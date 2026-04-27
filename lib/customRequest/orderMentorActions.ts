@@ -22,11 +22,14 @@ import {
 import {
   buildDeliverableRowPayload,
   buildDeliverableStorageObjectPath,
+  buildDeliverableSubmittedEventMetadataFromRow,
   DELIVERABLE_STORAGE_BUCKET,
   getDeliverableFileFromFormData,
   getOriginalFilenameForDisplay,
-  removeStorageObjectIfExists,
+  removeStorageObjectBestEffort,
+  validateDeliverableFileMagicBytes,
   validateDeliverableFileForUpload,
+  validateDeliverableStoragePath,
 } from "@/lib/customRequest/orderDeliverableFiles";
 import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
@@ -139,6 +142,14 @@ function isMissingColumnPostgrest(msg: string): boolean {
   return /column|does not exist|schema cache/i.test(msg);
 }
 
+function isPostgresUniqueViolation(e: { code?: string; message?: string } | null | undefined): boolean {
+  if (e?.code === "23505") {
+    return true;
+  }
+  const m = (e?.message ?? "").toLowerCase();
+  return m.includes("duplicate key") || m.includes("unique constraint");
+}
+
 /**
  * custom_order_deliverables insert + Storage(비공개 버킷) 업로드 + primary open → delivered.
  * FormData: orderId, deliverableFile(optional), deliverableBody(노트·텍스트, 파일 없을 때는 필수).
@@ -244,9 +255,20 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
 
   if (file) {
     const originalForDb = getOriginalFilenameForDisplay(file.name);
-    const { objectPath } = buildDeliverableStorageObjectPath(orderId, nextVersion, file.type, file.name);
-    storageObjectPath = objectPath;
+    if (originalForDb == null) {
+      redirectWithError(orderId, "파일 이름이 비어 있거나 사용할 수 없습니다.");
+    }
     const buf = await file.arrayBuffer();
+    const mErr = validateDeliverableFileMagicBytes(file.type, buf);
+    if (mErr) {
+      redirectWithError(orderId, mErr);
+    }
+    const { objectPath } = buildDeliverableStorageObjectPath(orderId, nextVersion, file.type, file.name);
+    const pCheck = validateDeliverableStoragePath(objectPath, orderId, nextVersion);
+    if (pCheck.ok === false) {
+      redirectWithError(orderId, pCheck.userMessage);
+    }
+    storageObjectPath = objectPath;
     const { error: upErr } = await supabase.storage.from(DELIVERABLE_STORAGE_BUCKET).upload(objectPath, buf, {
       contentType: file.type && file.type.length > 0 ? file.type : "application/octet-stream",
       upsert: false,
@@ -270,36 +292,45 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
     { ...idBase, body: note, file_url: null, version: nextVersion, status: "submitted" },
   ];
 
+  let inserted: Row | null = null;
   let insertErr: string | null = null;
+
   for (const payload of fallbacks) {
-    const { error: ie } = await supabase.from(dT.table).insert(payload).select("id").limit(1);
-    if (!ie) {
-      insertErr = null;
+    const { data, error: ie } = await supabase.from(dT.table).insert(payload).select("*").maybeSingle();
+    if (!ie && data) {
+      inserted = data as Row;
       break;
     }
-    insertErr = ie.message;
-    if (!isMissingColumnPostgrest(ie.message)) {
-      if (storageObjectPath) {
-        await removeStorageObjectIfExists(supabase, storageObjectPath);
+    if (!ie && !data) {
+      insertErr = "insert 결과 행이 없습니다.";
+      break;
+    }
+    if (ie) {
+      insertErr = ie.message;
+      if (isPostgresUniqueViolation(ie)) {
+        if (storageObjectPath) {
+          await removeStorageObjectBestEffort(supabase, storageObjectPath);
+        }
+        redirectWithError(orderId, "납품 처리 중 충돌이 발생했습니다. 다시 시도해 주세요.");
       }
-      redirectWithError(orderId, ie.message);
+      if (!isMissingColumnPostgrest(ie.message)) {
+        if (storageObjectPath) {
+          await removeStorageObjectBestEffort(supabase, storageObjectPath);
+        }
+        redirectWithError(orderId, ie.message);
+      }
     }
   }
-  if (insertErr) {
+  if (insertErr || !inserted) {
     if (storageObjectPath) {
-      await removeStorageObjectIfExists(supabase, storageObjectPath);
+      await removeStorageObjectBestEffort(supabase, storageObjectPath);
     }
     console.error("[submitMentorOrderDeliverableAction] insert failed", { orderId, insertErr, fk });
     redirectWithError(orderId, "납품 기록을 저장하지 못했습니다. 스키마를 확인하거나 잠시 후 다시 시도하세요.");
   }
 
-  await recordOrderEventBestEffort(supabase, orderId, "deliverable_submitted", user.id, {
-    version: nextVersion,
-    has_file: Boolean(fileMeta),
-    original_filename: fileMeta?.originalName,
-    storage_path: fileMeta?.objectPath,
-    mime_type: fileMeta?.mime,
-  });
+  const eventMeta = buildDeliverableSubmittedEventMetadataFromRow(inserted, nextVersion);
+  await recordOrderEventBestEffort(supabase, orderId, "deliverable_submitted", user.id, eventMeta);
 
   if (norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS) {
     const stCol = primaryOrderStatusColumnKey(row);

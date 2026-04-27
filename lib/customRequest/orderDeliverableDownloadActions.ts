@@ -7,12 +7,18 @@ import {
   firstReadableCustomTable,
   ORDER_TO_DELIVERABLE_FK_CANDIDATES,
 } from "@/lib/customRequest/customRequestQueries";
-import { DELIVERABLE_STORAGE_BUCKET, pickStoragePathFromDeliverableRow } from "@/lib/customRequest/orderDeliverableFiles";
+import {
+  DELIVERABLE_STORAGE_BUCKET,
+  pickStoragePathFromDeliverableRow,
+  validateDeliverableStoragePath,
+} from "@/lib/customRequest/orderDeliverableFiles";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/lib/types/user";
 
 type Row = Record<string, unknown>;
+
+const SIGNED_URL_TTL_SEC = 600;
 
 function orderPath(orderId: string) {
   return `/custom-request/orders/${encodeURIComponent(orderId)}`;
@@ -20,7 +26,7 @@ function orderPath(orderId: string) {
 
 /**
  * 납품 첨부 다운로드(비공개 버킷) — signed URL로 리다이렉트.
- * 주문 당사자(학생·멘토)·관리자만. 경로는 DB `storage_path` / `file_path` 등.
+ * 주문 당사자(학생·멘토)·관리자만. `storage_path` 는 검증된 ASCII key 만 허용.
  */
 export async function downloadCustomOrderDeliverableAction(formData: FormData): Promise<void> {
   const orderId = String(formData.get("orderId") ?? "").trim();
@@ -71,8 +77,9 @@ export async function downloadCustomOrderDeliverableAction(formData: FormData): 
   if (de || !drow) {
     redirect(orderPath(orderId) + "?error=" + encodeURIComponent("해당 납품을 찾을 수 없습니다."));
   }
+  const dr = drow as Row;
 
-  const path = pickStoragePathFromDeliverableRow(drow as Row);
+  const path = pickStoragePathFromDeliverableRow(dr);
   if (!path || path.startsWith("http://") || path.startsWith("https://")) {
     if (path?.startsWith("http")) {
       redirect(path);
@@ -80,9 +87,17 @@ export async function downloadCustomOrderDeliverableAction(formData: FormData): 
     redirect(orderPath(orderId) + "?error=" + encodeURIComponent("이 납품에 연결된 스토리지 파일이 없습니다(텍스트-only 납품)."));
   }
 
+  const vRaw = dr.version;
+  const vNum = typeof vRaw === "number" && Number.isFinite(vRaw) ? vRaw : Number(vRaw);
+  const expectedV = Number.isFinite(vNum) && vNum > 0 ? Math.floor(vNum) : undefined;
+  const pCheck = validateDeliverableStoragePath(path, orderId, expectedV);
+  if (pCheck.ok === false) {
+    redirect(orderPath(orderId) + "?error=" + encodeURIComponent("저장소 경로를 확인할 수 없어 다운로드할 수 없습니다."));
+  }
+
   const { data: signed, error: se } = await supabase.storage
     .from(DELIVERABLE_STORAGE_BUCKET)
-    .createSignedUrl(path, 120);
+    .createSignedUrl(path, SIGNED_URL_TTL_SEC);
   if (se || !signed?.signedUrl) {
     redirect(
       orderPath(orderId) + "?error=" + encodeURIComponent(se?.message ?? "다운로드 링크를 만들 수 없습니다. 잠시 후 다시 시도하세요.")
