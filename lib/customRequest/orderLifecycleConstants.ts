@@ -1,6 +1,9 @@
 /**
  * 맞춤의뢰 주문 상태 — 레포 내 출처만 명시 (Supabase migration / generated types 없음).
  *
+ * DB에서 실제 enum/문자열을 확인할 때 (Supabase SQL Editor 예시):
+ *   select distinct status, state, order_status from public.custom_request_orders;
+ *
  * | 구간 | 값 | 출처 |
  * |------|-----|------|
  * | 주문 생성 직후 primary (`status`→`state`→…) | `pending` | `insertCustomRequestOrder` p1 `status`/`state` |

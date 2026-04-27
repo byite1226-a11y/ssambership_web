@@ -13,6 +13,8 @@ type Props = {
   hasOrderPartyAccess: boolean;
   /** null이면 신청 폼 사용 가능(서버가 최종 검증) */
   openDisputeApplicationDisabledReason: string | null;
+  /** terminal 주문에서 분쟁 폼이 막힐 때 한 줄 안내(고객센터) */
+  postTerminalDisputeSupportLine?: string | null;
 };
 
 function disputeBody(r: Row) {
@@ -29,6 +31,7 @@ export function OrderDisputesPanel({
   actorRole,
   hasOrderPartyAccess,
   openDisputeApplicationDisabledReason,
+  postTerminalDisputeSupportLine,
 }: Props) {
   const u = detail.bundle.disputes;
   const rows = (u.rows ?? []) as Row[];
@@ -68,9 +71,14 @@ export function OrderDisputesPanel({
           </button>
         </form>
       ) : canForm && openDisputeApplicationDisabledReason ? (
-        <p className="mt-3 rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-slate-600" role="status">
-          {openDisputeApplicationDisabledReason}
-        </p>
+        <div className="mt-3 space-y-2" role="status">
+          <p className="rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-slate-600">
+            {openDisputeApplicationDisabledReason}
+          </p>
+          {postTerminalDisputeSupportLine ? (
+            <p className="px-0.5 text-xs text-slate-500">{postTerminalDisputeSupportLine}</p>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="mt-5">

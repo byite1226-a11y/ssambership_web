@@ -14,6 +14,8 @@ type Props = {
   studentRevisionRequestDisabledReason: string | null;
   /** null이면 #order-disputes 로 이동 가능(학생·멘토) */
   openDisputeApplicationDisabledReason: string | null;
+  /** terminal 주문에서 분쟁 액션이 막힐 때 짧은 안내(고객센터) */
+  postTerminalDisputeSupportLine?: string | null;
 };
 
 /**
@@ -28,6 +30,7 @@ export function OrderActionBar(props: Props) {
     mentorStartDisabledReason,
     studentRevisionRequestDisabledReason,
     openDisputeApplicationDisabledReason,
+    postTerminalDisputeSupportLine,
   } = props;
   const canStudentAccept =
     actorRole === "student" && view === "student" && !studentAcceptDisabledReason && orderId.trim().length > 0;
@@ -41,7 +44,8 @@ export function OrderActionBar(props: Props) {
     orderId.trim().length > 0;
 
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="주문 액션">
+    <div className="w-full" role="group" aria-label="주문 액션">
+      <div className="flex flex-wrap gap-2">
       {view === "student" && actorRole === "student" && canStudentRevisionJumps ? (
         <a
           href="#order-revisions"
@@ -127,6 +131,10 @@ export function OrderActionBar(props: Props) {
           분쟁 신청
         </button>
       )}
+      </div>
+      {postTerminalDisputeSupportLine ? (
+        <p className="mt-2 max-w-xl text-xs leading-snug text-slate-500">{postTerminalDisputeSupportLine}</p>
+      ) : null}
     </div>
   );
 }

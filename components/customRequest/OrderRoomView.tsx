@@ -126,6 +126,7 @@ function studentRevisionRequestDisabledReason(
 /**
  * 분쟁 신청 폼: 학생/멘토, 비종료, 미진행 분쟁.
  * - terminal: 이 화면에서 신규 티켓 열지 않음(정책, 사후는 운영·별도).
+ * - 멘토: 납품 1건 이상 또는 학생 검토 가능 상태에서만 신청(서버 액션과 동일).
  */
 function openDisputeApplicationDisabledReason(
   actorRole: AppRole,
@@ -145,6 +146,14 @@ function openDisputeApplicationDisabledReason(
   }
   if (hasActiveDisputeForOrderRows(detail.bundle.disputes.rows ?? [])) {
     return "이미 진행 중인 분쟁이 있습니다.";
+  }
+  if (actorRole === "mentor") {
+    // 멘토 분쟁은 납품 이후 단계에서만 허용한다. 납품 전 진행 이슈는 메시지/고객센터로 처리.
+    const hasDel = (detail.bundle.deliverables.rows?.length ?? 0) > 0;
+    const inStudentReview = isOrderStatusAllowingStudentAccept(norm);
+    if (!hasDel && !inStudentReview) {
+      return "멘토는 납품이 등록된 이후(또는 학생 검토·수락 단계)에만 분쟁을 신청할 수 있습니다. 납품 전 이슈는 주문 메시지·고객센터로 문의해 주세요.";
+    }
   }
   return null;
 }
@@ -183,6 +192,7 @@ export function OrderRoomView(props: {
   }
 
   const orderNorm = normalizedPrimaryOrderStatus(o as Row);
+  const isTerminalOrder = orderNorm ? isOrderStatusTerminal(orderNorm) : false;
   const mentorDeliverableBlockReason = (() => {
     if (view !== "mentor" || actorRole !== "mentor") {
       return "멘토만 납품을 등록할 수 있습니다.";
@@ -205,6 +215,10 @@ export function OrderRoomView(props: {
 
   const revBlock = studentRevisionRequestDisabledReason(actorRole, view, o as Row, detail);
   const disputeFormBlock = openDisputeApplicationDisabledReason(actorRole, o as Row, detail);
+  const postTerminalDisputeSupportLine =
+    isTerminalOrder && (actorRole === "student" || actorRole === "mentor")
+      ? "완료된 주문의 사후 분쟁은 고객센터로 문의해 주세요."
+      : null;
   const oid = String((o as Row).id ?? "");
 
   return (
@@ -237,6 +251,7 @@ export function OrderRoomView(props: {
         actorRole={actorRole}
         hasOrderPartyAccess={!accessDenied}
         openDisputeApplicationDisabledReason={disputeFormBlock}
+        postTerminalDisputeSupportLine={postTerminalDisputeSupportLine}
       />
       <OrderActionBar
         view={view}
@@ -246,6 +261,7 @@ export function OrderRoomView(props: {
         mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
         studentRevisionRequestDisabledReason={revBlock}
         openDisputeApplicationDisabledReason={disputeFormBlock}
+        postTerminalDisputeSupportLine={postTerminalDisputeSupportLine}
       />
       <p className="text-xs text-slate-500">
         결제·캐시/에스크로 연계: 비변경 단계. 오더 id: {pickDisplayField(o, ["id"])}
