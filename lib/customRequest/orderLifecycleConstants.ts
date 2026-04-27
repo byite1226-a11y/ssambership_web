@@ -1,0 +1,89 @@
+/**
+ * 맞춤의뢰 주문 상태 — 레포 내 출처만 명시 (Supabase migration / generated types 없음).
+ *
+ * | 구간 | 값 | 출처 |
+ * |------|-----|------|
+ * | 주문 생성 직후 primary (`status`→`state`→…) | `pending` | `insertCustomRequestOrder` p1 `status`/`state` |
+ * | 동일 insert의 `order_status` | `open` | `insertCustomRequestOrder` p1 |
+ * | 동일 insert의 `payment_status` | `unpaid` | `insertCustomRequestOrder` p1 (primary 상태 키 후보 아님) |
+ * | 멘토 작업 시작 후 primary 목표 | `open` | 주문 insert에 이미 쓰인 리터럴(`order_status`)과 동일 문자열 |
+ * | 학생 납품 수락 후 primary | `completed` | `orderStudentActions` |
+ * | 스레드 휴리스틱 종료류 | `done`, `resolved` 등 | `lib/home/threadStats.ts` (주문 row에 동일 문자열이 올 수 있으면 terminal 취급) |
+ *
+ * 납품·검토 대기 등은 insert에 없어 **legacy 집합**으로만 허용한다.
+ */
+
+const STATUS_KEYS = ["status", "state", "order_status", "stage"] as const;
+export type OrderStatusColumnKey = (typeof STATUS_KEYS)[number];
+
+/** `insertCustomRequestOrder` p1 — `customRequestMutations.ts` */
+export const ORDER_INSERT_STATUS_PENDING = "pending" as const;
+/** `insertCustomRequestOrder` p1 — `order_status` 컬럼 */
+export const ORDER_INSERT_ORDER_STATUS_OPEN = "open" as const;
+/** `insertCustomRequestOrder` p1 — `payment_status` (primary 상태 컬럼 후보 아님) */
+export const ORDER_INSERT_PAYMENT_STATUS_UNPAID = "unpaid" as const;
+
+/**
+ * 멘토 작업 시작 시 primary 컬럼에 넣는 값(현재 `open`).
+ * `insertCustomRequestOrder` 는 `status`/`state`=`pending` 과 동시에 `order_status`=`open` 를 넣으므로,
+ * `open` 이 “멘토 착수”인지 “접수/오픈 주문”인지는 DB CHECK/enum·DDL 이 레포에 있을 때만 확정할 수 있음
+ * (→ `orderSchemaGate` + `002_custom_request_orders_status.sql` 선행).
+ */
+export const ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS = ORDER_INSERT_ORDER_STATUS_OPEN;
+
+/** `status`→`state`→`order_status`→`stage` 순으로 비어 있지 않은 첫 컬럼(표시·검증·갱신에 동일 사용). */
+export function primaryOrderStatusColumnKey(row: Record<string, unknown>): OrderStatusColumnKey | null {
+  for (const k of STATUS_KEYS) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) {
+      return k;
+    }
+  }
+  return null;
+}
+
+export function normalizedPrimaryOrderStatus(row: Record<string, unknown>): string {
+  const k = primaryOrderStatusColumnKey(row);
+  if (!k) {
+    return "";
+  }
+  return String(row[k]).trim().toLowerCase();
+}
+
+/** 멘토 「작업 시작」직전 — insert 직후 primary만 허용 */
+export const ORDER_STATUSES_MENTOR_START_WORK_ALLOWED = new Set<string>([ORDER_INSERT_STATUS_PENDING]);
+
+/**
+ * 학생 납품 수락 직전 — `insertCustomRequestOrder`에는 납품 후 상태가 없음.
+ * 운영 DB·이전 스텁에서만 쓰이던 값은 legacy로 유지한다.
+ */
+export const ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY = new Set<string>([
+  "delivered",
+  "delivered_pending_review",
+  "waiting_review",
+  "pending_review",
+  "redelivered",
+  "delivery_submitted",
+  "in_review",
+]);
+
+export function isOrderStatusAllowingStudentAccept(norm: string): boolean {
+  return ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY.has(norm);
+}
+
+/** 종료·취소 등 — `orderStudentActions` + 흔한 취소류 + `threadStats` 종료 패턴 일부 */
+export const ORDER_TERMINAL_STATUSES = new Set<string>([
+  "completed",
+  "accepted",
+  "closed",
+  "cancelled",
+  "canceled",
+  "refunded",
+  "rejected",
+  "done",
+  "resolved",
+]);
+
+export function isOrderStatusTerminal(norm: string): boolean {
+  return ORDER_TERMINAL_STATUSES.has(norm);
+}

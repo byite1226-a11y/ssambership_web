@@ -1,0 +1,207 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { canAccessOrder } from "@/lib/customRequest/orderAccess";
+import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueries";
+import { insertOrderRoomMessage, recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
+import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { createClient } from "@/lib/supabase/server";
+import type { AppRole } from "@/lib/types/user";
+
+type Row = Record<string, unknown>;
+
+function orderPath(orderId: string) {
+  return `/custom-request/orders/${encodeURIComponent(orderId)}`;
+}
+
+function logActionFailure(
+  reason: string,
+  ctx: {
+    orderId: string;
+    userId: string | null;
+    role: AppRole | undefined;
+    canAccess: boolean | null;
+    studentMatch: boolean | null;
+    mentorMatch: boolean | null;
+    supabaseError: string | null;
+  }
+) {
+  console.error(`[submitCustomOrderRoomMessageAction] ${reason}`, ctx);
+}
+
+/**
+ * 주문방 메시지: orderId + 본문만 form에서 받고, author·역할은 세션/프로필로만 판정.
+ * 주의: completed/closed 등 **종료 상태**는 검사하지 않는다(당사자는 종료 후에도 메시지 가능).
+ * 라이프사이클(작업 시작·납품·수락) 액션과 달리 primary status / terminal 판정을 쓰지 않는다.
+ */
+export async function submitCustomOrderRoomMessageAction(formData: FormData): Promise<void> {
+  const orderIdEarly = String(formData.get("orderId") ?? "").trim();
+  const { user, profile, error: pe } = await getServerUserWithProfile();
+  if (!user) {
+    logActionFailure("no user", {
+      orderId: orderIdEarly || "—",
+      userId: null,
+      role: undefined,
+      canAccess: null,
+      studentMatch: null,
+      mentorMatch: null,
+      supabaseError: pe?.message ?? null,
+    });
+    const next = orderIdEarly ? `/custom-request/orders/${orderIdEarly}` : "/custom-request";
+    redirect("/login?next=" + encodeURIComponent(next));
+  }
+  if (pe) {
+    logActionFailure("profile load error", {
+      orderId: orderIdEarly || "—",
+      userId: user.id,
+      role: profile?.role as AppRole | undefined,
+      canAccess: null,
+      studentMatch: null,
+      mentorMatch: null,
+      supabaseError: pe.message,
+    });
+  }
+  const role = profile?.role as AppRole | undefined;
+  if (role !== "student" && role !== "mentor") {
+    logActionFailure("role not student/mentor", {
+      orderId: orderIdEarly || "—",
+      userId: user.id,
+      role,
+      canAccess: null,
+      studentMatch: null,
+      mentorMatch: null,
+      supabaseError: null,
+    });
+    redirect("/custom-request?error=" + encodeURIComponent("학생·멘토만 메시지를 보낼 수 있습니다."));
+  }
+
+  const orderId = orderIdEarly;
+  const text = String(formData.get("messageBody") ?? "").trim();
+  if (!orderId) {
+    logActionFailure("missing orderId", {
+      orderId: "—",
+      userId: user.id,
+      role,
+      canAccess: null,
+      studentMatch: null,
+      mentorMatch: null,
+      supabaseError: null,
+    });
+    redirect("/custom-request?error=" + encodeURIComponent("orderId가 필요합니다."));
+  }
+  if (!text) {
+    redirect(`${orderPath(orderId)}?error=${encodeURIComponent("메시지를 입력하세요.")}`);
+  }
+
+  const supabase = await createClient();
+  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
+  if (!oT.table) {
+    logActionFailure("no orders table", {
+      orderId,
+      userId: user.id,
+      role,
+      canAccess: null,
+      studentMatch: null,
+      mentorMatch: null,
+      supabaseError: oT.error || null,
+    });
+    redirect(`${orderPath(orderId)}?error=${encodeURIComponent(oT.error || "주문 없음")}`);
+  }
+  const table = oT.table;
+  const { data: rowData, error: oe } = await supabase.from(table).select("*").eq("id", orderId).maybeSingle();
+  if (oe || !rowData) {
+    logActionFailure("order row load", {
+      orderId,
+      userId: user.id,
+      role,
+      canAccess: null,
+      studentMatch: null,
+      mentorMatch: null,
+      supabaseError: oe?.message ?? (!rowData ? "no row" : null),
+    });
+    redirect(`${orderPath(orderId)}?error=${encodeURIComponent(oe?.message ?? "주문을 찾을 수 없습니다.")}`);
+  }
+  const row = rowData as Row;
+
+  const access = canAccessOrder(row, user.id, role);
+  if (!access.ok) {
+    logActionFailure("no order access", {
+      orderId,
+      userId: user.id,
+      role,
+      canAccess: false,
+      studentMatch: null,
+      mentorMatch: null,
+      supabaseError: null,
+    });
+    redirect(`${orderPath(orderId)}?error=${encodeURIComponent("이 주문에 메시지를 보낼 권한이 없습니다.")}`);
+  }
+
+  if (role === "student") {
+    const { column: stuCol } = await pickExistingColumn(supabase, table, [
+      "student_id",
+      "buyer_id",
+      "user_id",
+      "client_id",
+      "author_id",
+      "requester_id",
+    ]);
+    const studentMatch = stuCol ? String(row[stuCol]) === user.id : false;
+    if (!stuCol || !studentMatch) {
+      logActionFailure("student id mismatch or column missing", {
+        orderId,
+        userId: user.id,
+        role,
+        canAccess: true,
+        studentMatch,
+        mentorMatch: null,
+        supabaseError: null,
+      });
+      redirect(`${orderPath(orderId)}?error=${encodeURIComponent("의뢰자(학생) 본인만 이 영역에서 메시지를 보낼 수 있습니다.")}`);
+    }
+  } else {
+    const { column: menCol } = await pickExistingColumn(supabase, table, [
+      "mentor_id",
+      "mentor_user_id",
+      "assignee_id",
+      "assigned_mentor_id",
+      "selected_mentor_id",
+      "expert_id",
+    ]);
+    const mentorMatch = menCol ? String(row[menCol]) === user.id : false;
+    if (!menCol || !mentorMatch) {
+      logActionFailure("mentor id mismatch or column missing", {
+        orderId,
+        userId: user.id,
+        role,
+        canAccess: true,
+        studentMatch: null,
+        mentorMatch,
+        supabaseError: null,
+      });
+      redirect(`${orderPath(orderId)}?error=${encodeURIComponent("배정 멘토 본인만 이 영역에서 메시지를 보낼 수 있습니다.")}`);
+    }
+  }
+
+  const insertRes = await insertOrderRoomMessage(supabase, orderId, user.id, text, role);
+  if (insertRes.error) {
+    logActionFailure("message insert failed", {
+      orderId,
+      userId: user.id,
+      role,
+      canAccess: true,
+      studentMatch: role === "student" ? true : null,
+      mentorMatch: role === "mentor" ? true : null,
+      supabaseError: insertRes.error,
+    });
+    redirect(`${orderPath(orderId)}?error=${encodeURIComponent("메시지 저장 실패. " + insertRes.error)}`);
+  }
+
+  await recordOrderEventBestEffort(supabase, orderId, "message_created", user.id, { party: role });
+
+  revalidatePath(orderPath(orderId));
+  revalidatePath("/custom-request");
+  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("메시지를 보냈습니다.")}`);
+}

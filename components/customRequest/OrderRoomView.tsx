@@ -1,0 +1,255 @@
+import { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
+import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
+import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
+import { getMentorStartDisabledByMissingOrderDdl } from "@/lib/customRequest/orderSchemaGate";
+import {
+  ORDER_INSERT_STATUS_PENDING,
+  ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS,
+  ORDER_STATUSES_MENTOR_START_WORK_ALLOWED,
+  isOrderStatusAllowingStudentAccept,
+  isOrderStatusTerminal,
+  normalizedPrimaryOrderStatus,
+} from "@/lib/customRequest/orderLifecycleConstants";
+import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import { OrderActionBar } from "@/components/customRequest/order/OrderActionBar";
+import type { AppRole } from "@/lib/types/user";
+import { OrderDeliverablesPanel } from "@/components/customRequest/order/OrderDeliverablesPanel";
+import { OrderDisputesPanel } from "@/components/customRequest/order/OrderDisputesPanel";
+import { OrderProgressSection } from "@/components/customRequest/order/OrderProgressSection";
+import { OrderRevisionsPanel } from "@/components/customRequest/order/OrderRevisionsPanel";
+import { OrderSummaryHeader } from "@/components/customRequest/order/OrderSummaryHeader";
+
+type Bundle = Awaited<ReturnType<typeof loadOrderBundle>>;
+type Row = Record<string, unknown>;
+
+/** 분쟁 open/under_review/escalated 시 납품·수락·수정요청·작업시작을 잠금(서버 액션과 동기). */
+function disputeLifecycleBlockReason(detail: OrderDetailPageData): string | null {
+  if (hasActiveDisputeForOrderRows(detail.bundle.disputes.rows ?? [])) {
+    return "진행 중인 분쟁이 있어 이 작업을 할 수 없습니다.";
+  }
+  return null;
+}
+
+function studentAcceptDisabledReason(
+  actorRole: AppRole,
+  view: "student" | "mentor",
+  order: Row,
+  detail: OrderDetailPageData
+): string | null {
+  if (view !== "student" || actorRole !== "student") {
+    return "학생 본인 의뢰에서만 납품 수락을 사용할 수 있습니다.";
+  }
+  const byDispute = disputeLifecycleBlockReason(detail);
+  if (byDispute) {
+    return byDispute;
+  }
+  const hasDel = (detail.bundle.deliverables.rows?.length ?? 0) > 0;
+  if (!hasDel) {
+    return "등록된 납품이 있어야 수락할 수 있습니다.";
+  }
+  const norm = normalizedPrimaryOrderStatus(order);
+  if (!norm) {
+    return "주문 상태를 확인할 수 없습니다.";
+  }
+  if (isOrderStatusTerminal(norm)) {
+    return "이미 종료된 주문입니다.";
+  }
+  if (!isOrderStatusAllowingStudentAccept(norm)) {
+    return `현재 상태(${norm})에서는 수락할 수 없습니다.`;
+  }
+  return null;
+}
+
+function mentorStartDisabledReason(
+  actorRole: AppRole,
+  view: "student" | "mentor",
+  order: Row,
+  detail: OrderDetailPageData
+): string | null {
+  const byDispute = disputeLifecycleBlockReason(detail);
+  if (byDispute) {
+    return byDispute;
+  }
+  const byDdl = getMentorStartDisabledByMissingOrderDdl();
+  if (byDdl) {
+    return byDdl;
+  }
+  if (view !== "mentor" || actorRole !== "mentor") {
+    return "멘토 본인에게 배정된 주문에서만 작업 시작을 사용할 수 있습니다.";
+  }
+  const norm = normalizedPrimaryOrderStatus(order);
+  if (!norm) {
+    return "주문 상태를 확인할 수 없습니다.";
+  }
+  if (isOrderStatusTerminal(norm)) {
+    return "이미 종료된 주문입니다.";
+  }
+  if (norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS) {
+    return "이미 작업이 시작된 상태입니다.";
+  }
+  if (!ORDER_STATUSES_MENTOR_START_WORK_ALLOWED.has(norm)) {
+    return `현재 상태(${norm})에서는 작업을 시작할 수 없습니다.`;
+  }
+  return null;
+}
+
+function studentRevisionRequestDisabledReason(
+  actorRole: AppRole,
+  view: "student" | "mentor",
+  order: Row,
+  detail: OrderDetailPageData
+): string | null {
+  if (view !== "student" || actorRole !== "student") {
+    return "학생 본인 의뢰에서만 수정 요청을 보낼 수 있습니다.";
+  }
+  const byDispute = disputeLifecycleBlockReason(detail);
+  if (byDispute) {
+    return byDispute;
+  }
+  const hasDel = (detail.bundle.deliverables.rows?.length ?? 0) > 0;
+  if (!hasDel) {
+    return "등록된 납품이 있어야 수정 요청을 할 수 있습니다.";
+  }
+  const norm = normalizedPrimaryOrderStatus(order);
+  if (!norm) {
+    return "주문 상태를 확인할 수 없습니다.";
+  }
+  if (isOrderStatusTerminal(norm)) {
+    return "이미 완료·종료된 주문에는 수정 요청을 할 수 없습니다.";
+  }
+  if (!isOrderStatusAllowingStudentAccept(norm)) {
+    return `납품 검토·수락 단계에서만 수정 요청할 수 있습니다(현재: ${norm}).`;
+  }
+  return null;
+}
+
+/**
+ * 분쟁 신청 폼: 학생/멘토, 비종료, 미진행 분쟁.
+ * - terminal: 이 화면에서 신규 티켓 열지 않음(정책, 사후는 운영·별도).
+ */
+function openDisputeApplicationDisabledReason(
+  actorRole: AppRole,
+  order: Row,
+  detail: OrderDetailPageData
+): string | null {
+  if (actorRole !== "student" && actorRole !== "mentor") {
+    return "학생·멘토만 이 화면에서 분쟁을 신청할 수 있습니다.";
+  }
+  const norm = normalizedPrimaryOrderStatus(order);
+  if (!norm) {
+    return "주문 상태를 확인할 수 없어 분쟁을 신청할 수 없습니다.";
+  }
+  if (isOrderStatusTerminal(norm)) {
+    // 정책: terminal 이후 동일 주문 URL 로는 신규 분쟁 티켓을 열지 않음(사후 클레임은 운영·별도).
+    return "종료·완료된 주문에는 이 화면에서 새 분쟁을 열 수 없습니다.";
+  }
+  if (hasActiveDisputeForOrderRows(detail.bundle.disputes.rows ?? [])) {
+    return "이미 진행 중인 분쟁이 있습니다.";
+  }
+  return null;
+}
+
+export function OrderRoomView(props: {
+  bundle: Bundle;
+  detail: OrderDetailPageData | null;
+  orderId: string;
+  view: "student" | "mentor";
+  actorRole: AppRole;
+  accessDenied: boolean;
+  accessDetail?: string;
+}) {
+  const { bundle, detail, orderId, view, actorRole, accessDenied, accessDetail } = props;
+  const o = bundle.order.row;
+
+  if (accessDenied) {
+    return (
+      <p className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+        이 주문에 접근할 권한이 없습니다(의뢰자·배정 멘토·관리자만).{" "}
+        {accessDetail ? <span className="font-mono text-xs">({accessDetail})</span> : null}
+      </p>
+    );
+  }
+
+  if (!o) {
+    return (
+      <div className="space-y-2 text-sm text-slate-600">
+        <p>orderId에 맞는 행이 없습니다. {bundle.order.error}</p>
+      </div>
+    );
+  }
+
+  if (!detail) {
+    return null;
+  }
+
+  const orderNorm = normalizedPrimaryOrderStatus(o as Row);
+  const mentorDeliverableBlockReason = (() => {
+    if (view !== "mentor" || actorRole !== "mentor") {
+      return "멘토만 납품을 등록할 수 있습니다.";
+    }
+    const d = disputeLifecycleBlockReason(detail);
+    if (d) {
+      return d;
+    }
+    if (isOrderStatusTerminal(orderNorm)) {
+      return "종료된 주문입니다.";
+    }
+    if (orderNorm === ORDER_INSERT_STATUS_PENDING) {
+      return "작업 시작 후에만 납품을 등록할 수 있습니다(상태: pending).";
+    }
+    if (orderNorm !== ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS && orderNorm !== "delivered") {
+      return `이 상태(${orderNorm || "—"})에서는 납품 등록이 허용되지 않습니다.`;
+    }
+    return null;
+  })();
+
+  const revBlock = studentRevisionRequestDisabledReason(actorRole, view, o as Row, detail);
+  const disputeFormBlock = openDisputeApplicationDisabledReason(actorRole, o as Row, detail);
+  const oid = String((o as Row).id ?? "");
+
+  return (
+    <div className="space-y-4" data-views="custom-order-room">
+      <OrderSummaryHeader detail={detail} view={view} />
+      <OrderProgressSection
+        detail={detail}
+        orderId={String(orderId).trim() || oid}
+        view={view}
+        actorRole={actorRole}
+        hasOrderPartyAccess={!accessDenied}
+      />
+      <OrderDeliverablesPanel
+        detail={detail}
+        orderId={oid}
+        view={view}
+        actorRole={actorRole}
+        mentorDeliverableBlockReason={mentorDeliverableBlockReason}
+      />
+      <OrderRevisionsPanel
+        detail={detail}
+        orderId={oid}
+        actorRole={actorRole}
+        hasOrderPartyAccess={!accessDenied}
+        studentRevisionRequestDisabledReason={revBlock}
+      />
+      <OrderDisputesPanel
+        detail={detail}
+        orderId={oid}
+        actorRole={actorRole}
+        hasOrderPartyAccess={!accessDenied}
+        openDisputeApplicationDisabledReason={disputeFormBlock}
+      />
+      <OrderActionBar
+        view={view}
+        actorRole={actorRole}
+        orderId={oid}
+        studentAcceptDisabledReason={studentAcceptDisabledReason(actorRole, view, o as Row, detail)}
+        mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
+        studentRevisionRequestDisabledReason={revBlock}
+        openDisputeApplicationDisabledReason={disputeFormBlock}
+      />
+      <p className="text-xs text-slate-500">
+        결제·캐시/에스크로 연계: 비변경 단계. 오더 id: {pickDisplayField(o, ["id"])}
+      </p>
+    </div>
+  );
+}
