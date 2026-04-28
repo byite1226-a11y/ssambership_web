@@ -16,7 +16,8 @@ export type OrderRoomEventKind =
   | "deliverable_accepted"
   | "message_created"
   | "revision_requested"
-  | "dispute_opened";
+  | "dispute_opened"
+  | "settlement_item_created";
 
 const ORDER_EVENT_TABLES = ["order_events", "custom_order_events", "request_order_status_events"] as const;
 

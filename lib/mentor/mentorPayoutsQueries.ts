@@ -80,6 +80,17 @@ async function firstPayoutsTable(
   return { table: null, err: "payouts 계열 테이블 읽기 실패" };
 }
 
+export type CustomOrderSettlementListItem = {
+  id: string;
+  custom_request_order_id: string;
+  gross_amount: number;
+  platform_fee_amount: number;
+  mentor_amount: number;
+  status: string;
+  created_at: string;
+  paid_at: string | null;
+};
+
 export type MentorPayoutsBundle = {
   payoutTable: string | null;
   payoutError: string | null;
@@ -91,6 +102,8 @@ export type MentorPayoutsBundle = {
   tableHint: string;
   periodStart: string;
   periodEnd: string;
+  /** 맞춤의뢰 정산 예정(1차) */
+  customOrderSettlements: { rows: CustomOrderSettlementListItem[]; error: string | null };
 };
 
 export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentorId: string): Promise<MentorPayoutsBundle> {
@@ -164,6 +177,32 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
   }
   if (!cusTable) cusErr = "custom_request_orders(후보)를 읽지 못함";
 
+  let customSettlements: CustomOrderSettlementListItem[] = [];
+  let customSettlementsErr: string | null = null;
+  const { data: cosiData, error: cosiErr } = await supabase
+    .from("custom_order_settlement_items")
+    .select("id, custom_request_order_id, gross_amount, platform_fee_amount, mentor_amount, status, created_at, paid_at")
+    .eq("mentor_id", mentorId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (cosiErr) {
+    if (!/relation|does not exist|schema cache/i.test(cosiErr.message)) {
+      customSettlementsErr = cosiErr.message;
+    }
+  } else {
+    const list = (cosiData as Row[] | null) ?? [];
+    customSettlements = list.map((r) => ({
+      id: String(r.id ?? ""),
+      custom_request_order_id: String(r.custom_request_order_id ?? ""),
+      gross_amount: num(r.gross_amount),
+      platform_fee_amount: num(r.platform_fee_amount),
+      mentor_amount: num(r.mentor_amount),
+      status: typeof r.status === "string" ? r.status : "—",
+      created_at: typeof r.created_at === "string" ? r.created_at : "",
+      paid_at: r.paid_at != null && typeof r.paid_at === "string" ? r.paid_at : null,
+    }));
+  }
+
   return {
     payoutTable: pt.table,
     payoutError: pt.table ? null : pt.err || "—",
@@ -174,5 +213,6 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
     tableHint,
     periodStart: start,
     periodEnd: end,
+    customOrderSettlements: { rows: customSettlements, error: customSettlementsErr },
   };
 }

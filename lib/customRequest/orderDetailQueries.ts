@@ -10,6 +10,8 @@ import {
   pickDisplayField,
   pickMentorIdFromApplication,
 } from "@/lib/customRequest/customRequestQueries";
+import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
+import { loadCustomOrderSettlementItemByOrderId } from "@/lib/customRequest/orderSettlementService";
 import { loadOrderMessages, loadOrderRevisions } from "@/lib/customRequest/orderRoomMutations";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
@@ -126,6 +128,10 @@ export type OrderDetailPageData = {
   messages: CustomListResult;
   /** 학생 수정 요청(custom_order_revisions, 스키마 있을 때) */
   revisions: CustomListResult;
+  /** 맞춤의뢰 정산 예정 1행(스키마·RLS에 따름) */
+  settlementItem: Row | null;
+  settlementLoadError: string | null;
+  hasActiveDispute: boolean;
 };
 
 function numberish(v: unknown): string {
@@ -216,6 +222,9 @@ export async function loadOrderDetailPageData(
       latestDeliverable: null,
       messages: { table: null, sourceNote: "주문 없음", rows: [], error: null },
       revisions: { table: null, sourceNote: "주문 없음", rows: [], error: null },
+      settlementItem: null,
+      settlementLoadError: null,
+      hasActiveDispute: false,
     };
   }
 
@@ -249,12 +258,16 @@ export async function loadOrderDetailPageData(
     }
   }
 
-  const events = await loadOrderEventLog(supabase, orderId);
-  const messages = await loadOrderMessages(supabase, orderId);
-  const revisions = await loadOrderRevisions(supabase, orderId);
+  const [events, messages, revisions, settlementRes] = await Promise.all([
+    loadOrderEventLog(supabase, orderId),
+    loadOrderMessages(supabase, orderId),
+    loadOrderRevisions(supabase, orderId),
+    loadCustomOrderSettlementItemByOrderId(supabase, orderId),
+  ]);
   const delRows = (bundle.deliverables.rows as Row[]) ?? [];
   /** loadOrderBundle에서 version desc 등으로 정렬됨 */
   const latestDeliverable = delRows[0] ?? null;
+  const hasActiveDispute = hasActiveDisputeForOrderRows(bundle.disputes.rows);
 
   return {
     bundle,
@@ -266,5 +279,8 @@ export async function loadOrderDetailPageData(
     latestDeliverable,
     messages,
     revisions,
+    settlementItem: settlementRes.row,
+    settlementLoadError: settlementRes.error,
+    hasActiveDispute,
   };
 }

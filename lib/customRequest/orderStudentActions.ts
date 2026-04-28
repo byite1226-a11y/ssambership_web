@@ -12,6 +12,12 @@ import {
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
 import { firstReadableCustomTable, ORDER_TO_DELIVERABLE_FK_CANDIDATES } from "@/lib/customRequest/customRequestQueries";
+import { splitPlatformAndMentorForGross } from "@/lib/customRequest/orderSettlementAmounts";
+import {
+  deleteCustomOrderSettlementItemBestEffort,
+  insertCustomOrderSettlementIfRequiredBeforeComplete,
+  recordCustomOrderSettlementCreatedEvent,
+} from "@/lib/customRequest/orderSettlementService";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -112,6 +118,11 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
     redirectWithError(orderId, "주문 상태 컬럼을 찾을 수 없습니다.");
   }
 
+  const settlementStep = await insertCustomOrderSettlementIfRequiredBeforeComplete(supabase, orderId, row);
+  if (settlementStep.ok === false) {
+    redirectWithError(orderId, settlementStep.error);
+  }
+
   const patch: Record<string, unknown> = { [stCol]: "completed" };
 
   const { column: atCol } = await pickExistingColumn(supabase, table, [
@@ -126,7 +137,19 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
 
   const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(stuCol, user.id);
   if (ue) {
+    if (settlementStep.ok && settlementStep.created) {
+      await deleteCustomOrderSettlementItemBestEffort(supabase, orderId);
+    }
     redirectWithError(orderId, ue.message || "상태 갱신에 실패했습니다.");
+  }
+
+  if (settlementStep.ok && settlementStep.created) {
+    const { platformFee, mentorAmount } = splitPlatformAndMentorForGross(settlementStep.gross);
+    await recordCustomOrderSettlementCreatedEvent(supabase, orderId, user.id, {
+      gross: settlementStep.gross,
+      platform: platformFee,
+      mentor: mentorAmount,
+    });
   }
 
   revalidatePath(orderPath(orderId));

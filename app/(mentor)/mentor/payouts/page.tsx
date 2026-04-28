@@ -11,7 +11,10 @@ export default async function MentorPayoutsPage() {
   const bundle = await loadMentorPayoutsPageData(supabase, user.id);
 
   const hasAny =
-    (bundle.payoutTable && bundle.tableRows.length > 0) || bundle.subSummary.n > 0 || bundle.customSummary.n > 0;
+    (bundle.payoutTable && bundle.tableRows.length > 0) ||
+    bundle.subSummary.n > 0 ||
+    bundle.customSummary.n > 0 ||
+    bundle.customOrderSettlements.rows.length > 0;
   return (
     <PageScaffold
       eyebrow="Mentor / Payouts"
