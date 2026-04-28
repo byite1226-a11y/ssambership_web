@@ -5,7 +5,11 @@ import { submitCustomRequestNew } from "@/lib/customRequest/customRequestCompose
 
 export function CustomRequestNewForm(props: { errorMessage: string | null }) {
   return (
-    <form action={submitCustomRequestNew} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+    <form
+      action={submitCustomRequestNew}
+      encType="multipart/form-data"
+      className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5"
+    >
       <h1 className="text-xl font-black text-slate-900">의뢰 등록</h1>
       {props.errorMessage ? <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-950">{props.errorMessage}</div> : null}
 
@@ -39,9 +43,17 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
           <input name="budgetMax" type="number" min={0} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" />
         </label>
       </div>
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-500">
-        첨부 파일은 주문이 연결된 뒤, 안내에 따라 등록할 수 있습니다(현재 비활성).
-        <input type="file" disabled className="mt-1 block w-full text-xs" />
+      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-600">
+        <p className="text-xs text-slate-500">
+          문제 사진, 자료, 참고 문서를 첨부할 수 있습니다. PDF, 이미지, ZIP, DOCX, PPTX, 최대 20MB(선택)
+        </p>
+        <input
+          type="file"
+          name="postAttachmentFile"
+          accept="application/pdf,image/png,image/jpeg,image/webp,application/zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+          className="mt-2 block w-full text-xs file:mr-2 file:rounded file:border file:border-slate-200 file:bg-white file:px-2 file:py-1"
+        />
+        <p className="mt-1 text-xs text-slate-500">주문·납품 단계 첨부는 별도 안내를 따릅니다.</p>
       </div>
       <label className="block text-sm font-extrabold text-slate-800">
         원하는 결과물 형식

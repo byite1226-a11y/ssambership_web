@@ -4,7 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { insertCustomRequestPost } from "@/lib/customRequest/customRequestMutations";
+import { insertCustomRequestPost, insertCustomRequestPostAttachment } from "@/lib/customRequest/customRequestMutations";
+import { isAuthorOfPost } from "@/lib/customRequest/customRequestQueries";
+import {
+  buildPostAttachmentStorageObjectPath,
+  getPostAttachmentFileFromFormData,
+  getOriginalFilenameForDisplay,
+  POST_ATTACHMENT_STORAGE_BUCKET,
+  removePostAttachmentStorageObjectBestEffort,
+  validatePostAttachmentFileForUpload,
+  validatePostAttachmentFileMagicBytes,
+  validatePostAttachmentStoragePath,
+} from "@/lib/customRequest/postAttachmentFiles";
 
 const NEW = "/custom-request/new";
 
@@ -35,6 +46,29 @@ export async function submitCustomRequestNew(formData: FormData) {
     redirect(errRedirect("금지행위 동의·외부 연락 금지에 동의해 주세요."));
   }
 
+  const file = getPostAttachmentFileFromFormData(formData, "postAttachmentFile");
+  let fileBuffer: ArrayBuffer | null = null;
+  let resolvedOriginalName: string | null = null;
+  if (file) {
+    const verr = validatePostAttachmentFileForUpload({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    });
+    if (verr) {
+      redirect(errRedirect(verr));
+    }
+    resolvedOriginalName = getOriginalFilenameForDisplay(file.name);
+    if (resolvedOriginalName == null) {
+      redirect(errRedirect("파일 이름이 비어 있거나 사용할 수 없습니다."));
+    }
+    fileBuffer = await file.arrayBuffer();
+    const mErr = validatePostAttachmentFileMagicBytes(file.type, fileBuffer);
+    if (mErr) {
+      redirect(errRedirect(mErr));
+    }
+  }
+
   const r = await insertCustomRequestPost(supabase, {
     category,
     subject,
@@ -51,6 +85,40 @@ export async function submitCustomRequestNew(formData: FormData) {
 
   if (!r.ok) {
     redirect(errRedirect(r.error));
+  }
+
+  if (file && fileBuffer && resolvedOriginalName) {
+    const row = r.row;
+    if (!row || isAuthorOfPost(user.id, row).ok === false) {
+      redirect(errRedirect("의뢰 등록 직후 본인 확인에 실패해 첨부를 저장할 수 없습니다."));
+    }
+    const { objectPath } = buildPostAttachmentStorageObjectPath(r.id, file.type, file.name);
+    const pCheck = validatePostAttachmentStoragePath(objectPath, r.id);
+    if (pCheck.ok === false) {
+      redirect(errRedirect(pCheck.userMessage));
+    }
+    const { error: upErr } = await supabase.storage
+      .from(POST_ATTACHMENT_STORAGE_BUCKET)
+      .upload(objectPath, fileBuffer, {
+        contentType: file.type && file.type.length > 0 ? file.type : "application/octet-stream",
+        upsert: false,
+      });
+    if (upErr) {
+      console.error("[submitCustomRequestNew] post attachment storage upload", upErr);
+      redirect(errRedirect(upErr.message || "첨부 업로드에 실패했습니다. 잠시 후 다시 시도하세요."));
+    }
+    const ins = await insertCustomRequestPostAttachment(supabase, {
+      postId: r.id,
+      uploadedBy: user.id,
+      storagePath: objectPath,
+      originalFilename: resolvedOriginalName,
+      mimeType: (file.type || "application/octet-stream").toLowerCase(),
+      fileSizeBytes: file.size,
+    });
+    if (ins.ok === false) {
+      await removePostAttachmentStorageObjectBestEffort(supabase, objectPath);
+      redirect(errRedirect(`첨부 메타 저장 실패: ${ins.error}`));
+    }
   }
 
   revalidatePath("/custom-request");

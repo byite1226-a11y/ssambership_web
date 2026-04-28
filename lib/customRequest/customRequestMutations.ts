@@ -109,6 +109,31 @@ export async function insertCustomRequestPost(
   return toId(row, error);
 }
 
+export async function insertCustomRequestPostAttachment(
+  supabase: SupabaseClient,
+  input: {
+    postId: string;
+    uploadedBy: string;
+    storagePath: string;
+    originalFilename: string;
+    mimeType: string;
+    fileSizeBytes: number;
+  }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase.from("custom_request_post_attachments").insert({
+    custom_request_post_id: input.postId,
+    uploaded_by: input.uploadedBy,
+    storage_path: input.storagePath,
+    original_filename: input.originalFilename,
+    mime_type: input.mimeType,
+    file_size_bytes: input.fileSizeBytes,
+  });
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
 export type MentorApplicationInput = {
   postId: string;
   mentorId: string;

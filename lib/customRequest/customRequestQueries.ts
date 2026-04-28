@@ -216,6 +216,48 @@ function pickOrderIdFromRow(row: Row): string | null {
   return pickApplicationRowId(row);
 }
 
+export type PostAttachmentListItem = {
+  id: string;
+  original_filename: string;
+  file_size_bytes: number | null;
+  mime_type: string | null;
+  created_at: string;
+};
+
+/**
+ * 의뢰 등록 첨부(메타) — RLS: 작성·멘토·admin만 행 조회. 비로그인·비참여는 0행.
+ */
+export async function loadPostAttachments(
+  supabase: SupabaseClient,
+  postId: string
+): Promise<{ rows: PostAttachmentListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("custom_request_post_attachments")
+    .select("id, original_filename, file_size_bytes, mime_type, created_at")
+    .eq("custom_request_post_id", postId)
+    .order("created_at", { ascending: true });
+  if (error) {
+    if (/relation|does not exist|schema cache/i.test(error.message)) {
+      return { rows: [], error: null };
+    }
+    return { rows: [], error: error.message };
+  }
+  const list = (data as Row[] | null) ?? [];
+  return {
+    rows: list.map((r) => ({
+      id: String(r.id),
+      original_filename: String(r.original_filename ?? "파일"),
+      file_size_bytes: typeof r.file_size_bytes === "number" ? r.file_size_bytes : null,
+      mime_type: typeof r.mime_type === "string" ? r.mime_type : null,
+      created_at:
+        r.created_at != null && (typeof r.created_at === "string" || r.created_at instanceof Date)
+          ? String(r.created_at)
+          : "",
+    })),
+    error: null,
+  };
+}
+
 export async function loadCustomPostById(
   supabase: SupabaseClient,
   postId: string

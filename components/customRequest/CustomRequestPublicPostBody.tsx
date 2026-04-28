@@ -1,6 +1,11 @@
 import Link from "next/link";
-import { isAuthorOfPost, type CustomListResult } from "@/lib/customRequest/customRequestQueries";
+import {
+  isAuthorOfPost,
+  type CustomListResult,
+  type PostAttachmentListItem,
+} from "@/lib/customRequest/customRequestQueries";
 import { mapPostRowToPublicDetail, attachmentNote } from "@/lib/customRequest/customRequestPostMappers";
+import { downloadCustomRequestPostAttachmentAction } from "@/lib/customRequest/postAttachmentDownloadActions";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { MentorApplicationForm } from "@/components/customRequest/MentorApplicationForm";
 import type { UserRow } from "@/lib/types/user";
@@ -15,6 +20,9 @@ export function CustomRequestPublicPostBody(props: {
   profile: UserRow | null;
   /** 앱이 지원을 로드한 결과(서버에서 await 후 전달) */
   applications: CustomListResult & { postTable: string | null };
+  canViewAttachments: boolean;
+  attachments: PostAttachmentListItem[];
+  attachmentLoadError: string | null;
 }) {
   void props.postTable;
   const d = mapPostRowToPublicDetail(props.row);
@@ -44,9 +52,46 @@ export function CustomRequestPublicPostBody(props: {
           <p className="text-xs font-extrabold text-slate-500">본문</p>
           <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{d.body}</p>
         </div>
-        <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-          <span className="font-extrabold">첨부</span> · {att} · <span className="text-xs">제출된 첨부는 주문·진행 단계에서 안내됩니다.</span>
-        </div>
+        {props.canViewAttachments ? (
+          <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700">
+            <p className="font-extrabold text-slate-800">등록 시 첨부</p>
+            {props.attachmentLoadError ? (
+              <p className="mt-2 text-amber-800">목록을 불러오지 못했습니다: {mapDataErrorMessage(String(props.attachmentLoadError))}</p>
+            ) : props.attachments.length === 0 ? (
+              <p className="mt-2 text-xs text-slate-500">등록 시 올린 첨부가 없습니다. 주문·납품 단계 첨부는 별도 안내를 따릅니다.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {props.attachments.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs sm:text-sm"
+                  >
+                    <div>
+                      <p className="font-bold text-slate-900">{a.original_filename}</p>
+                      <p className="text-slate-500">
+                        {formatBytes(a.file_size_bytes)} · {formatUploadedAt(a.created_at)}
+                      </p>
+                    </div>
+                    <form action={downloadCustomRequestPostAttachmentAction}>
+                      <input type="hidden" name="postId" value={props.postId} />
+                      <input type="hidden" name="attachmentId" value={a.id} />
+                      <button
+                        type="submit"
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-800 hover:bg-slate-50"
+                      >
+                        다운로드
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
+            <span className="font-extrabold">첨부</span> · {att} · <span className="text-xs">제출된 첨부는 주문·진행 단계에서 안내됩니다.</span>
+          </div>
+        )}
         <div className="mt-4 text-sm text-slate-600">
           <p>
             <span className="font-extrabold">작성자</span> ·{" "}
@@ -117,4 +162,18 @@ function Item(props: { k: string; v: string }) {
       <dd className="mt-0.5 font-bold text-slate-900">{props.v}</dd>
     </div>
   );
+}
+
+function formatBytes(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "크기 미상";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatUploadedAt(iso: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("ko-KR", { dateStyle: "medium", timeStyle: "short" });
 }

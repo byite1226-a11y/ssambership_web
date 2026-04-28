@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { CustomRequestPublicPostBody } from "@/components/customRequest/CustomRequestPublicPostBody";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { loadApplicationsForPost, loadCustomPostForPublicDetail } from "@/lib/customRequest/customRequestQueries";
+import {
+  isAuthorOfPost,
+  loadApplicationsForPost,
+  loadCustomPostForPublicDetail,
+  loadPostAttachments,
+} from "@/lib/customRequest/customRequestQueries";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 import { createClient } from "@/lib/supabase/server";
@@ -48,6 +53,16 @@ export default async function CustomRequestPostPublicPage(props: Props) {
 
   const applications = await loadApplicationsForPost(supabase, postId, 40);
 
+  const canViewAttachments =
+    !!user &&
+    (profile?.role === "mentor" ||
+      profile?.role === "admin" ||
+      (profile?.role === "student" && isAuthorOfPost(user.id, post.row).ok));
+
+  const postAttachments = canViewAttachments
+    ? await loadPostAttachments(supabase, postId)
+    : { rows: [], error: null as string | null };
+
   return (
     <PageScaffold
       eyebrow="맞춤의뢰"
@@ -72,6 +87,9 @@ export default async function CustomRequestPostPublicPage(props: Props) {
         userId={user?.id ?? null}
         profile={profile}
         applications={applications}
+        canViewAttachments={canViewAttachments}
+        attachments={postAttachments.rows}
+        attachmentLoadError={postAttachments.error}
       />
       <p className="mt-8 text-center text-sm text-slate-500">
         <Link href="/custom-request" className="font-bold text-blue-700 underline">
