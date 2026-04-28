@@ -12,7 +12,7 @@ import path from "node:path";
 const DDL_MARKER = path.join(process.cwd(), "supabase", "sql", "002_custom_request_orders_status.sql");
 
 export const MENTOR_START_SCHEMA_GATE_MESSAGE =
-  "주문 테이블·상태 정의(DDL)가 레포에 아직 없어 멘토 작업 시작이 비활성화됩니다. supabase/sql/002_custom_request_orders_status.sql(실제 Supabase에서 내보낸 DDL)을 커밋하세요.";
+  "지금은 멘토 작업 시작을 사용할 수 없습니다. 서비스 설정이 완료되면 다시 시도하거나, 문제가 계속되면 고객센터로 문의해 주세요.";
 
 export function isCustomRequestOrderStatusDdlInRepo(): boolean {
   return fs.existsSync(DDL_MARKER);

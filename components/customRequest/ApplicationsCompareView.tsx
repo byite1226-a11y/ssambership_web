@@ -1,5 +1,7 @@
 import type { CustomListResult, EnrichedApplication } from "@/lib/customRequest/customRequestQueries";
 import { maskContact, pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 import { SelectMentorApplicationForm } from "@/components/customRequest/SelectMentorApplicationForm";
 import Link from "next/link";
 
@@ -20,18 +22,15 @@ export function ApplicationsCompareView(props: {
 }) {
   const { list, postId, enriched, existingOrderId } = props;
   if (list.error && !list.rows.length) {
-    return <p className="text-sm text-amber-800">Supabase: {list.error}</p>;
+    return <p className="text-sm text-amber-800">{mapDataErrorMessage(String(list.error))}</p>;
   }
   if (!list.rows.length) {
-    return <p className="text-sm text-slate-600">이 의뢰({postId})에 대한 지원서가 아직 없습니다. {list.sourceNote}</p>;
+    return <p className="text-sm text-slate-600">이 의뢰(번호 {shortOrderIdForDisplay(postId)})에 등록된 지원이 아직 없습니다.</p>;
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-slate-500">
-        연락처는 멘토 선정/주문 전 마스킹 — applications: {list.table} · custom_request_orders(선정 후) ·{" "}
-        <span className="font-mono">disputes</span> 연동 예정
-      </p>
+      <p className="text-xs text-slate-500">연락처·프로필의 일부는 멘토 선정·주문 전까지 가려질 수 있습니다.</p>
 
       {existingOrderId ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm text-emerald-900">

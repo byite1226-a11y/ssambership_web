@@ -10,7 +10,8 @@ import {
   isOrderStatusTerminal,
   normalizedPrimaryOrderStatus,
 } from "@/lib/customRequest/orderLifecycleConstants";
-import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 import { OrderActionBar } from "@/components/customRequest/order/OrderActionBar";
 import type { AppRole } from "@/lib/types/user";
 import { OrderDeliverablesPanel } from "@/components/customRequest/order/OrderDeliverablesPanel";
@@ -167,22 +168,22 @@ export function OrderRoomView(props: {
   accessDenied: boolean;
   accessDetail?: string;
 }) {
-  const { bundle, detail, orderId, view, actorRole, accessDenied, accessDetail } = props;
+  const { bundle, detail, orderId, view, actorRole, accessDenied } = props;
   const o = bundle.order.row;
 
   if (accessDenied) {
     return (
       <p className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-        이 주문에 접근할 권한이 없습니다(의뢰자·배정 멘토·관리자만).{" "}
-        {accessDetail ? <span className="font-mono text-xs">({accessDetail})</span> : null}
+        이 주문에 접근할 권한이 없습니다. 의뢰를 등록한 학생, 배정된 멘토, 운영자만 볼 수 있습니다.
       </p>
     );
   }
 
   if (!o) {
+    const errMsg = bundle.order.error ? mapDataErrorMessage(String(bundle.order.error)) : "주문을 찾을 수 없습니다.";
     return (
       <div className="space-y-2 text-sm text-slate-600">
-        <p>orderId에 맞는 행이 없습니다. {bundle.order.error}</p>
+        <p>{errMsg}</p>
       </div>
     );
   }
@@ -264,7 +265,7 @@ export function OrderRoomView(props: {
         postTerminalDisputeSupportLine={postTerminalDisputeSupportLine}
       />
       <p className="text-xs text-slate-500">
-        결제·캐시/에스크로 연계: 비변경 단계. 오더 id: {pickDisplayField(o, ["id"])}
+        결제·정산 안내는 주문이 확정된 뒤 단계별로 안내됩니다. 주문번호: {shortOrderIdForDisplay(oid || orderId)}
       </p>
     </div>
   );

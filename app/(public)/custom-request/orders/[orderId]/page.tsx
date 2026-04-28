@@ -7,7 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
 import { loadOrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
-import { CUSTOM_REQUEST_DATA_MODEL } from "@/lib/customRequest/customRequestDataModel";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 import type { AppRole } from "@/lib/types/user";
 
 type PageProps = {
@@ -22,7 +23,7 @@ type PageProps = {
 export default async function CustomRequestOrderPage(props: PageProps) {
   const { orderId } = await props.params;
   const sp = (await props.searchParams) ?? {};
-  const { user, profile, error: pe } = await getServerUserWithProfile();
+  const { user, profile } = await getServerUserWithProfile();
   if (!user) {
     redirect(`/login?next=${encodeURIComponent(`/custom-request/orders/${orderId}`)}`);
   }
@@ -39,31 +40,20 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   const detail = canEnrich ? await loadOrderDetailPageData(supabase, orderId, bundle) : null;
   const view: "student" | "mentor" = role === "mentor" ? "mentor" : "student";
 
-  const accessSectionBody = access.ok
-    ? `매칭: ${access.detail}`
-    : bundle.order.row
-      ? `접근 거절. ${pe?.message ?? "Supabase/프로필"}`
-      : (bundle.order.error ?? pe?.message ?? "주문/권한");
-
   return (
     <PageScaffold
-      eyebrow="Custom request / Order"
-      title="주문방 / 납품"
-      description={`orderId: ${orderId} · custom_request_orders, deliverables, disputes, post/application(조건부) · ${role}`}
+      eyebrow="주문방"
+      title="주문·납품"
+      description={`주문번호 ${shortOrderIdForDisplay(orderId)} — 진행 상황, 납품, 메시지를 확인합니다.`}
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
         { href: role === "mentor" ? "/mentor/dashboard" : "/home", label: "대시/홈", tone: "blue" },
       ]}
-      sections={[
-        { title: "접근", body: accessSectionBody, status: access.ok ? "connected" : "skeleton" },
-        { title: "캐시/결제", body: "본 턴에서 비변경(연계만 표기).", status: "skeleton" },
-      ]}
-      emptyState="주문/납품 데이터 없음."
-      dataPoints={[...CUSTOM_REQUEST_DATA_MODEL]}
+      sections={[]}
     >
       {sp.error ? (
         <p className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-900" role="alert">
-          {sp.error}
+          {mapDataErrorMessage(sp.error)}
         </p>
       ) : null}
       {sp.ok ? (
@@ -78,7 +68,6 @@ export default async function CustomRequestOrderPage(props: PageProps) {
         view={view}
         actorRole={role}
         accessDenied={accessDenied}
-        accessDetail={access.detail}
       />
     </PageScaffold>
   );

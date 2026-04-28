@@ -6,7 +6,6 @@ import { CustomRequestCategoryGrid } from "@/components/customRequest/CustomRequ
 import { CustomRequestPostListTable } from "@/components/customRequest/CustomRequestPostListTable";
 import { createClient } from "@/lib/supabase/server";
 import { loadCustomRequestCategories, loadRecentCustomRequestPosts } from "@/lib/customRequest/customRequestQueries";
-import { CUSTOM_REQUEST_DATA_MODEL } from "@/lib/customRequest/customRequestDataModel";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,20 +16,14 @@ export default async function CustomRequestPublicPage() {
 
   return (
     <PageScaffold
-      eyebrow="Public / Custom request"
+      eyebrow="맞춤의뢰"
       title="맞춤의뢰"
-      description="의뢰·지원·주문·납품 흐름(소개). 데이터는 custom_request_* 테이블(존재 시)에서만 조회 — 더미 행 없음."
+      description="요청을 등록하고 멘토와 매칭된 뒤, 주문방에서 납품·수정·소통을 진행합니다. 첨부·결제는 주문 확정 단계에서 안내됩니다."
       ctas={[
         { href: "/custom-request/new", label: "의뢰 등록(학생)", tone: "blue" },
         { href: `/login/student?next=${encodeURIComponent("/custom-request")}`, label: "학생 로그인", tone: "slate" },
       ]}
-      sections={[
-        { title: "데이터", body: recent.table ? `posts: ${recent.table}` : "posts 테이블 probe", status: recent.table ? "connected" : "skeleton" },
-        { title: "카테고리", body: cats.table ? String(cats.table) : "정적·또는 categories(후보)", status: cats.source === "table" && !cats.error ? "connected" : "skeleton" },
-        { title: "결제/첨부", body: "이번 턴: UI·Supabase 스텁 — 캐시·결제 모듈 비변경.", status: "skeleton" },
-      ]}
-      emptyState="최근 의뢰가 없으면 등록 CTA."
-      dataPoints={[...CUSTOM_REQUEST_DATA_MODEL]}
+      sections={[]}
     >
       <div className="space-y-6">
         <CustomRequestHero />

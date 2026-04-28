@@ -7,6 +7,7 @@ import {
   pickOrderStudentId,
 } from "@/lib/customRequest/orderRoomMutations";
 import type { AppRole } from "@/lib/types/user";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Row = Record<string, unknown>;
 type Props = {
@@ -58,11 +59,11 @@ export function OrderProgressSection({ detail, orderId: orderIdProp, view: _view
       <h3 className="text-base font-bold text-slate-900">진행 로그 / 메시지</h3>
       <p className="mt-1 text-xs text-slate-500">주문 이벤트와 의뢰·멘토 간 메시지를 확인할 수 있습니다.</p>
 
-      {postE ? <p className="mt-3 text-xs text-amber-800">의뢰(post) 연결: {postE}</p> : null}
-      {appE ? <p className="mt-1 text-xs text-amber-800">지원(application) 연결: {appE}</p> : null}
-      {evErr && !hasEvents ? <p className="mt-1 text-xs text-amber-800">이벤트 로드: {evErr}</p> : null}
-      {evErr && hasEvents ? <p className="mt-1 text-xs text-amber-700/90">이벤트 일부: {evErr}</p> : null}
-      {msgErr && !hasMessages && msg.table ? <p className="mt-1 text-xs text-amber-800">메시지 로드: {msgErr}</p> : null}
+      {postE ? <p className="mt-3 text-xs text-amber-800">의뢰 정보: {mapDataErrorMessage(String(postE))}</p> : null}
+      {appE ? <p className="mt-1 text-xs text-amber-800">지원 정보: {mapDataErrorMessage(String(appE))}</p> : null}
+      {evErr && !hasEvents ? <p className="mt-1 text-xs text-amber-800">진행 이벤트: {mapDataErrorMessage(String(evErr))}</p> : null}
+      {evErr && hasEvents ? <p className="mt-1 text-xs text-amber-700/90">진행 이벤트(일부): {mapDataErrorMessage(String(evErr))}</p> : null}
+      {msgErr && !hasMessages && msg.table ? <p className="mt-1 text-xs text-amber-800">메시지: {mapDataErrorMessage(String(msgErr))}</p> : null}
 
       <div className="mt-4">
         <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">상태·이벤트</h4>
@@ -84,11 +85,11 @@ export function OrderProgressSection({ detail, orderId: orderIdProp, view: _view
         ) : (
           <ol className="mt-1.5 list-decimal pl-4 text-xs text-slate-600">
             <li>상태: {String(o.status ?? o.state ?? o.order_status ?? o.stage ?? "—")}</li>
-            {o.created_at != null && <li>created_at: {String(o.created_at)}</li>}
+            {o.created_at != null && <li>주문 등록: {String(o.created_at)}</li>}
             {o.updated_at != null && (o as Row).created_at !== (o as Row).updated_at && (
-              <li>updated_at: {String(o.updated_at)}</li>
+              <li>마지막 변경: {String(o.updated_at)}</li>
             )}
-            <li className="list-none pl-0 text-slate-400">이벤트 기록이 없을 때 주문 정보만 표시합니다.</li>
+            <li className="list-none pl-0 text-slate-400">이벤트 기록이 없을 때는 위 정보로 대체 표시됩니다.</li>
           </ol>
         )}
       </div>

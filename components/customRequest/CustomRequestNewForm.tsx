@@ -40,7 +40,7 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
         </label>
       </div>
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-500">
-        첨부 파일: 업로드 Storage·RLS(연결 예정) — UI 자리만.
+        첨부 파일은 주문이 연결된 뒤, 안내에 따라 등록할 수 있습니다(현재 비활성).
         <input type="file" disabled className="mt-1 block w-full text-xs" />
       </div>
       <label className="block text-sm font-extrabold text-slate-800">

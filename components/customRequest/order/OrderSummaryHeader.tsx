@@ -1,4 +1,5 @@
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Props = {
   detail: OrderDetailPageData;
@@ -13,7 +14,7 @@ export function OrderSummaryHeader({ detail, view }: Props) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
         <h2 className="font-extrabold">주문 요약</h2>
-        <p className="mt-2">Supabase: {o.error}</p>
+        <p className="mt-2">{mapDataErrorMessage(String(o.error))}</p>
       </section>
     );
   }
@@ -22,7 +23,7 @@ export function OrderSummaryHeader({ detail, view }: Props) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
         <h2 className="font-extrabold">주문 요약</h2>
-        <p className="mt-2">해당 id의 주문을 찾을 수 없습니다. {o.table ? `(${o.table})` : null}</p>
+        <p className="mt-2">해당 주문을 찾을 수 없습니다.</p>
       </section>
     );
   }
@@ -35,7 +36,7 @@ export function OrderSummaryHeader({ detail, view }: Props) {
         </h2>
         <span
           className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-800"
-          title="custom_request_orders.status 등"
+          title="주문 상태"
         >
           {h.statusLine}
         </span>

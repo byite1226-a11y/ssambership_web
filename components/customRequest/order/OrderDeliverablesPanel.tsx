@@ -5,6 +5,7 @@ import { submitMentorOrderDeliverableAction } from "@/lib/customRequest/orderMen
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import type { AppRole } from "@/lib/types/user";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Row = Record<string, unknown>;
 type Props = {
@@ -73,7 +74,7 @@ export function OrderDeliverablesPanel({
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-extrabold text-slate-900">납품(버전)</h3>
-      {err ? <p className="text-sm text-amber-800">납품: {err}</p> : null}
+      {err ? <p className="text-sm text-amber-800">납품: {mapDataErrorMessage(String(err))}</p> : null}
       {d.table && rows.length > 0 ? (
         <ul className="space-y-2">
           {rows.map((r, i) => {

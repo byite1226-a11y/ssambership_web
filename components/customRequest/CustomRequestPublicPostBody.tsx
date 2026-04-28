@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { isAuthorOfPost, type CustomListResult } from "@/lib/customRequest/customRequestQueries";
 import { mapPostRowToPublicDetail, attachmentNote } from "@/lib/customRequest/customRequestPostMappers";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { MentorApplicationForm } from "@/components/customRequest/MentorApplicationForm";
 import type { UserRow } from "@/lib/types/user";
 
@@ -15,6 +16,7 @@ export function CustomRequestPublicPostBody(props: {
   /** 앱이 지원을 로드한 결과(서버에서 await 후 전달) */
   applications: CustomListResult & { postTable: string | null };
 }) {
+  void props.postTable;
   const d = mapPostRowToPublicDetail(props.row);
   const att = attachmentNote(props.row);
   const author = isAuthorOfPost(props.userId ?? "", props.row);
@@ -43,32 +45,29 @@ export function CustomRequestPublicPostBody(props: {
           <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{d.body}</p>
         </div>
         <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-          <span className="font-extrabold">첨부</span> · {att} · <span className="text-xs">Storage(후속)</span>
+          <span className="font-extrabold">첨부</span> · {att} · <span className="text-xs">제출된 첨부는 주문·진행 단계에서 안내됩니다.</span>
         </div>
         <div className="mt-4 text-sm text-slate-600">
           <p>
-            <span className="font-extrabold">작성자/식별</span> · {author.ok ? "내가 등록한 의뢰(같은 계정)" : "학생·의뢰자 식별은 post FK만 공개(연락은 마스킹)"} ·
-            {author.detail}
+            <span className="font-extrabold">작성자</span> ·{" "}
+            {author.ok ? "이 의뢰는 내가 등록한 요청입니다." : "다른 참가자에게는 식별 정보가 제한될 수 있습니다."}
           </p>
           <p className="mt-2">
             <span className="font-extrabold">선택 전 연락처</span> · {d.contactMasked}
           </p>
         </div>
         {props.applications.error ? (
-          <p className="mt-2 text-sm text-amber-800">지원·집계: {props.applications.error}</p>
+          <p className="mt-2 text-sm text-amber-800">지원 정보: {mapDataErrorMessage(String(props.applications.error))}</p>
         ) : (
-          <p className="mt-2 text-sm text-slate-600">제출된 지원(동일 post): {props.applications.rows.length}건 — {props.applications.sourceNote}</p>
+          <p className="mt-2 text-sm text-slate-600">이 의뢰에 제출된 지원: {props.applications.rows.length}건</p>
         )}
-        <p className="text-xs text-slate-500">
-          supabase: <code className="font-mono">{props.postTable}</code>
-        </p>
       </section>
 
       <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-sm text-blue-950">
         <p className="font-extrabold">정책(요약)</p>
         <ul className="mt-2 list-inside list-disc space-y-1 text-blue-900/90">
-          <li>의뢰 등록은 학생 계정만(별도 /custom-request/new).</li>
-          <li>지원 제출은 멘토만. 멘토 1명 선정 후 custom_request_orders·결제(후속)로 이어집니다.</li>
+          <li>의뢰 등록은 학생 계정으로 할 수 있습니다.</li>
+          <li>지원은 멘토만 제출할 수 있으며, 선정 후 주문·결제는 단계별로 안내됩니다.</li>
         </ul>
       </section>
 
@@ -105,7 +104,7 @@ export function CustomRequestPublicPostBody(props: {
       ) : null}
 
       {isMentor && !isAuthor && !allowsApply ? (
-        <p className="text-sm text-slate-500">모집 종료 등 open 이외 상태 — 새 지원 UI 비활성(스키마·상태명 확정 후 조정).</p>
+        <p className="text-sm text-slate-500">현재는 모집이 마감되었거나 지원을 받지 않는 상태입니다.</p>
       ) : null}
     </div>
   );

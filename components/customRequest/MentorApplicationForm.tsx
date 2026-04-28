@@ -4,12 +4,11 @@ import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitMentorCustomRequestApplication } from "@/lib/customRequest/customRequestApplicationActions";
 
 export function MentorApplicationForm(props: { postId: string; appTableHint: string | null }) {
+  void props.appTableHint;
   return (
     <form action={submitMentorCustomRequestApplication} className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5">
       <h2 className="text-lg font-extrabold text-slate-900">멘토 지원 제출</h2>
-      <p className="text-xs text-slate-600">
-        custom_request_applications(후보) insert · {props.appTableHint ? `probe: ${props.appTableHint}` : "테이블 probe 필요"}
-      </p>
+      <p className="text-xs text-slate-600">의뢰에 맞는 가격·일정·범위를 제안해 주세요. 제출 후 의뢰자가 검토합니다.</p>
       <input type="hidden" name="postId" value={props.postId} />
       <label className="block text-sm font-extrabold text-slate-800">
         제안 가격(원)

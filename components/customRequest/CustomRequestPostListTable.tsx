@@ -1,14 +1,15 @@
 import Link from "next/link";
 import type { CustomListResult } from "@/lib/customRequest/customRequestQueries";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 export function CustomRequestPostListTable(props: { list: CustomListResult; max?: number }) {
   const { list, max = 5 } = props;
   if (list.error && !list.rows.length) {
-    return <p className="text-sm text-amber-800">최근 의뢰: {list.error}</p>;
+    return <p className="text-sm text-amber-800">최근 의뢰: {mapDataErrorMessage(String(list.error))}</p>;
   }
   if (!list.rows.length) {
-    return <p className="text-sm text-slate-600">아직 공개·등록된 맞춤의뢰가 없습니다. ({list.sourceNote})</p>;
+    return <p className="text-sm text-slate-600">아직 등록된 맞춤의뢰가 없습니다.</p>;
   }
   return (
     <ul className="space-y-2 text-sm text-slate-800">

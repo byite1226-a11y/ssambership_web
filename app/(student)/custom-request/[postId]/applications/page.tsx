@@ -9,7 +9,8 @@ import {
   loadApplicationsForPost,
   loadCustomPostById,
 } from "@/lib/customRequest/customRequestQueries";
-import { CUSTOM_REQUEST_DATA_MODEL } from "@/lib/customRequest/customRequestDataModel";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type Row = Record<string, unknown>;
 
@@ -31,38 +32,38 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
   const enriched = await enrichApplicationRows(supabase, (list.rows as Row[]) ?? []);
   const existing = await findOrderForPostAndStudent(supabase, postId, user.id);
 
+  const listErr = list.error ? mapDataErrorMessage(String(list.error)) : null;
+  const existingNote = existing.orderId
+    ? `이미 연결된 주문이 있습니다(주문번호 ${shortOrderIdForDisplay(String(existing.orderId))}).`
+    : existing.error || existing.probe
+      ? mapDataErrorMessage(String(existing.error ?? existing.probe ?? ""))
+      : "아직 이 의뢰로 생성된 주문이 없습니다.";
+
+  const titleDescription = authz.ok
+    ? `의뢰 ${shortOrderIdForDisplay(postId)} — 지원 ${list.rows.length}건을 비교하고, 한 명을 선택하면 주문방으로 이어집니다.`
+    : `의뢰 ${shortOrderIdForDisplay(postId)} — 이 화면에서는 지원한 멘토를 비교할 수 있습니다.`;
+
   return (
     <PageScaffold
-      eyebrow="Student / Custom request / Applications"
+      eyebrow="지원서"
       title="지원서 비교"
-      description={`postId: ${postId} — 1인 선정 시 custom_request_orders + /custom-request/orders/[id].`}
+      description={titleDescription}
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
         { href: `/custom-request/${postId}`, label: "의뢰 공개 상세", tone: "slate" },
         { href: "/home", label: "홈", tone: "slate" },
       ]}
-      sections={[
-        { title: "권한", body: authz.ok ? "의뢰자 일치" : "불일치 — " + authz.detail, status: authz.ok ? "connected" : "skeleton" },
-        { title: "지원", body: list.table ? `${list.table} · ${list.rows.length}건` : "—", status: list.table ? "connected" : "skeleton" },
-        {
-          title: "기존 주문",
-          body: existing.orderId
-            ? `orderId: ${existing.orderId}`
-            : (existing.error ?? existing.probe) || "없음",
-          status: existing.orderId ? "connected" : "skeleton",
-        },
-      ]}
-      emptyState="지원 0건."
-      errorState={err ?? (list.error ?? "—")}
-      dataPoints={[...CUSTOM_REQUEST_DATA_MODEL]}
+      sections={[]}
     >
       {err ? (
-        <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-extrabold text-red-900">선정/주문: {err}</p>
+        <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-extrabold text-red-900">선정/주문: {mapDataErrorMessage(err)}</p>
       ) : null}
+      {authz.ok && listErr ? <p className="mb-3 text-sm text-amber-800">지원 목록: {listErr}</p> : null}
+      {authz.ok ? <p className="mb-4 text-sm text-slate-600">{existingNote}</p> : null}
       {!authz.ok ? (
         <p className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold text-amber-950">
-          이 의뢰에 대한 지원서 비교는 의뢰자만 볼 수 있습니다. ({authz.detail}
-          {post.error ? ` · ${post.error}` : ""})
+          이 의뢰를 등록한 학생만 지원서를 비교할 수 있습니다.
+          {post.error ? <span className="mt-2 block text-amber-900/90">의뢰 정보: {mapDataErrorMessage(String(post.error))}</span> : null}
         </p>
       ) : (
         <ApplicationsCompareView

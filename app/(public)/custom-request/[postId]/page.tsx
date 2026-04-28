@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { CustomRequestPublicPostBody } from "@/components/customRequest/CustomRequestPublicPostBody";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { CUSTOM_REQUEST_DATA_MODEL } from "@/lib/customRequest/customRequestDataModel";
 import { loadApplicationsForPost, loadCustomPostForPublicDetail } from "@/lib/customRequest/customRequestQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -25,19 +26,18 @@ export default async function CustomRequestPostPublicPage(props: Props) {
   const [{ user, profile }, post] = await Promise.all([getServerUserWithProfile(), loadCustomPostForPublicDetail(supabase, postId)]);
 
   if (post.error && !post.row) {
+    const friendly = mapDataErrorMessage(String(post.error));
     return (
       <PageScaffold
-        eyebrow="Custom request"
+        eyebrow="맞춤의뢰"
         title="의뢰를 열 수 없습니다"
-        description={post.error}
+        description="요청한 의뢰를 불러오지 못했습니다. 목록으로 돌아가 다시 시도해 주세요."
         ctas={[
           { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
         ]}
         sections={[]}
-        emptyState=""
-        dataPoints={[...CUSTOM_REQUEST_DATA_MODEL]}
       >
-        <p className="text-sm text-red-800">{post.error}</p>
+        <p className="text-sm text-amber-800">{friendly}</p>
       </PageScaffold>
     );
   }
@@ -50,24 +50,21 @@ export default async function CustomRequestPostPublicPage(props: Props) {
 
   return (
     <PageScaffold
-      eyebrow="Public / Custom request"
+      eyebrow="맞춤의뢰"
       title="맞춤의뢰 상세"
-      description="custom_request_posts 조회 + 멘토만 지원 제출. 질문방·로그인·어드민 라우트 미변경."
+      description={`의뢰 ${shortOrderIdForDisplay(postId)} · 멘토는 여기서 지원을 제출할 수 있습니다(로그인·자격이 필요할 수 있습니다).`}
       ctas={[
         { href: "/custom-request", label: "목록/소개", tone: "slate" },
         { href: "/mentors", label: "멘토 찾기", tone: "slate" },
       ]}
-      sections={[
-        { title: "post", body: post.table, status: "connected" },
-        { title: "applications", body: applications.table ? `${applications.table} · n=${applications.rows.length}` : "—", status: applications.error ? "skeleton" : "connected" },
-      ]}
-      emptyState="—"
-      dataPoints={[...CUSTOM_REQUEST_DATA_MODEL]}
+      sections={[]}
     >
       {ok ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">지원이 제출되었습니다(응답 id는 DB 스키마에 따름).</p>
+        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">지원이 제출되었습니다.</p>
       ) : null}
-      {err ? <p className="mb-4 text-sm font-bold text-red-800">제출/오류: {err}</p> : null}
+      {err ? (
+        <p className="mb-4 text-sm font-bold text-red-800">제출/오류: {mapDataErrorMessage(err)}</p>
+      ) : null}
       <CustomRequestPublicPostBody
         postId={postId}
         row={post.row}

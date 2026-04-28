@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { type StudentHomeData, paymentRowLabel } from "@/lib/home/studentHomeQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { studentMypageKorean } from "@/components/home/studentHomeDisplay";
 
 type Row = Record<string, unknown>;
 
@@ -22,17 +24,19 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
 
   const todayItems: string[] = [];
   if (roomErr) {
-    todayItems.push(`질문방 room 목록 조회에 문제: ${roomErr}`);
+    todayItems.push(`질문방을 불러오지 못했습니다. ${mapDataErrorMessage(String(roomErr))}`);
   } else if ((rooms.rows?.length ?? 0) === 0) {
-    todayItems.push("멘토를 찾아 첫 질문을 시작하세요. `/mentors` 또는 구독·질문방으로 이동.");
+    todayItems.push("멘토를 구독하거나 찾은 뒤, 첫 질문방을 열어 보세요.");
   } else {
-    todayItems.push(`질문방 ${rooms.rows.length}곳 — 열린 스레드(추정) ${threadStats.openThreads}개`);
+    todayItems.push(
+      `질문방 ${rooms.rows.length}곳이 연결되어 있고, 열려 있는 질문·스레드는 약 ${threadStats.openThreads}개로 보입니다.`
+    );
   }
   if (threadErr) {
-    todayItems.push(`스레드 집계: ${threadErr}`);
+    todayItems.push(`질문·스레드 요약: ${mapDataErrorMessage(String(threadErr))}`);
   }
   if (mypage.payments.status === "skeleton") {
-    todayItems.push("결제/구독 테이블이 아직 읽기 어렵습니다(스키마·RLS).");
+    todayItems.push("결제·주문 요약을 아직 가져오지 못했습니다. [지갑]·[구독]에서 확인해 주세요.");
   }
 
   return (
@@ -51,45 +55,39 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
           <Link className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold" href="/mentors">
             멘토 찾기
           </Link>
-          <Link className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold" href="/mentors">
-            멘토·구독
+          <Link className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold" href="/subscriptions">
+            구독
           </Link>
         </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-        <h2 className="text-sm font-extrabold text-slate-900">구독 중 멘토(요약)</h2>
-        {subErr ? stateBanner(`subscriptions: ${subErr}`, "err") : null}
-        <p className="mt-1 text-xs text-slate-500">소스: {subscriptionLines.probe}</p>
+        <h2 className="text-sm font-extrabold text-slate-900">구독 중인 멘토(요약)</h2>
+        {subErr ? stateBanner(`구독 정보: ${mapDataErrorMessage(String(subErr))}`, "err") : null}
         {subscriptionLines.lines.length ? (
           <ul className="mt-2 space-y-1">
             {subscriptionLines.lines.slice(0, 6).map((line) => (
               <li key={String((line.row as Row).id ?? line.mentorId)} className="text-slate-800">
                 <span className="font-bold">{line.mentorName}</span>
-                {line.mentorId ? (
-                  <span className="text-slate-500"> · {line.mentorId.slice(0, 8)}…</span>
-                ) : null}
+                {line.mentorId ? <span className="text-slate-500"> · {line.mentorId.slice(0, 8)}…</span> : null}
               </li>
             ))}
           </ul>
         ) : !subErr ? (
-          stateBanner("아직 구독 행이 없거나(0건) 스키마에 멘토·학생 FK가 없습니다.", "soft")
+          stateBanner("아직 구독 중인 멘토가 없습니다.", "soft")
         ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-extrabold text-slate-900">남은 질문·스레드</h2>
-        <p className="mt-1 text-slate-700">플랜(주간 한도·표기): {weeklyQuotaHint}</p>
-        <p className="mt-1 text-slate-700">
-          진행 중 스레드(휴리스틱): {threadStats.openThreads} · room 샘플 {threadStats.roomsSampled}개
-        </p>
-        {threadErr ? stateBanner(threadErr, "err") : null}
-        {mypage.subscriptions.status === "skeleton" && stateBanner(mypage.subscriptions.detail, "soft")}
+        <h2 className="text-sm font-extrabold text-slate-900">질문 한도·진행</h2>
+        <p className="mt-1 text-slate-700">플랜: {weeklyQuotaHint}</p>
+        <p className="mt-1 text-slate-700">진행 중인 질문(추정): {threadStats.openThreads}개</p>
+        {threadErr ? stateBanner(mapDataErrorMessage(String(threadErr)), "err") : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-extrabold text-slate-900">최근 질문방</h2>
-        {roomErr ? stateBanner(roomErr, "err") : null}
+        {roomErr ? stateBanner(mapDataErrorMessage(String(roomErr)), "err") : null}
         {rooms.rows?.length ? (
           <ul className="mt-2 space-y-2">
             {rooms.rows.slice(0, 5).map((r) => {
@@ -99,7 +97,7 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
               return (
                 <li key={id}>
                   <Link href={`/question-room/${id}`} className="font-bold text-blue-800 underline">
-                    room {id.slice(0, 8)}…
+                    질문방 {id.slice(0, 8)}…
                   </Link>{" "}
                   <span className="text-xs text-slate-500">{t ? t.slice(0, 10) : ""}</span>
                 </li>
@@ -107,14 +105,13 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
             })}
           </ul>
         ) : !roomErr ? (
-          <p className="mt-2 text-slate-600">질문방 empty — 멘토 구독 후 room이 생깁니다.</p>
+          <p className="mt-2 text-slate-600">아직 열린 질문방이 없습니다. 멘토를 구독하거나 [질문방]에서 시작해 보세요.</p>
         ) : null}
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-        <h2 className="text-sm font-extrabold text-slate-900">최근 결제·구독(결제 row)</h2>
-        {payErr ? stateBanner(payErr, "err") : null}
-        <p className="text-xs text-slate-500">소스: {recentPayments.probe}</p>
+        <h2 className="text-sm font-extrabold text-slate-900">최근 결제</h2>
+        {payErr ? stateBanner(`결제: ${mapDataErrorMessage(String(payErr))}`, "err") : null}
         {recentPayments.rows.length ? (
           <ul className="mt-2 list-inside list-decimal text-slate-800">
             {recentPayments.rows.map((r, i) => (
@@ -122,13 +119,12 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
             ))}
           </ul>
         ) : !payErr ? (
-          <p className="mt-2 text-slate-600">결제·주문 row empty(또는 학생 FK 경로 없음)</p>
+          <p className="mt-2 text-slate-600">최근 결제·주문이 없습니다.</p>
         ) : null}
-        <p className="mt-2 text-xs text-slate-500">구독 count: {mypage.subscriptions.valueText} — {mypage.subscriptions.detail}</p>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-extrabold text-slate-900">지금 갈 수 있는 곳</h2>
+        <h2 className="text-sm font-extrabold text-slate-900">바로 가기</h2>
         <ul className="mt-2 grid gap-1 sm:grid-cols-2 text-blue-800">
           <li>
             <Link className="underline" href="/community">
@@ -142,20 +138,20 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
           </li>
           <li>
             <Link className="underline" href="/wallet/charge">
-              캐시 충전(지갑)
+              캐시 충전
             </Link>
           </li>
           <li>
             <Link className="underline" href="/wallet/ledger">
-              캐시 원장(내역)
+              캐시 내역
             </Link>
           </li>
         </ul>
-        <p className="mt-2 text-xs text-slate-500">
-          알림(notifications) count: {mypage.notifications.valueText} — {mypage.notifications.status}{" "}
-          {mypage.notifications.detail}
-        </p>
-        {mypage.notifications.status === "skeleton" && stateBanner("알림: 전용 목록·실시간은 후속(연결 포인트만)", "soft")}
+        <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+          <p>구독(요약): {studentMypageKorean(mypage.subscriptions, "subscriptions")}</p>
+          <p>결제(요약): {studentMypageKorean(mypage.payments, "payments")}</p>
+          <p>알림(요약): {studentMypageKorean(mypage.notifications, "notifications")}</p>
+        </div>
       </section>
     </div>
   );

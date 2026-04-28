@@ -3,6 +3,7 @@ import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHe
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import type { AppRole } from "@/lib/types/user";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Row = Record<string, unknown>;
 
@@ -83,7 +84,7 @@ export function OrderDisputesPanel({
 
       <div className="mt-5">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-900/70">접수 내역</h4>
-        {u.error ? <p className="mt-2 text-sm text-amber-800">불러오기: {u.error}</p> : null}
+        {u.error ? <p className="mt-2 text-sm text-amber-800">불러오기: {mapDataErrorMessage(String(u.error))}</p> : null}
         {hasTable && rows.length > 0 ? (
           <ul className="mt-2 max-h-80 space-y-3 overflow-y-auto">
             {rows.map((r, i) => {
@@ -107,7 +108,7 @@ export function OrderDisputesPanel({
         ) : hasTable && rows.length === 0 ? (
           <p className="mt-2 text-sm text-slate-600">접수된 분쟁이 없습니다.</p>
         ) : !hasTable ? (
-          <p className="mt-2 text-sm text-slate-500">이 환경에서 분쟁 테이블이 연결되지 않았을 수 있습니다.</p>
+          <p className="mt-2 text-sm text-slate-500">분쟁 내역을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : null}
       </div>
     </section>

@@ -2,6 +2,7 @@ import { submitCustomOrderRevisionRequestAction } from "@/lib/customRequest/orde
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import type { AppRole } from "@/lib/types/user";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Row = Record<string, unknown>;
 
@@ -85,8 +86,8 @@ export function OrderRevisionsPanel({
         ) : (
           <p className="mt-2 text-sm text-slate-500">
             {rev.error
-              ? `수정 요청을 불러올 수 없습니다.(${rev.error})`
-              : "이 환경에서는 수정 요청 테이블이 연결되지 않았을 수 있습니다."}
+              ? `수정 요청을 불러올 수 없습니다. ${mapDataErrorMessage(String(rev.error))}`
+              : "수정 요청 내역을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."}
           </p>
         )}
       </div>
