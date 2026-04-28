@@ -109,3 +109,52 @@ export function pickExcerpt(r: Row): string {
   }
   return "";
 }
+
+export type CommunityPostType = "board" | "shortform";
+
+/** UI·액션과 맞춘 댓글(내부 id 등 비노출) */
+export type CommunityCommentListItem = {
+  id: string;
+  body: string;
+  createdAt: string;
+  authorLabel: string;
+  status: string;
+};
+
+/**
+ * community_comments — 게시 유형 + 글 id 별. 테이블 미배포 시 rows 빈 배열(오류 메시지 없이)
+ */
+export async function loadCommunityComments(
+  supabase: SupabaseClient,
+  postType: CommunityPostType,
+  postId: string
+): Promise<{ rows: CommunityCommentListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("community_comments")
+    .select("id, body, created_at, author_label, status")
+    .eq("post_type", postType)
+    .eq("post_id", postId)
+    .eq("status", "visible")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    if (/relation|does not exist|schema cache/i.test(error.message)) {
+      return { rows: [], error: null };
+    }
+    return { rows: [], error: "댓글을 불러오지 못했어요. 잠시 후 다시 시도해 주세요." };
+  }
+
+  const list = (data as Record<string, unknown>[]) ?? [];
+  const rows: CommunityCommentListItem[] = list.map((r) => {
+    const created = r.created_at;
+    return {
+      id: String(r.id ?? ""),
+      body: String(r.body ?? ""),
+      createdAt: typeof created === "string" ? created : new Date().toISOString(),
+      authorLabel:
+        typeof r.author_label === "string" && r.author_label.trim() ? r.author_label.trim() : "쌤버십 회원",
+      status: String(r.status ?? "visible"),
+    };
+  });
+  return { rows, error: null };
+}

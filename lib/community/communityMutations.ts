@@ -86,3 +86,38 @@ export async function insertMentorBoardPost(
   const { row, error } = await insertWithCandidates(supabase, t, payloads);
   return toResult(row, error);
 }
+
+export type InsertCommunityCommentInput = {
+  postType: "board" | "shortform";
+  postId: string;
+  body: string;
+  authorLabel: string;
+};
+
+/**
+ * public.community_comments — 016 SQL 선행. author_id = 로그인 사용자(액션에서 전달)
+ */
+export async function insertCommunityComment(
+  supabase: SupabaseClient,
+  userId: string,
+  input: InsertCommunityCommentInput
+): Promise<{ ok: true } | { ok: false; error: "validation" | "db" }> {
+  const { postType, postId, body, authorLabel } = input;
+  const trimmed = body.trim();
+  if (trimmed.length < 1 || trimmed.length > 1000) {
+    return { ok: false, error: "validation" };
+  }
+  const label = authorLabel.trim() || "쌤버십 회원";
+  const { error } = await supabase.from("community_comments").insert({
+    post_type: postType,
+    post_id: postId,
+    author_id: userId,
+    author_label: label,
+    body: trimmed,
+    status: "visible",
+  });
+  if (error) {
+    return { ok: false, error: "db" };
+  }
+  return { ok: true };
+}

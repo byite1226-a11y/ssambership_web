@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { StateBanner } from "@/components/community/StateBanner";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
-import { pickTitle } from "@/lib/community/communityQueries";
+import { pickTitle, type CommunityCommentListItem } from "@/lib/community/communityQueries";
+import { submitCommunityCommentAction } from "@/lib/community/commentActions";
 
 function bodyText(row: Record<string, unknown> | null): string {
   if (!row) return "";
@@ -22,17 +23,42 @@ function authorLabel(row: Record<string, unknown>): string {
   return "작성자";
 }
 
+function formatCommentTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("ko-KR", { dateStyle: "medium", timeStyle: "short" });
+  } catch {
+    return "";
+  }
+}
+
+function mapCommentError(code: string | null | undefined): string | null {
+  if (!code) return null;
+  if (code === "length") return "댓글은 1자 이상 1,000자 이하로 입력해 주세요.";
+  if (code === "save") return "댓글을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.";
+  if (code === "invalid") return "요청을 처리하지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.";
+  return "요청을 처리하지 못했어요.";
+}
+
 export function CommunityPostDetail(props: {
   variant: "shortform" | "board";
+  postId: string;
+  returnPath: string;
   title: string;
   row: Record<string, unknown> | null;
   error: string | null;
   backHref: string;
   listLabel: string;
+  comments: CommunityCommentListItem[];
+  commentsQueryError: string | null;
+  canComment: boolean;
+  commentErrorCode: string | null;
 }) {
   const t = props.row ? pickTitle(props.row) : props.title;
   const body = bodyText(props.row);
   const author = props.row ? authorLabel(props.row) : "작성자";
+  const postType = props.variant === "board" ? "board" : "shortform";
+  const commentErrMsg = mapCommentError(props.commentErrorCode);
+  const n = props.comments.length;
 
   return (
     <div className="space-y-6">
@@ -64,18 +90,81 @@ export function CommunityPostDetail(props: {
         </article>
       ) : null}
 
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <h2 className="text-sm font-extrabold text-slate-900">댓글</h2>
-        <p className="mt-2 text-sm text-slate-600">댓글 기능은 준비 중입니다. 곧 이곳에서 소통하실 수 있어요.</p>
-      </section>
+      {props.row ? (
+        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-base font-extrabold text-slate-900">댓글</h2>
+            <span className="text-sm text-slate-500">{n}개</span>
+          </div>
+
+          {props.commentsQueryError ? (
+            <p className="mt-2 text-sm text-amber-800">{props.commentsQueryError}</p>
+          ) : null}
+          {commentErrMsg ? <p className="mt-2 text-sm text-amber-800">{commentErrMsg}</p> : null}
+
+          {!props.commentsQueryError && n === 0 ? (
+            <p className="mt-3 text-sm text-slate-600">아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.</p>
+          ) : null}
+
+          {n > 0 ? (
+            <ul className="mt-4 space-y-3">
+              {props.comments.map((c) => (
+                <li key={c.id} className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-slate-500">
+                    <span className="font-extrabold text-slate-800">{c.authorLabel}</span>
+                    <time dateTime={c.createdAt}>{formatCommentTime(c.createdAt)}</time>
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap leading-6">{c.body}</p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <div className="mt-5 border-t border-slate-200 pt-4">
+            {props.canComment ? (
+              <form action={submitCommunityCommentAction} className="space-y-3">
+                <input type="hidden" name="postType" value={postType} />
+                <input type="hidden" name="postId" value={props.postId} />
+                <input type="hidden" name="returnPath" value={props.returnPath} />
+                <label className="sr-only" htmlFor="community-comment-body">
+                  댓글 내용
+                </label>
+                <textarea
+                  id="community-comment-body"
+                  name="body"
+                  required
+                  minLength={1}
+                  maxLength={1000}
+                  rows={4}
+                  placeholder="댓글을 입력하세요 (1~1,000자)"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800 shadow-sm placeholder:text-slate-400"
+                />
+                <button
+                  type="submit"
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
+                >
+                  등록
+                </button>
+              </form>
+            ) : (
+              <p className="text-sm text-slate-600">
+                로그인 후 댓글을 남길 수 있어요.{" "}
+                <Link
+                  className="font-bold text-blue-800 underline"
+                  href={`/login?next=${encodeURIComponent(props.returnPath)}`}
+                >
+                  로그인
+                </Link>
+              </p>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {props.variant === "shortform" ? (
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500">
             좋아요 (준비 중)
-          </button>
-          <button type="button" disabled className="cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500">
-            댓글 (준비 중)
           </button>
         </div>
       ) : null}
