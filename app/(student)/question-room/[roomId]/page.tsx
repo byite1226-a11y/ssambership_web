@@ -4,7 +4,6 @@ import { QuestionRoomWorkspace } from "@/components/qna/QuestionRoomWorkspace";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { loadQuestionRoomDetailBundle, userCanAccessMentorStudentRoom } from "@/lib/qna/questionRoomQueries";
-import { qnaHierarchy } from "@/lib/domain/coreFlows";
 import { extractNoteText } from "@/lib/qna/questionRoomMutations";
 import { paramToDraft } from "@/lib/qna/draftQuery";
 
@@ -50,32 +49,31 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
   const activeThreadId = resolvedThreadId;
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
+  const roomRow = bundle.rooms.rows.find((r) => r != null && String(r.id) === String(roomId));
+  const pageTitle =
+    (roomRow && typeof roomRow.title === "string" && roomRow.title) ||
+    (roomRow && typeof (roomRow as { topic?: string }).topic === "string" && (roomRow as { topic: string }).topic) ||
+    "질문방";
+
   return (
     <PageScaffold
-      eyebrow="Student / Question Room Detail"
-      title={`질문방 ${roomId}`}
-      description={`핵심 구조: ${qnaHierarchy.join(" → ")}. connection note는 room 스코프로 별도 트랙(메시지와 합치지 않음).`}
+      eyebrow="질문방"
+      title={pageTitle}
+      description="멘토와 궁금한 점을 남기고, 답변을 주고받을 수 있어요."
       ctas={[
         { href: "/question-room", label: "질문방 목록", tone: "slate" },
-        { href: "/notes", label: "room 연결노트", tone: "blue" },
+        { href: "/notes", label: "노트", tone: "blue" },
       ]}
-      sections={[
-        { title: "Room 컨텍스트", body: "mentor_student_rooms — 접근/목록 scope 검증.", status: "connected" },
-        { title: "Thread 목록/선택", body: "question_threads — ?thread=로 선택(없으면 첫 thread).", status: "connected" },
-        { title: "Message 타임라인(선택 thread)", body: "question_messages — thread_id 기준.", status: "connected" },
-        { title: "Connection note( room )", body: "connection_notes — room_id 기준.", status: "connected" },
-      ]}
-      emptyState="room 접근 권한이 없으면 좌측 room 패널에 오류/빈 상태로 표시합니다."
-      loadingState="서버에서 조회가 끝나면 패널에 데이터가 표시됩니다."
-      errorState="쿼리 실패는 패널 상단 배너로 구분합니다."
-      dataPoints={["mentor_student_rooms.id", "question_threads.room_id", "question_messages.thread_id", "connection_notes.room_id"]}
+      sections={[]}
+      dataPoints={[]}
     >
       <QuestionRoomWorkspace
         variant="student"
         surface="detail"
+        currentUserId={user.id}
         actionFeedback={{ kind: feedbackKind, ok: okMessage, error: errorMessage }}
-        title="질문방 상세"
-        subtitle={`room=${roomId} / thread=${activeThreadId ?? "(none)"}`}
+        title="질문방"
+        subtitle=""
         rooms={bundle.rooms}
         threads={bundle.threads}
         messages={bundle.messages}

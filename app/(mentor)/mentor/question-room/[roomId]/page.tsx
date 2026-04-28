@@ -4,7 +4,6 @@ import { QuestionRoomWorkspace } from "@/components/qna/QuestionRoomWorkspace";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { loadQuestionRoomDetailBundle, userCanAccessMentorStudentRoom } from "@/lib/qna/questionRoomQueries";
-import { qnaHierarchy } from "@/lib/domain/coreFlows";
 import { extractNoteText } from "@/lib/qna/questionRoomMutations";
 import { paramToDraft } from "@/lib/qna/draftQuery";
 
@@ -50,32 +49,31 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
   const activeThreadId = resolvedThreadId;
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
+  const roomRow = bundle.rooms.rows.find((r) => r != null && String(r.id) === String(roomId));
+  const pageTitle =
+    (roomRow && typeof roomRow.title === "string" && roomRow.title) ||
+    (roomRow && typeof (roomRow as { topic?: string }).topic === "string" && (roomRow as { topic: string }).topic) ||
+    "질문방";
+
   return (
     <PageScaffold
-      eyebrow="Mentor / Question Room Detail"
-      title={`멘토 질문방 ${roomId}`}
-      description={`${qnaHierarchy.join(" → ")} 구조를 학생 UI와 대칭으로 유지합니다.`}
+      eyebrow="질문방"
+      title={pageTitle}
+      description="학생이 남긴 질문에 답하고, 안내를 이어가요."
       ctas={[
         { href: "/mentor/question-room", label: "질문방 목록", tone: "slate" },
-        { href: "/mentor/channel", label: "콘텐츠 연계", tone: "green" },
+        { href: "/mentor/channel", label: "채널", tone: "green" },
       ]}
-      sections={[
-        { title: "Room 컨텍스트", body: "mentor_student_rooms — 멘토 room scope 검증.", status: "connected" },
-        { title: "Thread 관리", body: "question_threads — ?thread=로 선택(없으면 첫 thread).", status: "connected" },
-        { title: "Message 처리(선택 thread)", body: "question_messages — 답변 영역(placeholder) + raw 확인.", status: "connected" },
-        { title: "Connection note( room )", body: "connection_notes — room_id.", status: "connected" },
-      ]}
-      emptyState="권한이 없는 room이면 좌측에서 오류/빈 상태로 표시합니다."
-      loadingState="서버 조회 완료 시 패널이 채워집니다."
-      errorState="오류는 패널 배너로 표시합니다."
-      dataPoints={["mentor_student_rooms", "question_threads", "question_messages", "connection_notes"]}
+      sections={[]}
+      dataPoints={[]}
     >
       <QuestionRoomWorkspace
         variant="mentor"
         surface="detail"
+        currentUserId={user.id}
         actionFeedback={{ kind: feedbackKind, ok: okMessage, error: errorMessage }}
-        title="멘토 질문방 상세"
-        subtitle={`room=${roomId} / thread=${activeThreadId ?? "(none)"}`}
+        title="질문방"
+        subtitle=""
         rooms={bundle.rooms}
         threads={bundle.threads}
         messages={bundle.messages}

@@ -32,11 +32,14 @@ async function selectOrdered<T extends Record<string, unknown>>(
     }
     // If ordering fails because column is missing, try the next candidate.
     if (!/column|does not exist|schema cache/i.test(res.error.message)) {
-      return { rows: [], error: res.error.message };
+      return { rows: [], error: "데이터를 불러오는 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요." };
     }
   }
   const fallback = await run(null);
-  return { rows: (fallback.data as T[] | null) ?? [], error: fmt(fallback.error) };
+  return {
+    rows: (fallback.data as T[] | null) ?? [],
+    error: fmt(fallback.error) ? "데이터를 불러오는 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요." : null,
+  };
 }
 
 export async function fetchRoomsForUser(
@@ -72,7 +75,7 @@ export async function fetchRoomsForUser(
 
   return {
     rows: [],
-    error: lastProbeError ?? `mentor_student_rooms에서 사용자 컬럼을 찾지 못했습니다(tried ${candidates.join(", ")}).`,
+    error: lastProbeError ?? "질문방 목록을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.",
   };
 }
 
@@ -102,9 +105,9 @@ export async function fetchThreadsForRoom(
   roomId: string
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
   const table = "question_threads";
-  const { column, error: colErr } = await pickExistingColumn(supabase, table, [...QUESTION_THREADS_ROOM_FK_CANDIDATES]);
+  const { column } = await pickExistingColumn(supabase, table, [...QUESTION_THREADS_ROOM_FK_CANDIDATES]);
   if (!column) {
-    return { rows: [], error: colErr ?? "question_threads: room FK column not found" };
+    return { rows: [], error: "질문 주제를 불러오는 중 문제가 생겼습니다." };
   }
 
   return await selectOrdered<Record<string, unknown>>(
@@ -124,9 +127,9 @@ export async function fetchMessagesForThread(
   threadId: string
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
   const table = "question_messages";
-  const { column, error: colErr } = await pickExistingColumn(supabase, table, ["thread_id", "question_thread_id"]);
+  const { column } = await pickExistingColumn(supabase, table, ["thread_id", "question_thread_id"]);
   if (!column) {
-    return { rows: [], error: colErr ?? "question_messages: thread FK column not found" };
+    return { rows: [], error: "대화를 불러오는 중 문제가 생겼습니다." };
   }
 
   return await selectOrdered<Record<string, unknown>>(
@@ -146,13 +149,13 @@ export async function fetchConnectionNotesForRoom(
   roomId: string
 ): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
   const table = "connection_notes";
-  const { column, error: colErr } = await pickExistingColumn(
+  const { column } = await pickExistingColumn(
     supabase,
     table,
     [...CONNECTION_NOTES_ROOM_FK_CANDIDATES]
   );
   if (!column) {
-    return { rows: [], error: colErr ?? "connection_notes: room FK column not found" };
+    return { rows: [], error: "연결 노트를 불러오는 중 문제가 생겼습니다." };
   }
 
   return await selectOrdered<Record<string, unknown>>(
@@ -189,9 +192,9 @@ export async function loadQuestionRoomListBundle(
   if (rooms.error) {
     return emptyBundle({
       rooms: { rows: [], error: rooms.error, loading: false },
-      threads: { rows: [], error: "rooms 조회 실패로 thread를 건너뜀", loading: false },
-      messages: { rows: [], error: "thread 미선택(room 상세에서 연결)", loading: false },
-      notes: { rows: [], error: "rooms 조회 실패로 notes를 건너뜀", loading: false },
+      threads: { rows: [], error: null, loading: false },
+      messages: { rows: [], error: null, loading: false },
+      notes: { rows: [], error: null, loading: false },
     });
   }
   if (rooms.rows.length === 0) {
@@ -206,10 +209,10 @@ export async function loadQuestionRoomListBundle(
   const firstId = rooms.rows[0]?.id;
   if (firstId == null || String(firstId).length === 0) {
     return emptyBundle({
-      rooms: { rows: rooms.rows, error: "mentor_student_rooms row에 id가 없습니다.", loading: false },
-      threads: { rows: [], error: "room id를 확인할 수 없어 thread를 열 수 없습니다.", loading: false },
-      messages: { rows: [], error: "thread 미선택", loading: false },
-      notes: { rows: [], error: "room id를 확인할 수 없어 notes를 열 수 없습니다.", loading: false },
+      rooms: { rows: rooms.rows, error: "질문방 정보를 확인할 수 없습니다. 고객센터로 문의해 주세요.", loading: false },
+      threads: { rows: [], error: null, loading: false },
+      messages: { rows: [], error: null, loading: false },
+      notes: { rows: [], error: null, loading: false },
     });
   }
 
@@ -245,9 +248,9 @@ export async function loadQuestionRoomDetailBundle(
     return {
       ...emptyBundle({
         rooms: { rows: [], error: allRooms.error, loading: false },
-        threads: { rows: [], error: "rooms 조회 실패", loading: false },
-        messages: { rows: [], error: "thread 미확인", loading: false },
-        notes: { rows: [], error: "rooms 조회 실패", loading: false },
+        threads: { rows: [], error: null, loading: false },
+        messages: { rows: [], error: null, loading: false },
+        notes: { rows: [], error: null, loading: false },
       }),
       resolvedThreadId: null,
     };
@@ -257,7 +260,7 @@ export async function loadQuestionRoomDetailBundle(
   if (!inScope) {
     return {
       ...emptyBundle({
-        rooms: { rows: allRooms.rows, error: "이 room에 접근할 수 없거나 목록에 없습니다.", loading: false },
+        rooms: { rows: allRooms.rows, error: "질문방을 찾을 수 없거나 접근 권한이 없습니다.", loading: false },
         threads: { rows: [], error: null, loading: false },
         messages: { rows: [], error: null, loading: false },
         notes: { rows: [], error: null, loading: false },
