@@ -1,6 +1,8 @@
 -- P0: 맞춤의뢰 주문 — 멘토 정산 예정(1차) + 금액·상태 메타
 -- 선행: 001(users), 003(custom_request_posts, custom_request_orders) · is_admin()
 -- idempotent, 010/012와 충돌 없음
+--
+-- 보강(학생 insert 제거·CHECK·서비스 롤 insert): 014_p0_harden_custom_order_settlement_items.sql
 
 -- ---------------------------------------------------------------------------
 -- 1) custom_order_settlement_items

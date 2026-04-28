@@ -1,14 +1,21 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
+import {
+  getActiveDisputeBlockMessage,
+  getDisputeRowsForOrderId,
+  hasActiveDisputeForOrderRows,
+} from "@/lib/customRequest/orderDisputeHelpers";
+import { isCustomOrderPaymentConfirmed, mustBlockUnpaidAcceptForProduction } from "@/lib/customRequest/orderPaymentPolicy";
 import {
   CUSTOM_ORDER_PLATFORM_FEE_RATE,
   loadApplicationRowForOrder,
-  pickGrossAmountWonFromOrderAndApplication,
+  pickGrossAmountWonWithSource,
   splitPlatformAndMentorForGross,
+  type GrossAmountSource,
 } from "@/lib/customRequest/orderSettlementAmounts";
 import { recordOrderEventBestEffort, type OrderRoomEventKind } from "@/lib/customRequest/orderRoomMutations";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 type Row = Record<string, unknown>;
 
@@ -26,6 +33,16 @@ function pickOrderMentorId(r: Row): string | null {
   for (const k of ["mentor_id", "selected_mentor_id", "assigned_mentor_id", "expert_id", "mentor_user_id"] as const) {
     const v = r[k];
     if (typeof v === "string" && v.trim()) return v;
+  }
+  return null;
+}
+
+function pickPaymentStatusRaw(orderRow: Row): string | null {
+  for (const k of ["payment_status", "payment_state"] as const) {
+    const v = orderRow[k];
+    if (v != null && String(v).trim()) {
+      return String(v).trim();
+    }
   }
   return null;
 }
@@ -51,20 +68,41 @@ export async function loadCustomOrderSettlementItemByOrderId(
   return { row: (data as Row) ?? null, error: null };
 }
 
+export type InsertSettlementSuccess =
+  | { ok: true; created: false; reason: "no_amount" | "already_exists" }
+  | {
+      ok: true;
+      created: true;
+      gross: number;
+      settlementId: string;
+      amountSource: GrossAmountSource;
+      feeRate: number;
+      paymentStatus: string | null;
+      paymentConfirmed: boolean;
+    };
+
+export type InsertSettlementResult = InsertSettlementSuccess | { ok: false; error: string };
+
 /**
  * 납품 수락으로 주문을 completed로 바꾸기 **전**에 호출.
  * - 진행 중 분쟁이 있으면 실패(수락·정산 모두 중단).
+ * - 운영·비결제 주문은 `mustBlockUnpaidAcceptForProduction`로 중단.
  * - 금액이 없으면 행을 만들지 않음(created: false) — 수락은 상위에서 계속.
  * - 금액이 있으면 정산 예정 행 insert 필수 — 실패 시 수락 중단.
- * 정책: 금액이 있는데 DB insert 실패 시 completed로 가지 않음(운영 P0 대비).
+ * insert는 service role (RLS 우회) 전용.
  */
 export async function insertCustomOrderSettlementIfRequiredBeforeComplete(
   supabase: SupabaseClient,
   orderId: string,
   orderRow: Row
-): Promise<
-  { ok: true; created: false; reason: "no_amount" | "already_exists" } | { ok: true; created: true; gross: number } | { ok: false; error: string }
-> {
+): Promise<InsertSettlementResult> {
+  if (mustBlockUnpaidAcceptForProduction(orderRow)) {
+    return {
+      ok: false,
+      error: "운영 환경에서는 결제 확인이 완료된 주문만 납품 수락·정산 예정을 진행할 수 있습니다.",
+    };
+  }
+
   const block = await getActiveDisputeBlockMessage(supabase, orderId);
   if (block) {
     return { ok: false, error: "진행 중인 분쟁이 있어 납품 수락·정산 예정을 진행할 수 없습니다." };
@@ -83,11 +121,14 @@ export async function insertCustomOrderSettlementIfRequiredBeforeComplete(
   }
 
   const app = await loadApplicationRowForOrder(supabase, orderRow);
-  const gross = pickGrossAmountWonFromOrderAndApplication(orderRow, app);
-  if (gross == null || gross <= 0) {
-    console.warn("[insertCustomOrderSettlementIfRequiredBeforeComplete] no gross amount, settlement row skipped", { orderId });
+  const picked = pickGrossAmountWonWithSource(orderRow, app, { orderId });
+  if (picked == null || picked.gross <= 0) {
+    console.warn("[insertCustomOrderSettlementIfRequiredBeforeComplete] no gross amount, settlement row skipped", {
+      orderId,
+    });
     return { ok: true, created: false, reason: "no_amount" };
   }
+  const { gross, source: amountSource } = picked;
 
   const studentId = pickOrderStudentId(orderRow);
   const mentorId = pickOrderMentorId(orderRow);
@@ -96,17 +137,31 @@ export async function insertCustomOrderSettlementIfRequiredBeforeComplete(
   }
 
   const { platformFee, mentorAmount } = splitPlatformAndMentorForGross(gross, CUSTOM_ORDER_PLATFORM_FEE_RATE);
+  const paymentStatus = pickPaymentStatusRaw(orderRow);
+  const paymentConfirmed = isCustomOrderPaymentConfirmed(orderRow);
 
-  const { error: insErr } = await supabase.from(SETTLEMENT_TABLE).insert({
-    custom_request_order_id: orderId,
-    mentor_id: mentorId,
-    student_id: studentId,
-    gross_amount: gross,
-    platform_fee_amount: platformFee,
-    mentor_amount: mentorAmount,
-    fee_rate: CUSTOM_ORDER_PLATFORM_FEE_RATE,
-    status: "pending",
-  });
+  const reDispute = await getDisputeRowsForOrderId(supabase, orderId);
+  if (reDispute.error) {
+    console.warn("[insertCustomOrderSettlementIfRequiredBeforeComplete] dispute re-check read failed", orderId, reDispute.error);
+  } else if (hasActiveDisputeForOrderRows(reDispute.rows)) {
+    return { ok: false, error: "진행 중인 분쟁이 있어 정산 예정을 저장할 수 없습니다. 잠시 후 다시 시도해 주세요." };
+  }
+
+  const admin = createServiceRoleClient();
+  const { data: inserted, error: insErr } = await admin
+    .from(SETTLEMENT_TABLE)
+    .insert({
+      custom_request_order_id: orderId,
+      mentor_id: mentorId,
+      student_id: studentId,
+      gross_amount: gross,
+      platform_fee_amount: platformFee,
+      mentor_amount: mentorAmount,
+      fee_rate: CUSTOM_ORDER_PLATFORM_FEE_RATE,
+      status: "pending",
+    })
+    .select("id")
+    .maybeSingle();
 
   if (insErr) {
     if (/relation|does not exist|schema cache/i.test(insErr.message)) {
@@ -114,33 +169,63 @@ export async function insertCustomOrderSettlementIfRequiredBeforeComplete(
     }
     return { ok: false, error: insErr.message };
   }
+  const settlementId = inserted && typeof (inserted as Row).id === "string" ? String((inserted as Row).id) : "";
+  if (!settlementId) {
+    return { ok: false, error: "정산 예정 저장 응답에 id가 없습니다." };
+  }
 
-  return { ok: true, created: true, gross };
+  return {
+    ok: true,
+    created: true,
+    gross,
+    settlementId,
+    amountSource,
+    feeRate: CUSTOM_ORDER_PLATFORM_FEE_RATE,
+    paymentStatus,
+    paymentConfirmed,
+  };
 }
 
 export async function recordCustomOrderSettlementCreatedEvent(
   supabase: SupabaseClient,
   orderId: string,
   studentId: string,
-  amounts: { gross: number; platform: number; mentor: number }
+  payload: {
+    settlementId: string;
+    gross: number;
+    platform: number;
+    mentor: number;
+    feeRate: number;
+    amountSource: GrossAmountSource;
+    paymentStatus: string | null;
+    isPaymentConfirmed: boolean;
+  }
 ): Promise<void> {
   const kind = "settlement_item_created" as OrderRoomEventKind;
   await recordOrderEventBestEffort(supabase, orderId, kind, studentId, {
-    gross_amount: amounts.gross,
-    platform_fee_amount: amounts.platform,
-    mentor_amount: amounts.mentor,
+    settlement_id: payload.settlementId,
+    gross_amount: payload.gross,
+    platform_fee_amount: payload.platform,
+    mentor_amount: payload.mentor,
+    fee_rate: payload.feeRate,
+    amount_source: payload.amountSource,
+    payment_status: payload.paymentStatus,
+    payment_confirmed: payload.isPaymentConfirmed,
+    is_payment_confirmed: payload.isPaymentConfirmed,
   });
 }
 
 /**
- * 주문 완료 갱신 실패 시, 방금 만든 정산 행을 best-effort 제거(고아 방지).
+ * 주문 완료 갱신 실패 시, 방금 만든 정산 행을 best-effort 제거(고아 방지). service role.
  */
-export async function deleteCustomOrderSettlementItemBestEffort(
-  supabase: SupabaseClient,
-  orderId: string
-): Promise<void> {
-  const { error } = await supabase.from(SETTLEMENT_TABLE).delete().eq("custom_request_order_id", orderId);
-  if (error) {
-    console.error("[deleteCustomOrderSettlementItemBestEffort]", orderId, error.message);
+export async function deleteCustomOrderSettlementItemBestEffort(_supabase: SupabaseClient, orderId: string): Promise<void> {
+  try {
+    const admin = createServiceRoleClient();
+    const { error } = await admin.from(SETTLEMENT_TABLE).delete().eq("custom_request_order_id", orderId);
+    if (error) {
+      console.error("[deleteCustomOrderSettlementItemBestEffort]", orderId, error.message);
+    }
+  } catch (e) {
+    console.error("[deleteCustomOrderSettlementItemBestEffort]", orderId, e);
   }
 }

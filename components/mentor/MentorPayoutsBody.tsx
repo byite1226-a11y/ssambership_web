@@ -13,6 +13,20 @@ function pickPayoutStatus(r: Row | undefined): string {
   return "—";
 }
 
+/** 맞춤의뢰 정산 예정 테이블 `status` 한글 라벨 */
+function settlementStatusLabelKo(raw: string): string {
+  if (!raw || raw === "—") return raw;
+  const s = raw.trim().toLowerCase();
+  const map: Record<string, string> = {
+    pending: "정산 검토 중",
+    paid: "지급 완료",
+    cancelled: "정산 취소",
+    on_hold: "보류",
+    payable: "지급 가능",
+  };
+  return map[s] ?? raw;
+}
+
 function cell(v: unknown): string {
   if (v === null || v === undefined) return "—";
   if (typeof v === "object") return JSON.stringify(v);
@@ -87,7 +101,14 @@ export function MentorPayoutsBody({ bundle }: { bundle: MentorPayoutsBundle }) {
                     <td className="px-2 py-1.5">{r.gross_amount.toLocaleString("ko-KR")}</td>
                     <td className="px-2 py-1.5">{r.platform_fee_amount.toLocaleString("ko-KR")}</td>
                     <td className="px-2 py-1.5 font-semibold text-slate-900">{r.mentor_amount.toLocaleString("ko-KR")}</td>
-                    <td className="px-2 py-1.5">{r.status}</td>
+                    <td className="px-2 py-1.5 align-top">
+                      <span>{settlementStatusLabelKo(r.status)}</span>
+                      {r.showUnpaidOrderWarning ? (
+                        <p className="mt-0.5 max-w-[16rem] text-[10px] font-medium leading-snug text-amber-800">
+                          결제 확인 전 테스트 주문입니다. 실제 지급은 결제 확인 후 진행됩니다.
+                        </p>
+                      ) : null}
+                    </td>
                     <td className="px-2 py-1.5 text-slate-600">
                       {r.created_at ? new Date(r.created_at).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "—"}
                     </td>

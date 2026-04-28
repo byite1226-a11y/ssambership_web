@@ -11,6 +11,7 @@ import {
   primaryOrderStatusColumnKey,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
+import { mustBlockUnpaidAcceptForProduction } from "@/lib/customRequest/orderPaymentPolicy";
 import { firstReadableCustomTable, ORDER_TO_DELIVERABLE_FK_CANDIDATES } from "@/lib/customRequest/customRequestQueries";
 import { splitPlatformAndMentorForGross } from "@/lib/customRequest/orderSettlementAmounts";
 import {
@@ -92,6 +93,10 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
     redirectWithError(orderId, "의뢰자(학생) 본인만 납품을 수락할 수 있습니다.");
   }
 
+  if (mustBlockUnpaidAcceptForProduction(row)) {
+    redirectWithError(orderId, "운영 환경에서는 결제 확인이 완료된 주문만 납품을 수락할 수 있습니다.");
+  }
+
   const disputeBlock = await getActiveDisputeBlockMessage(supabase, orderId);
   if (disputeBlock) {
     redirectWithError(orderId, disputeBlock);
@@ -144,11 +149,19 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
   }
 
   if (settlementStep.ok && settlementStep.created) {
-    const { platformFee, mentorAmount } = splitPlatformAndMentorForGross(settlementStep.gross);
+    const { platformFee, mentorAmount } = splitPlatformAndMentorForGross(
+      settlementStep.gross,
+      settlementStep.feeRate
+    );
     await recordCustomOrderSettlementCreatedEvent(supabase, orderId, user.id, {
+      settlementId: settlementStep.settlementId,
       gross: settlementStep.gross,
       platform: platformFee,
       mentor: mentorAmount,
+      feeRate: settlementStep.feeRate,
+      amountSource: settlementStep.amountSource,
+      paymentStatus: settlementStep.paymentStatus,
+      isPaymentConfirmed: settlementStep.paymentConfirmed,
     });
   }
 

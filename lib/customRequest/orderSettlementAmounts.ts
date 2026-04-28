@@ -22,17 +22,26 @@ function toPositiveIntWon(v: unknown): number | null {
   return null;
 }
 
+export type GrossAmountSource =
+  | `order.${string}`
+  | `application.${string}`
+  | "none";
+
 /**
- * 주문·지원 행에서 총액(원, 정수) 후보를 순서대로 시도. 없으면 null.
- * paid_amount, final_price, price, quote_price … + 지원의 proposed_price 등.
+ * DB 행만 사용 (FormData·클라이언트 입력 금지).
+ * 우선순위: 주문(합의·최종) → 지원(제안·입찰).
  */
-export function pickGrossAmountWonFromOrderAndApplication(order: Row | null, application: Row | null): number | null {
+export function pickGrossAmountWonWithSource(
+  order: Row | null,
+  application: Row | null,
+  logContext?: { orderId?: string }
+): { gross: number; source: GrossAmountSource } | null {
   const orderKeys = [
-    "paid_amount",
-    "final_price",
     "agreed_price",
-    "price",
+    "final_price",
     "quote_price",
+    "price",
+    "paid_amount",
     "amount",
     "total",
     "total_amount",
@@ -40,17 +49,38 @@ export function pickGrossAmountWonFromOrderAndApplication(order: Row | null, app
   for (const k of orderKeys) {
     if (order && k in order) {
       const n = toPositiveIntWon((order as Row)[k]);
-      if (n != null) return n;
+      if (n != null) {
+        const source = `order.${k}` as const;
+        if (logContext?.orderId) {
+          console.info("[pickGrossAmountWonWithSource] gross source", { orderId: logContext.orderId, source, gross: n });
+        }
+        return { gross: n, source };
+      }
     }
   }
-  const appKeys = ["proposed_price", "price", "quote_price", "bid_amount", "amount"] as const;
+  const appKeys = ["proposed_price", "bid_amount", "quote_price", "price"] as const;
   for (const k of appKeys) {
     if (application && k in application) {
       const n = toPositiveIntWon((application as Row)[k]);
-      if (n != null) return n;
+      if (n != null) {
+        const source = `application.${k}` as const;
+        if (logContext?.orderId) {
+          console.info("[pickGrossAmountWonWithSource] gross source", { orderId: logContext.orderId, source, gross: n });
+        }
+        return { gross: n, source };
+      }
     }
   }
+  if (logContext?.orderId) {
+    console.warn("[pickGrossAmountWonWithSource] no positive gross from DB rows", { orderId: logContext.orderId });
+  }
   return null;
+}
+
+/** @deprecated 내부는 `pickGrossAmountWonWithSource` — 소스 추적이 필요하면 그쪽을 쓰세요. */
+export function pickGrossAmountWonFromOrderAndApplication(order: Row | null, application: Row | null): number | null {
+  const picked = pickGrossAmountWonWithSource(order, application);
+  return picked?.gross ?? null;
 }
 
 export function splitPlatformAndMentorForGross(
@@ -66,10 +96,7 @@ export function splitPlatformAndMentorForGross(
 /**
  * 주문 id로 지원 로드(금액 후보) — 수락 액션에서 insert 전에 사용.
  */
-export async function loadApplicationRowForOrder(
-  supabase: SupabaseClient,
-  order: Row
-): Promise<Row | null> {
+export async function loadApplicationRowForOrder(supabase: SupabaseClient, order: Row): Promise<Row | null> {
   for (const k of ["application_id", "custom_request_application_id", "selected_application_id", "bid_id"] as const) {
     const v = order[k];
     if (typeof v === "string" && v.trim()) {

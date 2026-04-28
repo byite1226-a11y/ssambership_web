@@ -10,6 +10,12 @@ function monthBounds(): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
+function orderPaymentLooksConfirmed(ps: string | null | undefined): boolean {
+  if (ps == null || !String(ps).trim()) return false;
+  const s = String(ps).trim().toLowerCase();
+  return ["paid", "succeeded", "escrowed", "completed", "complete", "success", "captured", "paid_out"].includes(s);
+}
+
 function num(v: unknown): number {
   if (typeof v === "number" && !Number.isNaN(v)) return v;
   if (typeof v === "string") {
@@ -89,6 +95,10 @@ export type CustomOrderSettlementListItem = {
   status: string;
   created_at: string;
   paid_at: string | null;
+  /** 주문의 결제 메타(정산 행에 없을 수 있음) */
+  orderPaymentStatus: string | null;
+  /** 비결제·대기·미기재 등 실제 지급 확정 전 */
+  showUnpaidOrderWarning: boolean;
 };
 
 export type MentorPayoutsBundle = {
@@ -191,16 +201,42 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
     }
   } else {
     const list = (cosiData as Row[] | null) ?? [];
-    customSettlements = list.map((r) => ({
-      id: String(r.id ?? ""),
-      custom_request_order_id: String(r.custom_request_order_id ?? ""),
-      gross_amount: num(r.gross_amount),
-      platform_fee_amount: num(r.platform_fee_amount),
-      mentor_amount: num(r.mentor_amount),
-      status: typeof r.status === "string" ? r.status : "—",
-      created_at: typeof r.created_at === "string" ? r.created_at : "",
-      paid_at: r.paid_at != null && typeof r.paid_at === "string" ? r.paid_at : null,
-    }));
+    const orderIds = [...new Set(list.map((r) => String(r.custom_request_order_id ?? "")).filter(Boolean))];
+    const paymentByOrder = new Map<string, string | null>();
+    if (orderIds.length) {
+      const { data: ordData, error: ordErr } = await supabase
+        .from("custom_request_orders")
+        .select("id, payment_status")
+        .in("id", orderIds);
+      if (!ordErr) {
+        for (const o of (ordData as Row[] | null) ?? []) {
+          const oid = String(o.id ?? "");
+          const raw = o.payment_status;
+          const ps =
+            raw != null && String(raw).trim()
+              ? String(raw).trim()
+              : null;
+          paymentByOrder.set(oid, ps);
+        }
+      }
+    }
+    customSettlements = list.map((r) => {
+      const oid = String(r.custom_request_order_id ?? "");
+      const orderPaymentStatus = paymentByOrder.get(oid) ?? null;
+      const showUnpaidOrderWarning = !orderPaymentLooksConfirmed(orderPaymentStatus);
+      return {
+        id: String(r.id ?? ""),
+        custom_request_order_id: oid,
+        gross_amount: num(r.gross_amount),
+        platform_fee_amount: num(r.platform_fee_amount),
+        mentor_amount: num(r.mentor_amount),
+        status: typeof r.status === "string" ? r.status : "—",
+        created_at: typeof r.created_at === "string" ? r.created_at : "",
+        paid_at: r.paid_at != null && typeof r.paid_at === "string" ? r.paid_at : null,
+        orderPaymentStatus,
+        showUnpaidOrderWarning,
+      };
+    });
   }
 
   return {
