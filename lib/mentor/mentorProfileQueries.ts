@@ -1,11 +1,7 @@
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
 type Row = Record<string, unknown>;
-
-function fmt(e: PostgrestError | null): string | null {
-  return e ? e.message : null;
-}
 
 export async function fetchMentorProfileRow(
   supabase: SupabaseClient,

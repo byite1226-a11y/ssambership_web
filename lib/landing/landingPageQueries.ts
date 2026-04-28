@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { listBoardPosts, listShortformPosts } from "@/lib/community/communityQueries";
 import { loadPublicMentorsList, type PublicMentorsListResult } from "@/lib/mentor/publicMentorsListQueries";
 import { parseMentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
-import { assignPlansByTier, priceLabelFromPlanRow, weeklyQuestionsLabel, type PlansByTier } from "@/lib/subscribe/subscribePageQueries";
+import { assignPlansByTier, type PlansByTier } from "@/lib/subscribe/subscribePageQueries";
 
 type Row = Record<string, unknown>;
 
