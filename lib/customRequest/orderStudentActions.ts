@@ -94,7 +94,10 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
   }
 
   if (mustBlockUnpaidAcceptForProduction(row)) {
-    redirectWithError(orderId, "운영 환경에서는 결제 확인이 완료된 주문만 납품을 수락할 수 있습니다.");
+    redirectWithError(
+      orderId,
+      "결제가 확인되지 않은 주문은 납품을 수락할 수 없습니다. 개발·스테이징에서 테스트하려면 CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT=true 를 설정하세요."
+    );
   }
 
   const disputeBlock = await getActiveDisputeBlockMessage(supabase, orderId);

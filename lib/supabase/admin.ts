@@ -3,8 +3,11 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * 서버 전용 — `SUPABASE_SERVICE_ROLE_KEY`로 RLS를 우회합니다.
- * 브라우저·클라이언트 번들에 포함하지 마세요.
+ * 서버 전용 — 서비스 롤로 RLS를 우회합니다.
+ * - 비밀 키는 **반드시** `process.env.SUPABASE_SERVICE_ROLE_KEY` 만 사용합니다.
+ * - `NEXT_PUBLIC_*` 로 서비스 키를 넣지 마세요(클라이언트 번들에 유출됨).
+ * - 이 모듈은 `"server-only"` 이므로 Client Component에서 import 시 빌드가 실패합니다.
+ * - URL은 공개 Supabase URL이므로 `NEXT_PUBLIC_SUPABASE_URL` 사용이 일반적입니다.
  */
 export function createServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

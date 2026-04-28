@@ -86,7 +86,7 @@ export type InsertSettlementResult = InsertSettlementSuccess | { ok: false; erro
 /**
  * 납품 수락으로 주문을 completed로 바꾸기 **전**에 호출.
  * - 진행 중 분쟁이 있으면 실패(수락·정산 모두 중단).
- * - 운영·비결제 주문은 `mustBlockUnpaidAcceptForProduction`로 중단.
+ * - 비결제(플래그 꺼짐)는 `mustBlockUnpaidAcceptForProduction`로 중단.
  * - 금액이 없으면 행을 만들지 않음(created: false) — 수락은 상위에서 계속.
  * - 금액이 있으면 정산 예정 행 insert 필수 — 실패 시 수락 중단.
  * insert는 service role (RLS 우회) 전용.
@@ -99,7 +99,8 @@ export async function insertCustomOrderSettlementIfRequiredBeforeComplete(
   if (mustBlockUnpaidAcceptForProduction(orderRow)) {
     return {
       ok: false,
-      error: "운영 환경에서는 결제 확인이 완료된 주문만 납품 수락·정산 예정을 진행할 수 있습니다.",
+      error:
+        "결제가 확인되지 않은 주문은 정산 예정을 만들 수 없습니다. 개발·스테이징에서는 CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT=true 로 테스트할 수 있습니다.",
     };
   }
 
