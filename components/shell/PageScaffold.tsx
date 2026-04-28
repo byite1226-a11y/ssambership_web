@@ -15,14 +15,11 @@ type PageScaffoldProps = {
   description: string;
   ctas: Cta[];
   sections: Section[];
-  /** 하단 안내(선택). 개발용 ‘빈/로딩/에러 자리’ 블록은 제거됨 */
-  emptyState?: string;
-  /** @deprecated 렌더링하지 않음(호환용) */
+  emptyState: string;
+  dataPoints: string[];
+  /** UI 자리(실제 로딩 UX는 이후 도입) */
   loadingState?: string;
-  /** @deprecated 렌더링하지 않음(호환용) */
   errorState?: string;
-  /** 비어 있으면 ‘연결 포인트’ 블록을 표시하지 않음 */
-  dataPoints?: string[];
   children?: ReactNode;
 };
 
@@ -32,25 +29,18 @@ const toneClass: Record<NonNullable<Cta["tone"]>, string> = {
   slate: "bg-slate-100 text-slate-800",
 };
 
-function sectionBadgeLabel(status: Section["status"]): string {
-  return status === "connected" ? "표시" : "참고";
-}
-
 export function PageScaffold({
   eyebrow,
   title,
   description,
   ctas,
   sections,
-  emptyState: _emptyState,
-  loadingState: _loadingState,
-  errorState: _errorState,
-  dataPoints = [],
+  emptyState,
+  dataPoints,
+  loadingState = "데이터를 불러오는 동안 스켈레톤/스피너 영역을 둡니다.",
+  errorState = "조회 실패 시 재시도/고객센터 안내 영역을 둡니다.",
   children,
 }: PageScaffoldProps) {
-  void _emptyState;
-  void _loadingState;
-  void _errorState;
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -70,38 +60,49 @@ export function PageScaffold({
         </div>
       </section>
 
-      {sections.length > 0 ? (
-        <section className="grid gap-4 md:grid-cols-2">
-          {sections.map((section) => (
-            <article key={section.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-extrabold text-slate-900">{section.title}</h2>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                    section.status === "connected" ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {sectionBadgeLabel(section.status)}
-                </span>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{section.body}</p>
-            </article>
-          ))}
-        </section>
-      ) : null}
+      <section className="grid gap-4 md:grid-cols-2">
+        {sections.map((section) => (
+          <article key={section.title} className="rounded-2xl border border-slate-200 bg-white p-5">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-extrabold text-slate-900">{section.title}</h2>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                  section.status === "connected" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                }`}
+              >
+                {section.status === "connected" ? "정상" : "확인 필요"}
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{section.body}</p>
+          </article>
+        ))}
+      </section>
 
       {children}
 
-      {dataPoints.length > 0 ? (
-        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-base font-extrabold text-slate-900">관련 항목</h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
-            {dataPoints.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <section className="grid gap-4 lg:grid-cols-3">
+        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <h3 className="text-base font-extrabold text-slate-900">빈 상태 / 권한 상태 자리</h3>
+          <p className="mt-2 text-sm text-slate-600">{emptyState}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <h3 className="text-base font-extrabold text-slate-900">로딩 상태 자리</h3>
+          <p className="mt-2 text-sm text-slate-600">{loadingState}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <h3 className="text-base font-extrabold text-slate-900">에러 상태 자리</h3>
+          <p className="mt-2 text-sm text-slate-600">{errorState}</p>
+        </article>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <h3 className="text-base font-extrabold text-slate-900">실데이터 연결 포인트</h3>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
+          {dataPoints.map((point) => (
+            <li key={point}>{point}</li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

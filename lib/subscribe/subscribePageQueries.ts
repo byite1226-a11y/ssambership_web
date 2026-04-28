@@ -80,7 +80,7 @@ export function priceLabelFromPlanRow(row: Row | null): string {
 }
 
 export function weeklyQuestionsLabel(row: Row | null): string {
-  if (!row) return "플랜 미선택 · 주간 질문 수(스키마 확정)";
+  if (!row) return "구독 플랜을 연결하면 이곳에 질문 한도를 표시해요";
   const s = getStringField(row, [
     "weekly_new_questions",
     "weekly_question_limit",
@@ -91,9 +91,9 @@ export function weeklyQuestionsLabel(row: Row | null): string {
   if (s) return s;
   for (const k of ["weekly_new_questions", "questions_per_week"]) {
     const v = row[k];
-    if (typeof v === "number") return `${v}회/주`;
+    if (typeof v === "number") return `주 ${v}회`;
   }
-  return "weekly_* 컬럼 연결 예정";
+  return "질문 한도는 구독 플랜에 따라 달라요";
 }
 
 async function fetchPromotionsProbe(supabase: SupabaseClient): Promise<PromotionsLoad> {

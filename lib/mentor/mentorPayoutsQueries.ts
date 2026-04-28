@@ -10,12 +10,6 @@ function monthBounds(): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-function orderPaymentLooksConfirmed(ps: string | null | undefined): boolean {
-  if (ps == null || !String(ps).trim()) return false;
-  const s = String(ps).trim().toLowerCase();
-  return ["paid", "succeeded", "escrowed", "completed", "complete", "success", "captured", "paid_out"].includes(s);
-}
-
 function num(v: unknown): number {
   if (typeof v === "number" && !Number.isNaN(v)) return v;
   if (typeof v === "string") {
@@ -83,23 +77,8 @@ async function firstPayoutsTable(
     const { error } = await supabase.from(t).select("id").limit(1);
     if (!error) return { table: t, err: "" };
   }
-  return { table: null, err: "payouts 계열 테이블 읽기 실패" };
+  return { table: null, err: "정산 내역을 아직 찾을 수 없어요" };
 }
-
-export type CustomOrderSettlementListItem = {
-  id: string;
-  custom_request_order_id: string;
-  gross_amount: number;
-  platform_fee_amount: number;
-  mentor_amount: number;
-  status: string;
-  created_at: string;
-  paid_at: string | null;
-  /** 주문의 결제 메타(정산 행에 없을 수 있음) */
-  orderPaymentStatus: string | null;
-  /** 비결제·대기·미기재 등 실제 지급 확정 전 */
-  showUnpaidOrderWarning: boolean;
-};
 
 export type MentorPayoutsBundle = {
   payoutTable: string | null;
@@ -112,8 +91,6 @@ export type MentorPayoutsBundle = {
   tableHint: string;
   periodStart: string;
   periodEnd: string;
-  /** 맞춤의뢰 정산 예정(1차) */
-  customOrderSettlements: { rows: CustomOrderSettlementListItem[]; error: string | null };
 };
 
 export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentorId: string): Promise<MentorPayoutsBundle> {
@@ -121,18 +98,20 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
   const pt = await firstPayoutsTable(supabase);
   let monthExpectedCents = 0;
   let tableRows: Row[] = [];
-  let tableHint = "—";
+  let tableHint = "이번 달 정산(예상)에 반영된 지급 내역이에요";
   if (pt.table) {
     const { rows, fk, error: re } = await readRowsForMentor(supabase, pt.table, mentorId, 80);
     tableRows = rows;
-    tableHint = fk ? `${pt.table} · ${fk} = user` : `${pt.table} · FK 없음(샘플)`;
+    tableHint = fk
+      ? "이번 달 정산(예상)에 반영된 지급 내역이에요"
+      : "이번 달 정산(예상)에 일부 샘플을 반영했어요";
     for (const row of rows) {
       if (inMonthRange(row, start, end)) {
         monthExpectedCents += pickAmount(row);
       }
     }
     if (re) {
-      tableHint += ` · ${re}`;
+      tableHint = "정산 내역을 모두 불러오지 못했어요. 잠시 후 다시 시도해 주세요";
     }
   }
 
@@ -152,17 +131,17 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
         .eq(mc, mentorId)
         .limit(20);
       subN = count ?? (data as Row[] | null)?.length ?? 0;
-      if (error) subErr = error.message;
+      if (error) subErr = "구독·수익 항목을 집계하는 중 문제가 있어요";
     } else {
       const c = await supabase.from(t).select("*", { count: "exact", head: true });
       subN = c.count ?? 0;
-      if (c.error) subErr = c.error.message;
-      subHint = "mentor 필터 컬럼 없음(전체 카운트)";
+      if (c.error) subErr = "구독·수익 항목을 집계하는 중 문제가 있어요";
+      subHint = "구독·수익과 연결된 항목을 집계했어요";
     }
-    subHint = `구독 관련: ${t}, 행 ${subN}개`;
+    subHint = `구독·수익 관련 항목 ${subN}건이에요`;
     break;
   }
-  if (!subTable) subErr = "subscriptions 계열을 읽지 못함";
+  if (!subTable) subErr = "구독·수익 정보를 불러오지 못했어요";
 
   let cusN = 0;
   let cusHint = "—";
@@ -180,64 +159,12 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
         .eq(mc, mentorId)
         .limit(20);
       cusN = count ?? (data as Row[] | null)?.length ?? 0;
-      if (error) cusErr = error.message;
+      if (error) cusErr = "맞춤의뢰 주문을 집계하는 중 문제가 있어요";
     }
-    cusHint = `맞춤의뢰: ${t}, 행 ${cusN}개(수익 컬럼·상태는 후속)`;
+    cusHint = `맞춤의뢰 주문 ${cusN}건이에요`;
     break;
   }
-  if (!cusTable) cusErr = "custom_request_orders(후보)를 읽지 못함";
-
-  let customSettlements: CustomOrderSettlementListItem[] = [];
-  let customSettlementsErr: string | null = null;
-  const { data: cosiData, error: cosiErr } = await supabase
-    .from("custom_order_settlement_items")
-    .select("id, custom_request_order_id, gross_amount, platform_fee_amount, mentor_amount, status, created_at, paid_at")
-    .eq("mentor_id", mentorId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-  if (cosiErr) {
-    if (!/relation|does not exist|schema cache/i.test(cosiErr.message)) {
-      customSettlementsErr = cosiErr.message;
-    }
-  } else {
-    const list = (cosiData as Row[] | null) ?? [];
-    const orderIds = [...new Set(list.map((r) => String(r.custom_request_order_id ?? "")).filter(Boolean))];
-    const paymentByOrder = new Map<string, string | null>();
-    if (orderIds.length) {
-      const { data: ordData, error: ordErr } = await supabase
-        .from("custom_request_orders")
-        .select("id, payment_status")
-        .in("id", orderIds);
-      if (!ordErr) {
-        for (const o of (ordData as Row[] | null) ?? []) {
-          const oid = String(o.id ?? "");
-          const raw = o.payment_status;
-          const ps =
-            raw != null && String(raw).trim()
-              ? String(raw).trim()
-              : null;
-          paymentByOrder.set(oid, ps);
-        }
-      }
-    }
-    customSettlements = list.map((r) => {
-      const oid = String(r.custom_request_order_id ?? "");
-      const orderPaymentStatus = paymentByOrder.get(oid) ?? null;
-      const showUnpaidOrderWarning = !orderPaymentLooksConfirmed(orderPaymentStatus);
-      return {
-        id: String(r.id ?? ""),
-        custom_request_order_id: oid,
-        gross_amount: num(r.gross_amount),
-        platform_fee_amount: num(r.platform_fee_amount),
-        mentor_amount: num(r.mentor_amount),
-        status: typeof r.status === "string" ? r.status : "—",
-        created_at: typeof r.created_at === "string" ? r.created_at : "",
-        paid_at: r.paid_at != null && typeof r.paid_at === "string" ? r.paid_at : null,
-        orderPaymentStatus,
-        showUnpaidOrderWarning,
-      };
-    });
-  }
+  if (!cusTable) cusErr = "맞춤의뢰 주문을 불러오지 못했어요";
 
   return {
     payoutTable: pt.table,
@@ -249,6 +176,5 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
     tableHint,
     periodStart: start,
     periodEnd: end,
-    customOrderSettlements: { rows: customSettlements, error: customSettlementsErr },
   };
 }

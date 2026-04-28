@@ -8,12 +8,12 @@ import { aggregateThreadStatsForRooms } from "@/lib/home/threadStats";
 type Row = Record<string, unknown>;
 
 export const MENTOR_DASHBOARD_DATA_MODEL = [
-  "mentor_student_rooms (연결 학생·room 수)",
-  "question_threads (답변 큐 휴리스틱)",
-  "payouts (이번 달 예상 — mentorPayouts 재사용)",
-  "custom_request_orders (맞춤의뢰 진행 요약)",
-  "mentor_profiles (한 줄 힌트 — 후속)",
-  "notifications (연결 예정)",
+  "질문방·학생 연결",
+  "답변·처리 현황",
+  "정산(이번 달 예상)",
+  "맞춤의뢰",
+  "멘토 프로필",
+  "알림",
 ] as const;
 
 export type MentorDashboardData = {
@@ -70,7 +70,7 @@ async function notificationsCountProbe(
 ): Promise<MentorDashboardData["notifyProbe"]> {
   const { error: pe } = await supabase.from("notifications").select("id").limit(1);
   if (pe) {
-    return { label: "notifications", detail: pe.message, status: "skeleton" };
+    return { label: "알림", detail: "알림을 불러오는 중 문제가 있어요. 잠시 후 다시 시도해 주세요.", status: "skeleton" };
   }
   for (const col of ["user_id", "recipient_id", "mentor_id", "student_id"] as const) {
     const { count, error } = await supabase
@@ -79,13 +79,13 @@ async function notificationsCountProbe(
       .eq(col, userId);
     if (!error && count !== null) {
       return {
-        label: "notifications",
-        detail: `${col} 기준 ${count}건(목록·읽음 후속)`,
+        label: "알림",
+        detail: count > 0 ? `알림 ${count}건이 있어요` : "새 알림이 없어요",
         status: count > 0 ? "connected" : "empty",
       };
     }
   }
-  return { label: "notifications", detail: "사용자 FK 컬럼 probe 실패", status: "skeleton" };
+  return { label: "알림", detail: "알림 건수를 아직 표시할 수 없어요", status: "skeleton" };
 }
 
 /**
@@ -118,8 +118,9 @@ export async function loadMentorDashboardData(
 }
 
 export function customOrderLine(r: Row) {
-  return `${pickDisplayField(r, ["status", "state", "order_status"])} · ${pickDisplayField(r, ["title", "id"])} · ${pickDisplayField(
-    r,
-    ["updated_at", "created_at"]
-  )}`;
+  const title = pickDisplayField(r, ["title", "subject", "label", "name"]);
+  const titleLine = title !== "—" ? title : "맞춤의뢰";
+  const when = pickDisplayField(r, ["updated_at", "created_at"]);
+  const whenShort = when !== "—" && when.length > 10 ? when.slice(0, 10) : when;
+  return `${pickDisplayField(r, ["status", "state", "order_status"])} · ${titleLine} · ${whenShort}`;
 }

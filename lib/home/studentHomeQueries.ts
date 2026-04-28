@@ -15,12 +15,12 @@ const MEN_FK = ["mentor_id", "mentor_user_id", "creator_id", "host_id"] as const
 const PAY_TABLES = ["payments", "payment_intents", "order_payments"] as const;
 
 export const STUDENT_HOME_DATA_MODEL = [
-  "users",
-  "subscriptions (구독 멘토·플랜 요약)",
-  "mentor_student_rooms (최근 질문방 CTA)",
-  "question_threads (진행·큐 휴리스틱)",
-  "payments (최근 결제 요약)",
-  "notifications (연결 예정·마이페이지 count 재사용)",
+  "프로필",
+  "구독·멘토 요약",
+  "질문방",
+  "진행 중인 질문",
+  "최근 결제",
+  "알림·마이페이지",
 ] as const;
 
 function pickMentorIdFromSubscriptionRow(r: Row): string | null {
@@ -139,11 +139,11 @@ async function enrichMentorLines(
   for (const row of rows) {
     const mentorId = pickMentorIdFromSubscriptionRow(row);
     if (!mentorId) {
-      out.push({ subscriptionTable: tableName, mentorId: null, mentorName: "—(멘토 id 없음)", probe, row });
+      out.push({ subscriptionTable: tableName, mentorId: null, mentorName: "멘토 정보 없음", probe, row });
       continue;
     }
     const { data: u } = await getMentorUserPublic(supabase, mentorId);
-    const name = (u?.nickname ?? u?.full_name ?? "").trim() || `${mentorId.slice(0, 8)}…`;
+    const name = (u?.nickname ?? u?.full_name ?? "").trim() || "이름을 불러올 수 없는 멘토";
     out.push({ subscriptionTable: tableName, mentorId, mentorName: name, probe, row });
   }
   return out;

@@ -4,12 +4,12 @@ import type { UserRow } from "@/lib/types/user";
 
 /** PageScaffold 하단 연결 포인트 목록 */
 export const MYPAGE_DATA_MODEL = [
-  "users (프로필 요약)",
-  "mentor_student_rooms (질문방 CTA, 연결됨/개수 — 질문방 라우트·스레드 쿼리는 변경 없음)",
-  "subscriptions (구독 개수, 스키마에 user FK 필요)",
-  "payments (결제·영수 관련, /wallet /cash-history 와 연계 예정)",
-  "notifications (알림, 목록 UI·읽음 처리는 후속)",
-  "reviews, reports (또는 후보명) — 본 턴은 count probe 또는 unavailable",
+  "프로필",
+  "질문방 안내·바로가기",
+  "구독 건수",
+  "결제·주문 건수",
+  "알림 건수",
+  "리뷰·신고(준비 중)",
 ] as const;
 
 export type MypageMetric = {
@@ -60,7 +60,7 @@ async function countRowsForUser(
       relErr = error.message;
     }
   }
-  return { n: null, error: relErr ?? "user를 가리키는 FK 컬럼을 아직 식별하지 못했습니다(스키마 확정 후). " };
+  return { n: null, error: relErr ?? "일시적으로 건수를 가져올 수 없어요" };
 }
 
 function toMetric(
@@ -75,7 +75,7 @@ function toMetric(
         label,
         valueText: "—",
         status: "skeleton",
-        detail: `${table}: ${r.error}`,
+        detail: "잠시 후 다시 시도하거나, 문제가 계속되면 고객센터로 문의해 주세요",
       },
     };
   }
@@ -85,7 +85,7 @@ function toMetric(
       label,
       valueText: String(r.n),
       status: r.n === 0 ? "empty" : "connected",
-      detail: r.n === 0 ? `${table}에서 해당 사용자 0건` : `${table} count`,
+      detail: r.n === 0 ? "해당 항목이 아직 없어요" : `총 ${r.n}건이에요`,
     },
   };
 }
@@ -116,27 +116,27 @@ export async function loadStudentMypageBundle(
   const { rows, error: roomErr } = await fetchRoomsForUser(supabase, "student", userId);
   const roomCount = { n: roomErr ? 0 : rows.length, error: roomErr };
 
-  const s = toMetric("subscriptions", "구독(행 수)", await countRowsForUser(supabase, "subscriptions", userId));
-  const p = toMetric("payments", "결제(행 수)", await countRowsForUser(supabase, "payments", userId));
-  const n = toMetric("notifications", "알림(행 수)", await countRowsForUser(supabase, "notifications", userId));
+  const s = toMetric("subscriptions", "구독", await countRowsForUser(supabase, "subscriptions", userId));
+  const p = toMetric("payments", "결제", await countRowsForUser(supabase, "payments", userId));
+  const n = toMetric("notifications", "알림", await countRowsForUser(supabase, "notifications", userId));
 
   let reviewsMetric: MypageMetric;
   const rev = await countRowsForUser(supabase, "reviews", userId);
   if (rev.error) {
     const alt = await countRowsForUser(supabase, "mentor_reviews", userId);
-    const t = toMetric("mentor_reviews", "리뷰(행 수, 후보명)", alt);
+    const t = toMetric("mentor_reviews", "리뷰", alt);
     reviewsMetric = t.metric;
   } else {
-    reviewsMetric = toMetric("reviews", "리뷰(행 수)", rev).metric;
+    reviewsMetric = toMetric("reviews", "리뷰", rev).metric;
   }
 
   let reportsMetric: MypageMetric;
   const rep = await countRowsForUser(supabase, "reports", userId);
   if (rep.error) {
-    const t = toMetric("abuse_reports", "신고(행 수, 후보명)", await countRowsForUser(supabase, "abuse_reports", userId));
+    const t = toMetric("abuse_reports", "신고", await countRowsForUser(supabase, "abuse_reports", userId));
     reportsMetric = t.metric;
   } else {
-    reportsMetric = toMetric("reports", "신고(행 수)", rep).metric;
+    reportsMetric = toMetric("reports", "신고", rep).metric;
   }
 
   const subsConn = s.connected;
@@ -145,37 +145,37 @@ export async function loadStudentMypageBundle(
 
   const scaff: ScaffoldRow[] = [
     {
-      title: "users 프로필",
+      title: "프로필",
       body: profile
-        ? `닉/이름/역할: ${profile.nickname ?? profile.full_name ?? "—"} (${profile.role})`
-        : (profileError ?? "프로필 행이 없습니다. public.users sync 확인."),
+        ? `닉네임·이름: ${profile.nickname ?? profile.full_name ?? "—"} (${profile.role})`
+        : (profileError ?? "프로필을 불러오지 못했어요."),
       status: profile ? "connected" : "skeleton",
     },
     {
-      title: "질문방(방 목록)",
+      title: "질문방",
       body: roomCount.error
-        ? `mentor_student_rooms: ${roomCount.error}`
-        : `활성 방 ${roomCount.n}개(목록/스레드는 /question-room 유지).`,
+        ? "질문방 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
+        : `사용 중인 질문방 ${roomCount.n}곳이에요.`,
       status: roomCount.error ? "skeleton" : "connected",
     },
     {
-      title: "구독 subscriptions",
+      title: "구독",
       body: s.metric.detail,
       status: subsConn ? "connected" : "skeleton",
     },
     {
-      title: "결제 payments",
+      title: "결제",
       body: p.metric.detail,
       status: payConn ? "connected" : "skeleton",
     },
     {
-      title: "알림 notifications",
+      title: "알림",
       body: n.metric.detail,
       status: notifConn ? "connected" : "skeleton",
     },
     {
-      title: "리뷰·신고(선택)",
-      body: "reviews / reports — 스키마 확정 후 CTA·상세 라우트 연동.",
+      title: "리뷰·신고",
+      body: "이용 내역이 생기면 이곳에서 확인하실 수 있어요.",
       status: "skeleton",
     },
   ];
