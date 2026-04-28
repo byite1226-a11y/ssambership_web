@@ -14,9 +14,12 @@ type PageScaffoldProps = {
   title: string;
   description: string;
   ctas: Cta[];
-  sections: Section[];
-  emptyState: string;
-  dataPoints: string[];
+  /** 기본 []. 항목이 없으면 요약 그리드 블록을 생략합니다. */
+  sections?: Section[];
+  /** 없거나 빈 문자열이면 ‘빈 상태’ 카드를 렌더링하지 않습니다. */
+  emptyState?: string;
+  /** 없거나 빈 배열이면 ‘실데이터 연결 포인트’ 블록을 렌더링하지 않습니다. */
+  dataPoints?: string[];
   /** UI 자리(실제 로딩 UX는 이후 도입) */
   loadingState?: string;
   errorState?: string;
@@ -34,13 +37,16 @@ export function PageScaffold({
   title,
   description,
   ctas,
-  sections,
+  sections = [],
   emptyState,
-  dataPoints,
+  dataPoints = [],
   loadingState = "데이터를 불러오는 동안 스켈레톤/스피너 영역을 둡니다.",
   errorState = "조회 실패 시 재시도/고객센터 안내 영역을 둡니다.",
   children,
 }: PageScaffoldProps) {
+  const showEmptyStateCard = emptyState != null && emptyState.length > 0;
+  const showDataPoints = dataPoints.length > 0;
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -60,31 +66,35 @@ export function PageScaffold({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        {sections.map((section) => (
-          <article key={section.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-extrabold text-slate-900">{section.title}</h2>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                  section.status === "connected" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
-                }`}
-              >
-                {section.status === "connected" ? "정상" : "확인 필요"}
-              </span>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-600">{section.body}</p>
-          </article>
-        ))}
-      </section>
+      {sections.length > 0 ? (
+        <section className="grid gap-4 md:grid-cols-2">
+          {sections.map((section) => (
+            <article key={section.title} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-lg font-extrabold text-slate-900">{section.title}</h2>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                    section.status === "connected" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {section.status === "connected" ? "정상" : "확인 필요"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{section.body}</p>
+            </article>
+          ))}
+        </section>
+      ) : null}
 
       {children}
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-base font-extrabold text-slate-900">빈 상태 / 권한 상태 자리</h3>
-          <p className="mt-2 text-sm text-slate-600">{emptyState}</p>
-        </article>
+      <section className={`grid gap-4 ${showEmptyStateCard ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+        {showEmptyStateCard ? (
+          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <h3 className="text-base font-extrabold text-slate-900">빈 상태 / 권한 상태 자리</h3>
+            <p className="mt-2 text-sm text-slate-600">{emptyState}</p>
+          </article>
+        ) : null}
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <h3 className="text-base font-extrabold text-slate-900">로딩 상태 자리</h3>
           <p className="mt-2 text-sm text-slate-600">{loadingState}</p>
@@ -95,14 +105,16 @@ export function PageScaffold({
         </article>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-        <h3 className="text-base font-extrabold text-slate-900">실데이터 연결 포인트</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
-          {dataPoints.map((point) => (
-            <li key={point}>{point}</li>
-          ))}
-        </ul>
-      </section>
+      {showDataPoints ? (
+        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <h3 className="text-base font-extrabold text-slate-900">실데이터 연결 포인트</h3>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
+            {dataPoints.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

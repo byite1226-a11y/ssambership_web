@@ -80,6 +80,13 @@ async function firstPayoutsTable(
   return { table: null, err: "정산 내역을 아직 찾을 수 없어요" };
 }
 
+/** 맞춤의뢰 쪽에서 읽어 온 정산·주문 후보 행(읽기 전용, 기존 custom 주문 조회와 동일 소스) */
+export type CustomOrderSettlementsBlock = {
+  rows: Row[];
+  error: string | null;
+  table: string | null;
+};
+
 export type MentorPayoutsBundle = {
   payoutTable: string | null;
   payoutError: string | null;
@@ -87,6 +94,7 @@ export type MentorPayoutsBundle = {
   monthExpectedCents: number;
   subSummary: { n: number; amountHint: string; error: string | null; table: string | null };
   customSummary: { n: number; amountHint: string; error: string | null; table: string | null };
+  customOrderSettlements: CustomOrderSettlementsBlock;
   tableRows: Row[];
   tableHint: string;
   periodStart: string;
@@ -147,6 +155,7 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
   let cusHint = "—";
   let cusErr: string | null = null;
   let cusTable: string | null = null;
+  let customOrderSettlementRows: Row[] = [];
   for (const t of ["custom_request_orders", "custom_order_payments"] as const) {
     const { error: pe } = await supabase.from(t).select("id").limit(1);
     if (pe) continue;
@@ -159,6 +168,7 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
         .eq(mc, mentorId)
         .limit(20);
       cusN = count ?? (data as Row[] | null)?.length ?? 0;
+      customOrderSettlementRows = (data as Row[] | null) ?? [];
       if (error) cusErr = "맞춤의뢰 주문을 집계하는 중 문제가 있어요";
     }
     cusHint = `맞춤의뢰 주문 ${cusN}건이에요`;
@@ -172,6 +182,7 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
     monthExpectedCents,
     subSummary: { n: subN, amountHint: subHint, error: subErr, table: subTable },
     customSummary: { n: cusN, amountHint: cusHint, error: cusErr, table: cusTable },
+    customOrderSettlements: { rows: customOrderSettlementRows, error: cusErr, table: cusTable },
     tableRows,
     tableHint,
     periodStart: start,

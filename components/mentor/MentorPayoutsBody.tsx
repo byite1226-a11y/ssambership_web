@@ -1,5 +1,4 @@
 import type { MentorPayoutsBundle } from "@/lib/mentor/mentorPayoutsQueries";
-import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type Row = Record<string, unknown>;
 
@@ -11,20 +10,6 @@ function pickPayoutStatus(r: Row | undefined): string {
     }
   }
   return "—";
-}
-
-/** 맞춤의뢰 정산 예정 테이블 `status` 한글 라벨 */
-function settlementStatusLabelKo(raw: string): string {
-  if (!raw || raw === "—") return raw;
-  const s = raw.trim().toLowerCase();
-  const map: Record<string, string> = {
-    pending: "정산 검토 중",
-    paid: "지급 완료",
-    cancelled: "정산 취소",
-    on_hold: "보류",
-    payable: "지급 가능",
-  };
-  return map[s] ?? raw;
 }
 
 function cell(v: unknown): string {
@@ -73,56 +58,6 @@ export function MentorPayoutsBody({ bundle }: { bundle: MentorPayoutsBundle }) {
         </p>
       ) : null}
 
-      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
-        <h3 className="text-sm font-extrabold text-slate-800">맞춤의뢰 · 정산 예정</h3>
-        <p className="mt-1 text-xs text-slate-600">실제 지급·PG 연동 전까지는 &quot;예정&quot;·&quot;처리 예정&quot; 단계로 표시됩니다.</p>
-        {bundle.customOrderSettlements.error ? (
-          <p className="mt-2 text-xs text-amber-800">{bundle.customOrderSettlements.error}</p>
-        ) : bundle.customOrderSettlements.rows.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-600">아직 정산 예정 내역이 없습니다.</p>
-        ) : (
-          <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead>
-                <tr className="bg-slate-50 text-xs">
-                  <th className="px-2 py-1.5 font-extrabold text-slate-800">주문</th>
-                  <th className="px-2 py-1.5 font-extrabold text-slate-800">총액</th>
-                  <th className="px-2 py-1.5 font-extrabold text-slate-800">플랫폼</th>
-                  <th className="px-2 py-1.5 font-extrabold text-slate-800">멘토(예정)</th>
-                  <th className="px-2 py-1.5 font-extrabold text-slate-800">상태</th>
-                  <th className="px-2 py-1.5 font-extrabold text-slate-800">생성</th>
-                  <th className="px-2 py-1.5 font-extrabold text-slate-800">지급</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bundle.customOrderSettlements.rows.map((r) => (
-                  <tr key={r.id} className="border-t border-slate-100 text-xs">
-                    <td className="px-2 py-1.5 font-mono text-slate-800">{shortOrderIdForDisplay(r.custom_request_order_id)}</td>
-                    <td className="px-2 py-1.5">{r.gross_amount.toLocaleString("ko-KR")}</td>
-                    <td className="px-2 py-1.5">{r.platform_fee_amount.toLocaleString("ko-KR")}</td>
-                    <td className="px-2 py-1.5 font-semibold text-slate-900">{r.mentor_amount.toLocaleString("ko-KR")}</td>
-                    <td className="px-2 py-1.5 align-top">
-                      <span>{settlementStatusLabelKo(r.status)}</span>
-                      {r.showUnpaidOrderWarning ? (
-                        <p className="mt-0.5 max-w-[16rem] text-[10px] font-medium leading-snug text-amber-800">
-                          결제 확인 전 테스트 주문입니다. 실제 지급은 결제 확인 후 진행됩니다.
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="px-2 py-1.5 text-slate-600">
-                      {r.created_at ? new Date(r.created_at).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "—"}
-                    </td>
-                    <td className="px-2 py-1.5 text-slate-600">
-                      {r.paid_at ? new Date(r.paid_at).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" }) : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
       <div>
         <h3 className="text-sm font-extrabold text-slate-800">수행/지급 내역</h3>
         <p className="text-xs text-slate-500">{bundle.tableHint}</p>
@@ -141,11 +76,11 @@ export function MentorPayoutsBody({ bundle }: { bundle: MentorPayoutsBundle }) {
                 </tr>
               </thead>
               <tbody>
-                {bundle.tableRows.map((r, i) => (
+                {bundle.tableRows.map((r: Row, i) => (
                   <tr key={i} className="border-t border-slate-100">
                     {keys.map((k) => (
                       <td key={k} className="max-w-[160px] truncate px-2 py-1.5 text-xs text-slate-800">
-                        {cell((r as Record<string, unknown>)[k])}
+                        {cell(r[k])}
                       </td>
                     ))}
                   </tr>
