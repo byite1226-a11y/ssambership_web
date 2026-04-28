@@ -46,15 +46,15 @@ function redirectWithError(orderId: string, msg: string): never {
 }
 
 /**
- * ??: ?? primary ??? `pending`(insert ??)? ?? `open`?? ??.
- * `open`? `insertCustomRequestOrder`? `order_status`? ?? ?? ???.
+ * 멘토 작업 시작: primary 상태가 허용 집합(예: pending/open)일 때만 `in_progress` 등으로 전이.
+ * insert 직후 값은 `insertCustomRequestOrder`·스키마에 따름.
  */
 export async function startCustomOrderWorkAction(formData: FormData): Promise<void> {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
   const orderId = String(formData.get("orderId") ?? "").trim();
   if (!orderId) {
-    redirect("/custom-request?error=" + encodeURIComponent("orderId? ?????."));
+    redirect("/custom-request?error=" + encodeURIComponent("orderId가 필요합니다."));
   }
 
   if (!isCustomRequestOrderStatusDdlInRepo()) {
@@ -63,19 +63,19 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
 
   const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
   if (!oT.table) {
-    redirectWithError(orderId, oT.error || "?? ???? ?? ? ????.");
+    redirectWithError(orderId, oT.error || "주문 테이블을 찾을 수 없습니다.");
   }
   const table = oT.table;
 
   const { data: rowData, error: oe } = await supabase.from(table).select("*").eq("id", orderId).maybeSingle();
   if (oe || !rowData) {
-    redirectWithError(orderId, oe?.message ?? "??? ?? ? ????.");
+    redirectWithError(orderId, oe?.message ?? "주문 정보를 찾을 수 없습니다.");
   }
   const row = rowData as Row;
 
   const access = canAccessOrder(row, user.id, "mentor");
   if (!access.ok) {
-    redirectWithError(orderId, "? ???? ??? ??? ??? ????.");
+    redirectWithError(orderId, "이 주문에 접근할 수 없습니다.");
   }
 
   const { column: menCol } = await pickExistingColumn(supabase, table, [
@@ -87,7 +87,7 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
     "expert_id",
   ]);
   if (!menCol || String(row[menCol]) !== user.id) {
-    redirectWithError(orderId, "??? ?? ??? ??? ??? ? ????.");
+    redirectWithError(orderId, "배정된 멘토 본인만 작업을 시작할 수 있습니다.");
   }
 
   const disputeBlockStart = await getActiveDisputeBlockMessage(supabase, orderId);
@@ -97,21 +97,21 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
 
   const norm = normalizedPrimaryOrderStatus(row);
   if (!norm) {
-    redirectWithError(orderId, "?? ??? ??? ? ?? ??? ??? ? ????.");
+    redirectWithError(orderId, "주문 상태를 확인할 수 없어 작업을 시작할 수 없습니다.");
   }
   if (isOrderStatusTerminal(norm)) {
-    redirectWithError(orderId, "?? ??? ?????.");
+    redirectWithError(orderId, "이미 종료된 주문은 작업을 시작할 수 없습니다.");
   }
   if (norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS) {
-    redirectWithError(orderId, "?? ??? ??? ?????.");
+    redirectWithError(orderId, "이미 작업이 시작된 상태입니다.");
   }
   if (!ORDER_STATUSES_MENTOR_START_WORK_ALLOWED.has(norm)) {
-    redirectWithError(orderId, `?? ??(${norm})??? ??? ??? ? ????.`);
+    redirectWithError(orderId, `현재 상태(${norm})에서는 작업을 시작할 수 없습니다.`);
   }
 
   const stCol = primaryOrderStatusColumnKey(row);
   if (!stCol) {
-    redirectWithError(orderId, "?? ?? ??? ?? ? ????.");
+    redirectWithError(orderId, "주문 상태 컬럼을 찾을 수 없습니다.");
   }
 
   const patch: Record<string, unknown> = { [stCol]: ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS };
@@ -128,14 +128,14 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
 
   const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
   if (ue) {
-    redirectWithError(orderId, ue.message || "?? ??? ??????.");
+    redirectWithError(orderId, ue.message || "상태를 갱신하지 못했습니다.");
   }
 
   await recordOrderEventBestEffort(supabase, orderId, "order_started", user.id, { from: norm });
 
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
-  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("??? ??????.")}`);
+  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("작업을 시작했습니다.")}`);
 }
 
 function isMissingColumnPostgrest(msg: string): boolean {
