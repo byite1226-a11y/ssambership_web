@@ -14,8 +14,8 @@ type Props = {
   hasOrderPartyAccess: boolean;
   /** null이면 신청 폼 사용 가능(서버가 최종 검증) */
   openDisputeApplicationDisabledReason: string | null;
-  /** terminal 주문에서 분쟁 폼이 막힐 때 한 줄 안내(고객센터) */
-  postTerminalDisputeSupportLine?: string | null;
+  /** 종료 주문: 분쟁 신청 폼·막힌 사유 박스 숨김(접수 내역만) */
+  orderTerminal?: boolean;
 };
 
 function disputeBody(r: Row) {
@@ -36,7 +36,7 @@ export function OrderDisputesPanel({
   actorRole,
   hasOrderPartyAccess,
   openDisputeApplicationDisabledReason,
-  postTerminalDisputeSupportLine,
+  orderTerminal = false,
 }: Props) {
   const u = detail.bundle.disputes;
   const rows = (u.rows ?? []) as Row[];
@@ -53,7 +53,7 @@ export function OrderDisputesPanel({
         주문 진행 중 문제가 있을 때 의뢰자 또는 멘토가 분쟁을 신청합니다. 열린 분쟁이 있으면 납품·수락·수정 요청·작업 시작이 제한됩니다(메시지는 별도).
       </p>
 
-      {canForm && openDisputeApplicationDisabledReason == null ? (
+      {!orderTerminal && canForm && openDisputeApplicationDisabledReason == null ? (
         <form action={submitCustomOrderDisputeAction} className="mt-4 space-y-2">
           <input type="hidden" name="orderId" value={orderId} />
           <label className="sr-only" htmlFor="order-dispute-body">
@@ -75,14 +75,11 @@ export function OrderDisputesPanel({
             분쟁 신청
           </button>
         </form>
-      ) : canForm && openDisputeApplicationDisabledReason ? (
+      ) : !orderTerminal && canForm && openDisputeApplicationDisabledReason ? (
         <div className="mt-3 space-y-2" role="status">
           <p className="rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-slate-600">
             {openDisputeApplicationDisabledReason}
           </p>
-          {postTerminalDisputeSupportLine ? (
-            <p className="px-0.5 text-xs text-slate-500">{postTerminalDisputeSupportLine}</p>
-          ) : null}
         </div>
       ) : null}
 

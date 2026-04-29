@@ -1,11 +1,14 @@
 import { startCustomOrderWorkAction } from "@/lib/customRequest/orderMentorActions";
 import { acceptCustomOrderDeliverableAction } from "@/lib/customRequest/orderStudentActions";
+import { ORDER_ROOM_TERMINAL_ACTIONS_NOTICE } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
 
 type Props = {
   view: "student" | "mentor";
   actorRole: AppRole;
   orderId: string;
+  /** 종료·완료 주문: 진행성 액션 전부 숨기고 안내만 */
+  orderTerminal?: boolean;
   /** null이면 학생 납품 수락 폼 활성 */
   studentAcceptDisabledReason: string | null;
   /** null이면 멘토 작업 시작 폼 활성 */
@@ -14,8 +17,6 @@ type Props = {
   studentRevisionRequestDisabledReason: string | null;
   /** null이면 #order-disputes 로 이동 가능(학생·멘토) */
   openDisputeApplicationDisabledReason: string | null;
-  /** terminal 주문에서 분쟁 액션이 막힐 때 짧은 안내(고객센터) */
-  postTerminalDisputeSupportLine?: string | null;
 };
 
 /**
@@ -26,12 +27,21 @@ export function OrderActionBar(props: Props) {
     view,
     actorRole,
     orderId,
+    orderTerminal = false,
     studentAcceptDisabledReason,
     mentorStartDisabledReason,
     studentRevisionRequestDisabledReason,
     openDisputeApplicationDisabledReason,
-    postTerminalDisputeSupportLine,
   } = props;
+  if (orderTerminal) {
+    return (
+      <div className="w-full" role="status" aria-label="주문 완료 안내">
+        <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
+          {ORDER_ROOM_TERMINAL_ACTIONS_NOTICE}
+        </p>
+      </div>
+    );
+  }
   const canStudentAccept =
     actorRole === "student" && view === "student" && !studentAcceptDisabledReason && orderId.trim().length > 0;
   const canMentorStart =
@@ -132,9 +142,6 @@ export function OrderActionBar(props: Props) {
         </button>
       )}
       </div>
-      {postTerminalDisputeSupportLine ? (
-        <p className="mt-2 max-w-xl text-xs leading-snug text-slate-500">{postTerminalDisputeSupportLine}</p>
-      ) : null}
     </div>
   );
 }

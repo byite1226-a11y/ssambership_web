@@ -50,9 +50,7 @@ export default async function CustomRequestOrderPage(props: PageProps) {
         { href: role === "mentor" ? "/mentor/dashboard" : "/home", label: "대시/홈", tone: "blue" },
       ]}
       sections={[]}
-      emptyState=""
-      loadingState="정보를 불러오고 있습니다."
-      errorState="정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+      hideFooterPlaceholderCards
     >
       {sp.error ? (
         <p className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-900" role="alert">

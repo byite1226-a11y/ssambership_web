@@ -19,6 +19,8 @@ type Props = {
   view: "student" | "mentor";
   actorRole: AppRole;
   hasOrderPartyAccess: boolean;
+  /** 종료 주문: 새 메시지 작성만 숨김(이력·로그는 유지) */
+  orderTerminal?: boolean;
 };
 
 function eventLine(r: Row) {
@@ -45,7 +47,14 @@ function messageText(m: Row) {
   return pickDisplayField(m, ["body", "content", "message", "text"]);
 }
 
-export function OrderProgressSection({ detail, orderId: orderIdProp, view: _view, actorRole, hasOrderPartyAccess }: Props) {
+export function OrderProgressSection({
+  detail,
+  orderId: orderIdProp,
+  view: _view,
+  actorRole,
+  hasOrderPartyAccess,
+  orderTerminal = false,
+}: Props) {
   void _view;
   const ev = detail.events;
   const o = detail.bundle.order.row;
@@ -67,8 +76,9 @@ export function OrderProgressSection({ detail, orderId: orderIdProp, view: _view
   const studentMsgs = msgRows.filter((m) => orderPartyLabelForMessage(m, o as Row | null, studentId, mentorId) === "학생");
   const mentorMsgs = msgRows.filter((m) => orderPartyLabelForMessage(m, o as Row | null, studentId, mentorId) === "멘토");
 
-  const showStudentComposer = actorRole === "student" && hasOrderPartyAccess && Boolean(orderId);
-  const showMentorComposer = actorRole === "mentor" && hasOrderPartyAccess && Boolean(orderId);
+  const showStudentComposer =
+    !orderTerminal && actorRole === "student" && hasOrderPartyAccess && Boolean(orderId);
+  const showMentorComposer = !orderTerminal && actorRole === "mentor" && hasOrderPartyAccess && Boolean(orderId);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-800 shadow-sm">

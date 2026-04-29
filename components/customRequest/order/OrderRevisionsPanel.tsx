@@ -13,6 +13,8 @@ type Props = {
   hasOrderPartyAccess: boolean;
   /** null이면 학생 수정 요청 폼을 표시(서버 액션이 다시 검증) */
   studentRevisionRequestDisabledReason: string | null;
+  /** 종료 주문: 폼·막힌 사유 박스 숨김(내역만) */
+  orderTerminal?: boolean;
 };
 
 function revisionBody(r: Row) {
@@ -25,6 +27,7 @@ export function OrderRevisionsPanel({
   actorRole,
   hasOrderPartyAccess,
   studentRevisionRequestDisabledReason,
+  orderTerminal = false,
 }: Props) {
   const rev = detail.revisions;
   const rows = (rev.rows ?? []) as Row[];
@@ -39,7 +42,7 @@ export function OrderRevisionsPanel({
       <h3 className="text-base font-bold text-slate-900">수정 요청</h3>
       <p className="mt-1 text-xs text-slate-500">납품·검토 중 의뢰자가 멘토에게 보내는 수정 사항이 여기 누적됩니다(완료된 주문은 제외).</p>
 
-      {canShowComposer && studentRevisionRequestDisabledReason == null ? (
+      {!orderTerminal && canShowComposer && studentRevisionRequestDisabledReason == null ? (
         <form action={submitCustomOrderRevisionRequestAction} className="mt-4 space-y-2">
           <input type="hidden" name="orderId" value={orderId} />
           <label className="sr-only" htmlFor="order-revision-note">
@@ -61,7 +64,7 @@ export function OrderRevisionsPanel({
             수정 요청 보내기
           </button>
         </form>
-      ) : actorRole === "student" && canShowComposer && studentRevisionRequestDisabledReason ? (
+      ) : !orderTerminal && actorRole === "student" && canShowComposer && studentRevisionRequestDisabledReason ? (
         <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600" role="status">
           {studentRevisionRequestDisabledReason}
         </p>

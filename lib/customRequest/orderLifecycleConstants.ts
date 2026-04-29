@@ -79,6 +79,7 @@ export const ORDER_TERMINAL_STATUSES = new Set<string>([
   "completed",
   "accepted",
   "closed",
+  "finished",
   "cancelled",
   "canceled",
   "refunded",
@@ -90,6 +91,31 @@ export const ORDER_TERMINAL_STATUSES = new Set<string>([
 export function isOrderStatusTerminal(norm: string): boolean {
   return ORDER_TERMINAL_STATUSES.has(norm);
 }
+
+const ORDER_STATE_COLUMN_KEYS = ["status", "state", "order_status", "stage"] as const;
+
+/**
+ * `status` / `state` / `order_status` / `stage` 중 하나라도 종료값이면 true.
+ * primary 컬럼만 보면 놓칠 수 있는 불일치(예: 한 컬럼만 completed)에 대비한다.
+ */
+export function isOrderRowTerminalForActions(row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) {
+    return false;
+  }
+  for (const k of ORDER_STATE_COLUMN_KEYS) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) {
+      if (isOrderStatusTerminal(v.trim().toLowerCase())) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/** 주문방: 종료 주문에서 진행 버튼 대신 표시하는 단일 안내 */
+export const ORDER_ROOM_TERMINAL_ACTIONS_NOTICE =
+  "완료된 주문입니다. 추가 변경이 필요하면 고객센터로 문의해 주세요.";
 
 // —— 주문방 UI: DB 토큰·ISO를 사용자 문구로만 변환(로직 판정에는 사용하지 않음)
 

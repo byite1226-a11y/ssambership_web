@@ -7,6 +7,7 @@ import {
   ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS,
   ORDER_STATUSES_MENTOR_START_WORK_ALLOWED,
   isOrderStatusAllowingStudentAccept,
+  isOrderRowTerminalForActions,
   isOrderStatusTerminal,
   normalizedPrimaryOrderStatus,
   orderStatusLabelForUi,
@@ -194,7 +195,7 @@ export function OrderRoomView(props: {
   }
 
   const orderNorm = normalizedPrimaryOrderStatus(o as Row);
-  const isTerminalOrder = orderNorm ? isOrderStatusTerminal(orderNorm) : false;
+  const isTerminalOrder = isOrderRowTerminalForActions(o as Row);
   const mentorDeliverableBlockReason = (() => {
     if (view !== "mentor" || actorRole !== "mentor") {
       return "멘토만 납품을 등록할 수 있습니다.";
@@ -217,10 +218,6 @@ export function OrderRoomView(props: {
 
   const revBlock = studentRevisionRequestDisabledReason(actorRole, view, o as Row, detail);
   const disputeFormBlock = openDisputeApplicationDisabledReason(actorRole, o as Row, detail);
-  const postTerminalDisputeSupportLine =
-    isTerminalOrder && (actorRole === "student" || actorRole === "mentor")
-      ? "완료된 주문의 사후 분쟁은 고객센터로 문의해 주세요."
-      : null;
   const oid = String((o as Row).id ?? "");
 
   return (
@@ -232,6 +229,7 @@ export function OrderRoomView(props: {
         view={view}
         actorRole={actorRole}
         hasOrderPartyAccess={!accessDenied}
+        orderTerminal={isTerminalOrder}
       />
       <OrderDeliverablesPanel
         detail={detail}
@@ -239,6 +237,7 @@ export function OrderRoomView(props: {
         view={view}
         actorRole={actorRole}
         mentorDeliverableBlockReason={mentorDeliverableBlockReason}
+        orderTerminal={isTerminalOrder}
       />
       <OrderRevisionsPanel
         detail={detail}
@@ -246,6 +245,7 @@ export function OrderRoomView(props: {
         actorRole={actorRole}
         hasOrderPartyAccess={!accessDenied}
         studentRevisionRequestDisabledReason={revBlock}
+        orderTerminal={isTerminalOrder}
       />
       <OrderDisputesPanel
         detail={detail}
@@ -253,17 +253,17 @@ export function OrderRoomView(props: {
         actorRole={actorRole}
         hasOrderPartyAccess={!accessDenied}
         openDisputeApplicationDisabledReason={disputeFormBlock}
-        postTerminalDisputeSupportLine={postTerminalDisputeSupportLine}
+        orderTerminal={isTerminalOrder}
       />
       <OrderActionBar
         view={view}
         actorRole={actorRole}
         orderId={oid}
+        orderTerminal={isTerminalOrder}
         studentAcceptDisabledReason={studentAcceptDisabledReason(actorRole, view, o as Row, detail)}
         mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
         studentRevisionRequestDisabledReason={revBlock}
         openDisputeApplicationDisabledReason={disputeFormBlock}
-        postTerminalDisputeSupportLine={postTerminalDisputeSupportLine}
       />
       <p className="text-xs text-slate-500">
         결제·정산 안내는 주문이 확정된 뒤 단계별로 안내됩니다. 주문번호: {shortOrderIdForDisplay(oid || orderId)}

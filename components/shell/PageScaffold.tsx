@@ -23,6 +23,8 @@ type PageScaffoldProps = {
   /** UI 자리(실제 로딩 UX는 이후 도입) */
   loadingState?: string;
   errorState?: string;
+  /** true이면 하단 로딩/오류(및 빈 상태) 플레이스홀더 카드 섹션을 렌더하지 않음 */
+  hideFooterPlaceholderCards?: boolean;
   children?: ReactNode;
 };
 
@@ -42,10 +44,12 @@ export function PageScaffold({
   dataPoints = [],
   loadingState = "정보를 불러오고 있습니다.",
   errorState = "정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  hideFooterPlaceholderCards = false,
   children,
 }: PageScaffoldProps) {
   const showEmptyStateCard = emptyState != null && emptyState.length > 0;
   const showDataPoints = dataPoints.length > 0;
+  const showFooterPlaceholders = !hideFooterPlaceholderCards;
 
   return (
     <div className="space-y-6">
@@ -88,22 +92,24 @@ export function PageScaffold({
 
       {children}
 
-      <section className={`grid gap-4 ${showEmptyStateCard ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
-        {showEmptyStateCard ? (
+      {showFooterPlaceholders ? (
+        <section className={`grid gap-4 ${showEmptyStateCard ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+          {showEmptyStateCard ? (
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <h3 className="text-base font-extrabold text-slate-900">안내</h3>
+              <p className="mt-2 text-sm text-slate-600">{emptyState}</p>
+            </article>
+          ) : null}
           <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <h3 className="text-base font-extrabold text-slate-900">안내</h3>
-            <p className="mt-2 text-sm text-slate-600">{emptyState}</p>
+            <h3 className="text-base font-extrabold text-slate-900">로딩</h3>
+            <p className="mt-2 text-sm text-slate-600">{loadingState}</p>
           </article>
-        ) : null}
-        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-base font-extrabold text-slate-900">로딩</h3>
-          <p className="mt-2 text-sm text-slate-600">{loadingState}</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-base font-extrabold text-slate-900">오류</h3>
-          <p className="mt-2 text-sm text-slate-600">{errorState}</p>
-        </article>
-      </section>
+          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+            <h3 className="text-base font-extrabold text-slate-900">오류</h3>
+            <p className="mt-2 text-sm text-slate-600">{errorState}</p>
+          </article>
+        </section>
+      ) : null}
 
       {showDataPoints ? (
         <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">

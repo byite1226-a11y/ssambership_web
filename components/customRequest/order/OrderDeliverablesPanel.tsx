@@ -19,6 +19,8 @@ type Props = {
   actorRole: AppRole;
   /** null = 멘토 납품 등록 폼 사용 가능(상태·역할·접근 충족) */
   mentorDeliverableBlockReason: string | null;
+  /** 종료 주문: 멘토 납품 등록 블록 전체 비표시(목록·다운로드는 유지) */
+  orderTerminal?: boolean;
 };
 
 function formatBytes(n: unknown): string {
@@ -76,6 +78,7 @@ export function OrderDeliverablesPanel({
   view,
   actorRole,
   mentorDeliverableBlockReason,
+  orderTerminal = false,
 }: Props) {
   const d = detail.bundle.deliverables;
   const err = d.error;
@@ -155,7 +158,7 @@ export function OrderDeliverablesPanel({
         <p className="text-sm text-slate-600">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       )}
 
-      {view === "mentor" && actorRole === "mentor" ? (
+      {!orderTerminal && view === "mentor" && actorRole === "mentor" ? (
         <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3">
           <p className="text-xs font-extrabold text-slate-800">멘토 납품 등록 (파일 + 설명)</p>
           <p className="mt-1 text-xs text-slate-600">
