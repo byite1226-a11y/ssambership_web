@@ -62,7 +62,7 @@ export function WalletChargeBody(props: {
           ) : (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
               <p className="font-extrabold text-slate-900">캐시 충전</p>
-              <p className="mt-1">PG 결제 연동 준비 중입니다. 테스트 충전은 담당자에 의해 허용된 환경에서만 사용할 수 있어요.</p>
+              <p className="mt-1">PG 결제 연동 준비 중입니다.</p>
             </div>
           )}
         </div>
@@ -149,7 +149,7 @@ export function WalletChargeBody(props: {
           </Link>
         ) : null}
         {!allowTestTopup ? (
-          <p className="w-full text-sm text-slate-600 sm:w-auto sm:self-center">PG 결제 연동 준비 중</p>
+          <p className="w-full text-sm text-slate-600 sm:w-auto sm:self-center">PG 결제 연동 준비 중입니다.</p>
         ) : null}
         <button
           type="button"

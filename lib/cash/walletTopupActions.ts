@@ -47,9 +47,9 @@ export async function testWalletCashTopupAction(formData: FormData): Promise<voi
   if (process.env.CASH_TOPUP_ALLOW_TEST_CHARGE !== "true") {
     redirect("/wallet/charge?error=" + encodeURIComponent(MSG_TEST_TOPUP_DISABLED));
   }
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && process.env.CASH_TOPUP_ALLOW_TEST_CHARGE === "true") {
     console.warn(
-      "[walletTopup] CASH_TOPUP_ALLOW_TEST_CHARGE === \"true\" in production — test cash top-up is enabled. Disable unless this deployment is controlled (staging/QA)."
+      "[walletTopup] CASH_TOPUP_ALLOW_TEST_CHARGE is true in production — test cash top-up is enabled. Disable for public production unless intentionally controlled."
     );
   }
 
