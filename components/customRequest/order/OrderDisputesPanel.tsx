@@ -2,8 +2,8 @@ import { submitCustomOrderDisputeAction } from "@/lib/customRequest/orderDispute
 import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
+import { formatOrderRoomDateTime, orderStatusLabelForUi } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
-import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Row = Record<string, unknown>;
 
@@ -23,7 +23,11 @@ function disputeBody(r: Row) {
 }
 
 function statusLabel(r: Row) {
-  return pickDisplayField(r, ["status", "state", "label"]);
+  const raw = pickDisplayField(r, ["status", "state", "label"]);
+  if (raw === "—" || !String(raw).trim()) {
+    return "—";
+  }
+  return orderStatusLabelForUi(String(raw));
 }
 
 export function OrderDisputesPanel({
@@ -84,11 +88,13 @@ export function OrderDisputesPanel({
 
       <div className="mt-5">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-900/70">접수 내역</h4>
-        {u.error ? <p className="mt-2 text-sm text-amber-800">불러오기: {mapDataErrorMessage(String(u.error))}</p> : null}
+        {u.error ? (
+          <p className="mt-2 text-sm text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        ) : null}
         {hasTable && rows.length > 0 ? (
           <ul className="mt-2 max-h-80 space-y-3 overflow-y-auto">
             {rows.map((r, i) => {
-              const at = r.created_at != null ? String(r.created_at).replace("T", " ").slice(0, 19) : "—";
+              const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
               return (
                 <li
                   key={String(r.id ?? i)}

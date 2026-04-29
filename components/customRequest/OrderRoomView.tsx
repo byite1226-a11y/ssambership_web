@@ -9,6 +9,7 @@ import {
   isOrderStatusAllowingStudentAccept,
   isOrderStatusTerminal,
   normalizedPrimaryOrderStatus,
+  orderStatusLabelForUi,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
@@ -56,7 +57,7 @@ function studentAcceptDisabledReason(
     return "이미 종료된 주문입니다.";
   }
   if (!isOrderStatusAllowingStudentAccept(norm)) {
-    return `현재 상태(${norm})에서는 수락할 수 없습니다.`;
+    return `현재 단계(${orderStatusLabelForUi(norm)})에서는 수락할 수 없습니다.`;
   }
   return null;
 }
@@ -89,7 +90,7 @@ function mentorStartDisabledReason(
     return "이미 작업이 시작된 상태입니다.";
   }
   if (!ORDER_STATUSES_MENTOR_START_WORK_ALLOWED.has(norm)) {
-    return `현재 상태(${norm})에서는 작업을 시작할 수 없습니다.`;
+    return `현재 단계(${orderStatusLabelForUi(norm)})에서는 작업을 시작할 수 없습니다.`;
   }
   return null;
 }
@@ -119,7 +120,7 @@ function studentRevisionRequestDisabledReason(
     return "이미 완료·종료된 주문에는 수정 요청을 할 수 없습니다.";
   }
   if (!isOrderStatusAllowingStudentAccept(norm)) {
-    return `납품 검토·수락 단계에서만 수정 요청할 수 있습니다(현재: ${norm}).`;
+    return `납품 검토·수락 단계에서만 수정 요청할 수 있습니다(현재: ${orderStatusLabelForUi(norm)}).`;
   }
   return null;
 }
@@ -206,10 +207,10 @@ export function OrderRoomView(props: {
       return "종료된 주문입니다.";
     }
     if (orderNorm === ORDER_INSERT_STATUS_PENDING) {
-      return "작업 시작 후에만 납품을 등록할 수 있습니다(상태: pending).";
+      return "멘토가 작업을 시작한 뒤에 납품을 등록할 수 있습니다.";
     }
     if (orderNorm !== ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS && orderNorm !== "delivered") {
-      return `이 상태(${orderNorm || "—"})에서는 납품 등록이 허용되지 않습니다.`;
+      return `이 단계(${orderNorm ? orderStatusLabelForUi(orderNorm) : "—"})에서는 납품을 등록할 수 없습니다.`;
     }
     return null;
   })();

@@ -2,10 +2,14 @@ import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import { downloadCustomOrderDeliverableAction } from "@/lib/customRequest/orderDeliverableDownloadActions";
 import { pickStoragePathFromDeliverableRow } from "@/lib/customRequest/orderDeliverableFiles";
 import { submitMentorOrderDeliverableAction } from "@/lib/customRequest/orderMentorActions";
+import {
+  deliverableVersionLabelKorean,
+  formatOrderRoomDateTime,
+  orderStatusLabelForUi,
+} from "@/lib/customRequest/orderLifecycleConstants";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import type { AppRole } from "@/lib/types/user";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
-import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Row = Record<string, unknown>;
 type Props = {
@@ -54,7 +58,16 @@ function hasDownloadableFile(r: Row): boolean {
 }
 
 function submittedAt(r: Row): string {
-  return pickDisplayField(r, ["submitted_at", "created_at", "updated_at"]);
+  const v = (() => {
+    for (const k of ["submitted_at", "created_at", "updated_at"] as const) {
+      const x = r[k];
+      if (x != null) {
+        return x;
+      }
+    }
+    return null;
+  })();
+  return formatOrderRoomDateTime(v);
 }
 
 export function OrderDeliverablesPanel({
@@ -65,7 +78,6 @@ export function OrderDeliverablesPanel({
   mentorDeliverableBlockReason,
 }: Props) {
   const d = detail.bundle.deliverables;
-  const latest = detail.latestDeliverable;
   const err = d.error;
   const showMentorForm = view === "mentor" && actorRole === "mentor" && !mentorDeliverableBlockReason;
   const rows = (d.rows ?? []) as Row[];
@@ -73,67 +85,74 @@ export function OrderDeliverablesPanel({
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-extrabold text-slate-900">납품(버전)</h3>
-      {err ? <p className="text-sm text-amber-800">납품: {mapDataErrorMessage(String(err))}</p> : null}
+      <h3 className="text-sm font-extrabold text-slate-900">납품</h3>
+      {err ? <p className="text-sm text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p> : null}
       {d.table && rows.length > 0 ? (
         <ul className="space-y-2">
           {rows.map((r, i) => {
             const id = String(r.id ?? i);
-            const version = String(r.version ?? "—");
-            const status = pickDisplayField(r, ["state", "status", "label"]);
+            const statusRaw = pickDisplayField(r, ["state", "status", "label"]);
+            const status =
+              statusRaw === "—" || !String(statusRaw).trim() ? "—" : orderStatusLabelForUi(String(statusRaw));
             const fileName = displayFileName(r);
             const dl = hasDownloadableFile(r);
+            const hasNamedFile = fileName !== "—" && String(fileName).trim().length > 0;
             return (
               <li
                 key={id}
                 className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-800 shadow-sm"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="font-mono text-xs text-slate-500">v{version}</span>
-                  <span className="text-xs text-slate-500">{submittedAt(r)}</span>
+                  <span className="text-xs font-semibold text-slate-700">
+                    {deliverableVersionLabelKorean((r as Row).version, i)}
+                  </span>
                 </div>
+                <p className="mt-1 text-xs text-slate-600">
+                  <span className="text-slate-500">등록일: </span>
+                  <span className="font-medium text-slate-800">{submittedAt(r)}</span>
+                </p>
                 <p className="mt-1 text-xs text-slate-600">
                   상태: <span className="font-medium text-slate-800">{status}</span>
                 </p>
-                <p className="mt-0.5 break-all text-slate-900">
-                  파일: {fileName}
-                  {pickSize(r) != null ? (
-                    <span className="ml-2 text-xs text-slate-500">({formatBytes(pickSize(r))})</span>
-                  ) : null}
-                </p>
                 {dl && canDownload ? (
-                  <form action={downloadCustomOrderDeliverableAction} className="mt-2">
-                    <input type="hidden" name="orderId" value={orderId} />
-                    <input type="hidden" name="deliverableId" value={id} />
-                    <button
-                      type="submit"
-                      className="rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-100"
-                    >
-                      다운로드
-                    </button>
-                  </form>
-                ) : null}
+                  <div className="mt-2">
+                    {hasNamedFile || pickSize(r) != null ? (
+                      <p className="mb-1.5 break-all text-slate-900">
+                        {hasNamedFile ? fileName : "첨부 파일"}
+                        {pickSize(r) != null ? (
+                          <span className="ml-2 text-xs text-slate-500">({formatBytes(pickSize(r))})</span>
+                        ) : null}
+                      </p>
+                    ) : null}
+                    <form action={downloadCustomOrderDeliverableAction} className="inline">
+                      <input type="hidden" name="orderId" value={orderId} />
+                      <input type="hidden" name="deliverableId" value={id} />
+                      <button
+                        type="submit"
+                        className="rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-100"
+                      >
+                        첨부 파일 다운로드
+                      </button>
+                    </form>
+                  </div>
+                ) : hasNamedFile || pickSize(r) != null ? (
+                  <p className="mt-0.5 break-all text-slate-900">
+                    {hasNamedFile ? fileName : "첨부"}
+                    {pickSize(r) != null ? (
+                      <span className="ml-2 text-xs text-slate-500">({formatBytes(pickSize(r))})</span>
+                    ) : null}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-sm text-slate-600">첨부 파일 없음</p>
+                )}
               </li>
             );
           })}
         </ul>
       ) : d.table ? (
-        <p className="text-sm text-slate-600">납품 행 없음. {d.error ?? d.sourceNote}</p>
+        <p className="text-sm text-slate-600">아직 등록된 납품물이 없습니다.</p>
       ) : (
-        <p className="text-sm text-slate-600">납품: {d.error ?? d.sourceNote}</p>
-      )}
-
-      {latest && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3 text-sm text-slate-800">
-          <p className="text-xs font-bold text-blue-900/80">최신 납품(우선)</p>
-          <ul className="mt-1 list-inside list-disc text-xs sm:text-sm">
-            <li>id: {pickDisplayField(latest, ["id"])}</li>
-            <li>version: {String((latest as Row).version ?? "—")}</li>
-            <li>state: {pickDisplayField(latest, ["state", "status", "label"])}</li>
-            <li>파일: {displayFileName(latest as Row)}</li>
-            <li>갱신: {pickDisplayField(latest, ["updated_at", "submitted_at", "created_at"])}</li>
-          </ul>
-        </div>
+        <p className="text-sm text-slate-600">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       )}
 
       {view === "mentor" && actorRole === "mentor" ? (

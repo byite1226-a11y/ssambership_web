@@ -1,6 +1,5 @@
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { isOrderStatusTerminal, normalizedPrimaryOrderStatus } from "@/lib/customRequest/orderLifecycleConstants";
-import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Props = {
   detail: OrderDetailPageData;
@@ -49,7 +48,7 @@ export function OrderSummaryHeader({ detail, view }: Props) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-950">
         <h2 className="font-extrabold">주문 요약</h2>
-        <p className="mt-2">{mapDataErrorMessage(String(o.error))}</p>
+        <p className="mt-2">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       </section>
     );
   }
@@ -80,19 +79,19 @@ export function OrderSummaryHeader({ detail, view }: Props) {
           </ul>
         </div>
       ) : null}
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-sm font-extrabold text-slate-500">
-          주문 요약 {view === "mentor" ? "· 멘토" : "· 의뢰자"}
-        </h2>
-        <span
-          className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-800"
-          title="주문 상태"
-        >
-          {h.statusLine}
-        </span>
-      </div>
+      <h2 className="text-sm font-extrabold text-slate-500">
+        주문 요약 {view === "mentor" ? "· 멘토" : "· 의뢰자"}
+      </h2>
       <h3 className="mt-2 text-base font-extrabold text-slate-900">{h.requestTitle}</h3>
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-slate-500">주문 상태</dt>
+          <dd className="font-medium text-slate-800">{h.statusLine}</dd>
+        </div>
+        <div>
+          <dt className="text-slate-500">결제</dt>
+          <dd className="font-medium text-slate-800">{h.paymentLine}</dd>
+        </div>
         <div>
           <dt className="text-slate-500">카테고리</dt>
           <dd className="font-medium text-slate-800">{h.category || "—"}</dd>

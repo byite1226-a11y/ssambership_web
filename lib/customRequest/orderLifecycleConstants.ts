@@ -90,3 +90,124 @@ export const ORDER_TERMINAL_STATUSES = new Set<string>([
 export function isOrderStatusTerminal(norm: string): boolean {
   return ORDER_TERMINAL_STATUSES.has(norm);
 }
+
+// —— 주문방 UI: DB 토큰·ISO를 사용자 문구로만 변환(로직 판정에는 사용하지 않음)
+
+/** `custom_request_orders`·납품 등에서 읽은 상태 문자열 */
+export function orderStatusLabelForUi(raw: string): string {
+  const s = String(raw).trim().toLowerCase();
+  if (!s || s === "—") {
+    return "—";
+  }
+  const map: Record<string, string> = {
+    pending: "진행 대기",
+    open: "진행 중",
+    in_progress: "작업 중",
+    completed: "주문 완료",
+    delivered: "납품 완료",
+    submitted: "제출됨",
+    closed: "종료",
+    cancelled: "취소됨",
+    canceled: "취소됨",
+    unpaid: "미결제",
+    paid: "결제 완료",
+    in_review: "검토 중",
+    waiting_review: "검토 대기",
+    delivered_pending_review: "납품 검토 중",
+    pending_review: "검토 대기",
+    redelivered: "재납품",
+    delivery_submitted: "납품 제출됨",
+    accepted: "수락 완료",
+    revision_requested: "수정 요청됨",
+    disputed: "분쟁 접수됨",
+    refunded: "환불됨",
+  };
+  return map[s] ?? String(raw).trim();
+}
+
+/** `payment_status` 등 — 주문 요약 표시용 */
+export function paymentStatusLabelForUi(raw: string): string {
+  const s = String(raw).trim().toLowerCase();
+  if (!s || s === "—") {
+    return "—";
+  }
+  const map: Record<string, string> = {
+    unpaid: "결제 확인 대기",
+    pending: "결제 확인 대기",
+    paid: "결제 완료",
+    completed: "결제 완료",
+    failed: "결제 실패",
+    refunded: "환불됨",
+    partial_refund: "부분 환불",
+    cancelled: "결제 취소",
+    canceled: "결제 취소",
+  };
+  return map[s] ?? String(raw).trim();
+}
+
+export function orderEventKindLabelForUi(raw: string): string {
+  const s = String(raw).trim().toLowerCase();
+  if (!s) {
+    return "기록";
+  }
+  if (/^[0-9a-f-]{36}$/i.test(s)) {
+    return "기록";
+  }
+  const map: Record<string, string> = {
+    order_started: "작업 시작",
+    deliverable_submitted: "납품 등록",
+    deliverable_accepted: "납품 수락",
+    settlement_item_created: "정산 항목 생성",
+    message_created: "메시지 작성",
+    revision_requested: "수정 요청",
+    dispute_opened: "분쟁 접수",
+  };
+  return map[s] ?? orderStatusLabelForUi(s);
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** 날짜만: 2026.05.02 */
+export function formatOrderRoomDate(v: unknown): string {
+  if (v == null) {
+    return "—";
+  }
+  if (v instanceof Date) {
+    if (Number.isNaN(v.getTime())) {
+      return "—";
+    }
+    return `${v.getFullYear()}.${pad2(v.getMonth() + 1)}.${pad2(v.getDate())}`;
+  }
+  if (typeof v === "string" && v.trim()) {
+    const d = new Date(v.trim());
+    if (!Number.isNaN(d.getTime())) {
+      return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`;
+    }
+  }
+  return "—";
+}
+
+/** 2026.04.29 16:06 */
+export function formatOrderRoomDateTime(v: unknown): string {
+  if (v == null) {
+    return "—";
+  }
+  const d =
+    v instanceof Date
+      ? v
+      : typeof v === "string" && v.trim()
+        ? new Date(v.trim())
+        : null;
+  if (!d || Number.isNaN(d.getTime())) {
+    return "—";
+  }
+  return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+export function deliverableVersionLabelKorean(version: unknown, zeroBasedIndex: number): string {
+  const n = typeof version === "number" && Number.isFinite(version) ? version : Number.parseInt(String(version ?? ""), 10);
+  const step = Number.isFinite(n) && n > 0 ? n : zeroBasedIndex + 1;
+  return `${step}차 납품`;
+}

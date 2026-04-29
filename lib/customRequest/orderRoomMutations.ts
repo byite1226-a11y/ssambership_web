@@ -92,13 +92,13 @@ export async function loadOrderMessages(supabase: SupabaseClient, orderId: strin
     if (o1.error) {
       const o2 = await supabase.from(table).select("*").eq(fk, orderId);
       if (o2.error) {
-        return { table, sourceNote: o2.error.message, rows: [], error: o2.error.message };
+        return { table, sourceNote: "메시지를 불러오지 못했습니다.", rows: [], error: o2.error.message };
       }
-      return { table, sourceNote: `${table} · created_at order 생략`, rows: (o2.data as Row[]) ?? [], error: null };
+      return { table, sourceNote: "시간 순 메시지", rows: (o2.data as Row[]) ?? [], error: null };
     }
-    return { table, sourceNote: `${table}.${fk}`, rows: (o1.data as Row[]) ?? [], error: null };
+    return { table, sourceNote: "주문 메시지", rows: (o1.data as Row[]) ?? [], error: null };
   }
-  return { table: null, sourceNote: "custom_order_messages 계열 없음", rows: [], error: null };
+  return { table: null, sourceNote: "이 화면의 주문 메시지를 사용할 수 없습니다.", rows: [], error: null };
 }
 
 export async function loadOrderRevisions(supabase: SupabaseClient, orderId: string): Promise<CustomListResult> {
@@ -111,13 +111,13 @@ export async function loadOrderRevisions(supabase: SupabaseClient, orderId: stri
     if (o1.error) {
       const o2 = await supabase.from(table).select("*").eq(fk, orderId);
       if (o2.error) {
-        return { table, sourceNote: o2.error.message, rows: [], error: o2.error.message };
+        return { table, sourceNote: "수정 요청을 불러오지 못했습니다.", rows: [], error: o2.error.message };
       }
-      return { table, sourceNote: `${table} · created_at order 생략`, rows: (o2.data as Row[]) ?? [], error: null };
+      return { table, sourceNote: "최신 순 수정 요청", rows: (o2.data as Row[]) ?? [], error: null };
     }
-    return { table, sourceNote: `${table}.${fk}`, rows: (o1.data as Row[]) ?? [], error: null };
+    return { table, sourceNote: "수정 요청", rows: (o1.data as Row[]) ?? [], error: null };
   }
-  return { table: null, sourceNote: "custom_order_revisions 없음", rows: [], error: null };
+  return { table: null, sourceNote: "수정 요청 기록이 없을 수 있습니다.", rows: [], error: null };
 }
 
 function isMissingCol(msg: string): boolean {

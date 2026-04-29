@@ -40,8 +40,8 @@ export function PageScaffold({
   sections = [],
   emptyState,
   dataPoints = [],
-  loadingState = "데이터를 불러오는 동안 스켈레톤/스피너 영역을 둡니다.",
-  errorState = "조회 실패 시 재시도/고객센터 안내 영역을 둡니다.",
+  loadingState = "정보를 불러오고 있습니다.",
+  errorState = "정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
   children,
 }: PageScaffoldProps) {
   const showEmptyStateCard = emptyState != null && emptyState.length > 0;
@@ -91,16 +91,16 @@ export function PageScaffold({
       <section className={`grid gap-4 ${showEmptyStateCard ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
         {showEmptyStateCard ? (
           <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <h3 className="text-base font-extrabold text-slate-900">빈 상태 / 권한 상태 자리</h3>
+            <h3 className="text-base font-extrabold text-slate-900">안내</h3>
             <p className="mt-2 text-sm text-slate-600">{emptyState}</p>
           </article>
         ) : null}
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-base font-extrabold text-slate-900">로딩 상태 자리</h3>
+          <h3 className="text-base font-extrabold text-slate-900">로딩</h3>
           <p className="mt-2 text-sm text-slate-600">{loadingState}</p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-base font-extrabold text-slate-900">에러 상태 자리</h3>
+          <h3 className="text-base font-extrabold text-slate-900">오류</h3>
           <p className="mt-2 text-sm text-slate-600">{errorState}</p>
         </article>
       </section>

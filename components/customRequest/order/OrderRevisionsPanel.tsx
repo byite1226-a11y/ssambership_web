@@ -1,8 +1,8 @@
 import { submitCustomOrderRevisionRequestAction } from "@/lib/customRequest/orderRevisionActions";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import { formatOrderRoomDateTime } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
-import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Row = Record<string, unknown>;
 
@@ -72,7 +72,7 @@ export function OrderRevisionsPanel({
         {hasTable && rows.length > 0 ? (
           <ul className="mt-2 max-h-72 space-y-3 overflow-y-auto">
             {rows.map((r, i) => {
-              const at = r.created_at != null ? String(r.created_at).replace("T", " ").slice(0, 16) : "—";
+              const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
               return (
                 <li key={String(r.id ?? i)} className="rounded-lg border border-slate-200 bg-slate-50/30 px-3 py-2.5">
                   <p className="text-[11px] text-slate-400">{at}</p>
@@ -86,7 +86,7 @@ export function OrderRevisionsPanel({
         ) : (
           <p className="mt-2 text-sm text-slate-500">
             {rev.error
-              ? `수정 요청을 불러올 수 없습니다. ${mapDataErrorMessage(String(rev.error))}`
+              ? "수정 요청을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
               : "수정 요청 내역을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."}
           </p>
         )}

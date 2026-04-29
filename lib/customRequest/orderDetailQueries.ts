@@ -14,6 +14,11 @@ import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHe
 import { loadCustomOrderSettlementItemByOrderId } from "@/lib/customRequest/orderSettlementService";
 import { loadOrderMessages, loadOrderRevisions } from "@/lib/customRequest/orderRoomMutations";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import {
+  formatOrderRoomDate,
+  orderStatusLabelForUi,
+  paymentStatusLabelForUi,
+} from "@/lib/customRequest/orderLifecycleConstants";
 
 type Row = Record<string, unknown>;
 
@@ -85,23 +90,28 @@ export async function loadOrderEventLog(
     if (o1.error) {
       const o2 = await supabase.from(table).select("*").eq(fk, orderId);
       if (o2.error) {
-        return { table, sourceNote: o2.error.message, rows: [], error: o2.error.message };
+        return { table, sourceNote: "진행 기록을 불러오지 못했습니다.", rows: [], error: o2.error.message };
       }
       return {
         table,
-        sourceNote: `${table} · created_at ordering 생략`,
+        sourceNote: "최신 순으로 정리한 진행 기록",
         rows: (o2.data as Row[]) ?? [],
         error: null,
       };
     }
     return {
       table,
-      sourceNote: `${table}.${fk}`,
+      sourceNote: "진행 기록",
       rows: (o1.data as Row[]) ?? [],
       error: null,
     };
   }
-  return { table: null, sourceNote: "order_events 계열 없음 · 타임라인은 주문 row 기반 fallback", rows: [], error: null };
+  return {
+    table: null,
+    sourceNote: "이 주문에 대한 단계별 기록이 별도로 없을 수 있습니다. 아래 요약·메시지를 참고하세요.",
+    rows: [],
+    error: null,
+  };
 }
 
 export type OrderDetailPageData = {
@@ -122,6 +132,7 @@ export type OrderDetailPageData = {
     priceLine: string;
     dueLine: string;
     statusLine: string;
+    paymentLine: string;
   };
   latestDeliverable: Row | null;
   /** 주문방 thread 메시지(스키마 있을 때) */
@@ -148,7 +159,7 @@ function buildHeader(
   display: MentorProfileDisplay | null
 ): OrderDetailPageData["header"] {
   const requestTitle = post
-    ? pickDisplayField(post, ["title", "subject", "id"])
+    ? pickDisplayField(post, ["title", "subject", "goal"])
     : order
       ? pickDisplayField(order, ["title", "label"])
       : "—";
@@ -160,7 +171,7 @@ function buildHeader(
     : app
       ? pickDisplayField(app, ["subject", "title"])
       : "—";
-  const mentorName = display?.displayName?.trim() ? display.displayName : "—(멘토 식별 대기)";
+  const mentorName = display?.displayName?.trim() ? display.displayName : "—";
   return {
     requestTitle,
     category,
@@ -173,27 +184,57 @@ function buildHeader(
       for (const k of ["agreed_price", "proposed_price", "price", "amount"] as const) {
         for (const src of [order, app] as (Row | null)[]) {
           if (!src) continue;
-          const s = numberish((src as Row)[k]);
-          if (s) return s;
+          const raw = (src as Row)[k];
+          if (raw == null) continue;
+          if (typeof raw === "number" && Number.isFinite(raw)) {
+            return `${raw.toLocaleString("ko-KR")}원`;
+          }
+          const s = numberish(raw);
+          if (s) {
+            const n = Number(String(s).replace(/[, ]/g, ""));
+            if (Number.isFinite(n)) {
+              return `${n.toLocaleString("ko-KR")}원`;
+            }
+            return s;
+          }
         }
       }
-      return "—(결제/확정 금액 — 후속)";
+      return "—";
     })(),
     dueLine: (() => {
       for (const src of [app, order] as (Row | null)[]) {
         if (!src) continue;
-        const d = pickDisplayField(src, [
-          "proposed_due",
-          "delivery_at",
-          "deliver_by",
-          "due_at",
-          "deadline",
-        ]);
-        if (d !== "—") return d;
+        for (const k of ["proposed_due", "delivery_at", "deliver_by", "due_at", "deadline"] as const) {
+          const v = (src as Row)[k];
+          if (v == null) continue;
+          const f = formatOrderRoomDate(v);
+          if (f !== "—") {
+            return f;
+          }
+        }
       }
       return "—";
     })(),
-    statusLine: order ? pickDisplayField(order, ["status", "state", "order_status", "stage"]) : "—",
+    statusLine: (() => {
+      if (!order) {
+        return "—";
+      }
+      const raw = pickDisplayField(order, ["status", "state", "order_status", "stage"]);
+      if (raw === "—") {
+        return "—";
+      }
+      return orderStatusLabelForUi(raw);
+    })(),
+    paymentLine: (() => {
+      if (!order) {
+        return "—";
+      }
+      const raw = pickDisplayField(order, ["payment_status", "paymentState", "pay_status"]);
+      if (raw === "—") {
+        return "—";
+      }
+      return paymentStatusLabelForUi(raw);
+    })(),
   };
 }
 
