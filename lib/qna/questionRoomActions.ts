@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { draftToParam } from "@/lib/qna/draftQuery";
 import { QUESTION_THREADS_ROOM_FK_CANDIDATES, threadRowBelongsToMentorStudentRoom } from "@/lib/qna/questionThreadRoomRef";
 import { userMatchesMentorInRoomRow, userMatchesStudentInRoomRow } from "@/lib/qna/questionRoomQueries";
+import { assertThreadCreationSubscriptionAllowed } from "@/lib/qna/questionThreadSubscriptionGuard";
 import {
   createQuestionMessage,
   createQuestionThread,
@@ -159,6 +160,18 @@ export async function createQuestionThreadAction(formData: FormData) {
         thread: contextThreadId,
         kind: "thread",
         error: userFacingActionError("thread", roomErr),
+        draftThread: readThreadTitleFromForm(formData),
+      })
+    );
+  }
+
+  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId);
+  if (!subGate.ok) {
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: contextThreadId,
+        kind: "thread",
+        error: subGate.userMessage,
         draftThread: readThreadTitleFromForm(formData),
       })
     );
