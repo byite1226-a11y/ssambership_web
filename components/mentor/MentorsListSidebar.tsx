@@ -32,7 +32,7 @@ export function MentorsListSidebar(props: { cards: MentorPublicListCard[] }) {
           필터와 검색으로 멘토를 좁힌 뒤, 카드에서 <span className="font-bold text-slate-800">프로필</span>로 이동해
           상세·구독을 이어갈 수 있어요. 비로그인도 둘러볼 수 있고, 구독·질문은 로그인 후에 안내됩니다.
         </p>
-        <p className="mt-2 text-xs text-slate-500">목록이 비어 있으면 공개 데이터·정책(준비)에 따라 표시가 달라질 수 있어요.</p>
+        <p className="mt-2 text-xs text-slate-500">목록은 서비스 상황에 따라 달라질 수 있어요.</p>
       </div>
 
       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">

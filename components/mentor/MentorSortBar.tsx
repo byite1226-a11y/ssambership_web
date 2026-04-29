@@ -11,7 +11,7 @@ const SORTS: { id: MentorsListSort; label: string }[] = [
 
 export function MentorSortBar(props: { current: Record<string, string | undefined>; active: MentorsListSort }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 sm:px-4">
+    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/90 px-2.5 py-2 sm:gap-2 sm:px-3 sm:py-2.5">
       <span className="w-full text-xs font-extrabold text-slate-500 sm:w-auto sm:shrink-0">정렬</span>
       {SORTS.map((s) => {
         const href = mentorsListHref(props.current, { sort: s.id === "new" ? null : s.id });

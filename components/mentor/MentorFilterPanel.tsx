@@ -4,13 +4,13 @@ export function MentorFilterPanel(props: {
   verificationDefault: string;
 }) {
   return (
-    <div className="mt-0 grid gap-3">
+    <div className="mt-0 grid gap-2.5">
         <label className="text-xs font-extrabold text-slate-700">
           대학교(부분 일치)
           <input
             name="university"
             defaultValue={props.universityDefault}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            className="mt-1 min-h-[40px] w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
           />
         </label>
         <label className="text-xs font-extrabold text-slate-700">
@@ -18,7 +18,7 @@ export function MentorFilterPanel(props: {
           <input
             name="subject"
             defaultValue={props.subjectDefault}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            className="mt-1 min-h-[40px] w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
           />
         </label>
         <label className="text-xs font-extrabold text-slate-700">
@@ -26,8 +26,8 @@ export function MentorFilterPanel(props: {
           <input
             name="verification"
             defaultValue={props.verificationDefault}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
-            placeholder="verified, pending…"
+            className="mt-1 min-h-[40px] w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
+            placeholder="인증·상태 키워드"
           />
         </label>
     </div>
