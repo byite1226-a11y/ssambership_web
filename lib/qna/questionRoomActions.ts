@@ -232,6 +232,18 @@ export async function createQuestionMessageAction(formData: FormData) {
     );
   }
 
+  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId);
+  if (!subGate.ok) {
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: fallbackThread,
+        kind: "message",
+        error: subGate.userMessage,
+        draftMessage: content,
+      })
+    );
+  }
+
   if (threadId) {
     const tErr = await assertThreadBelongsToRoom(supabase, roomId, threadId);
     if (tErr) {

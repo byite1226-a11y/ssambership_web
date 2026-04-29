@@ -49,7 +49,9 @@ async function ensureRoomScope(
 ): Promise<MutationFail | null> {
   const roomsQ = await fetchRoomsForUser(supabase, role, userId);
   if (roomsQ.error) return { ok: false, error: roomsQ.error };
-  const inScope = roomsQ.rows.some((room) => room.id === roomId);
+  const inScope = roomsQ.rows.some(
+    (room) => room.id != null && String(room.id) === String(roomId)
+  );
   if (!inScope) return { ok: false, error: "이 room에 대한 쓰기 권한이 없습니다." };
   return null;
 }

@@ -50,27 +50,51 @@ export function PaymentForm(props: {
       setErr(null);
       setCode(null);
       setInfo(null);
-      const res = await fetch("/api/subscribe/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId, mentorId, planTier: selectedTier }),
-        credentials: "same-origin",
-      });
-      const j = (await res.json().catch(() => ({}))) as CompleteOk & ApiErr;
-      if (!res.ok || !j || (j as ApiErr).ok === false) {
-        const e = j as ApiErr;
+
+      const doComplete = async () => {
+        const res = await fetch("/api/subscribe/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId, mentorId, planTier: selectedTier }),
+          credentials: "same-origin",
+        });
+        const j = (await res.json().catch(() => ({}))) as CompleteOk & ApiErr;
+        return { res, j };
+      };
+
+      const first = await doComplete();
+      if (!first.res.ok || !first.j || (first.j as ApiErr).ok === false) {
+        const e = first.j as ApiErr;
         setErr(e.error ?? "완료 처리에 실패했습니다.");
-        setCode(e.code ?? String(res.status));
+        setCode(e.code ?? String(first.res.status));
         setPhase("error");
         return;
       }
-      const ok = j as CompleteOk;
-      if (ok.roomId) {
-        router.push(`/question-room/${encodeURIComponent(ok.roomId)}`);
+      const ok1 = first.j as CompleteOk;
+      if (ok1.roomId) {
+        setPhase("idle");
+        router.push(`/question-room/${encodeURIComponent(ok1.roomId)}`);
         return;
       }
-      router.push(
-        `/subscribe?mentorId=${encodeURIComponent(mentorId)}&plan=${encodeURIComponent(selectedTier)}&success=1`
+
+      const second = await doComplete();
+      if (!second.res.ok || !second.j || (second.j as ApiErr).ok === false) {
+        const e = second.j as ApiErr;
+        setErr(e.error ?? "완료 처리에 실패했습니다.");
+        setCode(e.code ?? String(second.res.status));
+        setPhase("error");
+        return;
+      }
+      const ok2 = second.j as CompleteOk;
+      if (ok2.roomId) {
+        setPhase("idle");
+        router.push(`/question-room/${encodeURIComponent(ok2.roomId)}`);
+        return;
+      }
+
+      setPhase("idle");
+      setInfo(
+        "구독은 완료됐지만 질문방 연결을 준비 중입니다. 잠시 후 질문방 목록에서 확인해 주세요."
       );
     },
     [mentorId, router, selectedTier]
