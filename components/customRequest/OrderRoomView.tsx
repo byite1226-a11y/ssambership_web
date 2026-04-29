@@ -18,14 +18,15 @@ import { OrderActionBar } from "@/components/customRequest/order/OrderActionBar"
 import type { AppRole } from "@/lib/types/user";
 import { OrderDeliverablesPanel } from "@/components/customRequest/order/OrderDeliverablesPanel";
 import { OrderDisputesPanel } from "@/components/customRequest/order/OrderDisputesPanel";
+import { OrderEventsLogPanel } from "@/components/customRequest/order/OrderEventsLogPanel";
 import { OrderProgressSection } from "@/components/customRequest/order/OrderProgressSection";
 import { OrderRevisionsPanel } from "@/components/customRequest/order/OrderRevisionsPanel";
 import {
   hasRightSettlementBlockContent,
   OrderLeftContextPanel,
   OrderPaymentSettlementBlock,
+  OrderRoomPageHeader,
   OrderSettlementLineCard,
-  OrderSummaryHeader,
 } from "@/components/customRequest/order/OrderSummaryHeader";
 import { ORDER_ROOM_APP_SURFACE_CLASS, ORDER_ROOM_CONTENT_MAX } from "@/lib/customRequest/orderLifecycleConstants";
 
@@ -226,28 +227,32 @@ export function OrderRoomView(props: {
   const revBlock = studentRevisionRequestDisabledReason(actorRole, view, o as Row, detail);
   const disputeFormBlock = openDisputeApplicationDisabledReason(actorRole, o as Row, detail);
   const oid = String((o as Row).id ?? "");
+  const idForDisplay = String(oid || orderId).trim();
 
   return (
     <div className={`${ORDER_ROOM_APP_SURFACE_CLASS} w-full`} data-views="custom-order-room">
       <div className={`${ORDER_ROOM_CONTENT_MAX} px-3 pb-4 pt-2 sm:px-4 sm:pb-5 sm:pt-3 lg:px-6 lg:pb-6 lg:pt-4`}>
-        <OrderSummaryHeader detail={detail} view={view} />
+        <OrderRoomPageHeader detail={detail} view={view} />
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
-          <aside className="order-2 space-y-4 lg:order-1 lg:col-span-3 lg:sticky lg:top-4 lg:self-start">
+          <aside className="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-3 lg:sticky lg:top-4 lg:self-start">
             <OrderLeftContextPanel
               detail={detail}
               view={view}
               isTerminalOrder={isTerminalOrder}
+              orderIdDisplay={idForDisplay}
             />
           </aside>
-          <div className="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-6">
+          <div className="order-1 min-w-0 lg:order-2 lg:col-span-6">
             <OrderProgressSection
               detail={detail}
-              orderId={String(orderId).trim() || oid}
+              orderId={idForDisplay}
               view={view}
               actorRole={actorRole}
               hasOrderPartyAccess={!accessDenied}
               orderTerminal={isTerminalOrder}
             />
+          </div>
+          <aside className="order-3 min-w-0 space-y-5 lg:order-3 lg:col-span-3">
             <OrderDeliverablesPanel
               detail={detail}
               orderId={oid}
@@ -256,60 +261,50 @@ export function OrderRoomView(props: {
               mentorDeliverableBlockReason={mentorDeliverableBlockReason}
               orderTerminal={isTerminalOrder}
             />
-          </div>
-          <aside className="order-3 min-w-0 space-y-0 lg:order-3 lg:col-span-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">지금 상태</p>
-              <div className="mt-2">
-                <OrderActionBar
-                  view={view}
-                  actorRole={actorRole}
-                  orderId={oid}
-                  orderTerminal={isTerminalOrder}
-                  studentAcceptDisabledReason={studentAcceptDisabledReason(actorRole, view, o as Row, detail)}
-                  mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
-                  studentRevisionRequestDisabledReason={revBlock}
-                  openDisputeApplicationDisabledReason={disputeFormBlock}
-                />
-              </div>
-            </div>
             {hasRightSettlementBlockContent(detail, o as Row) ? (
-              <div className="mt-5 border-t border-slate-200/70 pt-5">
+              <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">정산</p>
-                <div className="mt-2 space-y-3">
+                <div className="space-y-3">
                   <OrderPaymentSettlementBlock detail={detail} orderRow={o as Row} />
                   <OrderSettlementLineCard detail={detail} />
                 </div>
               </div>
             ) : null}
-            <div className="mt-5 border-t border-slate-200/70 pt-5">
+            <OrderActionBar
+              view={view}
+              actorRole={actorRole}
+              orderId={oid}
+              orderTerminal={isTerminalOrder}
+              studentAcceptDisabledReason={studentAcceptDisabledReason(actorRole, view, o as Row, detail)}
+              mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
+              studentRevisionRequestDisabledReason={revBlock}
+              openDisputeApplicationDisabledReason={disputeFormBlock}
+            />
+            <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">기록</p>
-              <div className="mt-2 space-y-3">
-                <OrderRevisionsPanel
-                  detail={detail}
-                  orderId={oid}
-                  actorRole={actorRole}
-                  hasOrderPartyAccess={!accessDenied}
-                  studentRevisionRequestDisabledReason={revBlock}
-                  orderTerminal={isTerminalOrder}
-                  workspaceCompact
-                />
-                <OrderDisputesPanel
-                  detail={detail}
-                  orderId={oid}
-                  actorRole={actorRole}
-                  hasOrderPartyAccess={!accessDenied}
-                  openDisputeApplicationDisabledReason={disputeFormBlock}
-                  orderTerminal={isTerminalOrder}
-                  workspaceCompact
-                />
-              </div>
+              <OrderRevisionsPanel
+                detail={detail}
+                orderId={oid}
+                actorRole={actorRole}
+                hasOrderPartyAccess={!accessDenied}
+                studentRevisionRequestDisabledReason={revBlock}
+                orderTerminal={isTerminalOrder}
+                workspaceCompact
+              />
+              <OrderDisputesPanel
+                detail={detail}
+                orderId={oid}
+                actorRole={actorRole}
+                hasOrderPartyAccess={!accessDenied}
+                openDisputeApplicationDisabledReason={disputeFormBlock}
+                orderTerminal={isTerminalOrder}
+                workspaceCompact
+              />
             </div>
+            <OrderEventsLogPanel detail={detail} />
           </aside>
         </div>
-        <p className="mt-6 text-center text-xs text-slate-400">
-          결제·정산 안내는 주문이 확정된 뒤 단계별로 안내됩니다. 주문번호: {shortOrderIdForDisplay(oid || orderId)}
-        </p>
+        <p className="mt-6 text-center text-xs text-slate-400">참고 주문 식별: {shortOrderIdForDisplay(idForDisplay)}</p>
       </div>
     </div>
   );

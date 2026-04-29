@@ -1,12 +1,20 @@
+import { AlertTriangle, CheckCircle2, ChevronRight, Pencil, Play } from "lucide-react";
 import { startCustomOrderWorkAction } from "@/lib/customRequest/orderMentorActions";
 import { acceptCustomOrderDeliverableAction } from "@/lib/customRequest/orderStudentActions";
 import { ORDER_ROOM_CARD_CLASS, ORDER_ROOM_TERMINAL_ACTIONS_NOTICE } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
 
-const primaryBtn = "rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-500";
-const secondaryBtn =
-  "rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50";
-const disabledBtn = "cursor-not-allowed rounded-lg bg-slate-200/90 px-3 py-1.5 text-sm font-bold text-slate-500";
+const cardBase =
+  "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+
+const greenCard =
+  `${cardBase} border-green-200 bg-green-50 text-green-700 hover:bg-green-100`;
+const orangeCard =
+  `${cardBase} border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100`;
+const redCard = `${cardBase} border-red-200 bg-red-50 text-red-600 hover:bg-red-100`;
+const blueCard = `${cardBase} border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100`;
+const neutralCard = `${cardBase} border-slate-200 bg-white text-slate-800 hover:bg-slate-50`;
+const disabledCard = `${cardBase} border-slate-200 bg-slate-100 text-slate-500`;
 
 type Props = {
   view: "student" | "mentor";
@@ -23,6 +31,10 @@ type Props = {
   /** null이면 #order-disputes 로 이동 가능(학생·멘토) */
   openDisputeApplicationDisabledReason: string | null;
 };
+
+function Chevr() {
+  return <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />;
+}
 
 /**
  * 연결된 액션만 활성. 나머지는 disabled 유지.
@@ -58,77 +70,142 @@ export function OrderActionBar(props: Props) {
 
   return (
     <div className={`${ORDER_ROOM_CARD_CLASS} w-full`} role="group" aria-label="주문 액션">
-      <div className="flex flex-wrap gap-2">
-      {view === "student" && actorRole === "student" && canStudentRevisionJumps ? (
-        <a href="#order-revisions" className={primaryBtn}>
-          수정 요청
-        </a>
-      ) : view === "mentor" && actorRole === "mentor" ? (
-        <a href="#order-revisions" className={secondaryBtn}>
-          수정 요청
-        </a>
-      ) : view === "student" && actorRole === "student" ? (
-        <button
-          type="button"
-          disabled
-          className={disabledBtn}
-          title={studentRevisionRequestDisabledReason ?? "수정 요청을 보낼 수 없습니다."}
-        >
-          수정 요청
-        </button>
-      ) : null}
-      {view === "mentor" ? (
-        canMentorStart ? (
-          <form action={startCustomOrderWorkAction} className="inline">
-            <input type="hidden" name="orderId" value={orderId} />
-            <button type="submit" className={primaryBtn}>
-              작업 시작
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">작업 관리</p>
+      <p className="mt-0.5 text-xs text-slate-500">이 단계에서 사용할 수 있는 액션입니다</p>
+      <div className="mt-4 flex flex-col gap-2.5">
+        {view === "student" && actorRole === "student" && canStudentRevisionJumps ? (
+          <a href="#order-revisions" className={orangeCard}>
+            <div className="flex min-w-0 items-start gap-3">
+              <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">수정 요청하기</p>
+                <p className="mt-0.5 text-xs font-normal opacity-80">추가로 손봐야 할 부분이 있으면 요청해 주세요.</p>
+              </div>
+            </div>
+            <Chevr />
+          </a>
+        ) : view === "mentor" && actorRole === "mentor" ? (
+          <a href="#order-revisions" className={neutralCard}>
+            <div className="flex min-w-0 items-start gap-3">
+              <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">수정 요청하기</p>
+                <p className="mt-0.5 text-xs font-normal text-slate-500">학생과 협의한 수정 요청 내역으로 이동합니다.</p>
+              </div>
+            </div>
+            <Chevr />
+          </a>
+        ) : view === "student" && actorRole === "student" ? (
+          <button
+            type="button"
+            disabled
+            className={disabledCard}
+            title={studentRevisionRequestDisabledReason ?? "수정 요청을 보낼 수 없습니다."}
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">수정 요청하기</p>
+                <p className="mt-0.5 text-xs font-normal text-slate-500">이 단계에서는 사용할 수 없습니다.</p>
+              </div>
+            </div>
+            <Chevr />
+          </button>
+        ) : null}
+        {view === "mentor" ? (
+          canMentorStart ? (
+            <form action={startCustomOrderWorkAction} className="w-full">
+              <input type="hidden" name="orderId" value={orderId} />
+              <button type="submit" className={blueCard}>
+                <div className="flex min-w-0 items-start gap-3">
+                  <Play className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold">작업 시작</p>
+                    <p className="mt-0.5 text-xs font-normal text-blue-900/80">의뢰 조건에 맞춰 작업에 착수합니다.</p>
+                  </div>
+                </div>
+                <Chevr />
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className={disabledCard}
+              title={mentorStartDisabledReason ?? "사용할 수 없음"}
+            >
+              <div className="flex min-w-0 items-start gap-3">
+                <Play className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold">작업 시작</p>
+                  <p className="mt-0.5 text-xs font-normal text-slate-500">이 단계에서는 사용할 수 없습니다.</p>
+                </div>
+              </div>
+              <Chevr />
             </button>
-          </form>
+          )
+        ) : null}
+        {view === "student" ? (
+          canStudentAccept ? (
+            <form action={acceptCustomOrderDeliverableAction} className="w-full">
+              <input type="hidden" name="orderId" value={orderId} />
+              <button type="submit" className={greenCard}>
+                <div className="flex min-w-0 items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold">수락하기</p>
+                    <p className="mt-0.5 text-xs font-normal opacity-80">납품이 만족스러우면 수락해 주세요.</p>
+                  </div>
+                </div>
+                <Chevr />
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className={disabledCard}
+              title={studentAcceptDisabledReason ?? "사용할 수 없음"}
+            >
+              <div className="flex min-w-0 items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold">수락하기</p>
+                  <p className="mt-0.5 text-xs font-normal text-slate-500">이 단계에서는 사용할 수 없습니다.</p>
+                </div>
+              </div>
+              <Chevr />
+            </button>
+          )
+        ) : null}
+        {canDisputeJump ? (
+          <a href="#order-disputes" className={redCard}>
+            <div className="flex min-w-0 items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">분쟁 신청하기</p>
+                <p className="mt-0.5 text-xs font-normal opacity-80">이견·문제를 공식 절차로 올릴 수 있습니다.</p>
+              </div>
+            </div>
+            <Chevr />
+          </a>
         ) : (
           <button
             type="button"
             disabled
-            className={disabledBtn}
-            title={mentorStartDisabledReason ?? "사용할 수 없음"}
+            className={disabledCard}
+            title={openDisputeApplicationDisabledReason ?? "분쟁을 신청할 수 없습니다."}
           >
-            작업 시작
+            <div className="flex min-w-0 items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">분쟁 신청하기</p>
+                <p className="mt-0.5 text-xs font-normal text-slate-500">이 단계에서는 사용할 수 없습니다.</p>
+              </div>
+            </div>
+            <Chevr />
           </button>
-        )
-      ) : null}
-      {view === "student" ? (
-        canStudentAccept ? (
-          <form action={acceptCustomOrderDeliverableAction} className="inline">
-            <input type="hidden" name="orderId" value={orderId} />
-            <button type="submit" className={primaryBtn}>
-              납품 수락
-            </button>
-          </form>
-        ) : (
-          <button
-            type="button"
-            disabled
-            className={disabledBtn}
-            title={studentAcceptDisabledReason ?? "사용할 수 없음"}
-          >
-            납품 수락
-          </button>
-        )
-      ) : null}
-      {canDisputeJump ? (
-        <a href="#order-disputes" className={secondaryBtn}>
-          분쟁 신청
-        </a>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className={disabledBtn}
-          title={openDisputeApplicationDisabledReason ?? "분쟁을 신청할 수 없습니다."}
-        >
-          분쟁 신청
-        </button>
-      )}
+        )}
       </div>
     </div>
   );

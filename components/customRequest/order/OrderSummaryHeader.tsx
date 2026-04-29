@@ -1,10 +1,16 @@
+import Link from "next/link";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import {
   isOrderStatusTerminal,
+  isOrderRowTerminalForActions,
   ORDER_ROOM_CARD_CLASS,
+  ORDER_WORKSPACE_STEP_LABELS,
+  formatOrderRoomDateTime,
   normalizedPrimaryOrderStatus,
+  orderWorkspaceCurrentStepIndex,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/customRequest/order/OrderStatusBadge";
+import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type View = "student" | "mentor";
 
@@ -130,64 +136,243 @@ export function OrderSummaryHeader({ detail, view }: HeaderProps) {
   );
 }
 
+type OrderRoomPageHeaderProps = {
+  detail: OrderDetailPageData;
+  view: View;
+  /** 뒤로가기(기본: 맞춤의뢰 목록) */
+  backHref?: string;
+};
+
+/**
+ * 주문방 전용(학생/멘토 별도 마크업): 슬림 컨텍스트 바 + 핵심 한 줄(멘토·금액·범위·납기)
+ */
+export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request" }: OrderRoomPageHeaderProps) {
+  const h = detail.header;
+  const o = detail.bundle.order;
+
+  if (o.error && !o.row) {
+    return (
+      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 p-3 text-sm text-amber-950 sm:p-4">
+        <h2 className="font-extrabold">주문 요약</h2>
+        <p className="mt-2">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+      </div>
+    );
+  }
+
+  if (!o.row) {
+    return (
+      <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-3 text-sm text-slate-700 sm:p-4">
+        <h2 className="font-extrabold">주문 요약</h2>
+        <p className="mt-2">해당 주문을 찾을 수 없습니다.</p>
+      </div>
+    );
+  }
+
+  const orderRow = o.row as Record<string, unknown>;
+  const orderNorm = normalizedPrimaryOrderStatus(orderRow);
+  const payRaw = (() => {
+    for (const k of ["payment_status", "payment_state"] as const) {
+      const v = orderRow[k];
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+    return "";
+  })();
+
+  const oneLineContext = (() => {
+    const m = h.mentorName && h.mentorName !== "—" ? h.mentorName : "—";
+    const p = h.priceLine && h.priceLine !== "—" ? h.priceLine : "—";
+    const scope = h.subjects && h.subjects !== "—" ? h.subjects : null;
+    const due = h.dueLine && h.dueLine !== "—" ? h.dueLine : "—";
+    const base = `멘토 ${m} · ${p} · 마감 ${due}`;
+    return scope != null && scope ? `${base} · 범위 ${scope}` : base;
+  })();
+
+  const detailLine =
+    h.category && h.category !== "—" ? `${h.category} · ${h.subjectLine !== "—" ? h.subjectLine : "—"}` : h.subjectLine;
+
+  if (view === "student") {
+    return (
+      <header className="border-b border-slate-100 bg-white px-5 py-3 sm:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={backHref}
+            className="shrink-0 text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+          >
+            ← 맞춤의뢰
+          </Link>
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+            <OrderStatusBadge norm={orderNorm} />
+            <PaymentStatusBadge paymentRaw={payRaw} />
+            <Link
+              href="#order-room-order-info"
+              className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50/90 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            >
+              요청 상세
+            </Link>
+          </div>
+        </div>
+        <h1 className="mt-2 line-clamp-1 text-pretty text-base font-bold text-slate-950 sm:text-lg">
+          {h.requestTitle}
+        </h1>
+        {detailLine && detailLine !== "—" ? <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{detailLine}</p> : null}
+        <p className="mt-1 line-clamp-1 text-xs font-normal text-slate-600">{oneLineContext}</p>
+      </header>
+    );
+  }
+
+  return (
+    <header className="border-b border-slate-100 bg-white px-5 py-3 sm:px-6">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href={backHref}
+          className="shrink-0 text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+        >
+          ← 맞춤의뢰
+        </Link>
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+          <OrderStatusBadge norm={orderNorm} />
+          <PaymentStatusBadge paymentRaw={payRaw} />
+          <span className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            멘토
+          </span>
+          <Link
+            href="#order-room-order-info"
+            className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50/90 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+          >
+            주문 정보
+          </Link>
+        </div>
+      </div>
+      <h1 className="mt-2 line-clamp-1 text-pretty text-base font-bold text-slate-950 sm:text-lg">
+        {h.requestTitle}
+      </h1>
+      {detailLine && detailLine !== "—" ? <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{detailLine}</p> : null}
+      <p className="mt-1 line-clamp-1 text-xs font-normal text-slate-600">{oneLineContext}</p>
+    </header>
+  );
+}
+
 type LeftContextProps = {
   detail: OrderDetailPageData;
   view: View;
   isTerminalOrder: boolean;
+  orderIdDisplay: string;
 };
 
+function OrderStepStrip({ currentIndex }: { currentIndex: number }) {
+  return (
+    <ol className="space-y-2.5" aria-label="주문 단계">
+      {ORDER_WORKSPACE_STEP_LABELS.map((label, i) => {
+        const isDone = i < currentIndex;
+        const isCurrent = i === currentIndex;
+        return (
+          <li key={String(label)} className="flex min-h-[1.5rem] items-center gap-2.5">
+            <span
+              className={
+                isCurrent
+                  ? "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-extrabold text-white"
+                  : isDone
+                    ? "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-extrabold text-emerald-800"
+                    : "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-extrabold text-slate-500"
+              }
+            >
+              {i + 1}
+            </span>
+            <span
+              className={
+                isCurrent
+                  ? "text-sm font-semibold text-slate-900"
+                  : isDone
+                    ? "text-sm text-slate-700"
+                    : "text-sm text-slate-500"
+              }
+            >
+              {label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 /**
- * 왼쪽 열: 스캔 가능한 요약(상태·가격·납기·멘토·건수)
- * isTerminalOrder: 향후 배지/요약 톤 조정용(현재는 액션 열에서 종료 문구를 표시)
+ * 왼쪽 열: 주문 정보, 단계(표시), 안내
  */
-export function OrderLeftContextPanel({ detail, view, isTerminalOrder: _isTerminalOrder }: LeftContextProps) {
-  void _isTerminalOrder;
+export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDisplay }: LeftContextProps) {
   const o = detail.bundle.order;
   const h = detail.header;
   if (!o.row) return null;
   const orderRow = o.row as Record<string, unknown>;
   const orderNorm = normalizedPrimaryOrderStatus(orderRow);
   const payRaw = pickPaymentStatusRaw(orderRow);
-  const nDel = (detail.bundle.deliverables.rows ?? []).length;
-  const nRev = (detail.revisions.rows ?? []).length;
+  const hasDel = (detail.bundle.deliverables.rows ?? []).length > 0;
+  const terminal = isOrderRowTerminalForActions(orderRow) || isTerminalOrder;
+  const stepIndex = orderWorkspaceCurrentStepIndex(orderNorm, Boolean(terminal), hasDel);
+  const orderCreated =
+    (orderRow as { created_at?: unknown }).created_at != null
+      ? formatOrderRoomDateTime((orderRow as { created_at?: unknown }).created_at)
+      : "—";
+  const shortId = shortOrderIdForDisplay(String(orderIdDisplay).trim());
 
   return (
     <div className="space-y-3">
-      <div className={ORDER_ROOM_CARD_CLASS + " space-y-3"}>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">상태</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">주문</span>
-          <OrderStatusBadge norm={orderNorm} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">결제</span>
-          <PaymentStatusBadge paymentRaw={payRaw} />
-        </div>
-        <div className="mt-1 grid grid-cols-1 gap-2.5 sm:grid-cols-1">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-slate-100/90 bg-slate-50/80 px-3 py-2">
-            <span className="text-xs text-slate-500">가격</span>
-            <span className="text-sm font-semibold text-slate-900">{h.priceLine}</span>
+      <div id="order-room-order-info" className={ORDER_ROOM_CARD_CLASS + " space-y-3 scroll-mt-4"}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">주문 정보</p>
+        <dl className="space-y-2 text-sm">
+          <div className="flex flex-wrap justify-between gap-2">
+            <dt className="text-slate-500">주문번호</dt>
+            <dd className="font-mono text-xs text-slate-800">{shortId}</dd>
           </div>
-          <div className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-slate-100/90 bg-slate-50/80 px-3 py-2">
-            <span className="text-xs text-slate-500">납기</span>
-            <span className="text-sm font-semibold text-slate-900">{h.dueLine}</span>
+          <div className="flex flex-wrap justify-between gap-2">
+            <dt className="text-slate-500">분야</dt>
+            <dd className="text-right text-slate-900">{h.category && h.category !== "—" ? h.category : "—"}</dd>
           </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <dt className="text-slate-500">금액(제안·확정)</dt>
+            <dd className="text-right font-semibold text-slate-900">{h.priceLine}</dd>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <dt className="text-slate-500">결제</dt>
+            <dd>
+              <PaymentStatusBadge paymentRaw={payRaw} />
+            </dd>
+          </div>
+          <div className="flex flex-wrap justify-between gap-2">
+            <dt className="text-slate-500">주문일시</dt>
+            <dd className="text-slate-800">{orderCreated}</dd>
+          </div>
+          <div className="flex flex-wrap justify-between gap-2">
+            <dt className="text-slate-500">마감(납기)</dt>
+            <dd className="text-slate-800">{h.dueLine !== "—" && h.dueLine ? h.dueLine : "—"}</dd>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100/90 pt-2">
+            <dt className="text-slate-500">주문 상태</dt>
+            <dd>
+              <OrderStatusBadge norm={orderNorm} />
+            </dd>
+          </div>
+        </dl>
+        <p className="text-xs text-slate-500">
+          멘토: <span className="text-slate-800">{h.mentorName}</span>
+        </p>
+        <p className="text-[11px] text-slate-400">보기 기준: {view === "mentor" ? "멘토" : "의뢰자"}</p>
+      </div>
+
+      <div className={ORDER_ROOM_CARD_CLASS}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">주문 단계</p>
+        <p className="mt-0.5 text-xs text-slate-500">현재 흐름(참고)</p>
+        <div className="mt-3">
+          <OrderStepStrip currentIndex={stepIndex} />
         </div>
       </div>
 
-      <div className={ORDER_ROOM_CARD_CLASS + " text-sm text-slate-800"}>
-        <p className="text-xs font-semibold text-slate-500">멘토</p>
-        <p className="mt-1 font-medium text-slate-900">{h.mentorName}</p>
-        {h.university && h.university !== "—" ? (
-          <p className="text-xs text-slate-600">{h.university}</p>
-        ) : null}
-        {h.department && h.department !== "—" ? <p className="text-xs text-slate-600">{h.department}</p> : null}
-        <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-500">보기: {view === "mentor" ? "멘토" : "의뢰자(학생)"} 기준</p>
-      </div>
-
-      <div className={ORDER_ROOM_CARD_CLASS + " text-sm"}>
-        <p className="text-xs font-semibold text-slate-500">진행 건수</p>
-        <p className="mt-1.5 text-slate-800">등록 납품 {nDel}건 · 수정 요청 {nRev}회</p>
+      <div className={ORDER_ROOM_CARD_CLASS + " text-sm text-slate-700"}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">안내</p>
+        <ul className="mt-2 list-inside list-disc space-y-1.5 text-xs">
+          <li>납품이 등록되면 수락·수정 요청은 우측「작업 관리」에서 진행합니다.</li>
+          <li>이견이 있을 때는 우측에서 정식 분쟁을 신청할 수 있습니다(진행 중 분쟁이 있으면 액션이 잠깁니다).</li>
+        </ul>
       </div>
     </div>
   );
