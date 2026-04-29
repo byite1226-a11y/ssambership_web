@@ -11,7 +11,7 @@ import {
   primaryOrderStatusColumnKey,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
-import { mustBlockUnpaidAcceptForProduction } from "@/lib/customRequest/orderPaymentPolicy";
+import { isCustomOrderPaymentStatusStrictlyPaid, mustBlockUnpaidAcceptForProduction } from "@/lib/customRequest/orderPaymentPolicy";
 import { firstReadableCustomTable, ORDER_TO_DELIVERABLE_FK_CANDIDATES } from "@/lib/customRequest/customRequestQueries";
 import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { splitPlatformAndMentorForGross } from "@/lib/customRequest/orderSettlementAmounts";
@@ -136,7 +136,28 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
   if (mustBlockUnpaidAcceptForProduction(row)) {
     redirectWithError(
       orderId,
-      "결제가 확인되지 않은 주문은 납품을 수락할 수 없습니다. 개발·스테이징에서 테스트하려면 CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT=true 를 설정하세요."
+      "결제가 완료되지 않은 주문은 수락할 수 없습니다. 결제 확인 후 다시 시도해 주세요."
+    );
+  }
+  if (!isCustomOrderPaymentStatusStrictlyPaid(row)) {
+    // `mustBlockUnpaidAcceptForProduction` 통과: 비결제는 CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT === "true"일 때만 여기로 온다.
+    const paymentStatus: string | null = (() => {
+      for (const k of ["payment_status", "payment_state", "pay_status"] as const) {
+        const v = row[k];
+        if (v != null && String(v).trim()) {
+          return String(v).trim();
+        }
+      }
+      return null;
+    })();
+    console.warn(
+      "[acceptCustomOrderDeliverableAction] Unpaid accept allowed by env (staging/test). Custom order will proceed without payment_status === \"paid\".",
+      {
+        orderId,
+        payment_status: paymentStatus,
+        CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT: process.env.CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT,
+        NODE_ENV: process.env.NODE_ENV,
+      }
     );
   }
 
