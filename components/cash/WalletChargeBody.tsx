@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatWalletRowDisplay } from "@/lib/cash/cashQueries";
 import type { WalletChargePageData } from "@/lib/cash/walletRouteData";
 import { ledgerTypeLabel } from "@/lib/cash/ledgerRowDisplay";
+import { WalletTopupTestForm } from "@/components/cash/WalletTopupTestForm";
 
 const FAQ = [
   "캐시는 멤버십 구독·맞춤의뢰·수강 견적 결제와 별도 흐름입니다. 이 화면은 충전·잔액·원장만 다룹니다.",
@@ -20,8 +21,15 @@ function Banner({ kind, message }: { kind: "error" | "empty" | "info"; message: 
   return <div className={`rounded-xl border px-3 py-2 text-sm font-semibold ${skin}`}>{message}</div>;
 }
 
-export function WalletChargeBody(props: { data: WalletChargePageData; userIdShort: string }) {
-  const { data, userIdShort } = props;
+export function WalletChargeBody(props: {
+  data: WalletChargePageData;
+  userIdShort: string;
+  actionOk?: string | null;
+  actionError?: string | null;
+  /** 서버: `CASH_TOPUP_ALLOW_TEST_CHARGE === "true"` 일 때만 true */
+  allowTestTopup?: boolean;
+}) {
+  const { data, userIdShort, actionOk, actionError, allowTestTopup = false } = props;
   const { balance, packages, ledgerPreview, payments } = data;
   const balanceText = balance.error
     ? ""
@@ -34,6 +42,9 @@ export function WalletChargeBody(props: { data: WalletChargePageData; userIdShor
 
   return (
     <div className="space-y-6 text-slate-800">
+      {actionError ? <Banner kind="error" message={actionError} /> : null}
+      {actionOk ? <Banner kind="info" message={actionOk} /> : null}
+
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-extrabold text-slate-900">현재 잔액</h2>
         {balance.error ? <div className="mt-2"><Banner kind="error" message={balance.error} /></div> : null}
@@ -45,6 +56,16 @@ export function WalletChargeBody(props: { data: WalletChargePageData; userIdShor
         ) : null}
         {balance.table ? <p className="mt-1 text-xs text-slate-500">source: {balance.table}</p> : null}
         <p className="mt-2 text-xs text-slate-500">user …{userIdShort}</p>
+        <div id="test-topup" className="mt-4">
+          {allowTestTopup ? (
+            <WalletTopupTestForm />
+          ) : (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <p className="font-extrabold text-slate-900">캐시 충전</p>
+              <p className="mt-1">PG 결제 연동 준비 중입니다. 테스트 충전은 담당자에 의해 허용된 환경에서만 사용할 수 있어요.</p>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -119,13 +140,24 @@ export function WalletChargeBody(props: { data: WalletChargePageData; userIdShor
       </section>
 
       <div className="flex flex-wrap gap-2">
+        {allowTestTopup ? (
+          <Link
+            href="#test-topup"
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+          >
+            테스트 충전(위 폼)
+          </Link>
+        ) : null}
+        {!allowTestTopup ? (
+          <p className="w-full text-sm text-slate-600 sm:w-auto sm:self-center">PG 결제 연동 준비 중</p>
+        ) : null}
         <button
           type="button"
           disabled
           className="cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2 text-sm font-bold text-slate-600"
           title="PG·intent 연동 후"
         >
-          결제·충전 진행(자리)
+          PG 연동 결제(자리)
         </button>
         <Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800" href="/wallet/ledger">
           사용 내역

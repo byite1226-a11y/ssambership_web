@@ -4,10 +4,18 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { CASH_DATA_MODEL, loadWalletChargePageData, WALLET_CHARGE_DATA_MODEL } from "@/lib/cash/walletRouteData";
 
-export default async function WalletChargePage() {
+type Props = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function WalletChargePage({ searchParams }: Props) {
   const { user } = await requireRole("student");
   const supabase = await createClient();
   const data = await loadWalletChargePageData(supabase, user.id);
+  const sp = (await searchParams) ?? {};
+  const actionOk = typeof sp.ok === "string" && sp.ok.length > 0 ? sp.ok : null;
+  const actionError = typeof sp.error === "string" && sp.error.length > 0 ? sp.error : null;
+  const allowTestTopup = process.env.CASH_TOPUP_ALLOW_TEST_CHARGE === "true";
 
   return (
     <PageScaffold
@@ -29,7 +37,13 @@ export default async function WalletChargePage() {
       errorState="RLS/테이블: 배너"
       dataPoints={[...WALLET_CHARGE_DATA_MODEL, ...CASH_DATA_MODEL]}
     >
-      <WalletChargeBody data={data} userIdShort={user.id.slice(0, 8)} />
+      <WalletChargeBody
+        data={data}
+        userIdShort={user.id.slice(0, 8)}
+        actionOk={actionOk}
+        actionError={actionError}
+        allowTestTopup={allowTestTopup}
+      />
     </PageScaffold>
   );
 }
