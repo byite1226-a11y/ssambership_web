@@ -4,6 +4,7 @@ import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 
 type Row = Record<string, unknown>;
@@ -74,6 +75,83 @@ function planAmountKrw(planRow: Row | null): { amount: number; currency: string 
     }
   }
   return { amount: 0, currency: "KRW" };
+}
+
+/**
+ * cash_wallets / cash_ledger(004)의 balance_cents·delta_cents와 **동일한 정수 스케일**(문서: *_cents).
+ * - `amount_cents`·`price_cents`가 있으면 planAmountKrw 가 그 값을 /100 하여 KRW 표시에 쓰므로, **원장 차감은 DB 정수를 그대로** 사용
+ * (UI·결제 intent 의 won 표기와 `/_cents` 는 위 `planAmountKrw` 를 통해 맞음)
+ * - KRW(원) 정수만 온 `amount`·`price_krw`·`monthly_price`·`price` 등: `planAmountKrw`의 표시 원화와, `_cents`가 있을 때 `*_cents/100`이 표시 원과 같다는 기존 관례에 맞춰 **최소화 단위 = KRW(표시) × 100** 으로 환산( `_cents` 를 100으로 나누는 쪽의 역
+ */
+function planRowDebitAmountCents(planRow: Row): number {
+  for (const k of ["amount_cents", "price_cents"] as const) {
+    const v = planRow[k];
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+      return Math.trunc(v);
+    }
+  }
+  const { amount: krwDisplay } = planAmountKrw(planRow);
+  if (!Number.isFinite(krwDisplay) || krwDisplay <= 0) {
+    return 0;
+  }
+  return Math.round(krwDisplay * 100);
+}
+
+async function recordSubscriptionCashDebitRpc(
+  userId: string,
+  subscriptionId: string,
+  paymentId: string,
+  amountCents: number
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (amountCents <= 0) {
+    return { ok: true };
+  }
+  try {
+    const admin = createServiceRoleClient();
+    const { error } = await admin.rpc("record_subscription_cash_debit", {
+      p_user_id: userId,
+      p_subscription_id: subscriptionId,
+      p_payment_id: paymentId,
+      p_amount_cents: amountCents,
+    });
+    if (error) {
+      const m = String(error.message ?? error);
+      if (/CASH_INSUFFICIENT|잔액|balance|P0001/i.test(m) || m.includes("CASH")) {
+        return { ok: false, error: "캐시 잔액이 부족합니다. 충전 후 다시 시도해 주세요." };
+      }
+      return { ok: false, error: "캐시 정산(구독 결제)에 실패했습니다. 잠시 후 다시 시도해 주세요." };
+    }
+    return { ok: true };
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `캐시 정산(구독 결제)에 실패했습니다: ${m}` };
+  }
+}
+
+/**
+ * `record_subscription_cash_debit` 이후 `markPaymentSucceeded`만 실패한 경우(드묾) 보정: 원장+지갑을 019 `record_subscription_cash_rollback`에서 원자적으로 되돌림
+ */
+async function tryReversalSubscriptionCashDebit(
+  userId: string,
+  paymentId: string,
+  subscriptionId: string,
+  amountCents: number
+): Promise<void> {
+  if (amountCents <= 0) return;
+  try {
+    const admin = createServiceRoleClient();
+    const { error } = await admin.rpc("record_subscription_cash_rollback", {
+      p_user_id: userId,
+      p_subscription_id: subscriptionId,
+      p_payment_id: paymentId,
+      p_amount_cents: amountCents,
+    });
+    if (error) {
+      console.error("[tryReversalSubscriptionCashDebit] record_subscription_cash_rollback", error);
+    }
+  } catch (e) {
+    console.error("[tryReversalSubscriptionCashDebit]", e);
+  }
 }
 
 type IntentResult =
@@ -219,6 +297,20 @@ export async function finalizeSubscriptionCheckout(
     if (st === "succeeded" || st === "paid" || st === "complete" || st === "success") {
       const existingSub = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
       const subscriptionId = existingSub ? String((existingSub.row as Row).id ?? "") : null;
+      if (subscriptionId && subscriptionId.length > 0) {
+        const plansR = await fetchPlansForMentor(supabase, mentorId);
+        const { byTier: byTierR } = assignPlansByTier(plansR.rows);
+        const pr = byTierR[planTier];
+        if (pr) {
+          const ac = planRowDebitAmountCents(pr as Row);
+          if (ac > 0) {
+            const d = await recordSubscriptionCashDebitRpc(studentId, subscriptionId, paymentId, ac);
+            if (!d.ok) {
+              return { ok: false, error: d.error, code: "db" };
+            }
+          }
+        }
+      }
       const roomR = await ensureMentorStudentRoom(
         supabase,
         studentId,
@@ -280,8 +372,20 @@ export async function finalizeSubscriptionCheckout(
   }
   subId = subInsert.subscriptionId;
 
+  const amountCents = planRowDebitAmountCents(planRow);
+  if (amountCents > 0) {
+    const d = await recordSubscriptionCashDebitRpc(studentId, subId, paymentId, amountCents);
+    if (!d.ok) {
+      await tryDeleteSubscriptionById(supabase, subId);
+      return { ok: false, error: d.error, code: "db" };
+    }
+  }
+
   const payUpdate = await markPaymentSucceeded(supabase, payTable, paymentId, stCol);
   if (!payUpdate.ok) {
+    if (amountCents > 0) {
+      await tryReversalSubscriptionCashDebit(studentId, paymentId, subId, amountCents);
+    }
     await tryDeleteSubscriptionById(supabase, subId);
     return { ok: false, error: `결제 완료 표시 실패(롤백: 구독 삭제 시도): ${payUpdate.error}`, code: "db" };
   }
