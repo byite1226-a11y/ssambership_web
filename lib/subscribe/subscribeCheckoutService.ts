@@ -15,12 +15,13 @@ const MEN_FK = ["mentor_id", "mentor_user_id", "creator_id", "host_id"] as const
 const PAY_TABLES = ["payments", "payment_intents", "order_payments"] as const;
 const ROOM_TABLE = "mentor_student_rooms" as const;
 
-const ACTIVE_SUB_RE = /cancel|expir|end|inactiv|refund|void|revok|close|stop/i;
-
 function isRowSubscriptionActive(row: Row): boolean {
-  const st = String(row.status ?? row.state ?? row.subscription_status ?? "").toLowerCase();
-  if (!st) return true;
-  return !ACTIVE_SUB_RE.test(st);
+  const st = String(
+    row.status ?? row.state ?? row.subscription_status ?? ""
+  )
+    .toLowerCase()
+    .trim();
+  return st === "active";
 }
 
 /**
@@ -433,22 +434,24 @@ async function insertSubscriptionRow(
     payTable: string;
   }
 ): Promise<InsSub> {
+  void supabase;
+  const admin = createServiceRoleClient();
   for (const table of SUB_TABLES) {
-    const { error: pe } = await supabase.from(table).select("id").limit(1);
+    const { error: pe } = await admin.from(table).select("id").limit(1);
     if (pe) continue;
-    const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
-    const { column: mc } = await pickExistingColumn(supabase, table, MEN_FK);
+    const { column: sc } = await pickExistingColumn(admin, table, STU_FK);
+    const { column: mc } = await pickExistingColumn(admin, table, MEN_FK);
     if (!sc || !mc) continue;
-    const st = (await pickExistingColumn(supabase, table, ["status", "state", "subscription_status"])).column;
-    const pc = (await pickExistingColumn(supabase, table, ["plan_id", "mentor_plan_id", "product_id", "price_id"])).column;
-    const payRef = (await pickExistingColumn(supabase, table, ["payment_id", "last_payment_id", "initial_payment_id"])).column;
+    const st = (await pickExistingColumn(admin, table, ["status", "state", "subscription_status"])).column;
+    const pc = (await pickExistingColumn(admin, table, ["plan_id", "mentor_plan_id", "product_id", "price_id"])).column;
+    const payRef = (await pickExistingColumn(admin, table, ["payment_id", "last_payment_id", "initial_payment_id"])).column;
     const p: Record<string, unknown> = { [sc]: ctx.studentId, [mc]: ctx.mentorId };
     if (st) p[st] = "active";
     if (pc && ctx.planId) p[pc] = ctx.planId;
     if (payRef) p[payRef] = ctx.paymentId;
-    const { column: tierC } = await pickExistingColumn(supabase, table, ["plan_tier", "tier", "label"]);
+    const { column: tierC } = await pickExistingColumn(admin, table, ["plan_tier", "tier", "label"]);
     if (tierC) p[tierC] = ctx.planTier;
-    const { data, error } = await supabase.from(table).insert(p).select("id").maybeSingle();
+    const { data, error } = await admin.from(table).insert(p).select("id").maybeSingle();
     if (!error && data && (data as Row).id != null) {
       return { ok: true, subscriptionId: String((data as Row).id) };
     }
