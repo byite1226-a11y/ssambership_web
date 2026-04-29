@@ -18,6 +18,28 @@ import {
   saveConnectionNote,
 } from "@/lib/qna/questionRoomMutations";
 
+/**
+ * formatActionError 결과에도 Postgrest/HTTP/긴 raw가 남을 수 있으므로, URL 쿼리(사용자 노출)엔 이 함수를 쓴다.
+ */
+function userFacingActionError(action: "thread" | "message" | "note", err: string): string {
+  const s = String(err);
+  if (
+    /PGRST|postgrest|pg[_\d]|https?:\/\/|\"(hint|code|details)\"|permission denied|violates|relation|schema cache|does not exist|Could not find|42703|42P01|22P02|23503/i.test(
+      s
+    ) ||
+    s.length > 400
+  ) {
+    if (action === "thread") {
+      return "질문 주제를 추가하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    }
+    if (action === "message") {
+      return "메시지를 보내지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    }
+    return "메모를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  }
+  return formatActionError(action, s);
+}
+
 function textFromForm(v: FormDataEntryValue | null): string {
   return typeof v === "string" ? v.trim() : "";
 }
@@ -68,7 +90,10 @@ async function assertMentorStudentRoomParty(
   actor: "student" | "mentor"
 ): Promise<string | null> {
   const { data, error } = await supabase.from("mentor_student_rooms").select("*").eq("id", roomId).maybeSingle();
-  if (error) return error.message;
+  if (error) {
+    console.error("[assertMentorStudentRoomParty] mentor_student_rooms select", { roomId, code: error.code, message: error.message });
+    return "room 정보를 확인하는 중 오류가 났습니다. 잠시 후 다시 시도해 주세요.";
+  }
   if (!data) return "이 room을 찾을 수 없습니다.";
   const row = data as Record<string, unknown>;
   const isStudent = userMatchesStudentInRoomRow(row, userId);
@@ -96,7 +121,10 @@ async function assertThreadBelongsToRoom(
     .select("*")
     .eq("id", threadId)
     .maybeSingle();
-  if (error) return error.message;
+  if (error) {
+    console.error("[assertThreadBelongsToRoom] question_threads select", { roomId, threadId, code: error.code, message: error.message });
+    return "thread를 확인하는 중 오류가 났습니다. 잠시 후 다시 시도해 주세요.";
+  }
   if (!data) return "thread를 찾을 수 없습니다.";
   const row = data as Record<string, unknown>;
   if (!threadRowBelongsToMentorStudentRoom(row, roomId)) {
@@ -130,7 +158,7 @@ export async function createQuestionThreadAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, {
         thread: contextThreadId,
         kind: "thread",
-        error: formatActionError("thread", roomErr),
+        error: userFacingActionError("thread", roomErr),
         draftThread: readThreadTitleFromForm(formData),
       })
     );
@@ -150,7 +178,7 @@ export async function createQuestionThreadAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, {
         thread: contextThreadId,
         kind: "thread",
-        error: formatActionError("thread", result.error),
+        error: userFacingActionError("thread", result.error),
         draftThread: title,
       })
     );
@@ -185,7 +213,7 @@ export async function createQuestionMessageAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, {
         thread: fallbackThread,
         kind: "message",
-        error: formatActionError("message", roomErr),
+        error: userFacingActionError("message", roomErr),
         draftMessage: content,
       })
     );
@@ -198,7 +226,7 @@ export async function createQuestionMessageAction(formData: FormData) {
         buildRedirectUrl(roomId, actor, {
           thread: fallbackThread,
           kind: "message",
-          error: formatActionError("message", tErr),
+          error: userFacingActionError("message", tErr),
           draftMessage: content,
         })
       );
@@ -219,7 +247,7 @@ export async function createQuestionMessageAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, {
         thread: threadId || fallbackThread,
         kind: "message",
-        error: formatActionError("message", result.error),
+        error: userFacingActionError("message", result.error),
         draftMessage: content,
       })
     );
@@ -258,7 +286,7 @@ export async function saveConnectionNoteAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, {
         thread: contextThreadId,
         kind: "note",
-        error: formatActionError("note", roomErr),
+        error: userFacingActionError("note", roomErr),
         draftNote: content,
       })
     );
@@ -277,7 +305,7 @@ export async function saveConnectionNoteAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, {
         thread: contextThreadId,
         kind: "note",
-        error: formatActionError("note", result.error),
+        error: userFacingActionError("note", result.error),
         draftNote: content,
       })
     );

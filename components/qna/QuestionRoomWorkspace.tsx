@@ -32,6 +32,32 @@ function Panel({
   );
 }
 
+/** 쿼리/서버 오류 문자열이 기술·JSON·PGRST 를 포함하면 UI에 짧은 안내만 쓴다. */
+function publicQnaPanelError(
+  which: "rooms" | "threads" | "messages" | "notes",
+  raw: string | null | undefined
+): string {
+  const fallbacks = {
+    rooms: "질문방을 불러오는 중 오류가 났습니다. 잠시 후 다시 시도해 주세요.",
+    threads: "질문 주제를 불러오는 중 오류가 났습니다. 잠시 후 다시 시도해 주세요.",
+    messages: "대화를 불러오는 중 오류가 났습니다. 잠시 후 다시 시도해 주세요.",
+    notes: "연결 메모를 불러오는 중 오류가 났습니다. 잠시 후 다시 시도해 주세요.",
+  } as const;
+  const fallback = fallbacks[which];
+  if (raw == null) return fallback;
+  const t = String(raw).trim();
+  if (!t) return fallback;
+  if (
+    /PGRST|postgrest|https?:\/\/|\"(hint|code|details)\"|schema cache|\"error\"|jsonb?|error\":|42P0|22P0|23\d{3}/i.test(
+      t
+    ) ||
+    t.length > 500
+  ) {
+    return fallback;
+  }
+  return t;
+}
+
 function StateBanner({ kind, message }: { kind: "loading" | "error" | "empty"; message: string }) {
   const skin =
     kind === "loading"
@@ -199,7 +225,7 @@ export function QuestionRoomWorkspace(props: {
         <Panel title={props.variant === "student" ? "내 질문방" : "학생과의 질문방"} tone={tone}>
           {props.rooms.loading ? <StateBanner kind="loading" message="질문방을 불러오는 중…" /> : null}
           {!props.rooms.loading && props.rooms.error ? (
-            <StateBanner kind="error" message="질문방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />
+            <StateBanner kind="error" message={publicQnaPanelError("rooms", props.rooms.error)} />
           ) : null}
           {!props.rooms.loading && !props.rooms.error && props.rooms.rows.length === 0 ? (
             <StateBanner kind="empty" message={listEmptyRoomMsg} />
@@ -244,7 +270,7 @@ export function QuestionRoomWorkspace(props: {
           <Panel title="다른 질문방" tone={tone}>
             {props.rooms.loading ? <StateBanner kind="loading" message="질문방을 불러오는 중…" /> : null}
             {!props.rooms.loading && props.rooms.error ? (
-              <StateBanner kind="error" message={props.rooms.error} />
+              <StateBanner kind="error" message={publicQnaPanelError("rooms", props.rooms.error)} />
             ) : null}
             {!props.rooms.loading && !props.rooms.error && props.rooms.rows.length === 0 ? (
               <StateBanner kind="empty" message={listEmptyRoomMsg} />
@@ -256,7 +282,9 @@ export function QuestionRoomWorkspace(props: {
         <div className="lg:col-span-4">
           <Panel title="질문 주제" tone="slate">
             {props.threads.loading ? <StateBanner kind="loading" message="목록을 불러오는 중…" /> : null}
-            {!props.threads.loading && props.threads.error ? <StateBanner kind="error" message={props.threads.error} /> : null}
+            {!props.threads.loading && props.threads.error ? (
+              <StateBanner kind="error" message={publicQnaPanelError("threads", props.threads.error)} />
+            ) : null}
             {!props.threads.loading && !props.threads.error && props.threads.rows.length === 0 ? (
               <StateBanner kind="empty" message={threadEmptyMsg} />
             ) : null}
@@ -326,7 +354,9 @@ export function QuestionRoomWorkspace(props: {
         <div className="lg:col-span-5">
           <Panel title="대화" tone={tone}>
             {props.messages.loading ? <StateBanner kind="loading" message="대화를 불러오는 중…" /> : null}
-            {!props.messages.loading && props.messages.error ? <StateBanner kind="error" message={props.messages.error} /> : null}
+            {!props.messages.loading && props.messages.error ? (
+              <StateBanner kind="error" message={publicQnaPanelError("messages", props.messages.error)} />
+            ) : null}
             {!props.messages.loading && !props.messages.error && props.messages.rows.length === 0 ? (
               <StateBanner
                 kind="empty"
@@ -438,7 +468,7 @@ export function QuestionRoomWorkspace(props: {
         ) : null}
         {!props.notes.loading && props.notes.error ? (
           <div className="mt-3">
-            <StateBanner kind="error" message={props.notes.error} />
+            <StateBanner kind="error" message={publicQnaPanelError("notes", props.notes.error)} />
           </div>
         ) : null}
         {!props.notes.loading && !props.notes.error && props.notes.rows.length === 0 ? (

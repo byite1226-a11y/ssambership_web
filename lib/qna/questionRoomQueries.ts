@@ -321,7 +321,8 @@ export async function loadQuestionRoomDetailBundle(
   const threadsQ = await fetchThreadsForRoom(supabase, roomId);
   const notesQ = await fetchConnectionNotesForRoom(supabase, roomId);
 
-  const firstTid = typeof threadsQ.rows[0]?.id === "string" ? (threadsQ.rows[0].id as string) : null;
+  const firstIdRaw = threadsQ.rows[0]?.id;
+  const firstTid = firstIdRaw == null || String(firstIdRaw).length === 0 ? null : String(firstIdRaw);
   const threadInRoom =
     threadId &&
     threadsQ.rows.some((r) => r.id != null && String(r.id) === String(threadId));
