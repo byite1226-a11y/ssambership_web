@@ -19,27 +19,30 @@ export default async function MentorCustomRequestPostsPage() {
 
   return (
     <PageScaffold
-      eyebrow="멘토 / 맞춤의뢰"
-      title="맞춤의뢰 목록"
-      description="모집 중인 요청을 보고 지원하거나, 제출한 지원을 다시 확인하세요."
+      compactHero
+      hideFooterPlaceholderCards
+      eyebrow="멘토"
+      title="맞춤의뢰"
+      description="모집 중인 요청을 찾고 지원하거나, 보낸 지원을 다시 확인하세요."
       ctas={[
         { href: "/mentor/custom-request/dashboard", tone: "slate", label: "맞춤의뢰 홈" },
         { href: "/mentor/dashboard", tone: "slate", label: "멘토 대시보드" },
       ]}
       sections={[]}
+      dataPoints={[]}
       emptyState=""
     >
-      <section className="space-y-2">
-        <h2 className="text-lg font-extrabold text-slate-900">모집 중인 맞춤의뢰</h2>
+      <section className="space-y-2.5">
+        <h2 className="text-base font-extrabold text-slate-900 sm:text-lg">모집 중</h2>
         <MentorOpenPostListSection rows={openList.rows} listStatus={openList.status} />
       </section>
-      <section className="mt-8 space-y-2">
-        <h2 className="text-lg font-extrabold text-slate-900">내가 지원한 맞춤의뢰</h2>
+      <section className="mt-6 space-y-2.5 sm:mt-8">
+        <h2 className="text-base font-extrabold text-slate-900 sm:text-lg">내가 지원한 의뢰</h2>
         <MentorAppliedListSection items={applied.items} listFailed={applied.listFailed} />
       </section>
-      <p className="mt-6 text-center text-sm text-slate-500">
-        <Link href="/custom-request" className="font-bold text-blue-700 underline">
-          맞춤의뢰 서비스 소개
+      <p className="mt-5 text-center text-sm text-slate-500 sm:mt-6">
+        <Link href="/custom-request" className="min-h-[44px] font-extrabold text-blue-700 underline">
+          맞춤의뢰 소개
         </Link>
       </p>
     </PageScaffold>

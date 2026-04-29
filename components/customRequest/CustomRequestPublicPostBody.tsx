@@ -24,59 +24,91 @@ export function CustomRequestPublicPostBody(props: {
   attachments: PostAttachmentListItem[];
   attachmentLoadError: string | null;
 }) {
-  const d = mapPostRowToPublicDetail(props.row);
-  const author = isAuthorOfPost(props.userId ?? "", props.row);
-  const isMentor = props.profile?.role === "mentor";
-  const isStudent = props.profile?.role === "student";
-  const isAuthor = props.userId ? author.ok : false;
-  const allowsApply = isMentorApplicablePostStatus(props.row);
+  const { postId, row, postTable: _unusedPostTable, userId, profile, applications, canViewAttachments, attachments, attachmentLoadError } =
+    props;
+  void _unusedPostTable;
+  const d = mapPostRowToPublicDetail(row);
+  const author = isAuthorOfPost(userId ?? "", row);
+  const isMentor = profile?.role === "mentor";
+  const isStudent = profile?.role === "student";
+  const isAuthor = userId ? author.ok : false;
+  const allowsApply = isMentorApplicablePostStatus(row);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h1 className="text-2xl font-black text-slate-900">{d.title}</h1>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <Item k="카테고리" v={d.category} />
-          <Item k="과목" v={d.subject} />
-          <Item k="목표" v={d.goal} />
-          <Item k="기한" v={d.deadline} />
-          <Item k="예산 범위" v={d.budgetLine} />
-          <Item k="결과물 형식" v={d.deliverableFormat} />
-          <div>
-            <dt className="text-xs font-extrabold uppercase text-slate-500">상태</dt>
-            <dd className="mt-0.5">
-              <MentorPostStatusBadge row={props.row} />
-            </dd>
+    <div className="space-y-5 sm:space-y-6">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/30 p-4 shadow-sm sm:p-6">
+        <h1 className="text-balance break-words text-2xl font-black leading-tight text-slate-900 sm:text-3xl">{d.title}</h1>
+        <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <SummaryPill label="과목" value={d.subject} />
+          <SummaryPill label="예산" value={d.budgetLine} />
+          <SummaryPill label="마감" value={d.deadline} />
+          <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 sm:col-span-1">
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">상태</p>
+            <div className="mt-1.5">
+              <MentorPostStatusBadge row={row} />
+            </div>
           </div>
-        </dl>
-        <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
-          <p className="text-xs font-extrabold text-slate-500">본문</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{d.body}</p>
+          {d.goal && d.goal !== "—" ? <SummaryPill label="목표" value={d.goal} /> : null}
+        </ul>
+        {d.category && d.category !== "—" ? (
+          <p className="mt-3 text-sm text-slate-600">
+            <span className="font-extrabold text-slate-800">분야</span> {d.category}
+          </p>
+        ) : null}
+        <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600">
+          {author.ok ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-900">내가 등록한 의뢰</span> : null}
+          <p className="min-w-0 text-balance break-words">
+            <span className="font-extrabold text-slate-800">연락(선정 전)</span> {d.contactMasked}
+          </p>
         </div>
-        {props.canViewAttachments ? (
-          <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700">
-            <p className="font-extrabold text-slate-800">등록 첨부</p>
-            {props.attachmentLoadError ? (
-              <p className="mt-2 text-amber-800">목록을 불러오지 못했습니다: {props.attachmentLoadError}</p>
-            ) : props.attachments.length === 0 ? null : (
-              <ul className="mt-2 space-y-2">
-                {props.attachments.map((a) => (
+        {applications.error ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">
+            지원 건수를 모두 불러오지 못했을 수 있어요. 잠시 후 다시 열어 주세요.
+          </p>
+        ) : (
+          <p className="mt-3 text-sm text-slate-600">
+            <span className="font-extrabold text-slate-800">제출된 지원</span> {applications.rows.length}건
+          </p>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+        <h2 className="text-lg font-extrabold text-slate-900">요청 내용</h2>
+        <p className="mt-1 text-sm text-slate-500">희망 범위·세부 사항</p>
+        <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800">{d.body}</p>
+        </div>
+        {d.deliverableFormat && d.deliverableFormat !== "—" ? (
+          <p className="mt-3 text-sm text-slate-700">
+            <span className="font-extrabold">결과물 형식</span> {d.deliverableFormat}
+          </p>
+        ) : null}
+        {canViewAttachments ? (
+          <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-3.5 sm:p-4">
+            <p className="text-sm font-extrabold text-slate-800">첨부 파일</p>
+            {attachmentLoadError ? (
+              <p className="mt-2 text-sm text-amber-900">첨부를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+            ) : attachments.length === 0 ? (
+              <p className="mt-2 text-sm text-slate-600">등록된 첨부가 없어요.</p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {attachments.map((a) => (
                   <li
                     key={a.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs sm:text-sm"
+                    className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div>
-                      <p className="font-bold text-slate-900">{a.original_filename}</p>
-                      <p className="text-slate-500">
+                    <div className="min-w-0">
+                      <p className="font-bold break-words text-slate-900">{a.original_filename}</p>
+                      <p className="text-xs text-slate-500">
                         {formatBytes(a.file_size_bytes)} · {formatUploadedAt(a.created_at)}
                       </p>
                     </div>
-                    <form action={downloadCustomRequestPostAttachmentAction}>
-                      <input type="hidden" name="postId" value={props.postId} />
+                    <form action={downloadCustomRequestPostAttachmentAction} className="shrink-0">
+                      <input type="hidden" name="postId" value={postId} />
                       <input type="hidden" name="attachmentId" value={a.id} />
                       <button
                         type="submit"
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-800 hover:bg-slate-50"
+                        className="min-h-[40px] w-full rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 hover:bg-slate-50 sm:min-w-[5.5rem] sm:py-2"
                       >
                         다운로드
                       </button>
@@ -87,77 +119,71 @@ export function CustomRequestPublicPostBody(props: {
             )}
           </div>
         ) : null}
-        <div className="mt-4 text-sm text-slate-600">
-          {author.ok ? <p>작성하신 맞춤의뢰입니다.</p> : null}
-          <p className="mt-2">
-            <span className="font-extrabold">선정 전</span> · {d.contactMasked}
-          </p>
-        </div>
-        {props.applications.error ? (
-          <p className="mt-2 text-sm text-amber-800">지원서 정보를 모두 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-        ) : (
-          <p className="mt-2 text-sm text-slate-600">이 의뢰에 대해 제출된 지원 {props.applications.rows.length}건</p>
-        )}
       </section>
 
-      <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-sm text-blue-950">
-        <p className="font-extrabold">정책(요약)</p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-blue-900/90">
-          <li>의뢰 등록은 학생 계정만(별도 /custom-request/new).</li>
-          <li>지원 제출은 멘토만. 멘토 1명 선정 후 custom_request_orders·결제(후속)로 이어집니다.</li>
+      <section className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-sm text-slate-800 sm:p-5">
+        <p className="font-extrabold text-slate-900">이용 안내</p>
+        <ul className="mt-2 list-inside list-disc space-y-1.5 break-words text-slate-700">
+          <li>의뢰 등록은 학생 계정에서 진행돼요.</li>
+          <li>지원은 멘토가 제출하며, 한 분을 정하면 이후 주문·진행 단계로 이어질 수 있어요.</li>
         </ul>
       </section>
 
       {isStudent && isAuthor ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-900">
-          <p className="font-extrabold">의뢰자(학생) — 지원 비교·주문</p>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 sm:p-5">
+          <p className="font-extrabold text-emerald-950">의뢰하신 입장</p>
+          <p className="mt-1.5 text-sm text-emerald-900/90">지원을 비교하고, 한 분을 선택한 뒤 절차를 이어갈 수 있어요.</p>
           <Link
-            className="mt-2 inline-block font-bold text-emerald-800 underline"
-            href={`/custom-request/${props.postId}/applications`}
+            className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-extrabold text-white hover:bg-emerald-500"
+            href={`/custom-request/${postId}/applications`}
           >
-            지원서 목록으로 (학생) →
+            지원서 비교·선택하기
           </Link>
         </div>
       ) : null}
 
       {isMentor && !isAuthor && allowsApply && (
-        <MentorApplicationForm postId={props.postId} returnContext="public" />
+        <div className="space-y-2">
+          <p className="text-sm font-extrabold text-slate-800">이 의뢰에 지원해 보세요</p>
+          <MentorApplicationForm postId={postId} returnContext="public" />
+        </div>
       )}
 
       {isMentor && isAuthor ? (
-        <p className="text-sm text-amber-800">멘토 계정으로는 본인이 의뢰자로 등록한 글에 지원할 수 없습니다.</p>
+        <p className="rounded-lg border border-amber-200 bg-amber-50/90 px-3.5 py-2.5 text-sm text-amber-950">멘토 계정으로는 본인이 올린 의뢰에 지원할 수 없어요.</p>
       ) : null}
 
-      {!props.profile ? (
+      {!profile ? (
         <p className="text-sm text-slate-600">
           <Link
-            className="font-bold text-blue-700 underline"
-            href={`/login/mentor?next=${encodeURIComponent(`/custom-request/${props.postId}`)}`}
+            className="min-h-[44px] font-extrabold text-blue-700 underline"
+            href={`/login/mentor?next=${encodeURIComponent(`/custom-request/${postId}`)}`}
           >
             멘토로 로그인
-          </Link>{" "}
-          후 지원을 제출할 수 있습니다.
+          </Link>
+          {` `}
+          하시면 지원을 제출할 수 있어요.
         </p>
       ) : null}
 
       {isMentor && !isAuthor && !allowsApply ? (
-        <p className="text-sm text-slate-500">모집 종료 등 open 이외 상태 — 새 지원 UI 비활성(스키마·상태명 확정 후 조정).</p>
+        <p className="text-sm text-slate-600">지금은 새 지원을 받지 않는 단계예요. 모집이 끝났거나 조건이 맞지 않을 수 있어요.</p>
       ) : null}
     </div>
   );
 }
 
-function Item(props: { k: string; v: string }) {
+function SummaryPill(props: { label: string; value: string }) {
   return (
-    <div>
-      <dt className="text-xs font-extrabold uppercase text-slate-500">{props.k}</dt>
-      <dd className="mt-0.5 font-bold text-slate-900">{props.v}</dd>
+    <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{props.label}</p>
+      <p className="mt-0.5 break-words text-sm font-bold text-slate-900">{props.value || "—"}</p>
     </div>
   );
 }
 
 function formatBytes(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "크기 미상";
+  if (n == null || !Number.isFinite(n)) return "크기 정보 없음";
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
