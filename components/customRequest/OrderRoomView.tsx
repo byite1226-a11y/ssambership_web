@@ -244,7 +244,7 @@ export function OrderRoomView(props: {
               orderIdDisplay={idForDisplay}
             />
           </aside>
-          <div className="order-1 min-w-0 lg:order-2 lg:col-span-7">
+          <div className="order-1 min-w-0 lg:order-2 lg:col-span-6">
             <OrderProgressSection
               detail={detail}
               orderId={idForDisplay}
@@ -254,7 +254,7 @@ export function OrderRoomView(props: {
               orderTerminal={isTerminalOrder}
             />
           </div>
-          <aside className="order-3 min-w-0 space-y-5 lg:order-3 lg:col-span-2">
+          <aside className="order-3 min-w-0 space-y-5 lg:order-3 lg:col-span-3">
             <OrderDeliverablesPanel
               detail={detail}
               orderId={oid}
