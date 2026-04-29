@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { mapPostRowToPublicDetail, isMentorApplicablePostStatus } from "@/lib/customRequest/customRequestPostMappers";
+import { MentorPostStatusBadge } from "@/components/customRequest/MentorPostStatusBadge";
 
 type Row = Record<string, unknown>;
 
@@ -26,7 +27,12 @@ export function MentorCustomRequestDetailCard(props: { postId: string; row: Row;
         <Item k="희망 예산" v={d.budgetLine} />
         <Item k="희망 납기" v={d.deadline} />
         <Item k="납품 형식" v={d.deliverableFormat} />
-        <Item k="의뢰 상태" v={d.status} />
+        <div>
+          <dt className="text-xs font-extrabold uppercase text-slate-500">의뢰 상태</dt>
+          <dd className="mt-0.5">
+            <MentorPostStatusBadge row={props.row} />
+          </dd>
+        </div>
       </dl>
       <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
         <p className="text-xs font-extrabold text-slate-500">의뢰 내용</p>

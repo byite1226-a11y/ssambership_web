@@ -5,6 +5,7 @@ import {
   type PostAttachmentListItem,
 } from "@/lib/customRequest/customRequestQueries";
 import { isMentorApplicablePostStatus, mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
+import { MentorPostStatusBadge } from "@/components/customRequest/MentorPostStatusBadge";
 import { downloadCustomRequestPostAttachmentAction } from "@/lib/customRequest/postAttachmentDownloadActions";
 import { MentorApplicationForm } from "@/components/customRequest/MentorApplicationForm";
 import type { UserRow } from "@/lib/types/user";
@@ -41,7 +42,12 @@ export function CustomRequestPublicPostBody(props: {
           <Item k="기한" v={d.deadline} />
           <Item k="예산 범위" v={d.budgetLine} />
           <Item k="결과물 형식" v={d.deliverableFormat} />
-          <Item k="상태" v={d.status} />
+          <div>
+            <dt className="text-xs font-extrabold uppercase text-slate-500">상태</dt>
+            <dd className="mt-0.5">
+              <MentorPostStatusBadge row={props.row} />
+            </dd>
+          </div>
         </dl>
         <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
           <p className="text-xs font-extrabold text-slate-500">본문</p>

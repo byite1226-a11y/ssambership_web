@@ -1,19 +1,9 @@
 import Link from "next/link";
 import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
+import { formatDateYMDOrDash } from "@/lib/customRequest/mentorCustomRequestDisplay";
+import { MentorPostStatusBadge } from "@/components/customRequest/MentorPostStatusBadge";
 
 type Row = Record<string, unknown>;
-
-function formatPostCreatedAt(v: unknown): string {
-  if (v instanceof Date) {
-    return v.toLocaleString("ko-KR", { dateStyle: "medium" });
-  }
-  if (typeof v === "string" && v.trim()) {
-    const d = new Date(v);
-    if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleString("ko-KR", { dateStyle: "medium" });
-  }
-  return "—";
-}
 
 export function MentorOpenPostListSection(props: {
   rows: Row[];
@@ -43,14 +33,17 @@ export function MentorOpenPostListSection(props: {
         const id = String(r.id ?? i);
         return (
           <li key={id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <Link href={`/mentor/custom-request/posts/${id}`} className="font-bold text-blue-800 hover:underline">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Link href={`/mentor/custom-request/posts/${id}`} className="min-w-0 font-bold text-blue-800 hover:underline">
                 {d.title}
               </Link>
-              <span className="text-xs text-slate-500">{formatPostCreatedAt(r.created_at)}</span>
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <MentorPostStatusBadge row={r} />
+                <span className="text-xs text-slate-400 tabular-nums">{formatDateYMDOrDash(r.created_at)}</span>
+              </div>
             </div>
             <p className="mt-1 text-xs text-slate-600">
-              {d.category} · {d.subject} · {d.budgetLine} · 납기 {d.deadline} · {d.status}
+              {d.category} · {d.subject} · {d.budgetLine} · 납기 {d.deadline}
             </p>
           </li>
         );

@@ -229,7 +229,7 @@ export function OrderRoomView(props: {
 
   return (
     <div className={`${ORDER_ROOM_APP_SURFACE_CLASS} w-full`} data-views="custom-order-room">
-      <div className={`${ORDER_ROOM_CONTENT_MAX} px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6`}>
+      <div className={`${ORDER_ROOM_CONTENT_MAX} px-3 pb-4 pt-2 sm:px-4 sm:pb-5 sm:pt-3 lg:px-6 lg:pb-6 lg:pt-4`}>
         <OrderSummaryHeader detail={detail} view={view} />
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
           <aside className="order-2 space-y-4 lg:order-1 lg:col-span-3 lg:sticky lg:top-4 lg:self-start">

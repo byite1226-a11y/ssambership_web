@@ -1,24 +1,20 @@
 import { maskContact, pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import {
+  formatBudgetRangeKrw,
+  formatDateYYYYMMDD,
+  mentorPostStatusLabelForUi,
+  mentorPostStatusToken,
+} from "@/lib/customRequest/mentorCustomRequestDisplay";
 
 type Row = Record<string, unknown>;
 
-function numStr(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  if (typeof v === "number" && Number.isFinite(v)) return String(v);
-  if (typeof v === "string" && v.trim()) return v;
-  return "";
-}
-
-function budgetLine(row: Row): string {
-  const min = numStr(row.budget_min);
-  const max = numStr(row.budget_max);
-  const b = numStr((row as { budget?: unknown }).budget);
-  if (min && max) return `${min} ~ ${max}`;
-  if (b) return b;
-  for (const k of ["min_budget", "max_budget", "price_range"]) {
-    if (row[k] != null) return numStr(row[k]);
+function pickDeadlineRaw(row: Row): unknown {
+  for (const k of ["deadline", "due_at", "due_date", "ends_at", "close_at"] as const) {
+    if (row[k] != null) {
+      return row[k];
+    }
   }
-  return "—";
+  return null;
 }
 
 function contactLineMasked(row: Row): string {
@@ -52,17 +48,21 @@ export function isMentorApplicablePostStatus(row: Row): boolean {
 }
 
 export function mapPostRowToPublicDetail(row: Row) {
+  const statusToken = mentorPostStatusToken(row);
   return {
     title: pickDisplayField(row, ["title", "subject"]),
     category: pickDisplayField(row, ["category", "category_label", "category_id"]),
     subject: pickDisplayField(row, ["subject", "topic", "course"]),
     goal: pickDisplayField(row, ["goal", "subcategory", "objective"]),
     body: pickDisplayField(row, ["body", "content", "description", "text"]),
-    deadline: pickDisplayField(row, ["deadline", "due_at", "due_date", "ends_at", "close_at"]),
-    budgetLine: budgetLine(row),
+    /** 표시용 `YYYY.MM.DD` 또는 `일정 협의` */
+    deadline: formatDateYYYYMMDD(pickDeadlineRaw(row)),
+    /** 천단위 + 원 / `금액 협의` */
+    budgetLine: formatBudgetRangeKrw(row),
     deliverableFormat: pickDisplayField(row, ["deliverable_format", "result_format", "deliverable_type", "output_format"]),
     contactMasked: contactLineMasked(row),
-    status: pickDisplayField(row, ["status", "state", "stage"]),
+    /** 사용자용 의뢰 상태 문구(배지는 `MentorPostStatusBadge` + row) */
+    status: mentorPostStatusLabelForUi(statusToken),
   };
 }
 

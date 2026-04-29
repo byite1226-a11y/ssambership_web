@@ -8,7 +8,6 @@ import { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
 import { loadOrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
-import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 import type { AppRole } from "@/lib/types/user";
 
 type PageProps = {
@@ -42,9 +41,10 @@ export default async function CustomRequestOrderPage(props: PageProps) {
 
   return (
     <PageScaffold
+      compactHero
       eyebrow="주문방"
       title="주문·납품"
-      description={`주문번호 ${shortOrderIdForDisplay(orderId)} — 진행 상황, 납품, 메시지를 확인합니다.`}
+      description="진행·납품·메시지를 한곳에서 확인합니다. 주문번호는 하단을 참고해 주세요."
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
         { href: role === "mentor" ? "/mentor/dashboard" : "/home", label: "대시/홈", tone: "blue" },

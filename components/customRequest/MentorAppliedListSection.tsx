@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { MentorApplicationWithPostHint } from "@/lib/customRequest/customRequestQueries";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import { mentorApplicationStatusLabelForUi } from "@/lib/customRequest/mentorCustomRequestDisplay";
 
 export function MentorAppliedListSection(props: { items: MentorApplicationWithPostHint[]; listFailed: boolean }) {
   if (props.listFailed) {
@@ -13,13 +14,14 @@ export function MentorAppliedListSection(props: { items: MentorApplicationWithPo
     <ul className="space-y-2 text-sm text-slate-800">
       {props.items.map((it) => {
         const a = it.application;
-        const st = pickDisplayField(a, ["status", "state"]);
+        const stRaw = pickDisplayField(a, ["status", "state"]);
+        const stLabel = mentorApplicationStatusLabelForUi(stRaw === "—" ? "" : stRaw);
         return (
           <li key={String(a.id)} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
             <Link className="font-bold text-blue-800 hover:underline" href={it.href}>
               {it.postTitle}
             </Link>
-            <p className="text-xs text-slate-500">지원 상태 {st}</p>
+            <p className="text-xs text-slate-500">지원 {stLabel}</p>
           </li>
         );
       })}

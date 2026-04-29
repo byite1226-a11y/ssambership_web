@@ -25,6 +25,11 @@ type PageScaffoldProps = {
   errorState?: string;
   /** true이면 하단 로딩/오류(및 빈 상태) 플레이스홀더 카드 섹션을 렌더하지 않음 */
   hideFooterPlaceholderCards?: boolean;
+  /**
+   * true: 얇은 컨텍스트 바(맞춤의뢰 주문방 등) — 히어로 패딩·제목 축소, CTA는 텍스트 링크.
+   * 기본 false — 기존 흰 카드 히어로 유지.
+   */
+  compactHero?: boolean;
   children?: ReactNode;
 };
 
@@ -45,6 +50,7 @@ export function PageScaffold({
   loadingState = "정보를 불러오고 있습니다.",
   errorState = "정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
   hideFooterPlaceholderCards = false,
+  compactHero = false,
   children,
 }: PageScaffoldProps) {
   const showEmptyStateCard = emptyState != null && emptyState.length > 0;
@@ -52,22 +58,66 @@ export function PageScaffold({
   const showFooterPlaceholders = !hideFooterPlaceholderCards;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{eyebrow}</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">{title}</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-        <div className="mt-4 flex flex-wrap gap-2.5">
-          {ctas.map((cta) => (
-            <Link
-              key={cta.href + cta.label}
-              href={cta.href}
-              className={`rounded-lg px-3.5 py-2 text-sm font-bold ${toneClass[cta.tone ?? "blue"]}`}
-            >
-              {cta.label}
-            </Link>
-          ))}
-        </div>
+    <div className={compactHero ? "space-y-0" : "space-y-6"}>
+      <section
+        className={
+          compactHero
+            ? "border-0 border-b border-slate-200/50 bg-[#F3F7FF] px-3 py-3 sm:px-4 sm:py-3.5"
+            : "rounded-2xl border border-slate-200 bg-white p-6"
+        }
+      >
+        <p
+          className={
+            compactHero
+              ? "text-[10px] font-semibold uppercase tracking-wider text-slate-500"
+              : "text-xs font-extrabold uppercase tracking-wider text-slate-500"
+          }
+        >
+          {eyebrow}
+        </p>
+        <h1
+          className={
+            compactHero
+              ? "mt-1 text-lg font-bold leading-tight tracking-tight text-slate-900 sm:text-xl"
+              : "mt-2 text-3xl font-black tracking-tight text-slate-900"
+          }
+        >
+          {title}
+        </h1>
+        <p
+          className={
+            compactHero ? "mt-1 text-xs leading-relaxed text-slate-600" : "mt-2 text-sm leading-6 text-slate-600"
+          }
+        >
+          {description}
+        </p>
+        {ctas.length > 0 ? (
+          compactHero ? (
+            <nav className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="페이지 이동">
+              {ctas.map((cta) => (
+                <Link
+                  key={cta.href + cta.label}
+                  href={cta.href}
+                  className="font-medium text-slate-500 underline-offset-2 transition hover:text-slate-800 hover:underline"
+                >
+                  {cta.label}
+                </Link>
+              ))}
+            </nav>
+          ) : (
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {ctas.map((cta) => (
+                <Link
+                  key={cta.href + cta.label}
+                  href={cta.href}
+                  className={`rounded-lg px-3.5 py-2 text-sm font-bold ${toneClass[cta.tone ?? "blue"]}`}
+                >
+                  {cta.label}
+                </Link>
+              ))}
+            </div>
+          )
+        ) : null}
       </section>
 
       {sections.length > 0 ? (
