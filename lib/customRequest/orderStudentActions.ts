@@ -13,6 +13,7 @@ import {
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
 import { mustBlockUnpaidAcceptForProduction } from "@/lib/customRequest/orderPaymentPolicy";
 import { firstReadableCustomTable, ORDER_TO_DELIVERABLE_FK_CANDIDATES } from "@/lib/customRequest/customRequestQueries";
+import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { splitPlatformAndMentorForGross } from "@/lib/customRequest/orderSettlementAmounts";
 import {
   deleteCustomOrderSettlementItemBestEffort,
@@ -31,6 +32,45 @@ function orderPath(orderId: string) {
 
 function redirectWithError(orderId: string, msg: string): never {
   redirect(`${orderPath(orderId)}?error=${encodeURIComponent(msg)}`);
+}
+
+/**
+ * 수락 직후 주문 row — `primary` 1열만 갱신·타임스탬프 1곳만 채우면
+ * status=completed / state=pending / order_status=open / accepted_at=null 같은 불일치가 남는다.
+ * `status`·`state`·`order_status`·`accepted_at`·`completed_at`·`updated_at` 는 각각 스키마에 있을 때만 설정.
+ */
+async function buildOrderCompletionAfterAcceptPatch(
+  supabase: SupabaseClient,
+  table: string
+): Promise<Record<string, unknown> | { error: "no_status_col" }> {
+  const now = new Date().toISOString();
+  const patch: Record<string, unknown> = {};
+  const done = "completed" as const;
+
+  let hasAnyStatusCol = false;
+  for (const colName of ["status", "state", "order_status"] as const) {
+    const { column: c } = await pickExistingColumn(supabase, table, [colName]);
+    if (c) {
+      hasAnyStatusCol = true;
+      patch[c] = done;
+    }
+  }
+  if (!hasAnyStatusCol) {
+    return { error: "no_status_col" };
+  }
+
+  for (const colName of ["accepted_at", "completed_at"] as const) {
+    const { column: c } = await pickExistingColumn(supabase, table, [colName]);
+    if (c) {
+      patch[c] = now;
+    }
+  }
+
+  const { column: uCol } = await pickExistingColumn(supabase, table, ["updated_at"]);
+  if (uCol) {
+    patch[uCol] = now;
+  }
+  return patch;
 }
 
 export async function hasDeliverableRowsForOrder(supabase: SupabaseClient, orderId: string): Promise<boolean> {
@@ -72,7 +112,7 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
 
   const { data: rowData, error: oe } = await supabase.from(table).select("*").eq("id", orderId).maybeSingle();
   if (oe || !rowData) {
-    redirectWithError(orderId, oe?.message ?? "주문을 찾을 수 없습니다.");
+    redirectWithError(orderId, "주문을 찾을 수 없어요. 잠시 후 다시 시도해 주세요.");
   }
   const row = rowData as Row;
 
@@ -121,8 +161,7 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
     redirectWithError(orderId, "등록된 납품이 없어 수락할 수 없습니다.");
   }
 
-  const stCol = primaryOrderStatusColumnKey(row);
-  if (!stCol) {
+  if (!primaryOrderStatusColumnKey(row)) {
     redirectWithError(orderId, "주문 상태 컬럼을 찾을 수 없습니다.");
   }
 
@@ -131,25 +170,27 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
     redirectWithError(orderId, settlementStep.error);
   }
 
-  const patch: Record<string, unknown> = { [stCol]: "completed" };
-
-  const { column: atCol } = await pickExistingColumn(supabase, table, [
-    "completed_at",
-    "accepted_at",
-    "closed_at",
-    "finished_at",
-  ]);
-  if (atCol) {
-    patch[atCol] = new Date().toISOString();
-  }
-
-  const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(stuCol, user.id);
-  if (ue) {
+  const built = await buildOrderCompletionAfterAcceptPatch(supabase, table);
+  if ("error" in built) {
     if (settlementStep.ok && settlementStep.created) {
       await deleteCustomOrderSettlementItemBestEffort(supabase, orderId);
     }
-    redirectWithError(orderId, ue.message || "상태 갱신에 실패했습니다.");
+    redirectWithError(orderId, "주문을 완료로 표시할 수 없는 구성입니다. 잠시 후 다시 시도해 주세요.");
   }
+  const patch = built as Record<string, unknown>;
+
+  const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(stuCol, user.id);
+  if (ue) {
+    console.error("[acceptCustomOrderDeliverableAction] order update", orderId, ue.message);
+    if (settlementStep.ok && settlementStep.created) {
+      await deleteCustomOrderSettlementItemBestEffort(supabase, orderId);
+    }
+    redirectWithError(orderId, "납품 수락 후 주문을 반영하는 중 오류가 났어요. 잠시 후 다시 시도해 주세요.");
+  }
+
+  await recordOrderEventBestEffort(supabase, orderId, "deliverable_accepted", user.id, {
+    settlement_row_created: settlementStep.ok && settlementStep.created,
+  });
 
   if (settlementStep.ok && settlementStep.created) {
     const { platformFee, mentorAmount } = splitPlatformAndMentorForGross(

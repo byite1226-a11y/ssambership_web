@@ -16,6 +16,7 @@ export default async function MentorDashboardPage() {
       description="답변할 질문, 질문방, 정산, 맞춤의뢰를 한 화면에서 바로 확인하세요."
       ctas={[
         { href: "/mentor/question-room", label: "질문방 관리", tone: "green" },
+        { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰", tone: "blue" },
         { href: "/mentor/support/disputes", label: "분쟁·환불", tone: "blue" },
         { href: "/mentor/payouts", label: "정산", tone: "slate" },
         { href: "/mentor/profile", label: "프로필", tone: "slate" },

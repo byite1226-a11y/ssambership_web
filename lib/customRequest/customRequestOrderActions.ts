@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import {
   findOrderForPostAndStudent,
+  getApplicationPriceAmount,
   isAuthorOfPost,
   loadApplicationById,
   loadCustomPostById,
@@ -13,6 +14,11 @@ import {
   verifyApplicationForPost,
 } from "@/lib/customRequest/customRequestQueries";
 import { insertCustomRequestOrder } from "@/lib/customRequest/customRequestMutations";
+
+const MSG_NO_PRICE = "제안 가격을 확인할 수 없어 주문을 열 수 없습니다. 잠시 후 다시 시도해 주세요.";
+const MSG_ORDER_FAIL = "주문을 열 수 없습니다. 잠시 후 다시 시도해 주세요.";
+const MSG_NO_APP = "지원서를 찾을 수 없어요. 잠시 후 다시 시도해 주세요.";
+const MSG_NEED_IDS = "의뢰와 지원서를 다시 선택해 주세요.";
 
 function backToApplications(postId: string, msg: string) {
   redirect(`/custom-request/${postId}/applications?error=${encodeURIComponent(msg)}`);
@@ -26,8 +32,11 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
   const supabase = await createClient();
   const postId = String(formData.get("postId") ?? "").trim();
   const applicationId = String(formData.get("applicationId") ?? "").trim();
-  if (!postId || !applicationId) {
-    redirect("/custom-request?error=" + encodeURIComponent("postId·applicationId가 필요합니다."));
+  if (!postId) {
+    redirect("/custom-request");
+  }
+  if (!applicationId) {
+    backToApplications(postId, MSG_NEED_IDS);
   }
 
   const existing = await findOrderForPostAndStudent(supabase, postId, user.id);
@@ -39,19 +48,25 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
 
   const authz = isAuthorOfPost(user.id, post.row);
   if (!authz.ok) {
-    backToApplications(postId, "의뢰자(등록한 학생)만 멘토를 선택해 주문을 열 수 있습니다.");
+    backToApplications(postId, "의뢰를 등록하신 본인만 멘토를 선택해 주문을 열 수 있어요.");
   }
   if (!app.row) {
-    backToApplications(postId, app.error ?? "지원서를 찾을 수 없습니다.");
+    backToApplications(postId, MSG_NO_APP);
     return;
   }
   const postMatch = verifyApplicationForPost(app.row, postId);
   if (!postMatch.ok) {
-    backToApplications(postId, "이 지원서는 해당 의뢰에 속하지 않습니다.");
+    backToApplications(postId, "이 지원서는 이 의뢰에 해당하지 않아요.");
   }
   const mentor = pickMentorIdFromApplication(app.row!);
   if (!mentor) {
-    backToApplications(postId, "지원서에 mentor 식별자가 없습니다.");
+    backToApplications(postId, "지원서에서 멘토를 확인할 수 없어요. 잠시 후 다시 시도해 주세요.");
+    return;
+  }
+
+  const price = getApplicationPriceAmount(app.row!);
+  if (price === null) {
+    backToApplications(postId, MSG_NO_PRICE);
     return;
   }
 
@@ -60,6 +75,7 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
     studentId: user.id,
     applicationId,
     mentorId: mentor,
+    agreedPrice: price,
   });
   if (r.ok) {
     revalidatePath("/custom-request");
@@ -68,5 +84,5 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
     revalidatePath(`/custom-request/orders/${r.id}`);
     redirect(`/custom-request/orders/${r.id}`);
   }
-  backToApplications(postId, r.error);
+  backToApplications(postId, MSG_ORDER_FAIL);
 }

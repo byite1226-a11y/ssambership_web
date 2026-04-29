@@ -4,9 +4,8 @@ import {
   type CustomListResult,
   type PostAttachmentListItem,
 } from "@/lib/customRequest/customRequestQueries";
-import { mapPostRowToPublicDetail, attachmentNote } from "@/lib/customRequest/customRequestPostMappers";
+import { isMentorApplicablePostStatus, mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
 import { downloadCustomRequestPostAttachmentAction } from "@/lib/customRequest/postAttachmentDownloadActions";
-import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { MentorApplicationForm } from "@/components/customRequest/MentorApplicationForm";
 import type { UserRow } from "@/lib/types/user";
 
@@ -24,16 +23,12 @@ export function CustomRequestPublicPostBody(props: {
   attachments: PostAttachmentListItem[];
   attachmentLoadError: string | null;
 }) {
-  void props.postTable;
   const d = mapPostRowToPublicDetail(props.row);
-  const att = attachmentNote(props.row);
   const author = isAuthorOfPost(props.userId ?? "", props.row);
-  /* 멘토 지원/학생 CTA: 역할은 post row·RPC가 아닌 서버 profile.role 기준 */
   const isMentor = props.profile?.role === "mentor";
   const isStudent = props.profile?.role === "student";
   const isAuthor = props.userId ? author.ok : false;
-  const statusLower = (d.status || "").toLowerCase();
-  const allowsApply = statusLower.includes("open") || statusLower.includes("모집") || statusLower.includes("recruit") || d.status === "—";
+  const allowsApply = isMentorApplicablePostStatus(props.row);
 
   return (
     <div className="space-y-6">
@@ -54,12 +49,10 @@ export function CustomRequestPublicPostBody(props: {
         </div>
         {props.canViewAttachments ? (
           <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700">
-            <p className="font-extrabold text-slate-800">등록 시 첨부</p>
+            <p className="font-extrabold text-slate-800">등록 첨부</p>
             {props.attachmentLoadError ? (
-              <p className="mt-2 text-amber-800">목록을 불러오지 못했습니다: {mapDataErrorMessage(String(props.attachmentLoadError))}</p>
-            ) : props.attachments.length === 0 ? (
-              <p className="mt-2 text-xs text-slate-500">등록 시 올린 첨부가 없습니다. 주문·납품 단계 첨부는 별도 안내를 따릅니다.</p>
-            ) : (
+              <p className="mt-2 text-amber-800">목록을 불러오지 못했습니다: {props.attachmentLoadError}</p>
+            ) : props.attachments.length === 0 ? null : (
               <ul className="mt-2 space-y-2">
                 {props.attachments.map((a) => (
                   <li
@@ -87,32 +80,25 @@ export function CustomRequestPublicPostBody(props: {
               </ul>
             )}
           </div>
-        ) : (
-          <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-            <span className="font-extrabold">첨부</span> · {att} · <span className="text-xs">제출된 첨부는 주문·진행 단계에서 안내됩니다.</span>
-          </div>
-        )}
+        ) : null}
         <div className="mt-4 text-sm text-slate-600">
-          <p>
-            <span className="font-extrabold">작성자</span> ·{" "}
-            {author.ok ? "이 의뢰는 내가 등록한 요청입니다." : "다른 참가자에게는 식별 정보가 제한될 수 있습니다."}
-          </p>
+          {author.ok ? <p>작성하신 맞춤의뢰입니다.</p> : null}
           <p className="mt-2">
-            <span className="font-extrabold">선택 전 연락처</span> · {d.contactMasked}
+            <span className="font-extrabold">선정 전</span> · {d.contactMasked}
           </p>
         </div>
         {props.applications.error ? (
-          <p className="mt-2 text-sm text-amber-800">지원 정보: {mapDataErrorMessage(String(props.applications.error))}</p>
+          <p className="mt-2 text-sm text-amber-800">지원서 정보를 모두 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : (
-          <p className="mt-2 text-sm text-slate-600">이 의뢰에 제출된 지원: {props.applications.rows.length}건</p>
+          <p className="mt-2 text-sm text-slate-600">이 의뢰에 대해 제출된 지원 {props.applications.rows.length}건</p>
         )}
       </section>
 
       <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-sm text-blue-950">
         <p className="font-extrabold">정책(요약)</p>
         <ul className="mt-2 list-inside list-disc space-y-1 text-blue-900/90">
-          <li>의뢰 등록은 학생 계정으로 할 수 있습니다.</li>
-          <li>지원은 멘토만 제출할 수 있으며, 선정 후 주문·결제는 단계별로 안내됩니다.</li>
+          <li>의뢰 등록은 학생 계정만(별도 /custom-request/new).</li>
+          <li>지원 제출은 멘토만. 멘토 1명 선정 후 custom_request_orders·결제(후속)로 이어집니다.</li>
         </ul>
       </section>
 
@@ -129,7 +115,7 @@ export function CustomRequestPublicPostBody(props: {
       ) : null}
 
       {isMentor && !isAuthor && allowsApply && (
-        <MentorApplicationForm postId={props.postId} appTableHint={props.applications.table} />
+        <MentorApplicationForm postId={props.postId} returnContext="public" />
       )}
 
       {isMentor && isAuthor ? (
@@ -149,7 +135,7 @@ export function CustomRequestPublicPostBody(props: {
       ) : null}
 
       {isMentor && !isAuthor && !allowsApply ? (
-        <p className="text-sm text-slate-500">현재는 모집이 마감되었거나 지원을 받지 않는 상태입니다.</p>
+        <p className="text-sm text-slate-500">모집 종료 등 open 이외 상태 — 새 지원 UI 비활성(스키마·상태명 확정 후 조정).</p>
       ) : null}
     </div>
   );

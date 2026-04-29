@@ -175,6 +175,21 @@ export async function insertMentorApplication(
     return { ok: false, error: "mentor / applicant FK 컬럼을 찾을 수 없습니다." };
   }
 
+  const { data: dup, error: dupErr } = await supabase
+    .from(t)
+    .select("id")
+    .eq(postCol, input.postId)
+    .eq(mentorCol, input.mentorId)
+    .limit(1)
+    .maybeSingle();
+  if (dupErr) {
+    if (!/column|does not exist|schema cache/i.test(dupErr.message)) {
+      return { ok: false, error: dupErr.message };
+    }
+  } else if (dup) {
+    return { ok: false, error: "ALREADY_APPLIED" };
+  }
+
   const priceNum = input.proposedPrice ? Number.parseFloat(input.proposedPrice) : null;
   const p1: Record<string, unknown> = {
     [postCol]: input.postId,
@@ -203,6 +218,12 @@ export async function insertMentorApplication(
     content: [input.coverNote, input.extraAnswers].filter(Boolean).join("\n\n"),
   };
   const { row, error } = await insertWithCandidates(supabase, t, [p1, p2]);
+  if (error) {
+    const e = error;
+    if (/unique|23505|duplicate|already exists/i.test(e) || e.includes("ALREADY_APPLIED")) {
+      return { ok: false, error: "ALREADY_APPLIED" };
+    }
+  }
   return toId(row, error);
 }
 
@@ -211,6 +232,8 @@ export type CreateOrderFromApplicationInput = {
   studentId: string;
   applicationId: string;
   mentorId: string;
+  /** application에서 스냅샷(지원 제안가) */
+  agreedPrice: number;
 };
 
 /**
@@ -220,12 +243,16 @@ export async function insertCustomRequestOrder(
   supabase: SupabaseClient,
   input: CreateOrderFromApplicationInput
 ): Promise<MutationResult> {
+  if (!Number.isFinite(input.agreedPrice)) {
+    return { ok: false, error: "ORDER_PRICE_INVALID" };
+  }
   const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
   if (!oT.table) {
     return { ok: false, error: oT.error || "orders 테이블 없음" };
   }
   const t = oT.table;
-  /** 003 스키마: post_id, student_id, mentor_id NOT NULL + status 등 */
+  const ap = input.agreedPrice;
+  /** 003 스키마: post_id, student_id, mentor_id NOT NULL + status 등; agreed_price 등 스냅샷 */
   const pLean: Record<string, unknown> = {
     post_id: input.postId,
     student_id: input.studentId,
@@ -235,6 +262,10 @@ export async function insertCustomRequestOrder(
     state: "pending",
     order_status: "open",
     payment_status: "unpaid",
+    agreed_price: ap,
+    proposed_price: ap,
+    price: ap,
+    amount: ap,
   };
   const p1: Record<string, unknown> = {
     post_id: input.postId,
@@ -258,17 +289,25 @@ export async function insertCustomRequestOrder(
     state: "pending",
     order_status: "open",
     payment_status: "unpaid",
+    agreed_price: ap,
+    proposed_price: ap,
+    price: ap,
+    amount: ap,
   };
   const p2: Record<string, unknown> = {
     post_id: input.postId,
     student_id: input.studentId,
     mentor_id: input.mentorId,
     application_id: input.applicationId,
+    agreed_price: ap,
+    proposed_price: ap,
+    price: ap,
   };
   const p3: Record<string, unknown> = {
     custom_request_post_id: input.postId,
     student_id: input.studentId,
     mentor_id: input.mentorId,
+    agreed_price: ap,
   };
   const { row, error } = await insertWithCandidates(supabase, t, [pLean, p2, p3, p1]);
   return toId(row, error);

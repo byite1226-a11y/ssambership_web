@@ -32,6 +32,25 @@ function contactLineMasked(row: Row): string {
 }
 
 /** 공개 상세(선택 전 연락처·외부 식별자는 마스킹) */
+/**
+ * browse RPC(006·018)와 맞춰 모집 중인 의뢰만 지원 가능으로 본다.
+ * status·state가 비어 있으면(스키마상 정보 없음) 열어 두어 기존 공개 상세와 톤을 맞춤.
+ */
+export function isMentorApplicablePostStatus(row: Row): boolean {
+  const s = String(row.status ?? "").trim().toLowerCase();
+  const st = String((row as { state?: string }).state ?? "").trim().toLowerCase();
+  if (s.includes("close") || s.includes("취소") || s.includes("cancel") || s.includes("fulfill") || s === "archived" || s === "draft") {
+    return false;
+  }
+  if (s === "open" || st === "open" || st === "published") {
+    return true;
+  }
+  if (s.length === 0 && st.length === 0) {
+    return true;
+  }
+  return false;
+}
+
 export function mapPostRowToPublicDetail(row: Row) {
   return {
     title: pickDisplayField(row, ["title", "subject"]),

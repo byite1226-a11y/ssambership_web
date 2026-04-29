@@ -25,7 +25,7 @@ export type MentorDashboardData = {
   notifyProbe: { label: string; detail: string; status: "skeleton" | "connected" | "empty" };
 };
 
-async function fetchRecentCustomOrders(
+export async function fetchRecentCustomOrders(
   supabase: SupabaseClient,
   mentorId: string,
   limit = 5

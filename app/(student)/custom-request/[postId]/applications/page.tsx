@@ -5,12 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   enrichApplicationRows,
   isAuthorOfPost,
-  findOrderForPostAndStudent,
+  getOrderIdForPostAndStudent,
   loadApplicationsForPost,
   loadCustomPostById,
 } from "@/lib/customRequest/customRequestQueries";
-import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
-import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type Row = Record<string, unknown>;
 
@@ -19,10 +17,13 @@ type PageProps = {
   searchParams?: Promise<{ error?: string }>;
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function CustomRequestApplicationsPage(props: PageProps) {
   const { postId } = await props.params;
   const sp = (await props.searchParams) ?? {};
-  const err = typeof sp.error === "string" && sp.error ? sp.error : null;
+  const hasErrQ = sp.error != null && String(sp.error).length > 0;
 
   const { user } = await requireRole("student");
   const supabase = await createClient();
@@ -30,48 +31,33 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
   const authz = isAuthorOfPost(user.id, post.row);
   const list = await loadApplicationsForPost(supabase, postId, 40);
   const enriched = await enrichApplicationRows(supabase, (list.rows as Row[]) ?? []);
-  const existing = await findOrderForPostAndStudent(supabase, postId, user.id);
-
-  const listErr = list.error ? mapDataErrorMessage(String(list.error)) : null;
-  const existingNote = existing.orderId
-    ? `이미 연결된 주문이 있습니다(주문번호 ${shortOrderIdForDisplay(String(existing.orderId))}).`
-    : existing.error || existing.probe
-      ? mapDataErrorMessage(String(existing.error ?? existing.probe ?? ""))
-      : "아직 이 의뢰로 생성된 주문이 없습니다.";
-
-  const titleDescription = authz.ok
-    ? `의뢰 ${shortOrderIdForDisplay(postId)} — 지원 ${list.rows.length}건을 비교하고, 한 명을 선택하면 주문방으로 이어집니다.`
-    : `의뢰 ${shortOrderIdForDisplay(postId)} — 이 화면에서는 지원한 멘토를 비교할 수 있습니다.`;
+  const orderId = await getOrderIdForPostAndStudent(supabase, postId, user.id);
 
   return (
     <PageScaffold
-      eyebrow="지원서"
+      eyebrow="맞춤의뢰 / 지원서 비교"
       title="지원서 비교"
-      description={titleDescription}
+      description="이 의뢰에 대해 제출된 멘토님의 제안을 가격, 납기, 내용으로 비교하세요. 한 분을 선택하시면 이후 주문·진행 흐름이 이어질 수 있어요."
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
-        { href: `/custom-request/${postId}`, label: "의뢰 공개 상세", tone: "slate" },
+        { href: `/custom-request/${postId}`, label: "의뢰 상세", tone: "slate" },
         { href: "/home", label: "홈", tone: "slate" },
       ]}
       sections={[]}
+      emptyState=""
+      dataPoints={[]}
     >
-      {err ? (
-        <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-extrabold text-red-900">선정/주문: {mapDataErrorMessage(err)}</p>
+      {hasErrQ ? (
+        <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-bold text-red-900">
+          처리에 문제가 있었어요. 잠시 후 다시 시도해 주세요.
+        </p>
       ) : null}
-      {authz.ok && listErr ? <p className="mb-3 text-sm text-amber-800">지원 목록: {listErr}</p> : null}
-      {authz.ok ? <p className="mb-4 text-sm text-slate-600">{existingNote}</p> : null}
       {!authz.ok ? (
         <p className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold text-amber-950">
-          이 의뢰를 등록한 학생만 지원서를 비교할 수 있습니다.
-          {post.error ? <span className="mt-2 block text-amber-900/90">의뢰 정보: {mapDataErrorMessage(String(post.error))}</span> : null}
+          이 맞춤의뢰는 작성자(의뢰하신 본인)만 비교·선정 화면을 열 수 있어요.
         </p>
       ) : (
-        <ApplicationsCompareView
-          list={list}
-          postId={postId}
-          enriched={enriched}
-          existingOrderId={existing.orderId}
-        />
+        <ApplicationsCompareView list={list} postId={postId} enriched={enriched} existingOrderId={orderId} />
       )}
     </PageScaffold>
   );

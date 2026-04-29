@@ -9,7 +9,7 @@ function fmt(e: PostgrestError | null): string | null {
   return e ? e.message : null;
 }
 
-/** Staging(003)은 custom_request_order_id — legacy 호환 */
+/** insert: 첫으로 존재하는 열에 주문 id. 003는 custom_request_order_id NOT NULL. */
 export const ORDER_TO_DELIVERABLE_FK_CANDIDATES = [
   "custom_request_order_id",
   "order_id",
@@ -19,7 +19,7 @@ export const ORDER_TO_DELIVERABLE_FK_CANDIDATES = [
 
 /**
  * 읽기·count: OR 탐지 없이 SSOT 우선 단일 열(003: custom_request_order_id).
- * insert 후보(ORDER_TO_DELIVERABLE_FK_CANDIDATES)와 동일 후보나 **우선순위가 고정**됨.
+ * insert 후보(ORDER_TO_DELIVERABLE_FK_CANDIDATES)와 동일 후보이나 **우선순위가 고정**됨.
  */
 export const ORDER_CHILD_FK_READ_PRIORITY = [
   "custom_request_order_id",
@@ -43,6 +43,7 @@ export async function resolveOrderChildFkReadColumn(
 
 /**
  * 003: custom_request_order_id가 본 키이면 order_id·custom_order_id·request_order_id에 동일 UUID를 미러(열 있을 때만).
+ * 통합 주문 시스템에서 `order_id`만 쓰는 API와 호환.
  */
 export async function mergeOrderChildIdMirrorColumns(
   supabase: SupabaseClient,
@@ -382,7 +383,7 @@ export async function loadOrderBundle(
   const dT = await firstReadableCustomTable(supabase, ["custom_order_deliverables", "order_deliverables", "request_deliverables"]);
   let deliv: CustomListResult = { table: null, sourceNote: dT.error, rows: [], error: dT.error };
   if (dT.table && oT.table) {
-    const { column: fk } = await pickExistingColumn(supabase, dT.table, [...ORDER_TO_DELIVERABLE_FK_CANDIDATES]);
+    const { column: fk } = await resolveOrderChildFkReadColumn(supabase, dT.table);
     if (fk) {
       const { data, error } = await supabase
         .from(dT.table)
@@ -398,7 +399,7 @@ export async function loadOrderBundle(
           error: fmt(r2.error),
         };
       } else {
-        deliv = { table: dT.table, sourceNote: "deliverables", rows: (data as Row[]) ?? [], error: null };
+        deliv = { table: dT.table, sourceNote: `deliverables · ${fk}`, rows: (data as Row[]) ?? [], error: null };
       }
     } else {
       const { rows, error } = await selectWithOrder<Row>(supabase, dT.table, 20);
@@ -412,12 +413,7 @@ export async function loadOrderBundle(
   const dis = await firstReadableCustomTable(supabase, ["disputes", "order_disputes", "custom_disputes"]);
   let disputes: CustomListResult = { table: null, sourceNote: dis.error, rows: [], error: dis.error };
   if (dis.table) {
-    const { column: fk } = await pickExistingColumn(supabase, dis.table, [
-      "custom_request_order_id",
-      "order_id",
-      "custom_order_id",
-      "request_order_id",
-    ]);
+    const { column: fk } = await pickExistingColumn(supabase, dis.table, ["order_id", "custom_order_id"]);
     if (fk) {
       const { data, error } = await supabase.from(dis.table).select("*").eq(fk, orderId).limit(20);
       disputes = { table: dis.table, sourceNote: "분쟁(조회만)", rows: (data as Row[]) ?? [], error: fmt(error) };
@@ -442,6 +438,144 @@ export function pickDisplayField(row: Row, keys: string[]): string {
   return "—";
 }
 
+// ---------------------------------------------------------------------------
+// custom_request_applications (학생 비교·주문) — PostgREST가 numeric/날짜를 string이 아닌 형태로 줄 수 있음
+// ---------------------------------------------------------------------------
+
+/** 1순위 proposed_price → price → bid_amount, 숫자/문자 모두 허용 */
+export function getApplicationPriceAmount(row: Row): number | null {
+  for (const k of ["proposed_price", "price", "bid_amount"] as const) {
+    const v = row[k];
+    if (typeof v === "number" && Number.isFinite(v)) {
+      return v;
+    }
+    if (typeof v === "string" && v.trim()) {
+      const n = Number.parseFloat(v.replace(/,/g, "").trim());
+      if (Number.isFinite(n)) {
+        return n;
+      }
+    }
+  }
+  return null;
+}
+
+/** 예: 50000 → 50,000원 */
+export function formatApplicationPriceKrwDisplay(row: Row): string {
+  const n = getApplicationPriceAmount(row);
+  if (n === null) {
+    return "가격 미입력";
+  }
+  return new Intl.NumberFormat("ko-KR").format(n) + "원";
+}
+
+function dateLikeToYmdDots(v: unknown): string | null {
+  if (v == null) {
+    return null;
+  }
+  if (v instanceof Date) {
+    if (Number.isNaN(v.getTime())) {
+      return null;
+    }
+    return `${v.getFullYear()}.${String(v.getMonth() + 1).padStart(2, "0")}.${String(v.getDate()).padStart(2, "0")}`;
+  }
+  if (typeof v === "string" && v.trim()) {
+    const t = v.trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+      return t.slice(0, 10).replace(/-/g, ".");
+    }
+    const d = new Date(t);
+    if (!Number.isNaN(d.getTime())) {
+      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+    }
+  }
+  return null;
+}
+
+/** delivery_at → proposed_due → due_proposed, ISO 풀 문자열을 그대로 보여주지 않음 */
+export function formatApplicationDueDateDisplay(row: Row): string {
+  for (const k of ["delivery_at", "proposed_due", "due_proposed"] as const) {
+    const s = dateLikeToYmdDots(row[k]);
+    if (s) {
+      return s;
+    }
+  }
+  return "납기 미정";
+}
+
+/** DB status 원문을 크게 박지 않고 짧은 사용자 라벨 */
+export function formatApplicationStatusForStudent(row: Row): string {
+  const s = String(row.status ?? row.state ?? "")
+    .toLowerCase()
+    .trim();
+  if (s === "submitted" || s === "submit" || s === "sent") {
+    return "지원서 제출됨";
+  }
+  if (s === "draft" || s === "pending_draft") {
+    return "작성 중";
+  }
+  if (s === "accepted" || s === "selected" || s === "approved") {
+    return "선정됨";
+  }
+  if (s === "rejected" || s === "declined" || s === "cancelled" || s === "canceled") {
+    return "검토 종료";
+  }
+  if (s === "in_review" || s === "open" || !s) {
+    return "검토 가능";
+  }
+  return "검토 가능";
+}
+
+const COMPARE_EMPTY = "작성된 내용이 없습니다.";
+
+function applicationFirstNonEmptyString(row: Row, keys: string[]): string {
+  for (const k of keys) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) {
+      return v.trim();
+    }
+  }
+  return "";
+}
+
+function compNorm(s: string): string {
+  return s.replace(/\s+/g, " ").trim();
+}
+
+export type ApplicationTextBlocksForCompare = {
+  proposal: string;
+  scope: string;
+  extra: string;
+};
+
+/**
+ * cover_letter / scope / notes 우선순위와 동일·포함 본문 중복 완화
+ */
+export function getApplicationTextBlocksForCompare(row: Row): ApplicationTextBlocksForCompare {
+  const rawP = applicationFirstNonEmptyString(row, ["cover_letter", "message", "content", "self_intro"]);
+  const rawS = applicationFirstNonEmptyString(row, ["scope", "offer_scope", "services_offered"]);
+  const rawE = applicationFirstNonEmptyString(row, ["notes", "extra_answers", "answers"]);
+
+  const proposal = rawP || COMPARE_EMPTY;
+  let scope = rawS || COMPARE_EMPTY;
+  let extra = rawE || COMPARE_EMPTY;
+
+  const nP = rawP ? compNorm(rawP) : "";
+  const nS = rawS ? compNorm(rawS) : "";
+  const nE = rawE ? compNorm(rawE) : "";
+
+  if (nP && nS && nP === nS) {
+    scope = "제안 내용에 포함되어 있어, 별도의 작업 범위 문구는 없습니다.";
+  }
+  if (nE && nP && nE === nP) {
+    extra = "제안 내용에 포함되어 있어, 별도 추가 메모는 없습니다.";
+  } else if (nE && nS && nE === nS && nP && nE !== nP) {
+    extra = "작업 범위에 포함되어 있어, 별도 추가 메모는 없습니다.";
+  } else if (nE && nP && nS && nE === nP && nE === nS) {
+    extra = "제안·작업 범위와 동일한 내용입니다.";
+  }
+  return { proposal, scope, extra };
+}
+
 export function maskContact(s: string): string {
   if (s.length <= 2) return "**";
   return s[0] + "·".repeat(Math.min(4, s.length - 2)) + s[s.length - 1];
@@ -453,6 +587,142 @@ export type EnrichedApplication = {
   applicationId: string | null;
   display: MentorProfileDisplay | null;
 };
+
+/**
+ * 멘토용 모집 중 의뢰 목록 — 018 `list_open_custom_request_posts_for_mentor_browse` RPC
+ * (미적용 DB에서는 RPC 없음 → status `rpc_unavailable`, 클라이언트는 안내 문구만 사용)
+ */
+export async function loadOpenCustomRequestPostsForMentorBrowse(
+  supabase: SupabaseClient,
+  limit = 50
+): Promise<{ rows: Row[]; status: "ok" | "empty" | "rpc_unavailable" }> {
+  const { data, error } = await supabase.rpc("list_open_custom_request_posts_for_mentor_browse", { p_limit: limit });
+  if (error) {
+    if (/function|does not exist|schema cache/i.test(error.message)) {
+      return { rows: [], status: "rpc_unavailable" };
+    }
+    return { rows: [], status: "empty" };
+  }
+  return { rows: (data as Row[]) ?? [], status: "ok" };
+}
+
+/**
+ * 이미 이 의뢰에 (동일 멘토) 지원이 있는지 — 지원서 작성·중복 안내
+ */
+export async function mentorHasApplicationForPost(
+  supabase: SupabaseClient,
+  postId: string,
+  mentorId: string
+): Promise<boolean> {
+  const tProbe = await firstReadableCustomTable(supabase, ["custom_request_applications", "request_applications", "custom_bids"]);
+  if (!tProbe.table) return false;
+  const t = tProbe.table;
+  const { column: postCol } = await pickExistingColumn(supabase, t, [
+    "post_id",
+    "request_id",
+    "custom_request_id",
+    "custom_request_post_id",
+  ]);
+  const { column: mentorCol } = await pickExistingColumn(supabase, t, [
+    "mentor_id",
+    "applicant_id",
+    "user_id",
+    "proposer_id",
+  ]);
+  if (!postCol || !mentorCol) return false;
+  const { data, error } = await supabase.from(t).select("id").eq(postCol, postId).eq(mentorCol, mentorId).limit(1).maybeSingle();
+  if (error || !data) return false;
+  return true;
+}
+
+export type MentorApplicationWithPostHint = {
+  application: Row;
+  postId: string;
+  postTitle: string;
+  href: string;
+};
+
+/**
+ * 멘토가 제출한 지원 요약(의뢰 제목은 browse RPC·상세 조회로 보강)
+ */
+export async function loadMentorRecentApplicationsWithPostHints(
+  supabase: SupabaseClient,
+  mentorId: string,
+  max = 20
+): Promise<{ items: MentorApplicationWithPostHint[]; listFailed: boolean }> {
+  const tProbe = await firstReadableCustomTable(supabase, ["custom_request_applications", "request_applications", "custom_bids"]);
+  if (!tProbe.table) {
+    return { items: [], listFailed: false };
+  }
+  const t = tProbe.table;
+  const { column: mentorCol } = await pickExistingColumn(supabase, t, [
+    "mentor_id",
+    "applicant_id",
+    "user_id",
+    "proposer_id",
+  ]);
+  if (!mentorCol) {
+    return { items: [], listFailed: true };
+  }
+  const o1 = await supabase
+    .from(t)
+    .select("*")
+    .eq(mentorCol, mentorId)
+    .order("created_at", { ascending: false })
+    .limit(max);
+  if (o1.error) {
+    if (!/order|column|does not exist/i.test(o1.error.message)) {
+      return { items: [], listFailed: true };
+    }
+    const o2 = await supabase.from(t).select("*").eq(mentorCol, mentorId).limit(max);
+    if (o2.error) {
+      return { items: [], listFailed: true };
+    }
+    return mapAppsToHints(supabase, (o2.data as Row[]) ?? []);
+  }
+  return mapAppsToHints(supabase, (o1.data as Row[]) ?? []);
+}
+
+async function mapAppsToHints(
+  supabase: SupabaseClient,
+  apps: Row[]
+): Promise<{ items: MentorApplicationWithPostHint[]; listFailed: boolean }> {
+  const items: MentorApplicationWithPostHint[] = [];
+  for (const a of apps) {
+    const pid = String(
+      a.post_id ?? a.custom_request_post_id ?? a.request_id ?? a.custom_request_id ?? ""
+    ).trim();
+    if (!pid) {
+      continue;
+    }
+    const detail = await loadCustomPostForPublicDetail(supabase, pid);
+    const title = detail.row
+      ? pickDisplayField(detail.row, ["title", "subject", "content"])
+      : "맞춤의뢰";
+    items.push({
+      application: a,
+      postId: pid,
+      postTitle: title,
+      href: `/mentor/custom-request/posts/${pid}`,
+    });
+  }
+  return { items, listFailed: false };
+}
+
+/**
+ * 학생·의뢰자: 선정한 주문 id(선택 전·비해당 시 null) — UI에는 orderId만 사용
+ */
+export async function getOrderIdForPostAndStudent(
+  supabase: SupabaseClient,
+  postId: string,
+  studentId: string
+): Promise<string | null> {
+  const r = await findOrderForPostAndStudent(supabase, postId, studentId);
+  if (r.error) {
+    console.warn("[getOrderIdForPostAndStudent]", r.error);
+  }
+  return r.orderId;
+}
 
 export async function enrichApplicationRows(supabase: SupabaseClient, rows: Row[]): Promise<EnrichedApplication[]> {
   const out: EnrichedApplication[] = [];
