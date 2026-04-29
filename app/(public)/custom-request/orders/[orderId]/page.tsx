@@ -62,14 +62,16 @@ export default async function CustomRequestOrderPage(props: PageProps) {
           {sp.ok}
         </p>
       ) : null}
-      <OrderRoomView
-        bundle={bundle}
-        detail={detail}
-        orderId={orderId}
-        view={view}
-        actorRole={role}
-        accessDenied={accessDenied}
-      />
+      <div className="w-full min-w-0">
+        <OrderRoomView
+          bundle={bundle}
+          detail={detail}
+          orderId={orderId}
+          view={view}
+          actorRole={role}
+          accessDenied={accessDenied}
+        />
+      </div>
     </PageScaffold>
   );
 }

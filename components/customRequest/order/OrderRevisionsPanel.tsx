@@ -1,7 +1,7 @@
 import { submitCustomOrderRevisionRequestAction } from "@/lib/customRequest/orderRevisionActions";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
-import { formatOrderRoomDateTime } from "@/lib/customRequest/orderLifecycleConstants";
+import { formatOrderRoomDateTime, ORDER_ROOM_CARD_CLASS } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
 
 type Row = Record<string, unknown>;
@@ -15,6 +15,8 @@ type Props = {
   studentRevisionRequestDisabledReason: string | null;
   /** 종료 주문: 폼·막힌 사유 박스 숨김(내역만) */
   orderTerminal?: boolean;
+  /** 3열 레이아웃 우측: 히스토리 접기 */
+  workspaceCompact?: boolean;
 };
 
 function revisionBody(r: Row) {
@@ -28,6 +30,7 @@ export function OrderRevisionsPanel({
   hasOrderPartyAccess,
   studentRevisionRequestDisabledReason,
   orderTerminal = false,
+  workspaceCompact = false,
 }: Props) {
   const rev = detail.revisions;
   const rows = (rev.rows ?? []) as Row[];
@@ -37,10 +40,14 @@ export function OrderRevisionsPanel({
   return (
     <section
       id="order-revisions"
-      className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-800 shadow-sm"
+      className={`${ORDER_ROOM_CARD_CLASS} text-sm text-slate-800`}
     >
-      <h3 className="text-base font-bold text-slate-900">수정 요청</h3>
-      <p className="mt-1 text-xs text-slate-500">납품·검토 중 의뢰자가 멘토에게 보내는 수정 사항이 여기 누적됩니다(완료된 주문은 제외).</p>
+      <h3 className="text-sm font-bold text-slate-900">수정 요청</h3>
+      <p className="mt-1 text-xs text-slate-500">
+        {workspaceCompact
+          ? "의뢰자 → 멘토(납품·검토 중)"
+          : "납품·검토 중 의뢰자가 멘토에게 보내는 수정 사항이 여기 누적됩니다(완료된 주문은 제외)."}
+      </p>
 
       {!orderTerminal && canShowComposer && studentRevisionRequestDisabledReason == null ? (
         <form action={submitCustomOrderRevisionRequestAction} className="mt-4 space-y-2">
@@ -59,7 +66,7 @@ export function OrderRevisionsPanel({
           />
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
           >
             수정 요청 보내기
           </button>
@@ -70,14 +77,35 @@ export function OrderRevisionsPanel({
         </p>
       ) : null}
 
-      <div className="mt-5">
+      <div className="mt-4">
+        {workspaceCompact && hasTable && rows.length > 0 ? (
+          <details className="group mt-1">
+            <summary className="cursor-pointer list-none text-xs font-semibold text-slate-600 marker:hidden [&::-webkit-details-marker]:hidden">
+              <span className="inline-flex items-center gap-1">
+                <span className="text-slate-400">▸</span> 수정 요청 히스토리 ({rows.length})
+              </span>
+            </summary>
+            <ul className="mt-2 max-h-60 space-y-2 overflow-y-auto">
+              {rows.map((r, i) => {
+                const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
+                return (
+                  <li key={String(r.id ?? i)} className="rounded-lg border border-slate-200/60 bg-slate-50/50 px-2.5 py-2">
+                    <p className="text-[11px] text-slate-400">{at}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-slate-800">{revisionBody(r)}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        ) : (
+          <>
         <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">내역</h4>
         {hasTable && rows.length > 0 ? (
           <ul className="mt-2 max-h-72 space-y-3 overflow-y-auto">
             {rows.map((r, i) => {
               const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
               return (
-                <li key={String(r.id ?? i)} className="rounded-lg border border-slate-200 bg-slate-50/30 px-3 py-2.5">
+                <li key={String(r.id ?? i)} className="rounded-lg border border-blue-100/50 bg-blue-50/20 px-3 py-2.5">
                   <p className="text-[11px] text-slate-400">{at}</p>
                   <p className="mt-1.5 whitespace-pre-wrap text-slate-800">{revisionBody(r)}</p>
                 </li>
@@ -92,6 +120,8 @@ export function OrderRevisionsPanel({
               ? "수정 요청을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
               : "수정 요청 내역을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."}
           </p>
+        )}
+          </>
         )}
       </div>
     </section>

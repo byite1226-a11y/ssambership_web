@@ -3,15 +3,18 @@ import { submitCustomOrderRoomMessageAction } from "@/lib/customRequest/orderMes
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import {
   formatOrderRoomDateTime,
+  normalizedPrimaryOrderStatus,
   orderEventKindLabelForUi,
-  orderStatusLabelForUi,
+  ORDER_ROOM_CARD_CLASS,
 } from "@/lib/customRequest/orderLifecycleConstants";
+import { OrderStatusBadge } from "@/components/customRequest/order/OrderStatusBadge";
 import {
   orderPartyLabelForMessage,
   pickOrderMentorIdFromRow,
   pickOrderStudentId,
 } from "@/lib/customRequest/orderRoomMutations";
 import type { AppRole } from "@/lib/types/user";
+
 type Row = Record<string, unknown>;
 type Props = {
   detail: OrderDetailPageData;
@@ -73,158 +76,170 @@ export function OrderProgressSection({
   const studentId = pickOrderStudentId(o as Row | null);
   const mentorId = pickOrderMentorIdFromRow(o as Row | null);
   const msgRows = (msg.rows ?? []) as Row[];
-  const studentMsgs = msgRows.filter((m) => orderPartyLabelForMessage(m, o as Row | null, studentId, mentorId) === "학생");
-  const mentorMsgs = msgRows.filter((m) => orderPartyLabelForMessage(m, o as Row | null, studentId, mentorId) === "멘토");
+  const studentMsgs = msgRows.filter(
+    (m) => orderPartyLabelForMessage(m, o as Row | null, studentId, mentorId) === "학생"
+  );
+  const mentorMsgs = msgRows.filter(
+    (m) => orderPartyLabelForMessage(m, o as Row | null, studentId, mentorId) === "멘토"
+  );
 
   const showStudentComposer =
     !orderTerminal && actorRole === "student" && hasOrderPartyAccess && Boolean(orderId);
   const showMentorComposer = !orderTerminal && actorRole === "mentor" && hasOrderPartyAccess && Boolean(orderId);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-800 shadow-sm">
-      <h3 className="text-base font-bold text-slate-900">진행 로그 / 메시지</h3>
-      <p className="mt-1 text-xs text-slate-500">주문 이벤트와 의뢰·멘토 간 메시지를 확인할 수 있습니다.</p>
-
+    <div className={`${ORDER_ROOM_CARD_CLASS} space-y-4 text-sm text-slate-800`}>
       {postE ? (
-        <p className="mt-3 text-xs text-amber-800">의뢰 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <p className="text-xs text-amber-800">의뢰 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       ) : null}
       {appE ? (
-        <p className="mt-1 text-xs text-amber-800">지원 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <p className="text-xs text-amber-800">지원 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       ) : null}
       {evErr && !hasEvents ? (
-        <p className="mt-1 text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <p className="text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       ) : null}
-      {evErr && hasEvents ? <p className="mt-1 text-xs text-amber-700/90">일부 기록을 불러오지 못했을 수 있습니다.</p> : null}
+      {evErr && hasEvents ? <p className="text-xs text-amber-700/90">일부 기록을 불러오지 못했을 수 있습니다.</p> : null}
       {msgErr && !hasMessages && msg.table ? (
-        <p className="mt-1 text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <p className="text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       ) : null}
 
-      <div className="mt-4">
-        <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">상태·이벤트</h4>
-        {!o ? (
-          <p className="mt-1.5 text-xs text-slate-500">주문 정보가 없습니다.</p>
-        ) : hasEvents ? (
-          <ol className="mt-1.5 max-h-52 space-y-1.5 overflow-y-auto border-l border-slate-200 pl-3 text-xs text-slate-600">
-            {((ev.rows ?? []) as Row[]).map((r) => {
-              const { t, s, at } = eventLine(r);
-              return (
-                <li key={String((r as Row).id ?? t + at)} className="leading-relaxed">
-                  <span className="text-slate-400">{at}</span>{" "}
-                  <span className="text-slate-800">{t}</span>
-                  {s && s !== "—" ? <span className="text-slate-600"> — {s}</span> : null}
+      <div>
+        <div className="mb-3">
+          <h3 className="text-sm font-bold text-slate-950">진행 기록</h3>
+          <p className="mt-0.5 text-xs text-slate-500">최근 단계 이벤트(요약)</p>
+        </div>
+        <div className="min-h-0 max-h-36 overflow-y-auto rounded-2xl border border-slate-100/80 bg-slate-50/60 px-3 py-2.5">
+          {!o ? (
+            <p className="text-xs text-slate-500">주문 정보가 없습니다.</p>
+          ) : hasEvents ? (
+            <ol className="space-y-1.5 border-l-2 border-blue-200/70 pl-2.5 text-xs text-slate-600">
+              {((ev.rows ?? []) as Row[]).map((r) => {
+                const { t, s, at } = eventLine(r);
+                return (
+                  <li key={String((r as Row).id ?? t + at)} className="leading-relaxed">
+                    <span className="text-slate-400">{at}</span>{" "}
+                    <span className="text-slate-800">{t}</span>
+                    {s && s !== "—" ? <span className="text-slate-600"> — {s}</span> : null}
                 </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <ol className="mt-1.5 list-decimal pl-4 text-xs text-slate-600">
-            <li>
-              상태:{" "}
-              {orderStatusLabelForUi(
-                String((o as Row).status ?? (o as Row).state ?? (o as Row).order_status ?? (o as Row).stage ?? "")
+                );
+              })}
+            </ol>
+          ) : (
+            <ol className="list-decimal space-y-0.5 pl-4 text-xs text-slate-600">
+              <li className="pl-0">
+                <span className="text-slate-500">상태 </span>
+                <OrderStatusBadge norm={normalizedPrimaryOrderStatus(o as Row)} />
+              </li>
+              {o.created_at != null && <li>주문 등록 {formatOrderRoomDateTime((o as Row).created_at)}</li>}
+              {o.updated_at != null && (o as Row).created_at !== (o as Row).updated_at && (
+                <li>마지막 갱신 {formatOrderRoomDateTime((o as Row).updated_at)}</li>
               )}
-            </li>
-            {o.created_at != null && <li>주문 등록: {formatOrderRoomDateTime((o as Row).created_at)}</li>}
-            {o.updated_at != null && (o as Row).created_at !== (o as Row).updated_at && (
-              <li>마지막 변경: {formatOrderRoomDateTime((o as Row).updated_at)}</li>
-            )}
-            <li className="list-none pl-0 text-slate-400">이벤트 기록이 없을 때는 위 정보로 대체 표시됩니다.</li>
-          </ol>
+            </ol>
+          )}
+        </div>
+        {!o || hasEvents ? null : (
+          <p className="mt-1.5 text-[11px] text-slate-400">이벤트가 없을 때는 위 항목으로 대체해 보여 드려요.</p>
         )}
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div className="flex min-h-[120px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-600">
-          <p className="shrink-0 text-sm font-semibold text-slate-800">학생 메시지</p>
-          {showStudentComposer ? (
-            <form action={submitCustomOrderRoomMessageAction} className="shrink-0 space-y-2">
-              <input type="hidden" name="orderId" value={orderId} />
-              <label className="sr-only" htmlFor="student-order-msg">
-                학생 메시지
-              </label>
-              <textarea
-                id="student-order-msg"
-                name="messageBody"
-                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm"
-                rows={2}
-                placeholder="멘토에게 전달할 메시지를 입력하세요."
-                maxLength={4000}
-                autoComplete="off"
-              />
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-sky-600 py-2 text-sm font-semibold text-white hover:bg-sky-500"
-              >
-                학생 메시지 보내기
-              </button>
-            </form>
-          ) : null}
-          {hasMessages && studentMsgs.length > 0 ? (
-            <ul className="mt-0 max-h-48 space-y-2 overflow-y-auto text-left">
-              {studentMsgs.map((m, i) => (
-                <li
-                  key={String(m.id ?? i)}
-                  className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2 text-slate-800"
-                >
-                  <p className="text-[11px] text-slate-400">
-                    {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
-                  </p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{messageText(m)}</p>
-                </li>
-              ))}
-            </ul>
-          ) : msgTableReady && studentMsgs.length === 0 ? (
-            <p className="text-sm text-slate-500">학생 메시지 없음</p>
-          ) : !msgTableReady ? (
-            <p className="text-sm text-slate-500">메시지를 불러올 수 없습니다.</p>
-          ) : null}
+      <div>
+        <div className="mb-3">
+          <h3 className="text-sm font-bold text-slate-950">의뢰·멘토 메시지</h3>
+          <p className="mt-0.5 text-xs text-slate-500">이 주문에 한해 주고받은 대화</p>
         </div>
-        <div className="flex min-h-[120px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-600">
-          <p className="shrink-0 text-sm font-semibold text-slate-800">멘토 메시지</p>
-          {showMentorComposer ? (
-            <form action={submitCustomOrderRoomMessageAction} className="shrink-0 space-y-2">
-              <input type="hidden" name="orderId" value={orderId} />
-              <label className="sr-only" htmlFor="mentor-order-msg">
-                멘토 메시지
-              </label>
-              <textarea
-                id="mentor-order-msg"
-                name="messageBody"
-                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm"
-                rows={2}
-                placeholder="학생에게 전달할 메시지를 입력하세요."
-                maxLength={4000}
-                autoComplete="off"
-              />
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-emerald-700 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
-              >
-                멘토 메시지 보내기
-              </button>
-            </form>
-          ) : null}
-          {hasMessages && mentorMsgs.length > 0 ? (
-            <ul className="mt-0 max-h-48 space-y-2 overflow-y-auto text-left">
-              {mentorMsgs.map((m, i) => (
-                <li
-                  key={String(m.id ?? i)}
-                  className="rounded-lg border border-emerald-200/50 bg-white px-2.5 py-2 text-slate-800"
+        <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
+          <div className="flex min-h-[11rem] flex-col gap-3 rounded-2xl border border-slate-200/60 bg-slate-50/40 p-3 text-xs text-slate-600">
+            <p className="shrink-0 text-sm font-semibold text-slate-800">의뢰(학생)</p>
+            {showStudentComposer ? (
+              <form action={submitCustomOrderRoomMessageAction} className="shrink-0 space-y-2">
+                <input type="hidden" name="orderId" value={orderId} />
+                <label className="sr-only" htmlFor="student-order-msg">
+                  학생 메시지
+                </label>
+                <textarea
+                  id="student-order-msg"
+                  name="messageBody"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm"
+                  rows={3}
+                  placeholder="멘토에게 전달할 메시지"
+                  maxLength={4000}
+                  autoComplete="off"
+                />
+                <button
+                  type="submit"
+                  className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
                 >
-                  <p className="text-[11px] text-slate-400">
-                    {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
-                  </p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{messageText(m)}</p>
-                </li>
-              ))}
-            </ul>
-          ) : msgTableReady && mentorMsgs.length === 0 ? (
-            <p className="text-sm text-slate-500">멘토 메시지 없음</p>
-          ) : !msgTableReady ? (
-            <p className="text-sm text-slate-500">메시지를 불러올 수 없습니다.</p>
-          ) : null}
+                  보내기
+                </button>
+              </form>
+            ) : null}
+            {hasMessages && studentMsgs.length > 0 ? (
+              <ul className="mt-0 max-h-56 min-h-0 space-y-2 overflow-y-auto text-left">
+                {studentMsgs.map((m, i) => (
+                  <li
+                    key={String(m.id ?? i)}
+                    className="rounded-lg border border-white/60 bg-white px-2.5 py-2 text-slate-800 shadow-sm"
+                  >
+                    <p className="text-[11px] text-slate-400">
+                      {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{messageText(m)}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : msgTableReady && studentMsgs.length === 0 ? (
+              <p className="text-sm text-slate-500">의뢰 측 메시지가 없습니다.</p>
+            ) : !msgTableReady ? (
+              <p className="text-sm text-slate-500">메시지를 불러올 수 없습니다.</p>
+            ) : null}
+          </div>
+          <div className="flex min-h-[11rem] flex-col gap-3 rounded-2xl border border-slate-200/60 bg-slate-50/40 p-3 text-xs text-slate-600">
+            <p className="shrink-0 text-sm font-semibold text-slate-800">멘토</p>
+            {showMentorComposer ? (
+              <form action={submitCustomOrderRoomMessageAction} className="shrink-0 space-y-2">
+                <input type="hidden" name="orderId" value={orderId} />
+                <label className="sr-only" htmlFor="mentor-order-msg">
+                  멘토 메시지
+                </label>
+                <textarea
+                  id="mentor-order-msg"
+                  name="messageBody"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm"
+                  rows={3}
+                  placeholder="학생에게 전달할 메시지"
+                  maxLength={4000}
+                  autoComplete="off"
+                />
+                <button
+                  type="submit"
+                  className="w-full rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                >
+                  보내기
+                </button>
+              </form>
+            ) : null}
+            {hasMessages && mentorMsgs.length > 0 ? (
+              <ul className="mt-0 max-h-56 min-h-0 space-y-2 overflow-y-auto text-left">
+                {mentorMsgs.map((m, i) => (
+                  <li
+                    key={String(m.id ?? i)}
+                    className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2 text-slate-800 shadow-sm"
+                  >
+                    <p className="text-[11px] text-slate-400">
+                      {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{messageText(m)}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : msgTableReady && mentorMsgs.length === 0 ? (
+              <p className="text-sm text-slate-500">멘토 메시지가 없습니다.</p>
+            ) : !msgTableReady ? (
+              <p className="text-sm text-slate-500">메시지를 불러올 수 없습니다.</p>
+            ) : null}
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

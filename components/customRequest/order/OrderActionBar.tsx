@@ -1,7 +1,12 @@
 import { startCustomOrderWorkAction } from "@/lib/customRequest/orderMentorActions";
 import { acceptCustomOrderDeliverableAction } from "@/lib/customRequest/orderStudentActions";
-import { ORDER_ROOM_TERMINAL_ACTIONS_NOTICE } from "@/lib/customRequest/orderLifecycleConstants";
+import { ORDER_ROOM_CARD_CLASS, ORDER_ROOM_TERMINAL_ACTIONS_NOTICE } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
+
+const primaryBtn = "rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-blue-500";
+const secondaryBtn =
+  "rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50";
+const disabledBtn = "cursor-not-allowed rounded-lg bg-slate-200/90 px-3 py-1.5 text-sm font-bold text-slate-500";
 
 type Props = {
   view: "student" | "mentor";
@@ -35,10 +40,8 @@ export function OrderActionBar(props: Props) {
   } = props;
   if (orderTerminal) {
     return (
-      <div className="w-full" role="status" aria-label="주문 완료 안내">
-        <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
-          {ORDER_ROOM_TERMINAL_ACTIONS_NOTICE}
-        </p>
+      <div className={ORDER_ROOM_CARD_CLASS} role="status" aria-label="주문 완료 안내">
+        <p className="text-sm leading-relaxed text-slate-700">{ORDER_ROOM_TERMINAL_ACTIONS_NOTICE}</p>
       </div>
     );
   }
@@ -54,27 +57,21 @@ export function OrderActionBar(props: Props) {
     orderId.trim().length > 0;
 
   return (
-    <div className="w-full" role="group" aria-label="주문 액션">
+    <div className={`${ORDER_ROOM_CARD_CLASS} w-full`} role="group" aria-label="주문 액션">
       <div className="flex flex-wrap gap-2">
       {view === "student" && actorRole === "student" && canStudentRevisionJumps ? (
-        <a
-          href="#order-revisions"
-          className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800"
-        >
+        <a href="#order-revisions" className={primaryBtn}>
           수정 요청
         </a>
       ) : view === "mentor" && actorRole === "mentor" ? (
-        <a
-          href="#order-revisions"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold text-slate-800 hover:bg-slate-50"
-        >
+        <a href="#order-revisions" className={secondaryBtn}>
           수정 요청
         </a>
       ) : view === "student" && actorRole === "student" ? (
         <button
           type="button"
           disabled
-          className="cursor-not-allowed rounded-lg bg-slate-300 px-3 py-1.5 text-sm font-bold text-slate-600"
+          className={disabledBtn}
           title={studentRevisionRequestDisabledReason ?? "수정 요청을 보낼 수 없습니다."}
         >
           수정 요청
@@ -84,10 +81,7 @@ export function OrderActionBar(props: Props) {
         canMentorStart ? (
           <form action={startCustomOrderWorkAction} className="inline">
             <input type="hidden" name="orderId" value={orderId} />
-            <button
-              type="submit"
-              className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800"
-            >
+            <button type="submit" className={primaryBtn}>
               작업 시작
             </button>
           </form>
@@ -95,7 +89,7 @@ export function OrderActionBar(props: Props) {
           <button
             type="button"
             disabled
-            className="cursor-not-allowed rounded-lg bg-slate-300 px-3 py-1.5 text-sm font-bold text-slate-600"
+            className={disabledBtn}
             title={mentorStartDisabledReason ?? "사용할 수 없음"}
           >
             작업 시작
@@ -106,10 +100,7 @@ export function OrderActionBar(props: Props) {
         canStudentAccept ? (
           <form action={acceptCustomOrderDeliverableAction} className="inline">
             <input type="hidden" name="orderId" value={orderId} />
-            <button
-              type="submit"
-              className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800"
-            >
+            <button type="submit" className={primaryBtn}>
               납품 수락
             </button>
           </form>
@@ -117,7 +108,7 @@ export function OrderActionBar(props: Props) {
           <button
             type="button"
             disabled
-            className="cursor-not-allowed rounded-lg bg-slate-300 px-3 py-1.5 text-sm font-bold text-slate-600"
+            className={disabledBtn}
             title={studentAcceptDisabledReason ?? "사용할 수 없음"}
           >
             납품 수락
@@ -125,17 +116,14 @@ export function OrderActionBar(props: Props) {
         )
       ) : null}
       {canDisputeJump ? (
-        <a
-          href="#order-disputes"
-          className="rounded-lg bg-amber-900 px-3 py-1.5 text-sm font-bold text-white hover:bg-amber-800"
-        >
+        <a href="#order-disputes" className={secondaryBtn}>
           분쟁 신청
         </a>
       ) : (
         <button
           type="button"
           disabled
-          className="cursor-not-allowed rounded-lg bg-amber-200/80 px-3 py-1.5 text-sm font-bold text-amber-950"
+          className={disabledBtn}
           title={openDisputeApplicationDisabledReason ?? "분쟁을 신청할 수 없습니다."}
         >
           분쟁 신청

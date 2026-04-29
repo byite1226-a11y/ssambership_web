@@ -6,6 +6,7 @@ import {
   deliverableVersionLabelKorean,
   formatOrderRoomDateTime,
   orderStatusLabelForUi,
+  ORDER_ROOM_CARD_CLASS,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import type { AppRole } from "@/lib/types/user";
@@ -87,8 +88,12 @@ export function OrderDeliverablesPanel({
   const canDownload = (actorRole === "student" || actorRole === "mentor" || actorRole === "admin") && orderId.trim().length > 0;
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-extrabold text-slate-900">납품</h3>
+    <section className={ORDER_ROOM_CARD_CLASS}>
+      <div className="space-y-3">
+        <div className="mb-3">
+          <h3 className="text-sm font-bold text-slate-950">납품</h3>
+          <p className="mt-0.5 text-xs text-slate-500">버전별 납품물·멘토 등록</p>
+        </div>
       {err ? <p className="text-sm text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p> : null}
       {d.table && rows.length > 0 ? (
         <ul className="space-y-2">
@@ -103,7 +108,7 @@ export function OrderDeliverablesPanel({
             return (
               <li
                 key={id}
-                className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5 text-sm text-slate-800 shadow-sm"
+                className="rounded-xl border border-blue-100/50 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="text-xs font-semibold text-slate-700">
@@ -159,7 +164,7 @@ export function OrderDeliverablesPanel({
       )}
 
       {!orderTerminal && view === "mentor" && actorRole === "mentor" ? (
-        <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/90 p-3">
+        <div className="mt-2 rounded-xl border border-blue-100/60 bg-blue-50/50 p-3">
           <p className="text-xs font-extrabold text-slate-800">멘토 납품 등록 (파일 + 설명)</p>
           <p className="mt-1 text-xs text-slate-600">
             PDF·이미지·ZIP·docx·pptx, 최대 20MB. 파일만 또는 설명만도 가능(둘 중 하나 이상).
@@ -197,12 +202,13 @@ export function OrderDeliverablesPanel({
               <FormSubmitButton
                 idleLabel="납품 등록"
                 pendingLabel="등록 중…"
-                className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white enabled:hover:bg-slate-800"
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white enabled:hover:bg-blue-500"
               />
             </form>
           ) : null}
         </div>
       ) : null}
-    </div>
+      </div>
+    </section>
   );
 }

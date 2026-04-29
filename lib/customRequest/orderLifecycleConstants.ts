@@ -119,56 +119,152 @@ export const ORDER_ROOM_TERMINAL_ACTIONS_NOTICE =
 
 // —— 주문방 UI: DB 토큰·ISO를 사용자 문구로만 변환(로직 판정에는 사용하지 않음)
 
+const ORDER_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
+  pending: "진행 대기",
+  open: "진행 중",
+  in_progress: "작업 중",
+  completed: "주문 완료",
+  delivered: "납품 완료",
+  submitted: "제출됨",
+  closed: "종료",
+  cancelled: "취소됨",
+  canceled: "취소됨",
+  unpaid: "미결제",
+  paid: "결제 완료",
+  in_review: "검토 중",
+  waiting_review: "검토 대기",
+  delivered_pending_review: "납품 검토 중",
+  pending_review: "검토 대기",
+  redelivered: "재납품",
+  delivery_submitted: "납품 제출됨",
+  accepted: "수락 완료",
+  revision_requested: "수정 요청됨",
+  disputed: "분쟁 접수됨",
+  refunded: "환불됨",
+  done: "처리 완료",
+  resolved: "해결됨",
+  rejected: "거절됨",
+  finished: "완료",
+};
+
 /** `custom_request_orders`·납품 등에서 읽은 상태 문자열 */
 export function orderStatusLabelForUi(raw: string): string {
   const s = String(raw).trim().toLowerCase();
   if (!s || s === "—") {
     return "—";
   }
-  const map: Record<string, string> = {
-    pending: "진행 대기",
-    open: "진행 중",
-    in_progress: "작업 중",
-    completed: "주문 완료",
-    delivered: "납품 완료",
-    submitted: "제출됨",
-    closed: "종료",
-    cancelled: "취소됨",
-    canceled: "취소됨",
-    unpaid: "미결제",
-    paid: "결제 완료",
-    in_review: "검토 중",
-    waiting_review: "검토 대기",
-    delivered_pending_review: "납품 검토 중",
-    pending_review: "검토 대기",
-    redelivered: "재납품",
-    delivery_submitted: "납품 제출됨",
-    accepted: "수락 완료",
-    revision_requested: "수정 요청됨",
-    disputed: "분쟁 접수됨",
-    refunded: "환불됨",
-  };
-  return map[s] ?? String(raw).trim();
+  return ORDER_STATUS_LABEL_MAP[s] ?? String(raw).trim();
 }
 
-/** `payment_status` 등 — 주문 요약 표시용 */
+/** 주문 상태 배지·톤(표시 전용) — `normalizedPrimaryOrderStatus` 등 */
+export type OrderStatusUiTone = "gray" | "blue" | "amber" | "green" | "orange" | "red";
+
+export function orderStatusUiToneForNorm(norm: string): OrderStatusUiTone {
+  const s = String(norm).trim().toLowerCase();
+  if (!s) {
+    return "gray";
+  }
+  const toneByStatus: Readonly<Record<string, OrderStatusUiTone>> = {
+    pending: "gray",
+    open: "blue",
+    in_progress: "blue",
+    delivered: "amber",
+    completed: "green",
+    accepted: "green",
+    revision_requested: "orange",
+    disputed: "red",
+    cancelled: "gray",
+    canceled: "gray",
+    refunded: "gray",
+    closed: "gray",
+    in_review: "blue",
+    waiting_review: "blue",
+    delivered_pending_review: "amber",
+    pending_review: "blue",
+    redelivered: "amber",
+    delivery_submitted: "amber",
+    submitted: "blue",
+    unpaid: "gray",
+    paid: "green",
+    done: "green",
+    resolved: "green",
+    rejected: "red",
+    finished: "green",
+  };
+  return toneByStatus[s] ?? "gray";
+}
+
+/**
+ * 주문방 배지 전용: 알려진 상태만 `orderStatusLabelForUi`와 동일, 미매핑은 raw 노출 대신 통일 문구
+ */
+export function orderStatusBadgeLabelForNorm(norm: string): string {
+  const s = String(norm).trim().toLowerCase();
+  if (!s || s === "—") {
+    return "—";
+  }
+  if (Object.prototype.hasOwnProperty.call(ORDER_STATUS_LABEL_MAP, s)) {
+    return ORDER_STATUS_LABEL_MAP[s]!;
+  }
+  return "확인 필요";
+}
+
+const PAYMENT_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
+  unpaid: "결제 확인 대기",
+  pending: "결제 확인 대기",
+  paid: "결제 완료",
+  completed: "결제 완료",
+  failed: "결제 실패",
+  refunded: "환불됨",
+  partial_refund: "부분 환불",
+  cancelled: "결제 취소",
+  canceled: "결제 취소",
+  escrowed: "에스크로",
+  succeeded: "결제 완료",
+};
+
+export type PaymentStatusUiTone = "gray" | "blue" | "green" | "amber" | "red";
+
 export function paymentStatusLabelForUi(raw: string): string {
   const s = String(raw).trim().toLowerCase();
   if (!s || s === "—") {
     return "—";
   }
-  const map: Record<string, string> = {
-    unpaid: "결제 확인 대기",
-    pending: "결제 확인 대기",
-    paid: "결제 완료",
-    completed: "결제 완료",
-    failed: "결제 실패",
-    refunded: "환불됨",
-    partial_refund: "부분 환불",
-    cancelled: "결제 취소",
-    canceled: "결제 취소",
-  };
-  return map[s] ?? String(raw).trim();
+  return PAYMENT_STATUS_LABEL_MAP[s] ?? String(raw).trim();
+}
+
+export function paymentStatusUiToneForRaw(raw: string): PaymentStatusUiTone {
+  const s = String(raw).trim().toLowerCase();
+  if (!s) {
+    return "gray";
+  }
+  if (s === "paid" || s === "completed" || s === "succeeded" || s === "escrowed") {
+    return "green";
+  }
+  if (s === "unpaid" || s === "pending" || s === "processing") {
+    return "gray";
+  }
+  if (s === "failed") {
+    return "red";
+  }
+  if (s === "refunded" || s === "partial_refund") {
+    return "gray";
+  }
+  if (s === "cancelled" || s === "canceled") {
+    return "red";
+  }
+  return "amber";
+}
+
+/** 결제 배지(표시): 미매핑 토큰 raw 노출 방지 */
+export function paymentStatusBadgeLabelForRaw(raw: string): string {
+  const s = String(raw).trim().toLowerCase();
+  if (!s || s === "—") {
+    return "—";
+  }
+  if (Object.prototype.hasOwnProperty.call(PAYMENT_STATUS_LABEL_MAP, s)) {
+    return PAYMENT_STATUS_LABEL_MAP[s]!;
+  }
+  return "확인 필요";
 }
 
 export function orderEventKindLabelForUi(raw: string): string {
@@ -237,3 +333,12 @@ export function deliverableVersionLabelKorean(version: unknown, zeroBasedIndex: 
   const step = Number.isFinite(n) && n > 0 ? n : zeroBasedIndex + 1;
   return `${step}차 납품`;
 }
+
+// —— W19 주문방: 앱형 작업공간 표시용(도메인 로직 없음)
+
+export const ORDER_ROOM_APP_SURFACE_CLASS = "bg-[#F3F7FF]";
+
+export const ORDER_ROOM_CONTENT_MAX = "mx-auto w-full max-w-7xl";
+
+export const ORDER_ROOM_CARD_CLASS =
+  "rounded-[20px] border border-slate-200/70 bg-white/95 p-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)] sm:p-5";
