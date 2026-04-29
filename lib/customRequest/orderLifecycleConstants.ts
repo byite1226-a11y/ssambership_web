@@ -334,6 +334,58 @@ export function deliverableVersionLabelKorean(version: unknown, zeroBasedIndex: 
   return `${step}차 납품`;
 }
 
+export const ORDER_WORKSPACE_STEP_LABELS = [
+  "주문 생성",
+  "진행 중",
+  "납품 완료",
+  "검토 중",
+  "주문 완료",
+] as const;
+
+export function orderWorkspaceCurrentStepIndex(
+  norm: string,
+  isTerminal: boolean,
+  hasDeliverable: boolean
+): number {
+  if (isTerminal) {
+    return 4;
+  }
+
+  const n = String(norm ?? "").trim().toLowerCase();
+
+  if (
+    isOrderStatusAllowingStudentAccept(n) ||
+    n === "in_review" ||
+    n === "waiting_review" ||
+    n === "delivered_pending_review" ||
+    n === "pending_review"
+  ) {
+    return 3;
+  }
+
+  if (hasDeliverable) {
+    return 2;
+  }
+
+  if (n === ORDER_INSERT_STATUS_PENDING) {
+    return 0;
+  }
+
+  if (
+    n === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS ||
+    n === "in_progress" ||
+    n === "open" ||
+    n === "delivered" ||
+    n === "redelivered" ||
+    n === "delivery_submitted" ||
+    n === "submitted"
+  ) {
+    return 1;
+  }
+
+  return 1;
+}
+
 // —— W19 주문방: 앱형 작업공간 표시용(도메인 로직 없음)
 
 export const ORDER_ROOM_APP_SURFACE_CLASS = "bg-[#F3F7FF]";

@@ -231,9 +231,11 @@ export function OrderRoomView(props: {
 
   return (
     <div className={`${ORDER_ROOM_APP_SURFACE_CLASS} w-full`} data-views="custom-order-room">
-      <div className={`${ORDER_ROOM_CONTENT_MAX} px-3 pb-4 pt-2 sm:px-4 sm:pb-5 sm:pt-3 lg:px-6 lg:pb-6 lg:pt-4`}>
+      <div
+        className={`${ORDER_ROOM_CONTENT_MAX} !max-w-[min(100%,90rem)] px-3 pb-4 pt-2 sm:px-4 sm:pb-5 sm:pt-3 lg:px-6 lg:pb-6 lg:pt-4`}
+      >
         <OrderRoomPageHeader detail={detail} view={view} />
-        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
+        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-6">
           <aside className="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-3 lg:sticky lg:top-4 lg:self-start">
             <OrderLeftContextPanel
               detail={detail}
@@ -242,7 +244,7 @@ export function OrderRoomView(props: {
               orderIdDisplay={idForDisplay}
             />
           </aside>
-          <div className="order-1 min-w-0 lg:order-2 lg:col-span-6">
+          <div className="order-1 min-w-0 lg:order-2 lg:col-span-7">
             <OrderProgressSection
               detail={detail}
               orderId={idForDisplay}
@@ -252,7 +254,7 @@ export function OrderRoomView(props: {
               orderTerminal={isTerminalOrder}
             />
           </div>
-          <aside className="order-3 min-w-0 space-y-5 lg:order-3 lg:col-span-3">
+          <aside className="order-3 min-w-0 space-y-5 lg:order-3 lg:col-span-2">
             <OrderDeliverablesPanel
               detail={detail}
               orderId={oid}
