@@ -17,8 +17,8 @@ export default async function MentorDetailByIdPage(props: Props) {
   if (bundle.kind === "not_found") {
     return (
       <PageScaffold
-        eyebrow="Public / Mentor Detail"
-        title="멘토를 찾을 수 없음"
+        eyebrow="멤버십"
+        title="멘토를 찾을 수 없어요"
         description={bundle.message}
         ctas={[{ href: "/mentors", label: "멘토 찾기", tone: "slate" }]}
         sections={[]}
@@ -33,8 +33,8 @@ export default async function MentorDetailByIdPage(props: Props) {
   if (bundle.kind === "not_mentor") {
     return (
       <PageScaffold
-        eyebrow="Public / Mentor Detail"
-        title="멘토 프로필이 아닙니다"
+        eyebrow="멤버십"
+        title="멘토 프로필이 아니에요"
         description={bundle.message}
         ctas={[{ href: "/mentors", label: "멘토 찾기", tone: "slate" }]}
         sections={[]}
@@ -52,9 +52,9 @@ export default async function MentorDetailByIdPage(props: Props) {
 
   return (
     <PageScaffold
-      eyebrow="Public / Mentor Detail"
+      eyebrow="멤버십"
       title={display.displayName}
-      description="mentor_profiles + users 필드는 편집 화면과 동일 매퍼(buildMentorProfileDisplay). 리뷰·요금제는 테이블 probe."
+      description="멘토 소개·콘텐츠·리뷰·플랜을 한곳에서 확인하세요. 구독·결제는 기존 구독 화면 흐름을 따릅니다."
       ctas={[
         { href: "/mentors", label: "목록으로", tone: "slate" },
         { href: studentLoginForSubscribe, label: "학생 로그인(구독)", tone: "blue" },

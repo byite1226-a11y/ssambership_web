@@ -17,11 +17,11 @@ export default async function MentorsPage(props: Props) {
 
   return (
     <PageScaffold
-      eyebrow="Public / Mentors"
+      eyebrow="멤버십"
       title="멘토 찾기"
-      description="users(role=mentor) + mentor_profiles 배치 + reviews/plans 보강. 비로그인 접근 가능(데이터는 RLS에 따름). 더미 없음."
+      description="멘토를 둘러보고, 상세에서 구독·질문으로 이어가요. 공개 읽기 범위는 정책(로그인·RLS)에 따릅니다. 더 데이터가 없는 경우엔 ‘준비 중’ 안내로 표시돼요."
       ctas={[
-        { href: `/login?next=${encodeURIComponent("/mentors")}`, label: "로그인·이용", tone: "slate" },
+        { href: `/login?next=${encodeURIComponent("/mentors")}`, label: "로그인", tone: "slate" },
       ]}
       sections={[
         {
