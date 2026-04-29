@@ -1,19 +1,28 @@
-const steps = [
-  { title: "1. 의뢰 등록", body: "카테고리·기한·예산·요구사항·동의" },
-  { title: "2. 멘토 제안", body: "가격·납기·범위·커버노트 비교" },
-  { title: "3. 주문·진행", body: "선정 후 주문/대화(연락은 플랫폼)" },
-  { title: "4. 납품·마감", body: "버전 납품·수정·수락·분쟁 신청" },
+import { CustomRequestFlowStepper } from "@/components/customRequest/CustomRequestFlowStepper";
+
+const INTRO = [
+  {
+    title: "1. 의뢰 요청 등록",
+    body: "필요한 범위·일정·예산을 정리해 올려요.",
+  },
+  { title: "2. 멘토 지원", body: "멘토가 제안가·납기·진행 방식을 보내요." },
+  { title: "3. 멘토 선택", body: "비교한 뒤 한 분을 골라 이어가요." },
+  { title: "4. 상담 & 피드백", body: "첨부·수정·완료는 이후 단계에서 안내돼요." },
 ] as const;
 
 export function CustomRequestSteps() {
   return (
-    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {steps.map((s) => (
-        <div key={s.title} className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-sm font-extrabold text-slate-900">{s.title}</p>
-          <p className="mt-1 text-xs text-slate-600">{s.body}</p>
-        </div>
-      ))}
+    <section className="space-y-3" id="flow-steps">
+      <h2 className="text-base font-extrabold text-slate-900 sm:text-lg">이렇게 진행돼요</h2>
+      <CustomRequestFlowStepper activeStep={1} />
+      <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        {INTRO.map((s) => (
+          <div key={s.title} className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-sm sm:p-4">
+            <p className="text-sm font-extrabold text-slate-900">{s.title}</p>
+            <p className="mt-1.5 break-words text-xs leading-relaxed text-slate-600 sm:text-sm">{s.body}</p>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

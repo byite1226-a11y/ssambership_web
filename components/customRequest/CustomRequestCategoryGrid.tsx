@@ -1,7 +1,16 @@
 import type { CustomCategoryRow } from "@/lib/customRequest/customRequestQueries";
 import { mapCategoryLoadError } from "@/lib/utils/mapDataError";
 
-const STATIC_LABELS = ["수능·입시", "수행평가", "논술·면접", "논문·탐구", "기타"] as const;
+/** 공개 랜딩용 기본 7개(데이터가 없을 때·보강용) */
+const REFERENCE_CATEGORIES = [
+  "학습 계획 & 방법",
+  "과목 개념 이해",
+  "과제 / 보고서",
+  "발표 준비 코칭",
+  "글쓰기 / 논술 첨삭",
+  "진로 / 진학 상담",
+  "기타 학습상담",
+] as const;
 
 type Props = {
   fromTable: { rows: CustomCategoryRow[]; table: string | null; error: string | null };
@@ -9,20 +18,20 @@ type Props = {
 
 export function CustomRequestCategoryGrid(props: Props) {
   const { fromTable } = props;
-  const fromDb = fromTable.rows
-    .map((r) => (typeof r.name === "string" ? r.name : typeof r.label === "string" ? r.label : typeof r.title === "string" ? r.title : null))
-    .filter((x): x is string => Boolean(x));
-  const labels = fromDb.length ? fromDb : [...STATIC_LABELS];
+  const labels = [...REFERENCE_CATEGORIES];
   return (
-    <section className="space-y-2">
-      <h2 className="text-lg font-extrabold text-slate-900">카테고리</h2>
-      {fromTable.error && !fromTable.table ? <p className="text-xs text-amber-800">{mapCategoryLoadError()}</p> : null}
-      {fromTable.table && fromTable.error ? <p className="text-xs text-amber-800">{mapCategoryLoadError()}</p> : null}
-      {fromTable.table && !fromTable.error ? <p className="text-xs text-slate-500">등록된 카테고리를 표시합니다.</p> : null}
-      {!fromTable.table && !fromTable.error ? <p className="text-xs text-slate-500">아래는 예시입니다. 양식에서도 동일한 구분을 사용할 수 있습니다.</p> : null}
-      <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+    <section className="space-y-3" id="categories">
+      <h2 className="text-base font-extrabold text-slate-900 sm:text-lg">어떤 도움이 필요하신가요?</h2>
+      {fromTable.error && !fromTable.table ? (
+        <p className="text-sm text-amber-800">{mapCategoryLoadError()}</p>
+      ) : null}
+      {fromTable.table && fromTable.error ? <p className="text-sm text-amber-800">{mapCategoryLoadError()}</p> : null}
+      <div className="grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {labels.map((c) => (
-          <div key={c} className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm font-bold text-slate-800">
+          <div
+            key={c}
+            className="rounded-2xl border border-slate-200/90 bg-white px-3.5 py-3 text-sm font-extrabold text-slate-800 shadow-sm sm:py-3.5"
+          >
             {c}
           </div>
         ))}

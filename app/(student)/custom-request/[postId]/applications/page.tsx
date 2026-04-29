@@ -59,7 +59,13 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
           이 맞춤의뢰는 작성자(의뢰하신 본인)만 비교·선정 화면을 열 수 있어요.
         </p>
       ) : (
-        <ApplicationsCompareView list={list} postId={postId} enriched={enriched} existingOrderId={orderId} />
+        <ApplicationsCompareView
+          list={list}
+          postId={postId}
+          postRow={post.row != null ? (post.row as Row) : null}
+          enriched={enriched}
+          existingOrderId={orderId}
+        />
       )}
     </PageScaffold>
   );
