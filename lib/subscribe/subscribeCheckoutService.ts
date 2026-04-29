@@ -311,12 +311,14 @@ export async function finalizeSubscriptionCheckout(
           }
         }
       }
-      const roomR = await ensureMentorStudentRoom(
+      const subIdForRoom = subscriptionId && subscriptionId.length > 0 ? subscriptionId : null;
+      const roomR = await ensureMentorStudentRoomWithServiceRetry(
         supabase,
         studentId,
         mentorId,
         paymentId,
-        subscriptionId && subscriptionId.length > 0 ? subscriptionId : null
+        subIdForRoom,
+        "finalizeSubscriptionCheckout.idempotent"
       );
       return {
         ok: true,
@@ -325,7 +327,7 @@ export async function finalizeSubscriptionCheckout(
         roomId: roomR.ok ? roomR.roomId : null,
         message: roomR.ok
           ? "이미 완료된 결제입니다. 구독·질문방 정보를 다시 확인했습니다."
-          : `이미 완료된 결제이나 질문방 연결에 문제가 있습니다: ${roomR.error}`,
+          : `이미 완료된 결제이나 질문방을 연결하지 못했습니다. ${userFacingRoomConnectError(roomR.error)}`,
       };
     }
   }
@@ -390,14 +392,21 @@ export async function finalizeSubscriptionCheckout(
     return { ok: false, error: `결제 완료 표시 실패(롤백: 구독 삭제 시도): ${payUpdate.error}`, code: "db" };
   }
 
-  const roomR = await ensureMentorStudentRoom(supabase, studentId, mentorId, paymentId, subId);
+  const roomR = await ensureMentorStudentRoomWithServiceRetry(
+    supabase,
+    studentId,
+    mentorId,
+    paymentId,
+    subId,
+    "finalizeSubscriptionCheckout.newSubscription"
+  );
   if (!roomR.ok) {
     return {
       ok: true,
       paymentId,
       subscriptionId: subId,
       roomId: null,
-      message: `구독은 생성됐으나 질문방을 만들지 못했습니다: ${roomR.error}`,
+      message: `구독은 반영됐는데 질문방을 열지 못했어요. ${userFacingRoomConnectError(roomR.error)}`,
     };
   }
   return {
@@ -571,4 +580,41 @@ export async function ensureMentorStudentRoom(
     return { ok: true, roomId: String((data as Row).id) };
   }
   return { ok: false, error: "room insert id 없음" };
+}
+
+function userFacingRoomConnectError(detail: string | undefined): string {
+  const s = String(detail ?? "").trim();
+  if (!s) {
+    return "잠시 뒤 질문방 메뉴를 다시 열어 보시거나, 문제가 계속되면 고객센터로 문의해 주세요.";
+  }
+  if (
+    /PGRST|postgrest|permission|RLS|42501|42503|42P01|22P02|23\d{3}|violates foreign key/i.test(s) ||
+    s.length > 280
+  ) {
+    return "질문방을 연결하는 데 일시적인 문제가 있어요. 잠시 뒤 다시 시도해 주세요.";
+  }
+  return s;
+}
+
+/**
+ * 사용자 세션으로 room 생성·재사용을 시도하고, 실패 시(예: RLS) service role로 한 번 더 시도한다.
+ * 구독은 이미 확정된 뒤 호출되는 경우가 있어, 질문방 누락을 줄이기 위한 최소 보강이다.
+ */
+async function ensureMentorStudentRoomWithServiceRetry(
+  userClient: SupabaseClient,
+  studentId: string,
+  mentorId: string,
+  paymentId: string,
+  subscriptionId: string | null,
+  logLabel: string
+): Promise<RoomR> {
+  const first = await ensureMentorStudentRoom(userClient, studentId, mentorId, paymentId, subscriptionId);
+  if (first.ok) return first;
+  console.error(`[${logLabel}] ensureMentorStudentRoom failed, retrying with service role`, {
+    studentId,
+    mentorId,
+    paymentId,
+    error: first.error,
+  });
+  return ensureMentorStudentRoom(createServiceRoleClient(), studentId, mentorId, paymentId, subscriptionId);
 }
