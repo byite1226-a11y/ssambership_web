@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import {
-  createQuestionMessageAction,
   createQuestionThreadAction,
   saveConnectionNoteAction,
+  sendQuestionMessageAction,
 } from "@/lib/qna/questionRoomActions";
 
 type Row = Record<string, unknown>;
@@ -384,7 +384,7 @@ export function QuestionRoomWorkspace(props: {
             {surface === "detail" ? (
               <form
                 key={`msg-${props.threadId ?? "none"}-${rev}-${props.draftMessageBody?.length ?? 0}`}
-                action={createQuestionMessageAction}
+                action={sendQuestionMessageAction}
                 className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"
               >
                 {props.actionFeedback?.kind === "message" && props.actionFeedback.error ? (

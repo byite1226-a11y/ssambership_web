@@ -7,6 +7,7 @@ import { requireQnaActor } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { draftToParam } from "@/lib/qna/draftQuery";
 import { QUESTION_THREADS_ROOM_FK_CANDIDATES, threadRowBelongsToMentorStudentRoom } from "@/lib/qna/questionThreadRoomRef";
+import { userMatchesMentorInRoomRow, userMatchesStudentInRoomRow } from "@/lib/qna/questionRoomQueries";
 import {
   createQuestionMessage,
   createQuestionThread,
@@ -66,23 +67,19 @@ async function assertMentorStudentRoomParty(
   userId: string,
   actor: "student" | "mentor"
 ): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("mentor_student_rooms")
-    .select("id, student_id, mentor_id")
-    .eq("id", roomId)
-    .maybeSingle();
+  const { data, error } = await supabase.from("mentor_student_rooms").select("*").eq("id", roomId).maybeSingle();
   if (error) return error.message;
   if (!data) return "이 room을 찾을 수 없습니다.";
   const row = data as Record<string, unknown>;
-  const sid = row.student_id != null ? String(row.student_id) : "";
-  const mid = row.mentor_id != null ? String(row.mentor_id) : "";
-  if (sid !== userId && mid !== userId) {
+  const isStudent = userMatchesStudentInRoomRow(row, userId);
+  const isMentor = userMatchesMentorInRoomRow(row, userId);
+  if (!isStudent && !isMentor) {
     return "이 room의 학생·멘토 당사자가 아닙니다.";
   }
-  if (actor === "student" && sid !== userId) {
+  if (actor === "student" && !isStudent) {
     return "이 room의 학생(의뢰자)만 이 작업을 할 수 있습니다.";
   }
-  if (actor === "mentor" && mid !== userId) {
+  if (actor === "mentor" && !isMentor) {
     return "이 room의 멘토만 이 작업을 할 수 있습니다.";
   }
   return null;
@@ -237,6 +234,12 @@ export async function createQuestionMessageAction(formData: FormData) {
     })
   );
 }
+
+/**
+ * P0: 질문/답변 메시지 전송. `createQuestionMessageAction`과 동일하며 room·thread·역할을 서버에서 다시 검증한다.
+ * (폼의 `actor`·hidden id만으로는 권한을 판단하지 않음.)
+ */
+export const sendQuestionMessageAction = createQuestionMessageAction;
 
 export async function saveConnectionNoteAction(formData: FormData) {
   const { user, actor } = await requireQnaActor();

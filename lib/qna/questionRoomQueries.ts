@@ -4,6 +4,33 @@ import { CONNECTION_NOTES_ROOM_FK_CANDIDATES, QUESTION_THREADS_ROOM_FK_CANDIDATE
 
 type QnaRole = "student" | "mentor";
 
+const STUDENT_ROOM_ID_KEYS = ["student_id", "student_user_id", "student_uid"] as const;
+const MENTOR_ROOM_ID_KEYS = ["mentor_id", "mentor_user_id", "mentor_uid"] as const;
+
+/**
+ * `mentor_student_rooms` 한 행에서 `userId`가 학생 당사자로 매칭되는지(스키마 별칭 열 대응).
+ */
+export function userMatchesStudentInRoomRow(row: Record<string, unknown>, userId: string): boolean {
+  for (const k of STUDENT_ROOM_ID_KEYS) {
+    if (k in row && String(row[k] ?? "").trim() === userId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * `mentor_student_rooms` 한 행에서 `userId`가 멘토 당사자로 매칭되는지(스키마 별칭 열 대응).
+ */
+export function userMatchesMentorInRoomRow(row: Record<string, unknown>, userId: string): boolean {
+  for (const k of MENTOR_ROOM_ID_KEYS) {
+    if (k in row && String(row[k] ?? "").trim() === userId) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export type QnaDataState<T> = {
   rows: T[];
   error: string | null;
@@ -80,8 +107,30 @@ export async function fetchRoomsForUser(
 }
 
 /**
+ * P0: 로그인 사용자가 볼 수 있는 `mentor_student_rooms` 행(목록/게이트 공통).
+ * `fetchRoomsForUser`와 동일한 스키마 탐색 결과를 쓴다.
+ */
+export async function loadMyQuestionRooms(
+  supabase: SupabaseClient,
+  role: QnaRole,
+  userId: string
+): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
+  return fetchRoomsForUser(supabase, role, userId);
+}
+
+/**
+ * P0: 한 방(`mentor_student_rooms.id` = `roomId`)에 속한 질문 스레드.
+ */
+export const loadQuestionThreads = fetchThreadsForRoom;
+
+/**
+ * P0: 한 스레드의 메시지(`question_messages`, 시간 오름차순).
+ */
+export const loadQuestionThreadMessages = fetchMessagesForThread;
+
+/**
  * 페이지 게이트: roomId 행이 현재 사용자(학생·멘토 party)와 일치하는지.
- * RLS와 별도로 서버에서 한 번 더 거른다.
+ * RLS와 별도로 서버에서 한 번 더 거른다. 목록 조회 `fetchRoomsForUser`와 동일한 id 열 별칭을 허용한다.
  */
 export async function userCanAccessMentorStudentRoom(
   supabase: SupabaseClient,
@@ -89,15 +138,15 @@ export async function userCanAccessMentorStudentRoom(
   role: QnaRole,
   roomId: string
 ): Promise<boolean> {
-  const col = role === "student" ? "student_id" : "mentor_id";
-  const { data, error } = await supabase
-    .from("mentor_student_rooms")
-    .select("id")
-    .eq("id", roomId)
-    .eq(col, userId)
-    .maybeSingle();
-  if (error) return false;
-  return !!data;
+  const { data, error } = await supabase.from("mentor_student_rooms").select("*").eq("id", roomId).maybeSingle();
+  if (error || !data) {
+    return false;
+  }
+  const row = data as Record<string, unknown>;
+  if (role === "student") {
+    return userMatchesStudentInRoomRow(row, userId);
+  }
+  return userMatchesMentorInRoomRow(row, userId);
 }
 
 export async function fetchThreadsForRoom(
@@ -188,7 +237,7 @@ export async function loadQuestionRoomListBundle(
   role: QnaRole,
   userId: string
 ): Promise<QuestionRoomBundle> {
-  const rooms = await fetchRoomsForUser(supabase, role, userId);
+  const rooms = await loadMyQuestionRooms(supabase, role, userId);
   if (rooms.error) {
     return emptyBundle({
       rooms: { rows: [], error: rooms.error, loading: false },
@@ -243,7 +292,7 @@ export async function loadQuestionRoomDetailBundle(
   roomId: string,
   threadId: string | null
 ): Promise<QuestionRoomDetailLoadResult> {
-  const allRooms = await fetchRoomsForUser(supabase, role, userId);
+  const allRooms = await loadMyQuestionRooms(supabase, role, userId);
   if (allRooms.error) {
     return {
       ...emptyBundle({
