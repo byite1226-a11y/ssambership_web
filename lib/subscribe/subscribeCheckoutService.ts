@@ -453,9 +453,11 @@ async function markPaymentSucceeded(
   id: string,
   stCol: string | null
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  void supabase;
   if (!stCol) return { ok: true };
+  const admin = createServiceRoleClient();
   for (const val of ["succeeded", "paid", "success", "complete", "captured"] as const) {
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from(table)
       .update({ [stCol]: val })
       .eq("id", id)
