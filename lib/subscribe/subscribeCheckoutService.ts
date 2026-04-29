@@ -455,21 +455,35 @@ async function markPaymentSucceeded(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!stCol) return { ok: true };
   for (const val of ["succeeded", "paid", "success", "complete", "captured"] as const) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(table)
       .update({ [stCol]: val })
-      .eq("id", id);
-    if (!error) return { ok: true };
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
+    if (!error && data) {
+      return { ok: true };
+    }
   }
   return { ok: false, error: "status 업데이트 실패" };
 }
 
 async function tryDeleteSubscriptionById(supabase: SupabaseClient, subId: string | null) {
+  void supabase;
   if (!subId) return;
+  const admin = createServiceRoleClient();
   for (const table of SUB_TABLES) {
-    const { error } = await supabase.from(table).delete().eq("id", subId);
+    const { error } = await admin.from(table).delete().eq("id", subId);
     if (!error) return;
+    console.error(
+      "[tryDeleteSubscriptionById] failed on",
+      table,
+      "subId:",
+      subId,
+      error.message
+    );
   }
+  console.error("[tryDeleteSubscriptionById] ZOMBIE_SUBSCRIPTION_RISK subId:", subId);
 }
 
 type RoomR = { ok: true; roomId: string } | { ok: false; error: string };
