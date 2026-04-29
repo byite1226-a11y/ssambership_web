@@ -11,9 +11,9 @@ export default async function MentorDashboardPage() {
 
   return (
     <PageScaffold
-      eyebrow="Mentor / Dashboard"
-      title="멘토 홈(대시보드)"
-      description="답변할 질문, 질문방, 정산, 맞춤의뢰를 한 화면에서 바로 확인하세요."
+      eyebrow="홈"
+      title="멘토 대시보드"
+      description="답변·질문방·맞춤의뢰·정산·분쟁으로 바로 갈 수 있어요. 숫자는 스키마·권한에 맞게 집계돼요."
       ctas={[
         { href: "/mentor/question-room", label: "질문방 관리", tone: "green" },
         { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰", tone: "blue" },

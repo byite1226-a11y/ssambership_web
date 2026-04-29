@@ -15,9 +15,9 @@ export default async function StudentHomePage() {
 
   return (
     <PageScaffold
-      eyebrow="Student / Home"
-      title="학생 홈"
-      description="질문·구독·결제·맞춤의뢰로 이어지는 ‘오늘 할 일’을 한곳에서 확인하세요."
+      eyebrow="홈"
+      title="학생 대시보드"
+      description="질문방·구독·캐시·의뢰로 이어지는 흐름을 한 화면에서 점검하세요. 비어 있으면 안내만 보여요."
       ctas={[
         { href: "/question-room", label: "질문방", tone: "blue" },
         { href: "/subscriptions", label: "구독", tone: "slate" },
