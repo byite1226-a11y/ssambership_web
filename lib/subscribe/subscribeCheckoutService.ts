@@ -600,8 +600,8 @@ function userFacingRoomConnectError(detail: string | undefined): string {
 }
 
 /**
- * 사용자 세션으로 room 생성·재사용을 시도하고, 실패 시(예: RLS) service role로 한 번 더 시도한다.
- * 구독은 이미 확정된 뒤 호출되는 경우가 있어, 질문방 누락을 줄이기 위한 최소 보강이다.
+ * mentor_student_rooms insert는 authenticated RLS(027 등)로 막히는 경우가 많아
+ * service_role로만 생성·재사용을 시도한다. 구독이 확정된 뒤 호출된다.
  */
 async function ensureMentorStudentRoomWithServiceRetry(
   userClient: SupabaseClient,
@@ -611,13 +611,7 @@ async function ensureMentorStudentRoomWithServiceRetry(
   subscriptionId: string | null,
   logLabel: string
 ): Promise<RoomR> {
-  const first = await ensureMentorStudentRoom(userClient, studentId, mentorId, paymentId, subscriptionId);
-  if (first.ok) return first;
-  console.error(`[${logLabel}] ensureMentorStudentRoom failed, retrying with service role`, {
-    studentId,
-    mentorId,
-    paymentId,
-    error: first.error,
-  });
+  void userClient;
+  void logLabel;
   return ensureMentorStudentRoom(createServiceRoleClient(), studentId, mentorId, paymentId, subscriptionId);
 }

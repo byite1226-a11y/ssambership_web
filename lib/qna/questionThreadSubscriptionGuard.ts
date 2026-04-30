@@ -23,7 +23,8 @@ function pickUserId(row: Record<string, unknown>, keys: readonly string[]): stri
  */
 export async function assertThreadCreationSubscriptionAllowed(
   supabase: SupabaseClient,
-  roomId: string
+  roomId: string,
+  actor: "student" | "mentor"
 ): Promise<{ ok: true } | { ok: false; userMessage: string }> {
   const { data, error } = await supabase.from("mentor_student_rooms").select("*").eq("id", roomId).maybeSingle();
   if (error) {
@@ -42,7 +43,11 @@ export async function assertThreadCreationSubscriptionAllowed(
 
   const active = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
   if (!active) {
-    return { ok: false, userMessage: "활성 구독을 찾을 수 없습니다. 멘토 구독 후 질문을 작성해 주세요." };
+    const userMessage =
+      actor === "student"
+        ? "활성 구독을 찾을 수 없습니다. 멘토 구독 후 질문을 작성해 주세요."
+        : "학생의 활성 구독이 없어 현재 답변을 작성할 수 없습니다.";
+    return { ok: false, userMessage };
   }
 
   return { ok: true };
