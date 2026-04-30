@@ -7,8 +7,9 @@ import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueries";
 import {
   isOrderStatusAllowingStudentAccept,
-  isOrderStatusTerminal,
+  isOrderRowTerminalForActions,
   normalizedPrimaryOrderStatus,
+  orderStatusLabelForUi,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
 import { hasDeliverableRowsForOrder } from "@/lib/customRequest/orderStudentActions";
@@ -80,11 +81,14 @@ export async function submitCustomOrderRevisionRequestAction(formData: FormData)
   if (!norm) {
     redirectWithError(orderId, "주문 상태를 확인할 수 없어 요청을 처리할 수 없습니다.");
   }
-  if (isOrderStatusTerminal(norm)) {
-    redirectWithError(orderId, "이미 완료·종료된 주문에는 수정 요청을 보낼 수 없습니다.");
+  if (isOrderRowTerminalForActions(row)) {
+    redirectWithError(orderId, "완료된 주문에서는 수정 요청을 보낼 수 없습니다.");
   }
   if (!isOrderStatusAllowingStudentAccept(norm)) {
-    redirectWithError(orderId, `납품 검토·수락 단계에서만 수정 요청할 수 있습니다(현재: ${norm}).`);
+    redirectWithError(
+      orderId,
+      `납품 검토·수락 단계에서만 수정 요청할 수 있습니다(현재: ${orderStatusLabelForUi(norm)}).`
+    );
   }
   const hasDel = await hasDeliverableRowsForOrder(supabase, orderId);
   if (!hasDel) {

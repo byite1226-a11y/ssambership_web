@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import {
   isOrderStatusAllowingStudentAccept,
-  isOrderStatusTerminal,
+  isOrderRowTerminalForActions,
   normalizedPrimaryOrderStatus,
   primaryOrderStatusColumnKey,
 } from "@/lib/customRequest/orderLifecycleConstants";
@@ -175,8 +175,8 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
   if (!norm) {
     redirectWithError(orderId, "주문 상태를 확인할 수 없어 수락할 수 없습니다.");
   }
-  if (isOrderStatusTerminal(norm)) {
-    redirectWithError(orderId, "이미 종료된 주문입니다.");
+  if (isOrderRowTerminalForActions(row)) {
+    redirectWithError(orderId, "이미 완료된 주문입니다.");
   }
   if (!isOrderStatusAllowingStudentAccept(norm)) {
     redirectWithError(orderId, `현재 상태(${norm})에서는 납품 수락을 할 수 없습니다.`);
@@ -293,8 +293,8 @@ export async function confirmStudentCustomOrderPaymentAction(formData: FormData)
   if (!norm) {
     redirectWithError(orderId, "주문 상태를 확인할 수 없어 결제 확인을 진행할 수 없습니다.");
   }
-  if (isOrderStatusTerminal(norm)) {
-    redirectWithError(orderId, "종료된 주문에는 결제 확인을 할 수 없습니다.");
+  if (isOrderRowTerminalForActions(row)) {
+    redirectWithError(orderId, "완료된 주문에서는 결제 확인을 진행할 수 없습니다.");
   }
 
   const { column: payCol } = await pickExistingColumn(supabase, table, [

@@ -9,7 +9,6 @@ import {
   isOrderStatusAllowingStudentAccept,
   isOrderRowTerminalForActions,
   isOrderRowPaymentConfirmedForMentorWork,
-  isOrderStatusTerminal,
   normalizedPrimaryOrderStatus,
   orderStatusLabelForUi,
 } from "@/lib/customRequest/orderLifecycleConstants";
@@ -63,8 +62,8 @@ function studentAcceptDisabledReason(
   if (!norm) {
     return "주문 상태를 확인할 수 없습니다.";
   }
-  if (isOrderStatusTerminal(norm)) {
-    return "이미 종료된 주문입니다.";
+  if (isOrderRowTerminalForActions(order)) {
+    return "이미 완료된 주문입니다.";
   }
   if (!isOrderStatusAllowingStudentAccept(norm)) {
     return `현재 단계(${orderStatusLabelForUi(norm)})에서는 수락할 수 없습니다.`;
@@ -96,8 +95,8 @@ function mentorStartDisabledReason(
   if (!norm) {
     return "주문 상태를 확인할 수 없습니다.";
   }
-  if (isOrderStatusTerminal(norm)) {
-    return "이미 종료된 주문입니다.";
+  if (isOrderRowTerminalForActions(order)) {
+    return "이미 완료된 주문입니다.";
   }
   if (norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS) {
     return "이미 작업이 시작된 상태입니다.";
@@ -129,7 +128,7 @@ function studentRevisionRequestDisabledReason(
   if (!norm) {
     return "주문 상태를 확인할 수 없습니다.";
   }
-  if (isOrderStatusTerminal(norm)) {
+  if (isOrderRowTerminalForActions(order)) {
     return "이미 완료·종료된 주문에는 수정 요청을 할 수 없습니다.";
   }
   if (!isOrderStatusAllowingStudentAccept(norm)) {
@@ -155,7 +154,7 @@ function openDisputeApplicationDisabledReason(
   if (!norm) {
     return "주문 상태를 확인할 수 없어 분쟁을 신청할 수 없습니다.";
   }
-  if (isOrderStatusTerminal(norm)) {
+  if (isOrderRowTerminalForActions(order)) {
     // 정책: terminal 이후 동일 주문 URL 로는 신규 분쟁 티켓을 열지 않음(사후 클레임은 운영·별도).
     return "종료·완료된 주문에는 이 화면에서 새 분쟁을 열 수 없습니다.";
   }
@@ -219,8 +218,8 @@ export function OrderRoomView(props: {
     if (d) {
       return d;
     }
-    if (isOrderStatusTerminal(orderNorm)) {
-      return "종료된 주문입니다.";
+    if (isOrderRowTerminalForActions(o as Row)) {
+      return "완료된 주문에서는 납품을 추가로 등록할 수 없습니다.";
     }
     if (orderNorm === ORDER_INSERT_STATUS_PENDING) {
       return "멘토가 작업을 시작한 뒤에 납품을 등록할 수 있습니다.";

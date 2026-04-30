@@ -86,6 +86,7 @@ export const ORDER_TERMINAL_STATUSES = new Set<string>([
   "rejected",
   "done",
   "resolved",
+  "dispute_resolved",
 ]);
 
 export function isOrderStatusTerminal(norm: string): boolean {
@@ -110,12 +111,37 @@ export function isOrderRowTerminalForActions(row: Record<string, unknown> | null
       }
     }
   }
+  for (const k of ["completed_at", "closed_at", "finished_at"] as const) {
+    const v = row[k];
+    if (v != null && String(v).trim() !== "") {
+      return true;
+    }
+  }
   return false;
 }
 
-/** 주문방: 종료 주문에서 진행 버튼 대신 표시하는 단일 안내 */
+/**
+ * 주문 행이 종료·완료로 더 이상 진행 액션(수락·수정·분쟁·작업 시작·납품 등)을 허용하지 않는지.
+ * `primary` 한 컬럼만 보면 놓치는 불일치에 대비해 `isOrderRowTerminalForActions`를 쓴다.
+ */
+export function isOrderRowClosedForLifecycleActions(row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) {
+    return false;
+  }
+  return isOrderRowTerminalForActions(row);
+}
+
+/** 주문방: 종료 주문에서 진행 버튼 대신 표시(공통) */
 export const ORDER_ROOM_TERMINAL_ACTIONS_NOTICE =
-  "완료된 주문입니다. 추가 변경이 필요하면 고객센터로 문의해 주세요.";
+  "이 주문은 완료되어 추가 작업이 제한됩니다. 납품물과 진행 기록은 아래에서 확인할 수 있어요.";
+
+/** 학생 뷰 — 터미널 안내 */
+export const ORDER_ROOM_TERMINAL_STUDENT_NOTICE =
+  "완료된 주문입니다. 납품물과 진행 기록을 확인할 수 있어요.";
+
+/** 멘토 뷰 — 터미널 안내 */
+export const ORDER_ROOM_TERMINAL_MENTOR_NOTICE =
+  "완료된 주문입니다. 추가 납품이나 상태 변경은 할 수 없어요.";
 
 // —— 주문방 UI: DB 토큰·ISO를 사용자 문구로만 변환(로직 판정에는 사용하지 않음)
 
@@ -380,11 +406,10 @@ export function orderWorkspaceCurrentStepIndex(
   isTerminal: boolean,
   hasDeliverable: boolean
 ): number {
-  if (isTerminal) {
+  const n = String(norm ?? "").trim().toLowerCase();
+  if (isTerminal || isOrderStatusTerminal(n)) {
     return 4;
   }
-
-  const n = String(norm ?? "").trim().toLowerCase();
 
   if (
     isOrderStatusAllowingStudentAccept(n) ||

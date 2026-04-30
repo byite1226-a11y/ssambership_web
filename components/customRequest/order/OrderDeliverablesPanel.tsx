@@ -83,7 +83,8 @@ export function OrderDeliverablesPanel({
 }: Props) {
   const d = detail.bundle.deliverables;
   const err = d.error;
-  const showMentorForm = view === "mentor" && actorRole === "mentor" && !mentorDeliverableBlockReason;
+  const showMentorForm =
+    view === "mentor" && actorRole === "mentor" && !orderTerminal && !mentorDeliverableBlockReason;
   const rows = (d.rows ?? []) as Row[];
   const canDownload = (actorRole === "student" || actorRole === "mentor" || actorRole === "admin") && orderId.trim().length > 0;
 

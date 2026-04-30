@@ -1,7 +1,11 @@
 import { AlertTriangle, CheckCircle2, ChevronRight, Pencil, Play } from "lucide-react";
 import { startCustomOrderWorkAction } from "@/lib/customRequest/orderMentorActions";
 import { acceptCustomOrderDeliverableAction } from "@/lib/customRequest/orderStudentActions";
-import { ORDER_ROOM_CARD_CLASS, ORDER_ROOM_TERMINAL_ACTIONS_NOTICE } from "@/lib/customRequest/orderLifecycleConstants";
+import {
+  ORDER_ROOM_CARD_CLASS,
+  ORDER_ROOM_TERMINAL_MENTOR_NOTICE,
+  ORDER_ROOM_TERMINAL_STUDENT_NOTICE,
+} from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
 
 const cardBase =
@@ -51,9 +55,17 @@ export function OrderActionBar(props: Props) {
     openDisputeApplicationDisabledReason,
   } = props;
   if (orderTerminal) {
+    const notice =
+      view === "student" && actorRole === "student"
+        ? ORDER_ROOM_TERMINAL_STUDENT_NOTICE
+        : view === "mentor" && actorRole === "mentor"
+          ? ORDER_ROOM_TERMINAL_MENTOR_NOTICE
+          : "이 주문은 완료되어 추가 작업이 제한됩니다.";
     return (
       <div className={ORDER_ROOM_CARD_CLASS} role="status" aria-label="주문 완료 안내">
-        <p className="text-sm leading-relaxed text-slate-700">{ORDER_ROOM_TERMINAL_ACTIONS_NOTICE}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">작업 관리</p>
+        <p className="mt-2 text-sm font-semibold text-slate-900">추가 작업 없음</p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-700">{notice}</p>
       </div>
     );
   }
@@ -71,7 +83,7 @@ export function OrderActionBar(props: Props) {
   return (
     <div className={`${ORDER_ROOM_CARD_CLASS} w-full`} role="group" aria-label="주문 액션">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">작업 관리</p>
-      <p className="mt-0.5 text-xs text-slate-500">이 단계에서 사용할 수 있는 액션입니다</p>
+      <p className="mt-0.5 text-xs text-slate-500">현재 단계에서 진행할 수 있는 작업이에요</p>
       <div className="mt-4 flex flex-col gap-2.5">
         {view === "student" && actorRole === "student" && canStudentRevisionJumps ? (
           <a href="#order-revisions" className={orangeCard}>

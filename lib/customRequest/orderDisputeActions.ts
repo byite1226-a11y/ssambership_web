@@ -8,7 +8,7 @@ import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueri
 import { getDisputeRowsForOrderId, hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
 import {
   isOrderStatusAllowingStudentAccept,
-  isOrderStatusTerminal,
+  isOrderRowTerminalForActions,
   normalizedPrimaryOrderStatus,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { hasDeliverableRowsForOrder } from "@/lib/customRequest/orderStudentActions";
@@ -191,9 +191,9 @@ export async function submitCustomOrderDisputeAction(formData: FormData): Promis
   if (!norm) {
     redirectWithError(orderId, "주문 상태를 확인할 수 없어 분쟁을 신청할 수 없습니다.");
   }
-  if (isOrderStatusTerminal(norm)) {
+  if (isOrderRowTerminalForActions(row)) {
     // 정책: completed/cancelled/closed 등 종료 뒤 동일 URL 로는 신규 분쟁 티켓을 열지 않음(환불·클레임은 별도).
-    redirectWithError(orderId, "종료·완료된 주문에는 이 화면에서 새 분쟁을 열 수 없습니다.");
+    redirectWithError(orderId, "완료된 주문에서는 이 화면에서 새 분쟁을 열 수 없습니다.");
   }
 
   if (role === "mentor") {

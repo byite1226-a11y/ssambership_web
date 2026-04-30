@@ -10,7 +10,7 @@ import {
   ORDER_INSERT_STATUS_PENDING,
   ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS,
   ORDER_STATUSES_MENTOR_START_WORK_ALLOWED,
-  isOrderStatusTerminal,
+  isOrderRowTerminalForActions,
   normalizedPrimaryOrderStatus,
   primaryOrderStatusColumnKey,
 } from "@/lib/customRequest/orderLifecycleConstants";
@@ -104,8 +104,8 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
   if (!norm) {
     redirectWithError(orderId, "주문 상태를 확인할 수 없어 작업을 시작할 수 없습니다.");
   }
-  if (isOrderStatusTerminal(norm)) {
-    redirectWithError(orderId, "이미 종료된 주문은 작업을 시작할 수 없습니다.");
+  if (isOrderRowTerminalForActions(row)) {
+    redirectWithError(orderId, "완료된 주문에서는 작업을 시작할 수 없습니다.");
   }
   if (norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS) {
     redirectWithError(orderId, "이미 작업이 시작된 상태입니다.");
@@ -224,8 +224,8 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
   if (!norm) {
     redirectWithError(orderId, "주문 상태를 확인할 수 없어 납품을 등록할 수 없습니다.");
   }
-  if (isOrderStatusTerminal(norm)) {
-    redirectWithError(orderId, "이미 종료된 주문입니다.");
+  if (isOrderRowTerminalForActions(row)) {
+    redirectWithError(orderId, "완료된 주문에서는 납품을 등록할 수 없습니다.");
   }
   if (norm === ORDER_INSERT_STATUS_PENDING) {
     redirectWithError(orderId, "작업 시작 후에만 납품을 등록할 수 있습니다(상태: pending).");

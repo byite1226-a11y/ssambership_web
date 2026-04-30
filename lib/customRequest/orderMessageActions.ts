@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueries";
+import { isOrderRowTerminalForActions } from "@/lib/customRequest/orderLifecycleConstants";
 import { insertOrderRoomMessage, recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
@@ -33,8 +34,7 @@ function logActionFailure(
 
 /**
  * 주문방 메시지: orderId + 본문만 form에서 받고, author·역할은 세션/프로필로만 판정.
- * 주의: completed/closed 등 **종료 상태**는 검사하지 않는다(당사자는 종료 후에도 메시지 가능).
- * 라이프사이클(작업 시작·납품·수락) 액션과 달리 primary status / terminal 판정을 쓰지 않는다.
+ * 완료·종료 주문(`isOrderRowTerminalForActions`)에서는 새 메시지 작성을 막고 UI(읽기 전용)와 맞춘다.
  */
 export async function submitCustomOrderRoomMessageAction(formData: FormData): Promise<void> {
   const orderIdEarly = String(formData.get("orderId") ?? "").trim();
@@ -124,6 +124,10 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
     redirect(`${orderPath(orderId)}?error=${encodeURIComponent(oe?.message ?? "주문을 찾을 수 없습니다.")}`);
   }
   const row = rowData as Row;
+
+  if (isOrderRowTerminalForActions(row)) {
+    redirect(`${orderPath(orderId)}?error=${encodeURIComponent("완료된 주문에서는 새 메시지를 보낼 수 없습니다.")}`);
+  }
 
   const access = canAccessOrder(row, user.id, role);
   if (!access.ok) {

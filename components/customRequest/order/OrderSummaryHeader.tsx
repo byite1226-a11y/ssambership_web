@@ -2,9 +2,11 @@ import Link from "next/link";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import {
   isOrderRowPaymentConfirmedForMentorWork,
-  isOrderStatusTerminal,
   isOrderRowTerminalForActions,
+  isOrderStatusTerminal,
   ORDER_ROOM_CARD_CLASS,
+  ORDER_ROOM_TERMINAL_MENTOR_NOTICE,
+  ORDER_ROOM_TERMINAL_STUDENT_NOTICE,
   ORDER_WORKSPACE_STEP_LABELS,
   formatOrderRoomDateTime,
   normalizedPrimaryOrderStatus,
@@ -376,6 +378,11 @@ export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDi
         <div className="mt-3">
           <OrderStepStrip currentIndex={stepIndex} />
         </div>
+        {terminal ? (
+          <p className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/90 px-3 py-2 text-xs font-medium text-emerald-950">
+            {view === "student" ? ORDER_ROOM_TERMINAL_STUDENT_NOTICE : ORDER_ROOM_TERMINAL_MENTOR_NOTICE}
+          </p>
+        ) : null}
       </div>
 
       <div className={ORDER_ROOM_CARD_CLASS + " text-sm text-slate-700"}>
