@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
 import { resolvePostLoginPath, safeInternalNextPath } from "@/lib/auth/getPostLoginPath";
@@ -42,7 +42,6 @@ type RoleLoginFormProps = {
 };
 
 export function RoleLoginForm({ role, emailId, passwordId, submitLabel, initialNext, rolePickerHref = "/login" }: RoleLoginFormProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const signupFollowUp = searchParams.get("message") === "signup-check-email";
   const [email, setEmail] = useState("");
@@ -130,14 +129,40 @@ export function RoleLoginForm({ role, emailId, passwordId, submitLabel, initialN
       return;
     }
 
-    setSuccess("로그인에 성공했습니다. 잠시 후 이동합니다.");
+    if (role === "mentor" && profile.role !== "mentor") {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        /* */
+      }
+      setError("이 로그인 화면은 멘토 계정 전용입니다. 학생 계정이면 학생 로그인을 이용해 주세요.");
+      setLoading(false);
+      return;
+    }
+    if (role === "student" && profile.role !== "student") {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        /* */
+      }
+      setError("이 로그인 화면은 학생 계정 전용입니다. 멘토 계정이면 멘토 로그인을 이용해 주세요.");
+      setLoading(false);
+      return;
+    }
+
     const fromQuery = safeInternalNextPath(initialNext);
     const nextPath = resolvePostLoginPath(fromQuery ?? null, profile.role);
-    setTimeout(() => {
-      router.push(nextPath);
-      router.refresh();
-    }, 800);
+
+    setSuccess("로그인에 성공했습니다. 이동합니다.");
     setLoading(false);
+    /**
+     * `router.push`만 쓰면 브라우저에 방금 쓴 세션 쿠키가 다음 RSC 요청에 아직 안 실릴 수 있어
+     * `(mentor)` 레이아웃의 `requireRole`이 비로그인으로 판단하는 레이스가 난다.
+     * 전체 문서 네비게이션으로 확실히 같은 쿠키 저장소를 쓰는 요청을 보낸다.
+     */
+    window.setTimeout(() => {
+      window.location.assign(nextPath);
+    }, 150);
   }
 
   return (
