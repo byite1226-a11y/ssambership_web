@@ -31,8 +31,8 @@ export const PUBLIC_MENTOR_DATA_MODEL = [
 ] as const;
 
 export const MENTOR_PAYOUTS_DATA_MODEL = [
-  "payouts, mentor_payouts, settlement_lines (이름 후보) — 수익/지급 행",
-  "subscriptions — 멘토-구독 수익 요약(컬럼·RLS 확정)",
-  "custom_request_orders — 맞춤의뢰 수익(멘토 FK, 읽기만)",
-  "custom_order_settlement_items — 맞춤의뢰 정산·지급 예정(멘토 본인 행)",
+  "멘토 지급·정산 내역",
+  "구독·수익 요약",
+  "맞춤의뢰 주문 흐름",
+  "맞춤의뢰 정산 예정 및 지급 완료",
 ] as const;

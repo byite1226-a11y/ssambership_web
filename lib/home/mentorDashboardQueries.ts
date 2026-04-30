@@ -48,7 +48,7 @@ export async function fetchRecentCustomOrders(
       "selected_mentor_id",
     ]);
     if (!mc) {
-      return { table: t, rows: [], error: null, probe: `${t}: mentor FK 없음` };
+      return { table: t, rows: [], error: null, probe: "" };
     }
     const o1 = await supabase
       .from(t)
@@ -58,17 +58,17 @@ export async function fetchRecentCustomOrders(
       .limit(limit);
     if (o1.error) {
       if (!/order|column/i.test(o1.error.message)) {
-        return { table: t, rows: [], error: o1.error.message, probe: t };
+        return { table: t, rows: [], error: o1.error.message, probe: "" };
       }
       const o2 = await supabase.from(t).select("*").eq(mc, mentorId).limit(limit);
       if (o2.error) {
-        return { table: t, rows: [], error: o2.error.message, probe: t };
+        return { table: t, rows: [], error: o2.error.message, probe: "" };
       }
-      return { table: t, rows: (o2.data as Row[]) ?? [], error: null, probe: `${t} · order 생략` };
+      return { table: t, rows: (o2.data as Row[]) ?? [], error: null, probe: "" };
     }
-    return { table: t, rows: (o1.data as Row[]) ?? [], error: null, probe: `${t}.${mc}` };
+    return { table: t, rows: (o1.data as Row[]) ?? [], error: null, probe: "" };
   }
-  return { table: null, rows: [], error: null, probe: "custom_request_orders(후보) 없음" };
+  return { table: null, rows: [], error: null, probe: "" };
 }
 
 async function notificationsCountProbe(
@@ -145,7 +145,7 @@ export async function fetchMentorCustomRequestOrdersFromPrimaryTable(
   const t = CUSTOM_REQUEST_ORDERS_TABLE;
   const { error: pe } = await supabase.from(t).select("id").limit(1);
   if (pe) {
-    return { rows: [], error: pe.message, probe: `${t}: 접근 불가` };
+    return { rows: [], error: pe.message, probe: "" };
   }
   const { column: mc } = await pickExistingColumn(supabase, t, [
     "mentor_id",
@@ -155,7 +155,7 @@ export async function fetchMentorCustomRequestOrdersFromPrimaryTable(
     "selected_mentor_id",
   ]);
   if (!mc) {
-    return { rows: [], error: null, probe: `${t}: mentor FK 없음` };
+    return { rows: [], error: null, probe: "" };
   }
   const o1 = await supabase
     .from(t)
@@ -165,15 +165,15 @@ export async function fetchMentorCustomRequestOrdersFromPrimaryTable(
     .limit(limit);
   if (o1.error) {
     if (!/order|column/i.test(o1.error.message)) {
-      return { rows: [], error: o1.error.message, probe: t };
+      return { rows: [], error: o1.error.message, probe: "" };
     }
     const o2 = await supabase.from(t).select("*").eq(mc, mentorId).limit(limit);
     if (o2.error) {
-      return { rows: [], error: o2.error.message, probe: t };
+      return { rows: [], error: o2.error.message, probe: "" };
     }
-    return { rows: (o2.data as Row[]) ?? [], error: null, probe: `${t} · order 생략` };
+    return { rows: (o2.data as Row[]) ?? [], error: null, probe: "" };
   }
-  return { rows: (o1.data as Row[]) ?? [], error: null, probe: `${t}.${mc}` };
+  return { rows: (o1.data as Row[]) ?? [], error: null, probe: "" };
 }
 
 export function mentorCustomOrderWorkroomHref(orderId: string): string {
@@ -200,7 +200,7 @@ export function mentorCustomOrderPaymentLine(row: Row): string {
     if (!s) continue;
     return paymentStatusLabelForUi(s);
   }
-  return "결제 상태 미확인";
+  return "결제 정보 없음";
 }
 
 export function mentorCustomOrderPaymentBadge(row: Row): string {

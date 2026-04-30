@@ -131,7 +131,7 @@ export function PageScaffold({
                     section.status === "connected" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                   }`}
                 >
-                  {section.status === "connected" ? "정상" : "확인 필요"}
+                  {section.status === "connected" ? "표시 중" : "준비 중"}
                 </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-600">{section.body}</p>
@@ -163,7 +163,7 @@ export function PageScaffold({
 
       {showDataPoints ? (
         <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-base font-extrabold text-slate-900">실데이터 연결 포인트</h3>
+          <h3 className="text-base font-extrabold text-slate-900">참고</h3>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
             {dataPoints.map((point) => (
               <li key={point}>{point}</li>

@@ -19,7 +19,7 @@ type Row = Record<string, unknown>;
 export default async function MentorCustomRequestOrdersListPage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
-  const { rows, error, probe } = await fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80);
+  const { rows, error } = await fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80);
 
   return (
     <PageScaffold
@@ -40,7 +40,6 @@ export default async function MentorCustomRequestOrdersListPage() {
           주문 목록을 불러오지 못했습니다. {error}
         </p>
       ) : null}
-      <p className="mb-4 text-xs text-slate-500">{probe}</p>
       {rows.length === 0 && !error ? (
         <p className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
           아직 표시할 맞춤의뢰 주문이 없습니다. 학생이 지원서를 선택하면 여기에 나타납니다.

@@ -89,12 +89,12 @@ export async function fetchStudentCustomRequestOrdersFromPrimaryTable(
   const t = CUSTOM_REQUEST_ORDERS_TABLE;
   const { error: pe } = await supabase.from(t).select("id").limit(1);
   if (pe) {
-    return { rows: [], error: pe.message, probe: `${t}: 접근 불가` };
+    return { rows: [], error: pe.message, probe: "" };
   }
 
   const ownerCols = await listExistingStudentOwnerColumns(supabase, t);
   if (ownerCols.length === 0) {
-    return { rows: [], error: null, probe: `${t}: 학생 소유 FK 컬럼 없음` };
+    return { rows: [], error: null, probe: "" };
   }
 
   const orFilter = ownerCols.map((c) => `${c}.eq.${studentUserId}`).join(",");
@@ -102,17 +102,17 @@ export async function fetchStudentCustomRequestOrdersFromPrimaryTable(
   const o1 = await supabase.from(t).select("*").or(orFilter).order("updated_at", { ascending: false }).limit(limit);
   if (o1.error) {
     if (!/order|column/i.test(o1.error.message)) {
-      return { rows: [], error: o1.error.message, probe: t };
+      return { rows: [], error: o1.error.message, probe: "" };
     }
     const o2 = await supabase.from(t).select("*").or(orFilter).limit(limit);
     if (o2.error) {
-      return { rows: [], error: o2.error.message, probe: t };
+      return { rows: [], error: o2.error.message, probe: "" };
     }
     const raw = ((o2.data as Row[]) ?? []).filter((r) => canAccessOrder(r, studentUserId, "student").ok);
-    return { rows: raw, error: null, probe: `${t} · OR(${ownerCols.join(",")}) · order 생략` };
+    return { rows: raw, error: null, probe: "" };
   }
   const raw = ((o1.data as Row[]) ?? []).filter((r) => canAccessOrder(r, studentUserId, "student").ok);
-  return { rows: raw, error: null, probe: `${t} · OR(${ownerCols.join(",")})` };
+  return { rows: raw, error: null, probe: "" };
 }
 
 export type StudentCustomOrderListRowView = {

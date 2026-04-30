@@ -21,7 +21,7 @@ export default async function MentorPayoutsPage() {
     <PageScaffold
       eyebrow="Mentor / Payouts"
       title="정산 · 수익"
-      description="맞춤의뢰는 custom_order_settlement_items(멘토 본인 행)을 기준으로 표시합니다. payouts·구독 요약은 보조입니다."
+      description="맞춤의뢰 정산 예정·완료 금액과 주문별 내역을 확인하세요. 구독·기타 요약은 참고용입니다."
       ctas={[
         { href: "/mentor/dashboard", label: "대시보드", tone: "slate" },
         { href: "/mentor/profile", label: "프로필", tone: "green" },
@@ -32,15 +32,19 @@ export default async function MentorPayoutsPage() {
           title: "맞춤의뢰 정산",
           body: bundle.settlementPayouts.error
             ? bundle.settlementPayouts.error
-            : `정산 행 ${bundle.settlementPayouts.totals.count}건 · 예정 ${bundle.settlementPayouts.totals.expectedMentorAmount.toLocaleString("ko-KR")}원 · 완료 ${bundle.settlementPayouts.totals.paidMentorAmount.toLocaleString("ko-KR")}원`,
+            : `정산 내역 ${bundle.settlementPayouts.totals.count}건 · 예정 ${bundle.settlementPayouts.totals.expectedMentorAmount.toLocaleString("ko-KR")}원 · 완료 ${bundle.settlementPayouts.totals.paidMentorAmount.toLocaleString("ko-KR")}원`,
           status: bundle.settlementPayouts.error ? "skeleton" : "connected",
         },
-        { title: "payouts 후보", body: bundle.payoutTable ? `payout: ${bundle.payoutTable}` : (bundle.payoutError ?? "—"), status: bundle.payoutTable ? "connected" : "skeleton" },
-        { title: "캐시/환불", body: "이 모듈 외 /wallet /cash 연계(수정 없음).", status: "skeleton" },
+        {
+          title: "기타 정산·지급",
+          body: bundle.payoutTable ? "연결된 지급 내역 소스가 있습니다." : (bundle.payoutError ?? "추가 지급 내역을 찾지 못했습니다."),
+          status: bundle.payoutTable ? "connected" : "skeleton",
+        },
+        { title: "캐시·환불", body: "캐시 충전·환불은 지갑·고객지원 메뉴에서 이어집니다.", status: "skeleton" },
       ]}
-      emptyState={!hasAny ? "아직 수익·지급 행이 없거나 RLS로 0입니다." : "요약/테이블은 아래."}
-      loadingState="RSC. 기간·필터(클라) 후속."
-      errorState="조회·RLS 오류는 summary 오류란·테이블 비움."
+      emptyState={!hasAny ? "아직 표시할 정산·수익 정보가 없습니다." : "아래에서 상세를 확인하세요."}
+      loadingState="정산 정보를 불러오는 중입니다."
+      errorState="일부 정보를 불러오지 못했을 수 있습니다. 잠시 후 다시 시도해 주세요."
       dataPoints={[...MENTOR_PAYOUTS_DATA_MODEL]}
     >
       <MentorPayoutsBody bundle={bundle} />

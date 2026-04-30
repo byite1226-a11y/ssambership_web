@@ -125,7 +125,9 @@ export default async function MentorCustomRequestDashboardPage() {
                 })}
               </ul>
             )}
-            <p className="mt-2 text-xs text-slate-500">{orders.probe}</p>
+            {orders.rows.length > 0 ? (
+              <p className="mt-2 text-xs text-slate-500">배정된 맞춤의뢰 주문이에요. 전체 목록은 위 링크에서 확인하세요.</p>
+            ) : null}
           </div>
         </li>
         <li className="sm:col-span-2">

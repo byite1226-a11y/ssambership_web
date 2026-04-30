@@ -98,14 +98,14 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
         <StatTile
           label="답변 대기 질문"
           value={threadErr ? "—" : String(threadStats.openThreads)}
-          hint={threadErr ? "집계 제한" : "진행 중 스레드(추정)"}
+          hint={threadErr ? "일시적으로 표시되지 않을 수 있어요" : "진행 중인 질문(추정)"}
         />
         <StatTile label="구독(건)" value={subCountLabel} hint={mypage.subscriptions.detail} />
         <StatTile label="결제(건)" value={payCountLabel} hint={mypage.payments.detail} />
         <StatTile
           label="알림"
           value={notifLabel}
-          hint={mypage.notifications.status === "skeleton" ? "집계 준비 중" : mypage.notifications.detail}
+          hint={mypage.notifications.status === "skeleton" ? "알림 정보를 준비 중입니다" : mypage.notifications.detail}
         />
       </div>
 
@@ -191,10 +191,10 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
           <h2 className="text-base font-extrabold text-slate-900">답변 대기·질문 한도</h2>
           <p className="mt-1 text-sm text-slate-700">질문 한도(플랜): {weeklyQuotaHint}</p>
           <p className="mt-1 text-sm text-slate-700">
-            답변을 기다리는 질문 {threadErr ? "—" : String(threadStats.openThreads)}건 · {threadErr ? "—" : String(threadStats.roomsSampled)}곳
-            집계
+            답변을 기다리는 질문 {threadErr ? "—" : String(threadStats.openThreads)}건 · 질문방{" "}
+            {threadErr ? "—" : String(threadStats.roomsSampled)}곳 기준
           </p>
-          {threadErr ? stateBanner("진행 질문을 집계하는 데 제한이 있을 수 있어요.", "err") : null}
+          {threadErr ? stateBanner("진행 중인 질문 수를 불러오는 데 제한이 있을 수 있어요.", "err") : null}
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -314,7 +314,8 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
           </li>
         </ul>
         <p className="mt-2 text-xs text-slate-500">
-          알림: {mypage.notifications.valueText === "—" ? "집계 중" : `${mypage.notifications.valueText}건`} — {mypage.notifications.detail}
+          알림: {mypage.notifications.valueText === "—" ? "표시 준비 중" : `${mypage.notifications.valueText}건`} —{" "}
+          {mypage.notifications.detail}
         </p>
       </section>
     </div>

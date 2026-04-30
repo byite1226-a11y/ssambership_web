@@ -80,14 +80,12 @@ export async function loadMentorSettlementItemsForPayouts(
   supabase: SupabaseClient,
   mentorId: string
 ): Promise<MentorSettlementPayoutsBlock> {
-  const probeBase = `${SETTLEMENT_ITEMS_TABLE}.mentor_id`;
-
   const { error: pe } = await supabase.from(SETTLEMENT_ITEMS_TABLE).select("id").limit(1);
   if (pe && /relation|does not exist|schema cache/i.test(pe.message)) {
     return {
       lines: [],
       error: null,
-      probe: `${SETTLEMENT_ITEMS_TABLE} 테이블을 찾을 수 없습니다.`,
+      probe: "정산 안내를 준비 중입니다.",
       loadedVia: "none",
       totals: { expectedMentorAmount: 0, paidMentorAmount: 0, count: 0 },
     };
@@ -124,7 +122,7 @@ export async function loadMentorSettlementItemsForPayouts(
       } catch (e) {
         const m = e instanceof Error ? e.message : String(e);
         if (/SUPABASE_SERVICE_ROLE_KEY|createServiceRoleClient/i.test(m)) {
-          err = `${u1.error.message} (서비스 롤 키 없음)`;
+          err = u1.error.message;
         }
       }
     }
@@ -134,7 +132,7 @@ export async function loadMentorSettlementItemsForPayouts(
     return {
       lines: [],
       error: err,
-      probe: probeBase,
+      probe: "",
       loadedVia: "none",
       totals: { expectedMentorAmount: 0, paidMentorAmount: 0, count: 0 },
     };
@@ -190,10 +188,15 @@ export async function loadMentorSettlementItemsForPayouts(
     return { settlement, order, workroomHref, orderStatusLabel, orderPaymentLabel };
   });
 
+  const probe =
+    lines.length > 0
+      ? "완료된 맞춤의뢰 주문의 정산 예정 금액입니다. 완료된 주문은 정산 예정 금액에 반영됩니다."
+      : "정산 데이터가 아직 없습니다.";
+
   return {
     lines,
     error: null,
-    probe: `${probeBase} · ${via === "service_role" ? "service_role 보조 읽기" : "세션 읽기"} · ${lines.length}건`,
+    probe,
     loadedVia: via,
     totals: {
       expectedMentorAmount,
@@ -295,7 +298,7 @@ export type MentorPayoutsBundle = {
   subSummary: { n: number; amountHint: string; error: string | null; table: string | null };
   customSummary: { n: number; amountHint: string; error: string | null; table: string | null };
   customOrderSettlements: CustomOrderSettlementsBlock;
-  /** 맞춤의뢰 정산 예정·지급 완료(custom_order_settlement_items) */
+  /** 맞춤의뢰 정산 예정·지급 완료 행 */
   settlementPayouts: MentorSettlementPayoutsBlock;
   tableRows: Row[];
   tableHint: string;
@@ -309,13 +312,13 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
   const pt = await firstPayoutsTable(supabase);
   let monthExpectedCents = 0;
   let tableRows: Row[] = [];
-  let tableHint = "이번 달 정산(예상)에 반영된 지급 내역이에요";
+  let tableHint = "이번 달 기준으로 예상되는 지급·정산 금액이에요.";
   if (pt.table) {
     const { rows, fk, error: re } = await readRowsForMentor(supabase, pt.table, mentorId, 80);
     tableRows = rows;
     tableHint = fk
-      ? "이번 달 정산(예상)에 반영된 지급 내역이에요"
-      : "이번 달 정산(예상)에 일부 샘플을 반영했어요";
+      ? "이번 달 기준으로 예상되는 지급·정산 금액이에요."
+      : "이번 달 예상 금액은 일부 항목만 반영됐을 수 있어요.";
     for (const row of rows) {
       if (inMonthRange(row, start, end)) {
         monthExpectedCents += pickAmount(row);

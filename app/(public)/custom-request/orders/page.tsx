@@ -13,7 +13,7 @@ export const revalidate = 0;
 export default async function StudentCustomRequestOrdersListPage() {
   const { user } = await requireRole("student");
   const supabase = await createClient();
-  const { rows, error, probe } = await fetchStudentCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80);
+  const { rows, error } = await fetchStudentCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80);
   const enriched = error ? [] : await enrichStudentCustomOrderListRows(supabase, rows);
 
   return (
@@ -21,7 +21,7 @@ export default async function StudentCustomRequestOrdersListPage() {
       compactHero
       eyebrow="맞춤의뢰"
       title="내 주문"
-      description="결제·진행·납품 중인 맞춤의뢰 주문입니다. 작업방에서 멘토와 이어가요."
+      description="결제·진행·납품 중인 맞춤의뢰 주문을 확인하세요. 작업방에서 멘토와 이어가요."
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰 홈", tone: "slate" },
         { href: "/custom-request/new", label: "새 의뢰 등록", tone: "blue" },
@@ -36,7 +36,6 @@ export default async function StudentCustomRequestOrdersListPage() {
           주문 목록을 불러오지 못했습니다. {error}
         </p>
       ) : null}
-      <p className="mb-4 text-xs text-slate-500">{probe}</p>
       {enriched.length === 0 && !error ? (
         <p className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-700">
           아직 표시할 맞춤의뢰 주문이 없습니다. 의뢰를 올리고 멘토 제안을 선택하면 여기에 나타납니다.
@@ -70,13 +69,9 @@ export default async function StudentCustomRequestOrdersListPage() {
                     <dt className="font-semibold text-slate-500">멘토</dt>
                     <dd className="min-w-0 break-all">{card.mentorLine}</dd>
                   </div>
-                  <div className="flex flex-wrap gap-x-2">
+                  <div className="flex flex-wrap gap-x-2 sm:col-span-2">
                     <dt className="font-semibold text-slate-500">생성</dt>
                     <dd>{card.createdLabel}</dd>
-                  </div>
-                  <div className="flex flex-wrap gap-x-2">
-                    <dt className="font-semibold text-slate-500">마감</dt>
-                    <dd>{card.deadlineLabel}</dd>
                   </div>
                 </dl>
                 <div className="mt-4">

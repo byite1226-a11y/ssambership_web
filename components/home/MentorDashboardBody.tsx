@@ -14,7 +14,7 @@ function stateBanner(text: string, kind: "err" | "soft") {
 function notifyStatusKorean(status: MentorDashboardData["notifyProbe"]["status"]): string {
   if (status === "connected") return "있음";
   if (status === "empty") return "없음";
-  return "확인 필요";
+  return "준비 중";
 }
 
 function StatTile(props: { label: string; value: string; hint?: string; variant?: "default" | "emerald" }) {
@@ -91,7 +91,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
         <StatTile
           label="답변 예정(추정)"
           value={queue}
-          hint={threadStats.error ? "집계 제한" : "큐·스레드 기반"}
+          hint={threadStats.error ? "일시적으로 표시되지 않을 수 있어요" : "예상치"}
           variant="emerald"
         />
         <StatTile label="진행 중 질문" value={openThreads} hint={threadStats.error ? "불러오지 못함" : "오픈 스레드"} />
@@ -103,7 +103,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
         <StatTile
           label="이번 달 정산(예상)"
           value={monthText}
-          hint={amountErr ? "정산 테이블·권한 확인" : "참고 금액"}
+          hint={amountErr ? "정산 정보를 불러오지 못했어요" : "참고 금액"}
         />
         <StatTile label="최근 맞춤의뢰" value={customCount} hint={customErr ? "불러오지 못함" : "목록에 보이는 건수"} />
       </div>
@@ -154,7 +154,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
           <p className="mt-1 text-xs text-slate-500">{payouts.tableHint}</p>
           <p className="mt-1 text-xs text-slate-500">
             {payouts.subSummary.amountHint}
-            {payouts.subSummary.error ? " · 수익·구독 요약을 일부만 불러왔을 수 있어요." : ""}
+            {payouts.subSummary.error ? " · 구독·수익 요약을 모두 불러오지 못했을 수 있어요." : ""}
           </p>
         </section>
 
@@ -183,7 +183,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
           ) : !customErr ? (
             <p className="mt-2 text-slate-600">최근 맞춤의뢰가 없어요. 기록이 쌓이면 여기에 뜰 거예요.</p>
           ) : null}
-          <p className="mt-2 text-xs text-slate-500">{payouts.customSummary.amountHint}</p>
+          <p className="mt-2 text-xs text-slate-500">주문 목록·맞춤의뢰 홈에서 전체 흐름을 이어가요.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <CtaButton href="/mentor/custom-request/orders" tone="emerald">
               주문 목록

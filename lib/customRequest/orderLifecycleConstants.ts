@@ -205,7 +205,7 @@ export function orderStatusBadgeLabelForNorm(norm: string): string {
   if (Object.prototype.hasOwnProperty.call(ORDER_STATUS_LABEL_MAP, s)) {
     return ORDER_STATUS_LABEL_MAP[s]!;
   }
-  return "확인 필요";
+  return "준비 중";
 }
 
 const PAYMENT_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
@@ -264,7 +264,7 @@ export function paymentStatusBadgeLabelForRaw(raw: string): string {
   if (Object.prototype.hasOwnProperty.call(PAYMENT_STATUS_LABEL_MAP, s)) {
     return PAYMENT_STATUS_LABEL_MAP[s]!;
   }
-  return "확인 필요";
+  return "준비 중";
 }
 
 const ORDER_PAYMENT_CONFIRMED_FOR_WORK = new Set([
