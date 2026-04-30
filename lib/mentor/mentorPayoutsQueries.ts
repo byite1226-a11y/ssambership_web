@@ -1,7 +1,207 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  normalizedPrimaryOrderStatus,
+  orderStatusLabelForUi,
+  paymentStatusLabelForUi,
+} from "@/lib/customRequest/orderLifecycleConstants";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 type Row = Record<string, unknown>;
+
+const SETTLEMENT_ITEMS_TABLE = "custom_order_settlement_items" as const;
+const ORDERS_TABLE = "custom_request_orders" as const;
+
+/** 정산 예정(미지급) — DB CHECK와 맞춤 */
+const SETTLEMENT_STATUS_EXPECTED = new Set(["pending", "on_hold", "payable"]);
+
+function looksLikeRlsOrPermission(msg: string): boolean {
+  return /permission|RLS|42501|policy|not authorized/i.test(msg);
+}
+
+function intAmount(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return Math.trunc(v);
+  if (typeof v === "string") {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.trunc(n) : 0;
+  }
+  return 0;
+}
+
+export function formatKrwWon(n: number): string {
+  return `${n.toLocaleString("ko-KR")}원`;
+}
+
+function pickOrderMentorIdFromRow(o: Row): string | null {
+  for (const k of ["mentor_id", "selected_mentor_id", "assigned_mentor_id", "expert_id", "mentor_user_id"] as const) {
+    const v = o[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+function pickPaymentRawForOrder(o: Row): string {
+  for (const k of ["payment_status", "payment_state", "pay_status"] as const) {
+    const v = o[k];
+    if (v == null) continue;
+    const s = String(v).trim();
+    if (s) return s;
+  }
+  return "";
+}
+
+export type MentorPayoutsSettlementLine = {
+  settlement: Row;
+  order: Row | null;
+  workroomHref: string;
+  orderStatusLabel: string;
+  orderPaymentLabel: string;
+};
+
+export type MentorSettlementPayoutsBlock = {
+  lines: MentorPayoutsSettlementLine[];
+  error: string | null;
+  probe: string;
+  /** 세션 조회 실패 후 RLS로 판단될 때만 service_role 재시도(mentor_id 동일) */
+  loadedVia: "session" | "service_role" | "none";
+  totals: {
+    /** pending / on_hold / payable 멘토 정산액 합 */
+    expectedMentorAmount: number;
+    /** status === paid 멘토 정산액 합 */
+    paidMentorAmount: number;
+    count: number;
+  };
+};
+
+/**
+ * 멘토 본인 `mentor_id` 행만. RLS 실패 시에만 service_role로 동일 조건 재조회.
+ */
+export async function loadMentorSettlementItemsForPayouts(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<MentorSettlementPayoutsBlock> {
+  const probeBase = `${SETTLEMENT_ITEMS_TABLE}.mentor_id`;
+
+  const { error: pe } = await supabase.from(SETTLEMENT_ITEMS_TABLE).select("id").limit(1);
+  if (pe && /relation|does not exist|schema cache/i.test(pe.message)) {
+    return {
+      lines: [],
+      error: null,
+      probe: `${SETTLEMENT_ITEMS_TABLE} 테이블을 찾을 수 없습니다.`,
+      loadedVia: "none",
+      totals: { expectedMentorAmount: 0, paidMentorAmount: 0, count: 0 },
+    };
+  }
+
+  const runSelect = async (client: SupabaseClient) =>
+    client
+      .from(SETTLEMENT_ITEMS_TABLE)
+      .select("*")
+      .eq("mentor_id", mentorId)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+  let raw: Row[] = [];
+  let err: string | null = null;
+  let via: MentorSettlementPayoutsBlock["loadedVia"] = "session";
+
+  const u1 = await runSelect(supabase);
+  if (!u1.error) {
+    raw = (u1.data as Row[]) ?? [];
+  } else {
+    err = u1.error.message;
+    if (looksLikeRlsOrPermission(err)) {
+      try {
+        const admin = createServiceRoleClient();
+        const a1 = await runSelect(admin);
+        if (!a1.error) {
+          raw = (a1.data as Row[]) ?? [];
+          err = null;
+          via = "service_role";
+        } else {
+          err = a1.error.message;
+        }
+      } catch (e) {
+        const m = e instanceof Error ? e.message : String(e);
+        if (/SUPABASE_SERVICE_ROLE_KEY|createServiceRoleClient/i.test(m)) {
+          err = `${u1.error.message} (서비스 롤 키 없음)`;
+        }
+      }
+    }
+  }
+
+  if (err) {
+    return {
+      lines: [],
+      error: err,
+      probe: probeBase,
+      loadedVia: "none",
+      totals: { expectedMentorAmount: 0, paidMentorAmount: 0, count: 0 },
+    };
+  }
+
+  let expectedMentorAmount = 0;
+  let paidMentorAmount = 0;
+  for (const r of raw) {
+    const ma = intAmount(r.mentor_amount);
+    const st = String(r.status ?? "").trim().toLowerCase();
+    if (st === "paid") {
+      paidMentorAmount += ma;
+    } else if (SETTLEMENT_STATUS_EXPECTED.has(st)) {
+      expectedMentorAmount += ma;
+    }
+  }
+
+  const orderIds = [
+    ...new Set(
+      raw
+        .map((r) => (typeof r.custom_request_order_id === "string" ? r.custom_request_order_id.trim() : ""))
+        .filter(Boolean)
+    ),
+  ];
+
+  const orderById = new Map<string, Row>();
+  if (orderIds.length > 0) {
+    const { error: oe } = await supabase.from(ORDERS_TABLE).select("id").limit(1);
+    if (!oe) {
+      const oq = await supabase.from(ORDERS_TABLE).select("*").in("id", orderIds);
+      if (!oq.error && oq.data) {
+        for (const o of oq.data as Row[]) {
+          const id = typeof o.id === "string" ? o.id : null;
+          if (!id) continue;
+          if (pickOrderMentorIdFromRow(o) !== mentorId) {
+            continue;
+          }
+          orderById.set(id, o);
+        }
+      }
+    }
+  }
+
+  const lines: MentorPayoutsSettlementLine[] = raw.map((settlement) => {
+    const oid =
+      typeof settlement.custom_request_order_id === "string" ? settlement.custom_request_order_id.trim() : "";
+    const order = oid ? orderById.get(oid) ?? null : null;
+    const norm = order ? normalizedPrimaryOrderStatus(order) : "";
+    const orderStatusLabel = norm ? orderStatusLabelForUi(norm) : "—";
+    const payRaw = order ? pickPaymentRawForOrder(order) : "";
+    const orderPaymentLabel = payRaw ? paymentStatusLabelForUi(payRaw) : "—";
+    const workroomHref = oid ? `/custom-request/orders/${encodeURIComponent(oid)}` : "/custom-request/orders";
+    return { settlement, order, workroomHref, orderStatusLabel, orderPaymentLabel };
+  });
+
+  return {
+    lines,
+    error: null,
+    probe: `${probeBase} · ${via === "service_role" ? "service_role 보조 읽기" : "세션 읽기"} · ${lines.length}건`,
+    loadedVia: via,
+    totals: {
+      expectedMentorAmount,
+      paidMentorAmount,
+      count: raw.length,
+    },
+  };
+}
 
 function monthBounds(): { start: string; end: string } {
   const d = new Date();
@@ -95,6 +295,8 @@ export type MentorPayoutsBundle = {
   subSummary: { n: number; amountHint: string; error: string | null; table: string | null };
   customSummary: { n: number; amountHint: string; error: string | null; table: string | null };
   customOrderSettlements: CustomOrderSettlementsBlock;
+  /** 맞춤의뢰 정산 예정·지급 완료(custom_order_settlement_items) */
+  settlementPayouts: MentorSettlementPayoutsBlock;
   tableRows: Row[];
   tableHint: string;
   periodStart: string;
@@ -103,6 +305,7 @@ export type MentorPayoutsBundle = {
 
 export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentorId: string): Promise<MentorPayoutsBundle> {
   const { start, end } = monthBounds();
+  const settlementPayouts = await loadMentorSettlementItemsForPayouts(supabase, mentorId);
   const pt = await firstPayoutsTable(supabase);
   let monthExpectedCents = 0;
   let tableRows: Row[] = [];
@@ -183,6 +386,7 @@ export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentor
     subSummary: { n: subN, amountHint: subHint, error: subErr, table: subTable },
     customSummary: { n: cusN, amountHint: cusHint, error: cusErr, table: cusTable },
     customOrderSettlements: { rows: customOrderSettlementRows, error: cusErr, table: cusTable },
+    settlementPayouts,
     tableRows,
     tableHint,
     periodStart: start,
