@@ -82,6 +82,8 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
     revalidatePath(`/custom-request/${postId}`);
     revalidatePath(`/custom-request/${postId}/applications`, "page");
     revalidatePath(`/custom-request/orders/${r.id}`);
+    revalidatePath("/mentor/custom-request/orders");
+    revalidatePath("/mentor/custom-request/dashboard");
     redirect(`/custom-request/orders/${r.id}`);
   }
   backToApplications(postId, MSG_ORDER_FAIL);

@@ -31,6 +31,7 @@ import {
   validateDeliverableFileForUpload,
   validateDeliverableStoragePath,
 } from "@/lib/customRequest/orderDeliverableFiles";
+import { isCustomOrderPaymentConfirmed } from "@/lib/customRequest/orderPaymentPolicy";
 import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
@@ -61,7 +62,7 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
     redirectWithError(orderId, MENTOR_START_SCHEMA_GATE_MESSAGE);
   }
 
-  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
+  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "request_orders"]);
   if (!oT.table) {
     redirectWithError(orderId, oT.error || "주문 테이블을 찾을 수 없습니다.");
   }
@@ -93,6 +94,10 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
   const disputeBlockStart = await getActiveDisputeBlockMessage(supabase, orderId);
   if (disputeBlockStart) {
     redirectWithError(orderId, disputeBlockStart);
+  }
+
+  if (!isCustomOrderPaymentConfirmed(row)) {
+    redirectWithError(orderId, "학생 측 결제가 완료된 뒤에만 작업을 시작할 수 있습니다.");
   }
 
   const norm = normalizedPrimaryOrderStatus(row);
@@ -135,6 +140,7 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
 
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
+  revalidatePath("/mentor/custom-request/orders");
   redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("작업을 시작했습니다.")}`);
 }
 
@@ -178,7 +184,7 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
     }
   }
 
-  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
+  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "request_orders"]);
   if (!oT.table) {
     redirectWithError(orderId, oT.error || "주문 테이블을 찾을 수 없습니다.");
   }
@@ -208,6 +214,10 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
   const disputeBlockDel = await getActiveDisputeBlockMessage(supabase, orderId);
   if (disputeBlockDel) {
     redirectWithError(orderId, disputeBlockDel);
+  }
+
+  if (!isCustomOrderPaymentConfirmed(row)) {
+    redirectWithError(orderId, "학생 측 결제가 완료된 뒤에만 납품을 등록할 수 있습니다.");
   }
 
   const norm = normalizedPrimaryOrderStatus(row);
@@ -347,5 +357,6 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
 
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
+  revalidatePath("/mentor/custom-request/orders");
   redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("납품이 등록되었습니다.")}`);
 }

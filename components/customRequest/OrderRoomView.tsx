@@ -8,6 +8,7 @@ import {
   ORDER_STATUSES_MENTOR_START_WORK_ALLOWED,
   isOrderStatusAllowingStudentAccept,
   isOrderRowTerminalForActions,
+  isOrderRowPaymentConfirmedForMentorWork,
   isOrderStatusTerminal,
   normalizedPrimaryOrderStatus,
   orderStatusLabelForUi,
@@ -80,6 +81,9 @@ function mentorStartDisabledReason(
   const byDispute = disputeLifecycleBlockReason(detail);
   if (byDispute) {
     return byDispute;
+  }
+  if (view === "mentor" && actorRole === "mentor" && !isOrderRowPaymentConfirmedForMentorWork(order)) {
+    return "학생 측 결제가 완료된 뒤에만 작업을 시작할 수 있습니다.";
   }
   const byDdl = getMentorStartDisabledByMissingOrderDdl();
   if (byDdl) {
@@ -207,6 +211,9 @@ export function OrderRoomView(props: {
   const mentorDeliverableBlockReason = (() => {
     if (view !== "mentor" || actorRole !== "mentor") {
       return "멘토만 납품을 등록할 수 있습니다.";
+    }
+    if (!isOrderRowPaymentConfirmedForMentorWork(o as Row)) {
+      return "학생 측 결제가 완료된 뒤에만 납품을 등록할 수 있습니다.";
     }
     const d = disputeLifecycleBlockReason(detail);
     if (d) {

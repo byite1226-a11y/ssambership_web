@@ -267,6 +267,38 @@ export function paymentStatusBadgeLabelForRaw(raw: string): string {
   return "확인 필요";
 }
 
+const ORDER_PAYMENT_CONFIRMED_FOR_WORK = new Set([
+  "paid",
+  "succeeded",
+  "escrowed",
+  "completed",
+  "complete",
+  "success",
+  "captured",
+  "paid_out",
+]);
+
+/**
+ * 주문 행에서 결제가 확정된 것으로 볼 수 있는지 (`orderPaymentPolicy.isCustomOrderPaymentConfirmed` 와 동일 토큰 집합).
+ * UI(RSC/클라)에서도 사용 가능하도록 `server-only` 모듈에 의존하지 않는다.
+ */
+export function isOrderRowPaymentConfirmedForMentorWork(row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) {
+    return false;
+  }
+  for (const k of ["payment_status", "payment_state", "pg_payment_status"] as const) {
+    const v = row[k];
+    if (v == null) {
+      continue;
+    }
+    const s = String(v).trim().toLowerCase();
+    if (s && ORDER_PAYMENT_CONFIRMED_FOR_WORK.has(s)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function orderEventKindLabelForUi(raw: string): string {
   const s = String(raw).trim().toLowerCase();
   if (!s) {

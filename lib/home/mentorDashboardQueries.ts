@@ -1,5 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import {
+  isOrderRowPaymentConfirmedForMentorWork,
+  normalizedPrimaryOrderStatus,
+  orderStatusLabelForUi,
+  paymentStatusBadgeLabelForRaw,
+  paymentStatusLabelForUi,
+} from "@/lib/customRequest/orderLifecycleConstants";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsQueries";
@@ -30,7 +37,7 @@ export async function fetchRecentCustomOrders(
   mentorId: string,
   limit = 5
 ): Promise<{ table: string | null; rows: Row[]; error: string | null; probe: string }> {
-  for (const t of ["custom_request_orders", "custom_orders", "request_orders"] as const) {
+  for (const t of ["custom_request_orders", "request_orders"] as const) {
     const { error: pe } = await supabase.from(t).select("id").limit(1);
     if (pe) continue;
     const { column: mc } = await pickExistingColumn(supabase, t, [
@@ -123,4 +130,86 @@ export function customOrderLine(r: Row) {
   const when = pickDisplayField(r, ["updated_at", "created_at"]);
   const whenShort = when !== "—" && when.length > 10 ? when.slice(0, 10) : when;
   return `${pickDisplayField(r, ["status", "state", "order_status"])} · ${titleLine} · ${whenShort}`;
+}
+
+const CUSTOM_REQUEST_ORDERS_TABLE = "custom_request_orders" as const;
+
+/**
+ * `public.custom_request_orders` 만 조회한다. (`custom_orders` 테이블은 사용하지 않음.)
+ */
+export async function fetchMentorCustomRequestOrdersFromPrimaryTable(
+  supabase: SupabaseClient,
+  mentorId: string,
+  limit = 50
+): Promise<{ rows: Row[]; error: string | null; probe: string }> {
+  const t = CUSTOM_REQUEST_ORDERS_TABLE;
+  const { error: pe } = await supabase.from(t).select("id").limit(1);
+  if (pe) {
+    return { rows: [], error: pe.message, probe: `${t}: 접근 불가` };
+  }
+  const { column: mc } = await pickExistingColumn(supabase, t, [
+    "mentor_id",
+    "mentor_user_id",
+    "expert_id",
+    "assignee_id",
+    "selected_mentor_id",
+  ]);
+  if (!mc) {
+    return { rows: [], error: null, probe: `${t}: mentor FK 없음` };
+  }
+  const o1 = await supabase
+    .from(t)
+    .select("*")
+    .eq(mc, mentorId)
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (o1.error) {
+    if (!/order|column/i.test(o1.error.message)) {
+      return { rows: [], error: o1.error.message, probe: t };
+    }
+    const o2 = await supabase.from(t).select("*").eq(mc, mentorId).limit(limit);
+    if (o2.error) {
+      return { rows: [], error: o2.error.message, probe: t };
+    }
+    return { rows: (o2.data as Row[]) ?? [], error: null, probe: `${t} · order 생략` };
+  }
+  return { rows: (o1.data as Row[]) ?? [], error: null, probe: `${t}.${mc}` };
+}
+
+export function mentorCustomOrderWorkroomHref(orderId: string): string {
+  return `/custom-request/orders/${encodeURIComponent(orderId)}`;
+}
+
+/** 목록·카드: 결제 미확인이면 결제 대기 문구를 우선한다. */
+export function mentorCustomOrderStatusHeadline(row: Row): string {
+  if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
+    return "결제 대기 · 진행 대기";
+  }
+  const norm = normalizedPrimaryOrderStatus(row);
+  if (!norm) {
+    return "진행 중";
+  }
+  return orderStatusLabelForUi(norm);
+}
+
+export function mentorCustomOrderPaymentLine(row: Row): string {
+  for (const k of ["payment_status", "payment_state", "pay_status"] as const) {
+    const v = row[k];
+    if (v == null) continue;
+    const s = String(v).trim();
+    if (!s) continue;
+    return paymentStatusLabelForUi(s);
+  }
+  return "결제 상태 미확인";
+}
+
+export function mentorCustomOrderPaymentBadge(row: Row): string {
+  for (const k of ["payment_status", "payment_state", "pay_status"] as const) {
+    const v = row[k];
+    if (v == null) continue;
+    const s = String(v).trim();
+    if (!s) continue;
+    return paymentStatusBadgeLabelForRaw(s);
+  }
+  return "—";
 }

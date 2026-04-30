@@ -25,6 +25,7 @@ export default async function MentorCustomRequestPostsPage() {
       title="맞춤의뢰"
       description="모집 중인 요청을 찾고 지원하거나, 보낸 지원을 다시 확인하세요."
       ctas={[
+        { href: "/mentor/custom-request/orders", tone: "blue", label: "맞춤의뢰 주문" },
         { href: "/mentor/custom-request/dashboard", tone: "slate", label: "맞춤의뢰 홈" },
         { href: "/mentor/dashboard", tone: "slate", label: "멘토 대시보드" },
       ]}

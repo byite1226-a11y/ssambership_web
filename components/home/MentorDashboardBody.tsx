@@ -1,6 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { customOrderLine, type MentorDashboardData } from "@/lib/home/mentorDashboardQueries";
+import {
+  customOrderLine,
+  mentorCustomOrderWorkroomHref,
+  type MentorDashboardData,
+} from "@/lib/home/mentorDashboardQueries";
 
 function stateBanner(text: string, kind: "err" | "soft") {
   const cls = kind === "err" ? "border-amber-200 bg-amber-50 text-amber-950" : "border-slate-200 bg-slate-50 text-slate-700";
@@ -159,17 +163,33 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
           {customErr ? stateBanner("맞춤의뢰를 불러오는 데 제한이 있을 수 있어요.", "err") : null}
           {customRecent.rows.length ? (
             <ol className="mt-2 list-decimal space-y-2 pl-4 text-slate-800 sm:pl-5">
-              {customRecent.rows.map((r, i) => (
-                <li key={i}>{customOrderLine(r as Record<string, unknown>)}</li>
-              ))}
+              {customRecent.rows.map((r, i) => {
+                const row = r as Record<string, unknown>;
+                const oid = typeof row.id === "string" && row.id.trim() ? row.id.trim() : null;
+                const line = customOrderLine(row);
+                return (
+                  <li key={oid ?? i}>
+                    {oid ? (
+                      <Link className="font-bold text-blue-800 underline hover:text-blue-950" href={mentorCustomOrderWorkroomHref(oid)}>
+                        {line}
+                      </Link>
+                    ) : (
+                      line
+                    )}
+                  </li>
+                );
+              })}
             </ol>
           ) : !customErr ? (
             <p className="mt-2 text-slate-600">최근 맞춤의뢰가 없어요. 기록이 쌓이면 여기에 뜰 거예요.</p>
           ) : null}
           <p className="mt-2 text-xs text-slate-500">{payouts.customSummary.amountHint}</p>
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap gap-2">
+            <CtaButton href="/mentor/custom-request/orders" tone="emerald">
+              주문 목록
+            </CtaButton>
             <CtaButton href="/mentor/custom-request/dashboard" tone="slate">
-              대시보드로
+              맞춤의뢰 홈
             </CtaButton>
           </div>
         </section>

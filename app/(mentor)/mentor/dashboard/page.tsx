@@ -16,6 +16,7 @@ export default async function MentorDashboardPage() {
       description="답변·질문방·맞춤의뢰·정산·분쟁으로 바로 갈 수 있어요. 숫자는 스키마·권한에 맞게 집계돼요."
       ctas={[
         { href: "/mentor/question-room", label: "질문방 관리", tone: "green" },
+        { href: "/mentor/custom-request/orders", label: "맞춤의뢰 주문", tone: "blue" },
         { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰", tone: "blue" },
         { href: "/mentor/support/disputes", label: "분쟁·환불", tone: "blue" },
         { href: "/mentor/payouts", label: "정산", tone: "slate" },
