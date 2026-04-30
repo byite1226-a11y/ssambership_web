@@ -49,7 +49,7 @@ function pickApplicationIdFromOrderRow(r: Row | null): string | null {
   return null;
 }
 
-function pickMentorIdFromOrderRow(r: Row | null): string | null {
+export function pickMentorIdFromOrderRow(r: Row | null): string | null {
   if (!r) return null;
   for (const k of [
     "mentor_id",

@@ -22,6 +22,7 @@ export default async function StudentHomePage() {
         { href: "/question-room", label: "질문방", tone: "blue" },
         { href: "/subscriptions", label: "구독", tone: "slate" },
         { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
+        { href: "/custom-request/orders", label: "맞춤의뢰 주문", tone: "slate" },
       ]}
       sections={[
         {

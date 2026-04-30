@@ -39,7 +39,13 @@ export default async function CustomRequestPublicPage() {
           <CustomRequestPostListTable list={recent} max={6} />
         </section>
         <CustomRequestTrustBanner />
-        <p className="text-center text-sm text-slate-500">
+        <p className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 sm:flex-row sm:flex-wrap sm:gap-4">
+          <Link
+            href="/custom-request/orders"
+            className="inline-flex min-h-[44px] items-center justify-center font-extrabold text-indigo-800 underline decoration-indigo-300 underline-offset-2"
+          >
+            진행 중인 주문 보기
+          </Link>
           <Link
             href="/custom-request/new"
             className="inline-flex min-h-[44px] items-center justify-center font-extrabold text-indigo-700 underline"

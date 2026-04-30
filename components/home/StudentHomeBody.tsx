@@ -252,13 +252,21 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
 
         <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
           <h2 className="text-base font-extrabold text-slate-900">맞춤의뢰·기타</h2>
-          <p className="mt-1 text-sm text-slate-600">진행 중 의뢰 수는 별도 화면에서 다루고, 여기에선 링크만 둡니다.</p>
-          <Link
-            className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-950 hover:bg-amber-100"
-            href="/custom-request"
-          >
-            맞춤의뢰로
-          </Link>
+          <p className="mt-1 text-sm text-slate-600">진행 중 주문은 주문 목록에서 이어가요.</p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Link
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-950 hover:bg-amber-100 sm:min-w-[10rem]"
+              href="/custom-request/orders"
+            >
+              내 진행 주문
+            </Link>
+            <Link
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 hover:bg-slate-50 sm:min-w-[10rem]"
+              href="/custom-request"
+            >
+              맞춤의뢰 홈
+            </Link>
+          </div>
         </section>
       </div>
 
@@ -290,8 +298,13 @@ export function StudentHomeBody({ data }: { data: StudentHomeData }) {
             </Link>
           </li>
           <li>
+            <Link className="min-h-[44px] text-base font-bold text-blue-800 underline" href="/custom-request/orders">
+              맞춤의뢰 주문
+            </Link>
+          </li>
+          <li>
             <Link className="min-h-[44px] text-base font-bold text-blue-800 underline" href="/custom-request">
-              맞춤의뢰
+              맞춤의뢰 홈
             </Link>
           </li>
           <li>

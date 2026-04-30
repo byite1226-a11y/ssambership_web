@@ -18,6 +18,12 @@ export function CustomRequestHero() {
             >
               의뢰 요청 등록하기
             </Link>
+            <Link
+              href="/custom-request/orders"
+              className="inline-flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-center text-sm font-extrabold text-indigo-900 shadow-sm hover:bg-indigo-100 min-[400px]:max-w-xs"
+            >
+              내 진행 의뢰 보기
+            </Link>
             <a
               href="#flow-steps"
               className="inline-flex min-h-[48px] min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-extrabold text-slate-800 shadow-sm hover:bg-slate-50"
