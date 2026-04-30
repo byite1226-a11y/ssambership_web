@@ -298,20 +298,15 @@ export async function finalizeSubscriptionCheckout(
     if (st === "succeeded" || st === "paid" || st === "complete" || st === "success") {
       const existingSub = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
       const subscriptionId = existingSub ? String((existingSub.row as Row).id ?? "") : null;
-      if (subscriptionId && subscriptionId.length > 0) {
-        const plansR = await fetchPlansForMentor(supabase, mentorId);
-        const { byTier: byTierR } = assignPlansByTier(plansR.rows);
-        const pr = byTierR[planTier];
-        if (pr) {
-          const ac = planRowDebitAmountCents(pr as Row);
-          if (ac > 0) {
-            const d = await recordSubscriptionCashDebitRpc(studentId, subscriptionId, paymentId, ac);
-            if (!d.ok) {
-              return { ok: false, error: d.error, code: "db" };
-            }
-          }
-        }
-      }
+      /**
+       * 결제가 이미 성공 상태인 complete 재호출(멱등)에서는 캐시 차감을 다시 하지 않는다.
+       * 정상 앱 complete 흐름에서는 cash debit 이후 payment를 succeeded로 마킹하므로,
+       * 이 분기는 이미 차감된 결제의 room 보장/복구 경로다.
+       * 재시도 시 중복 차감/잔액 부족으로 room 연결까지 막히면 PaymentForm의 두 번째 complete가 무의미해질 수 있어,
+       * 멱등 재호출에서는 차감을 생략한다.
+       * 단, 향후 PG webhook이 앱 밖에서 payment를 succeeded로 먼저 변경하는 구조가 생기면
+       * cash_ledger 보정 로직이 필요하다.
+       */
       const subIdForRoom = subscriptionId && subscriptionId.length > 0 ? subscriptionId : null;
       const roomR = await ensureMentorStudentRoomWithServiceRetry(
         supabase,
