@@ -28,7 +28,8 @@ const areaTone: Record<ShellArea, { badge: string; badgeClass: string }> = {
 export function AppShell({ area, children, sessionRole = null }: AppShellProps) {
   const effectiveArea: ShellArea = (sessionRole ?? area) as ShellArea;
   const tone = areaTone[effectiveArea];
-  const showAuthedCtas = area === "public" && sessionRole != null;
+  /** (student)/(mentor)/(admin) 레이아웃은 area만 넘기면 배지는 맞는데 sessionRole이 없으면 CTAs가 비로그인으로 떨어짐 */
+  const showAuthedCtas = sessionRole != null;
   const homeHref =
     sessionRole === "mentor"
       ? getPostLoginPath("mentor")
@@ -37,6 +38,7 @@ export function AppShell({ area, children, sessionRole = null }: AppShellProps) 
         : sessionRole === "admin"
           ? getPostLoginPath("admin")
           : "/";
+  const mainNav = showAuthedCtas ? globalNav.filter((item) => item.href !== "/login") : globalNav;
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -46,7 +48,7 @@ export function AppShell({ area, children, sessionRole = null }: AppShellProps) 
             쌤버십
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
-            {globalNav.map((item) => (
+            {mainNav.map((item) => (
               <Link key={item.href} href={item.href} className="text-sm font-semibold text-slate-600 hover:text-slate-900">
                 {item.label}
               </Link>
@@ -55,12 +57,38 @@ export function AppShell({ area, children, sessionRole = null }: AppShellProps) 
           <div className="flex items-center gap-2">
             <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${tone.badgeClass}`}>{tone.badge}</span>
             {showAuthedCtas ? (
-              <Link
-                href={homeHref}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-800 hover:bg-slate-100"
-              >
-                {sessionRole === "mentor" ? "멘토 홈" : sessionRole === "admin" ? "관리자" : "내 홈"}
-              </Link>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {sessionRole === "student" ? (
+                  <>
+                    <Link
+                      href={homeHref}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-800 hover:bg-slate-100"
+                    >
+                      내 홈
+                    </Link>
+                    <Link
+                      href="/mypage"
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      마이페이지
+                    </Link>
+                  </>
+                ) : sessionRole === "mentor" ? (
+                  <Link
+                    href={homeHref}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-800 hover:bg-slate-100"
+                  >
+                    멘토 대시보드
+                  </Link>
+                ) : (
+                  <Link
+                    href={homeHref}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-800 hover:bg-slate-100"
+                  >
+                    관리자
+                  </Link>
+                )}
+              </div>
             ) : (
               <>
                 <Link href="/login" className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-700">
