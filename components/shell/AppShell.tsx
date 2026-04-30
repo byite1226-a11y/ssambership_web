@@ -88,6 +88,12 @@ export function AppShell({ area, children, sessionRole = null }: AppShellProps) 
                     관리자
                   </Link>
                 )}
+                <a
+                  href="/logout"
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  로그아웃
+                </a>
               </div>
             ) : (
               <>
