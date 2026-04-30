@@ -21,6 +21,7 @@ export default async function StudentQuestionRoomListPage() {
       ]}
       sections={[]}
       dataPoints={[]}
+      hideFooterPlaceholderCards
     >
       <QuestionRoomWorkspace
         variant="student"

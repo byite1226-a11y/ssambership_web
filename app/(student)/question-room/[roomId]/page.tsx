@@ -66,6 +66,7 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
       ]}
       sections={[]}
       dataPoints={[]}
+      hideFooterPlaceholderCards
     >
       <QuestionRoomWorkspace
         variant="student"

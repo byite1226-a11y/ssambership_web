@@ -21,6 +21,7 @@ export default async function MentorQuestionRoomListPage() {
       ]}
       sections={[]}
       dataPoints={[]}
+      hideFooterPlaceholderCards
     >
       <QuestionRoomWorkspace
         variant="mentor"

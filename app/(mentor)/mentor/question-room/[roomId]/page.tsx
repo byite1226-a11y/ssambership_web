@@ -66,6 +66,7 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
       ]}
       sections={[]}
       dataPoints={[]}
+      hideFooterPlaceholderCards
     >
       <QuestionRoomWorkspace
         variant="mentor"
