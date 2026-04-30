@@ -11,7 +11,11 @@ import {
   primaryOrderStatusColumnKey,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
-import { isCustomOrderPaymentStatusStrictlyPaid, mustBlockUnpaidAcceptForProduction } from "@/lib/customRequest/orderPaymentPolicy";
+import {
+  isCustomOrderPaymentConfirmed,
+  isCustomOrderPaymentStatusStrictlyPaid,
+  mustBlockUnpaidAcceptForProduction,
+} from "@/lib/customRequest/orderPaymentPolicy";
 import { firstReadableCustomTable, ORDER_TO_DELIVERABLE_FK_CANDIDATES } from "@/lib/customRequest/customRequestQueries";
 import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { splitPlatformAndMentorForGross } from "@/lib/customRequest/orderSettlementAmounts";
@@ -21,6 +25,7 @@ import {
   recordCustomOrderSettlementCreatedEvent,
 } from "@/lib/customRequest/orderSettlementService";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -233,4 +238,120 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
   redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("납품을 수락해 주문을 완료했습니다.")}`);
+}
+
+/**
+ * 학생(의뢰자): 맞춤의뢰 주문 결제 확인(E2E·PG 미연동 시 수동 확인).
+ * `payment_status` / `payment_state` / `pay_status` 중 스키마에 있는 첫 컬럼을 `paid`로 갱신한다.
+ * 멘토 작업 시작 게이트(`isCustomOrderPaymentConfirmed` / `isOrderRowPaymentConfirmedForMentorWork`)와 값을 맞춘다.
+ *
+ * 1차: 로그인 세션 클라이언트로 update (RLS 허용 시).
+ * 실패 시 permission/RLS로 보이면 service_role로 동일 WHERE(id + 학생 FK)만 재시도한다.
+ */
+export async function confirmStudentCustomOrderPaymentAction(formData: FormData): Promise<void> {
+  const { user } = await requireRole("student");
+  const supabase = await createClient();
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  if (!orderId) {
+    redirect("/custom-request?error=" + encodeURIComponent("orderId가 필요합니다."));
+  }
+
+  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "request_orders"]);
+  if (!oT.table) {
+    redirectWithError(orderId, oT.error || "주문 테이블을 찾을 수 없습니다.");
+  }
+  const table = oT.table;
+
+  const { data: rowData, error: oe } = await supabase.from(table).select("*").eq("id", orderId).maybeSingle();
+  if (oe || !rowData) {
+    redirectWithError(orderId, "주문을 찾을 수 없어요. 잠시 후 다시 시도해 주세요.");
+  }
+  const row = rowData as Row;
+
+  const access = canAccessOrder(row, user.id, "student");
+  if (!access.ok) {
+    redirectWithError(orderId, "이 주문을 처리할 권한이 없습니다.");
+  }
+
+  const { column: stuCol } = await pickExistingColumn(supabase, table, [
+    "student_id",
+    "buyer_id",
+    "user_id",
+    "client_id",
+    "author_id",
+    "requester_id",
+  ]);
+  if (!stuCol || String(row[stuCol]) !== user.id) {
+    redirectWithError(orderId, "의뢰자(학생) 본인만 결제 확인을 할 수 있습니다.");
+  }
+
+  if (isCustomOrderPaymentConfirmed(row)) {
+    redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("이미 결제가 확인된 주문입니다.")}`);
+  }
+
+  const norm = normalizedPrimaryOrderStatus(row);
+  if (!norm) {
+    redirectWithError(orderId, "주문 상태를 확인할 수 없어 결제 확인을 진행할 수 없습니다.");
+  }
+  if (isOrderStatusTerminal(norm)) {
+    redirectWithError(orderId, "종료된 주문에는 결제 확인을 할 수 없습니다.");
+  }
+
+  const { column: payCol } = await pickExistingColumn(supabase, table, [
+    "payment_status",
+    "payment_state",
+    "pay_status",
+  ]);
+  if (!payCol) {
+    redirectWithError(orderId, "주문에 결제 상태 컬럼이 없어 확인 처리를 할 수 없습니다.");
+  }
+
+  const now = new Date().toISOString();
+  const patch: Record<string, unknown> = { [payCol]: "paid" };
+  const { column: paidAtCol } = await pickExistingColumn(supabase, table, [
+    "paid_at",
+    "payment_confirmed_at",
+    "payment_completed_at",
+  ]);
+  if (paidAtCol) {
+    patch[paidAtCol] = now;
+  }
+  const { column: uCol } = await pickExistingColumn(supabase, table, ["updated_at"]);
+  if (uCol) {
+    patch[uCol] = now;
+  }
+
+  const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(stuCol, user.id);
+  if (!ue) {
+    await recordOrderEventBestEffort(supabase, orderId, "payment_confirmed", user.id, { via: "session" });
+    revalidatePath(orderPath(orderId));
+    revalidatePath("/custom-request");
+    revalidatePath("/mentor/custom-request/orders");
+    redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("결제 확인이 반영되었습니다. 멘토가 작업을 시작할 수 있어요.")}`);
+  }
+
+  const msg = String(ue.message ?? "");
+  const looksLikeRls = /permission|RLS|42501|policy|not authorized/i.test(msg);
+  if (!looksLikeRls) {
+    redirectWithError(orderId, msg || "결제 확인을 저장하지 못했습니다.");
+  }
+
+  try {
+    const admin = createServiceRoleClient();
+    const { error: ae } = await admin.from(table).update(patch).eq("id", orderId).eq(stuCol, user.id);
+    if (ae) {
+      console.error("[confirmStudentCustomOrderPaymentAction] service_role update", orderId, ae.message);
+      redirectWithError(orderId, "결제 확인을 저장하지 못했습니다. 잠시 후 다시 시도하거나 운영자에 문의해 주세요.");
+    }
+    await recordOrderEventBestEffort(supabase, orderId, "payment_confirmed", user.id, { via: "service_role" });
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    console.error("[confirmStudentCustomOrderPaymentAction] service_role unavailable", m);
+    redirectWithError(orderId, "결제 확인을 저장할 권한이 없습니다. 서버 설정(SUPABASE_SERVICE_ROLE_KEY)을 확인해 주세요.");
+  }
+
+  revalidatePath(orderPath(orderId));
+  revalidatePath("/custom-request");
+  revalidatePath("/mentor/custom-request/orders");
+  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("결제 확인이 반영되었습니다. 멘토가 작업을 시작할 수 있어요.")}`);
 }

@@ -270,11 +270,16 @@ export function OrderRoomView(props: {
               mentorDeliverableBlockReason={mentorDeliverableBlockReason}
               orderTerminal={isTerminalOrder}
             />
-            {hasRightSettlementBlockContent(detail, o as Row) ? (
+            {hasRightSettlementBlockContent(detail, o as Row, actorRole) ? (
               <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">정산</p>
                 <div className="space-y-3">
-                  <OrderPaymentSettlementBlock detail={detail} orderRow={o as Row} />
+                  <OrderPaymentSettlementBlock
+                    detail={detail}
+                    orderRow={o as Row}
+                    orderId={oid}
+                    actorRole={actorRole}
+                  />
                   <OrderSettlementLineCard detail={detail} />
                 </div>
               </div>

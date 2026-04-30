@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import {
+  isOrderRowPaymentConfirmedForMentorWork,
   isOrderStatusTerminal,
   isOrderRowTerminalForActions,
   ORDER_ROOM_CARD_CLASS,
@@ -9,6 +10,8 @@ import {
   normalizedPrimaryOrderStatus,
   orderWorkspaceCurrentStepIndex,
 } from "@/lib/customRequest/orderLifecycleConstants";
+import { confirmStudentCustomOrderPaymentAction } from "@/lib/customRequest/orderStudentActions";
+import type { AppRole } from "@/lib/types/user";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/customRequest/order/OrderStatusBadge";
 import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
@@ -50,12 +53,20 @@ function paymentSettlementNotice(detail: OrderDetailPageData, orderRow: Record<s
 /** 우측 [정산] 열: 표시할 카드가 하나라도 있으면 true */
 export function hasRightSettlementBlockContent(
   detail: OrderDetailPageData,
-  orderRow: Record<string, unknown>
+  orderRow: Record<string, unknown>,
+  actorRole?: AppRole
 ): boolean {
   if (detail.settlementLoadError) {
     return true;
   }
   if (detail.settlementItem) {
+    return true;
+  }
+  if (
+    actorRole === "student" &&
+    !isOrderRowTerminalForActions(orderRow) &&
+    !isOrderRowPaymentConfirmedForMentorWork(orderRow)
+  ) {
     return true;
   }
   return paymentSettlementNotice(detail, orderRow).length > 0;
@@ -381,24 +392,51 @@ export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDi
 type OrderPaymentSettlementBlockProps = {
   detail: OrderDetailPageData;
   orderRow: Record<string, unknown>;
+  orderId: string;
+  actorRole: AppRole;
 };
 
 /**
  * 우측 열: 결제·정산 안내 문장
  */
-export function OrderPaymentSettlementBlock({ detail, orderRow }: OrderPaymentSettlementBlockProps) {
+export function OrderPaymentSettlementBlock({ detail, orderRow, orderId, actorRole }: OrderPaymentSettlementBlockProps) {
   const lines = paymentSettlementNotice(detail, orderRow);
-  if (lines.length === 0) {
+  const showPayConfirm =
+    actorRole === "student" &&
+    orderId.trim().length > 0 &&
+    !isOrderRowTerminalForActions(orderRow) &&
+    !isOrderRowPaymentConfirmedForMentorWork(orderRow);
+
+  if (lines.length === 0 && !showPayConfirm) {
     return null;
   }
   return (
     <div className={ORDER_ROOM_CARD_CLASS} role="status">
       <p className="text-xs font-semibold text-slate-500">진행 안내</p>
-      <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-sm text-slate-700">
-        {lines.map((t, i) => (
-          <li key={i}>{t}</li>
-        ))}
-      </ul>
+      {lines.length > 0 ? (
+        <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-sm text-slate-700">
+          {lines.map((t, i) => (
+            <li key={i}>{t}</li>
+          ))}
+        </ul>
+      ) : null}
+      {showPayConfirm ? (
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <p className="text-sm font-bold text-slate-900">결제 확인</p>
+          <p className="mt-1 text-xs text-slate-600">
+            실제 PG 결제가 붙기 전에는 아래 버튼으로 결제 완료를 표시해 멘토 작업을 시작할 수 있게 합니다.
+          </p>
+          <form action={confirmStudentCustomOrderPaymentAction} className="mt-3">
+            <input type="hidden" name="orderId" value={orderId} />
+            <button
+              type="submit"
+              className="w-full rounded-xl border border-blue-200 bg-blue-600 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700"
+            >
+              결제 완료 확인
+            </button>
+          </form>
+        </div>
+      ) : null}
     </div>
   );
 }

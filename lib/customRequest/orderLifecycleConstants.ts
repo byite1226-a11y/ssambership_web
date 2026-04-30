@@ -315,6 +315,7 @@ export function orderEventKindLabelForUi(raw: string): string {
     message_created: "메시지 작성",
     revision_requested: "수정 요청",
     dispute_opened: "분쟁 접수",
+    payment_confirmed: "결제 확인",
   };
   return map[s] ?? orderStatusLabelForUi(s);
 }
