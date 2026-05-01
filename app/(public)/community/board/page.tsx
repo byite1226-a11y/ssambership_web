@@ -13,6 +13,9 @@ function commentCount(r: Record<string, unknown>): string {
 export default async function CommunityBoardPage() {
   const supabase = await createClient();
   const { rows, error } = await listBoardPosts(supabase, 50);
+  if (error) {
+    console.error("[community/board] listBoardPosts", error);
+  }
 
   return (
     <PageScaffold
@@ -30,7 +33,7 @@ export default async function CommunityBoardPage() {
     >
       {error ? (
         <div className="mb-4">
-          <StateBanner kind="error" message={`목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${error})`} />
+          <StateBanner kind="error" message="게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />
         </div>
       ) : null}
       {!error && rows.length === 0 ? (

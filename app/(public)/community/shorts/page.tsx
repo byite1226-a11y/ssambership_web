@@ -7,6 +7,9 @@ import { listShortformPosts, pickExcerpt, pickTitle } from "@/lib/community/comm
 export default async function CommunityShortsPage() {
   const supabase = await createClient();
   const { rows, error } = await listShortformPosts(supabase, 30);
+  if (error) {
+    console.error("[community/shorts] listShortformPosts", error);
+  }
 
   return (
     <PageScaffold
@@ -24,7 +27,7 @@ export default async function CommunityShortsPage() {
     >
       {error ? (
         <div className="mb-4">
-          <StateBanner kind="error" message={`숏폼 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. (${error})`} />
+          <StateBanner kind="error" message="숏폼 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />
         </div>
       ) : null}
       {!error && rows.length === 0 ? (

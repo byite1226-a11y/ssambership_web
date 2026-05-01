@@ -7,7 +7,9 @@ export function MentorCommunityComposeForm(props: { errorMessage: string | null 
   return (
     <form action={submitMentorCommunityPost} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
       <h1 className="text-xl font-black text-slate-900">게시물 작성 (멘토)</h1>
-      <p className="text-sm text-slate-600">숏폼(shortform_posts)과 게시판(community_posts) 중 하나로 저장합니다. 제출 시 멘토 권한이 검증됩니다.</p>
+      <p className="text-sm text-slate-600">
+        게시판 글과 숏폼 소식 중 하나를 선택해 등록합니다. 제출 시 멘토 권한이 확인됩니다.
+      </p>
 
       {props.errorMessage ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-950">{props.errorMessage}</div>
@@ -20,8 +22,8 @@ export function MentorCommunityComposeForm(props: { errorMessage: string | null 
           required
           className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         >
-          <option value="board">community_posts (게시판)</option>
-          <option value="shortform">shortform_posts (숏폼)</option>
+          <option value="board">게시판 글</option>
+          <option value="shortform">숏폼 소식</option>
         </select>
       </label>
 
@@ -55,7 +57,7 @@ export function MentorCommunityComposeForm(props: { errorMessage: string | null 
       </label>
 
       <label className="block text-sm font-extrabold text-slate-800">
-        출처 (attribution)
+        출처
         <input
           name="source"
           required

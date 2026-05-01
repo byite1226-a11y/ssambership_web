@@ -8,9 +8,9 @@ import { insertMentorBoardPost, insertMentorShortformPost } from "@/lib/communit
 
 const NEW_PATH = "/mentor/community/new";
 
-function buildErrorRedirect(message: string) {
+function buildErrorRedirect(code: string) {
   const qs = new URLSearchParams();
-  qs.set("error", message);
+  qs.set("error", code);
   return `${NEW_PATH}?${qs.toString()}`;
 }
 
@@ -26,16 +26,16 @@ export async function submitMentorCommunityPost(formData: FormData) {
   const rights = formData.get("rightsAck") === "on";
 
   if (postType !== "shortform" && postType !== "board") {
-    redirect(buildErrorRedirect("작성 대상(숏폼 / 게시판)을 선택하세요."));
+    redirect(buildErrorRedirect("invalid_target"));
   }
   if (!title || !body) {
-    redirect(buildErrorRedirect("제목과 본문을 입력하세요."));
+    redirect(buildErrorRedirect("validation_fields"));
   }
   if (!source) {
-    redirect(buildErrorRedirect("출처(attribution)를 입력하세요."));
+    redirect(buildErrorRedirect("validation_source"));
   }
   if (!rights) {
-    redirect(buildErrorRedirect("권리·정당한 이용 확인에 동의해 주세요."));
+    redirect(buildErrorRedirect("validation_rights"));
   }
 
   const input = { title, body, category, source };
@@ -43,7 +43,8 @@ export async function submitMentorCommunityPost(formData: FormData) {
   if (postType === "shortform") {
     const r = await insertMentorShortformPost(supabase, user.id, input);
     if (!r.ok) {
-      redirect(buildErrorRedirect(`shortform: ${r.error}`));
+      console.error("[submitMentorCommunityPost] shortform insert failed", r.error);
+      redirect(buildErrorRedirect("shortform_save"));
     }
     revalidatePath("/community/shorts");
     revalidatePath("/community");
@@ -53,7 +54,8 @@ export async function submitMentorCommunityPost(formData: FormData) {
 
   const r2 = await insertMentorBoardPost(supabase, user.id, input);
   if (!r2.ok) {
-    redirect(buildErrorRedirect(`board: ${r2.error}`));
+    console.error("[submitMentorCommunityPost] board insert failed", r2.error);
+    redirect(buildErrorRedirect("board_save"));
   }
   revalidatePath("/community/board");
   revalidatePath("/community");
