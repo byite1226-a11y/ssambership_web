@@ -11,17 +11,8 @@ export default async function AdminDashboardPage() {
     <PageScaffold
       eyebrow="관리자 / 대시보드"
       title="관리자 대시보드"
-      description="멘토 승인, 신고, 분쟁, 환불, 리뷰, 정산, 감사 로그 현황을 한눈에 확인할 수 있습니다."
-      ctas={[
-        { href: "/admin/mentor-approvals", label: "멘토 승인", tone: "blue" },
-        { href: "/admin/reports", label: "신고 관리", tone: "slate" },
-        { href: "/admin/disputes", label: "분쟁 관리", tone: "blue" },
-        { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
-        { href: "/admin/reviews", label: "리뷰 관리", tone: "slate" },
-        { href: "/admin/settlements", label: "정산 관리", tone: "slate" },
-        { href: "/admin/audit-logs", label: "감사 로그", tone: "slate" },
-        { href: "/admin/notices", label: "공지/프로모션", tone: "green" },
-      ]}
+      description="멘토 승인, 신고, 분쟁, 환불, 리뷰, 정산, 감사 로그 현황을 한눈에 확인할 수 있습니다. 세부 화면은 왼쪽(또는 상단) 관리자 메뉴에서 이동할 수 있습니다."
+      ctas={[]}
       sections={[
         ...scaffolds,
         { title: "운영 지표", body: "가입·활성·과금 등 집계는 추후 대시보드에 연결됩니다.", status: "skeleton" },
