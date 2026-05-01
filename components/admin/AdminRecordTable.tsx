@@ -92,7 +92,7 @@ export function AdminRecordTable(props: {
   if (!result.rows.length) {
     return (
       <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-        조회된 내역이 없습니다.
+        표시할 행이 없습니다.
         {showSourceNote && result.sourceNote ? (
           <span className="mt-1 block text-xs text-slate-500">{result.sourceNote}</span>
         ) : null}
@@ -132,7 +132,7 @@ export function AdminRecordTable(props: {
                     (() => {
                       const d = getDetailLink(row);
                       if (!d) {
-                        return <span className="text-slate-400">상세 준비 중</span>;
+                        return <span className="text-slate-400">상세 링크 없음</span>;
                       }
                       return (
                         <Link className="font-bold text-indigo-800 underline" href={d.href} prefetch={false}>
@@ -141,7 +141,7 @@ export function AdminRecordTable(props: {
                       );
                     })()
                   ) : (
-                    <span className="text-slate-400">상세 준비 중</span>
+                    <span className="text-slate-400">상세 링크 없음</span>
                   )}
                 </td>
               </tr>

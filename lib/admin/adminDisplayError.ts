@@ -47,21 +47,21 @@ const GENERIC_RETRY = "정보를 불러오지 못했습니다. 잠시 후 다시
 export function adminListErrorDescription(context: AdminErrorDisplayContext): string {
   switch (context) {
     case "notices":
-      return "등록된 공지 또는 프로모션을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+      return "공지·프로모션 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "reports":
-      return "신고 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+      return "신고 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "reviews":
-      return "리뷰 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+      return "리뷰 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "disputes":
-      return "분쟁 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+      return "분쟁 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "settlements":
-      return "정산 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+      return "정산 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "mentorApprovals":
-      return "멘토 승인 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+      return "멘토 승인 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "auditLogs":
       return "운영 로그를 불러올 수 없습니다. 연결 상태를 확인하거나 잠시 후 다시 시도해 주세요.";
     default:
-      return "아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+      return "목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
   }
 }
 
@@ -72,9 +72,9 @@ export function adminListFetchFailedCopy(context: AdminErrorDisplayContext): { t
 /** 공지 vs 프로모션 블록별 안내(한 블록만 실패한 경우) */
 export function adminNoticesSectionDescription(kind: "notice" | "promotion"): string {
   if (kind === "promotion") {
-    return "등록된 프로모션을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+    return "프로모션 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
   }
-  return "등록된 공지를 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+  return "공지 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
 }
 
 function containsForbidden(msg: string): boolean {

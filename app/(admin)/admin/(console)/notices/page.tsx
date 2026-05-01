@@ -26,7 +26,7 @@ export default async function AdminNoticesPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="관리자 / 공지"
       title="공지 및 프로모션"
-      description="서비스 공지와 프로모션 안내를 관리합니다."
+      description="서비스 공지와 프로모션을 등록·수정합니다. 저장 후 노출 여부는 활성 설정과 기간을 함께 확인해 주세요."
       ctas={[
         { href: "/admin", label: "대시보드", tone: "slate" },
         { href: "/admin/audit-logs", label: "감사 로그", tone: "blue" },
@@ -36,8 +36,8 @@ export default async function AdminNoticesPage(props: PageProps) {
         { title: "작성", body: "새 공지 또는 프로모션", status: "connected" },
       ]}
       emptyState="등록된 공지 또는 프로모션이 없습니다."
-      loadingState="목록을 불러오는 중입니다."
-      errorState={listErrors.length ? adminListErrorDescription("notices") : "일시적으로 목록을 불러오지 못했습니다."}
+      loadingState="불러오는 중입니다."
+      errorState={listErrors.length ? adminListErrorDescription("notices") : "일시적으로 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
       dataPoints={[...ADMIN_NOTICES_DATA_MODEL]}
     >
       <div className="space-y-5">
@@ -52,7 +52,7 @@ export default async function AdminNoticesPage(props: PageProps) {
           </div>
         )}
 
-        <AdminNoticesFormSkeleton hints={ADMIN_NOTICES_FORM_HINTS} errorMessage={err} ok={ok} hintTable="app_notices" />
+        <AdminNoticesFormSkeleton hints={ADMIN_NOTICES_FORM_HINTS} errorMessage={err} ok={ok} hintTable={null} />
       </div>
     </PageScaffold>
   );

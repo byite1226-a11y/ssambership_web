@@ -33,7 +33,7 @@ export default async function AdminAuditLogsPage() {
       hideFooterPlaceholderCards
       eyebrow="관리자 / 감사 로그"
       title="감사 로그"
-      description="신고·분쟁·환불·리뷰·주문 이벤트·공지 등 최근 운영 흐름을 한 화면에서 확인합니다. 금액·환불·정산 실행은 이 화면에서 자동으로 이루어지지 않으며, 필요 시 각 전용 메뉴에서 수동 처리합니다. 내부 시스템 오류 원문은 표시하지 않습니다."
+      description="신고·분쟁·환불·리뷰·주문 이벤트·공지 등 최근 흐름을 한 화면에서 확인합니다. 결제·환불·정산·주문 상태는 이 화면에서 바뀌지 않으며, 필요 시 환불·분쟁 등 각 메뉴에서 수동으로 처리합니다. 기술적인 오류 메시지는 표시하지 않습니다."
       ctas={[
         { href: "/admin", label: "대시보드", tone: "slate" },
         { href: "/admin/refunds", label: "환불 관리", tone: "blue" },
@@ -42,12 +42,12 @@ export default async function AdminAuditLogsPage() {
       sections={[
         {
           title: "통합 표시",
-          body: "여러 운영 테이블의 최근 변경·접수를 시간순으로 합쳐 보여 줍니다. 출처별로 조회 한도가 있어 전체 이력과는 다를 수 있습니다.",
+          body: "여러 업무에서 나온 최근 변경·접수를 시간순으로 합쳐 보여 줍니다. 소스마다 가져오는 건수에 한도가 있어 전체 이력과는 다를 수 있습니다.",
           status: "connected",
         },
         {
           title: "보관·검색",
-          body: "기간·키워드 검색은 추후 확장 예정입니다. 민감 정보는 최소한만 표시합니다.",
+          body: "기간·키워드 검색은 이 화면에서 아직 사용할 수 없습니다. 필요한 경우 각 메뉴에서 해당 건을 직접 찾아 주세요.",
           status: "skeleton",
         },
       ]}

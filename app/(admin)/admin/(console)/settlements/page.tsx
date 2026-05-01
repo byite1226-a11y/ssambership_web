@@ -101,16 +101,18 @@ export default async function AdminSettlementsPage() {
     <PageScaffold
       eyebrow="관리자 / 정산"
       title="정산 관리"
-      description="멘토 정산 대상과 지급 상태를 확인합니다."
+      description="멘토 정산 대상과 지급 상태를 확인합니다. 지급 실행·재시도는 이 화면에서 자동으로 이루어지지 않으며, 필요 시 외부 정산 절차와 맞춰 수동 처리합니다."
       ctas={[
         { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
+        { href: "/admin/disputes", label: "분쟁 관리", tone: "slate" },
         { href: "/admin/audit-logs", label: "감사 로그", tone: "blue" },
+        { href: "/admin", label: "대시보드", tone: "slate" },
       ]}
       sections={[
         { title: "정산 요약", body: summaryBody, status: queryOk ? "connected" : "skeleton" },
         {
           title: "오류 재처리",
-          body: "지급 실패 건의 자동 재처리·재시도는 아직 연결되어 있지 않습니다. 필요 시 수동으로 원장과 결제 상태를 확인해 주세요.",
+          body: "지급 실패 건의 자동 재시도는 이 화면에서 제공하지 않습니다. 원장·결제 상태를 확인한 뒤 필요 시 수동으로 후속 처리해 주세요.",
           status: "skeleton",
         },
         { title: "멘토별 보기", body: byMentorHint, status: "skeleton" },

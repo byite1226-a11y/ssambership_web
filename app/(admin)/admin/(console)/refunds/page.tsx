@@ -4,6 +4,7 @@ import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { createClient } from "@/lib/supabase/server";
 import { loadAdminRefundsList } from "@/lib/admin/adminQueries";
 import { approveAdminRefundAction, rejectAdminRefundAction } from "@/lib/admin/refundActions";
+import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 
 type Row = Record<string, unknown>;
 
@@ -108,13 +109,20 @@ export default async function AdminRefundsPage(props: PageProps) {
     <PageScaffold
       eyebrow="관리자 / 환불"
       title="환불 관리"
-      description="환불 요청을 검토하고 승인 또는 거절할 수 있습니다."
+      description="환불 요청을 검토하고 승인 또는 거절할 수 있습니다. 실제 PG·계좌 환불 반영은 결제 연동 상태에 따라 별도 확인이 필요할 수 있습니다."
       ctas={[
-        { href: "/admin/disputes", label: "분쟁", tone: "blue" },
-        { href: "/admin/settlements", label: "정산", tone: "slate" },
+        { href: "/admin/disputes", label: "분쟁 관리", tone: "blue" },
+        { href: "/admin/settlements", label: "정산 관리", tone: "slate" },
+        { href: "/admin/audit-logs", label: "감사 로그", tone: "slate" },
         { href: "/admin", label: "대시보드", tone: "slate" },
       ]}
-      sections={[]}
+      sections={[
+        {
+          title: "처리 방식",
+          body: "승인·거절은 이 화면에서 기록합니다. 정산·주문 상태와 맞는지 필요 시 정산·분쟁 메뉴에서 함께 확인해 주세요.",
+          status: "connected",
+        },
+      ]}
       emptyState=""
       dataPoints={[]}
       hideFooterPlaceholderCards
@@ -127,7 +135,7 @@ export default async function AdminRefundsPage(props: PageProps) {
         ) : null}
         {flashErr ? (
           <p className="rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm font-semibold text-red-950">
-            {flashErr}
+            {toAdminDisplayError(flashErr, "default") ?? "처리에 실패했습니다. 잠시 후 다시 시도해 주세요."}
           </p>
         ) : null}
 
@@ -147,7 +155,9 @@ export default async function AdminRefundsPage(props: PageProps) {
         {list.error && !rows.length ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-950">
             <p className="font-semibold">목록을 불러오지 못했습니다.</p>
-            <p className="mt-1 text-xs text-amber-900/90">{list.error}</p>
+            <p className="mt-1 text-xs text-amber-900/90">
+              {toAdminDisplayError(list.error, "default") ?? "잠시 후 다시 시도하거나 담당자에게 문의해 주세요."}
+            </p>
           </div>
         ) : null}
 

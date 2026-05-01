@@ -385,7 +385,7 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
       summary.mentorApprovalPendingCount === null
         ? "목록을 불러올 수 없습니다."
         : summary.mentorApprovalPendingCount === 0
-          ? "연결된 운영 데이터가 없습니다."
+          ? "표시할 대기 건이 없습니다(0건)."
           : "승인 대기·검토 중 멘토 신청 건수입니다.",
     state: metricState(summary.mentorApprovalPendingCount, true),
   };
@@ -398,7 +398,7 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
       summary.reportOpenCount === null
         ? "목록을 불러올 수 없습니다."
         : summary.reportOpenCount === 0
-          ? "연결된 운영 데이터가 없습니다."
+          ? "표시할 접수 건이 없습니다(0건)."
           : "접수·진행 중 신고 건수입니다.",
     state: metricState(summary.reportOpenCount, true),
   };
@@ -424,7 +424,7 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
       summary.refundPendingCount === null
         ? "목록을 불러올 수 없습니다."
         : summary.refundPendingCount === 0
-          ? "연결된 운영 데이터가 없습니다."
+          ? "대기 중인 환불 요청이 없습니다(0건)."
           : "상태가 대기인 환불 요청 건수입니다.",
     state: metricState(summary.refundPendingCount, true),
   };
@@ -437,8 +437,8 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
       summary.reviewTotalCount === null
         ? "목록을 불러올 수 없습니다."
         : summary.reviewTotalCount === 0
-          ? "연결된 운영 데이터가 없습니다."
-          : "연결된 리뷰 테이블 기준 전체 리뷰 건수입니다.(/admin/reviews 목록은 그중 최근 50건)",
+          ? "등록된 리뷰가 없거나 조회 결과가 0건입니다."
+          : "전체 리뷰 건수입니다. 리뷰 관리 화면에서는 최근 50건만 표시됩니다.",
     state: metricState(summary.reviewTotalCount, true),
   };
 
@@ -470,8 +470,8 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
       summary.auditLogCount === null
         ? "목록을 불러올 수 없습니다."
         : summary.auditLogCount === 0
-          ? "연결된 운영 데이터가 없습니다."
-          : "누적 로그 건수입니다.",
+          ? "집계 대상 로그가 없거나 0건입니다."
+          : "전용 로그 저장소 기준 건수입니다. 감사 로그 화면의 통합 목록과 다를 수 있습니다.",
     state: metricState(summary.auditLogCount, true),
   };
 
@@ -483,7 +483,7 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
       summary.noticesActiveCount === null
         ? "목록을 불러올 수 없습니다."
         : summary.noticesActiveCount === 0
-          ? "연결된 운영 데이터가 없습니다."
+          ? "현재 활성화된 공지·프로모션이 없습니다(0건)."
           : "활성 공지·프로모션 합계입니다.",
     state: metricState(summary.noticesActiveCount, true),
   };
@@ -513,8 +513,8 @@ export async function loadAdminDashboardMetrics(
     },
     {
       title: "다음 작업",
-      body: "세부 처리는 각 관리 메뉴에서 진행합니다.",
-      status: "skeleton",
+      body: "승인·신고·분쟁·환불 등 세부 처리는 각 관리 메뉴에서 진행합니다.",
+      status: "connected",
     },
     {
       title: "운영 지표",
@@ -523,7 +523,7 @@ export async function loadAdminDashboardMetrics(
     },
     {
       title: "긴급 알림",
-      body: "별도 알림 채널은 아직 연결되어 있지 않습니다.",
+      body: "이 대시보드에서 푸시·외부 알림을 보내는 기능은 제공하지 않습니다.",
       status: "skeleton",
     },
   ];
@@ -896,7 +896,7 @@ export async function loadAdminSettlementsList(
   queryOk: boolean;
   byMentorHint: string;
 }> {
-  const byMentorHint = "멘토별 정산 요약은 추후 확장 예정입니다.";
+  const byMentorHint = "멘토별 요약 보기는 제공하지 않습니다. 아래 목록에서 건별로 확인해 주세요.";
 
   const { data, error } = await supabase
     .from(COSI_TABLE)

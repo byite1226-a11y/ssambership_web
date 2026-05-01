@@ -31,7 +31,7 @@ export default async function AdminDisputesListPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="관리자 / 분쟁"
       title="분쟁 관리"
-      description="맞춤의뢰 등 접수된 분쟁을 조회하고, 검토·메모·해결·종결 처리합니다. 환불·정산·주문 금액은 이 화면에서 자동 변경되지 않으며 필요 시 별도 메뉴에서 수동 처리합니다. 내부 시스템 오류 원문은 표시하지 않습니다."
+      description="맞춤의뢰 등 접수된 분쟁을 조회하고, 검토·운영 메모·해결·종결 처리를 합니다. 환불·정산·주문 상태는 이 화면에서 자동으로 바뀌지 않으며, 필요 시 환불 관리 등에서 수동으로 처리합니다. 기술적인 오류 메시지는 표시하지 않습니다."
       ctas={[
         { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
         { href: "/admin/audit-logs", label: "감사 로그", tone: "blue" },

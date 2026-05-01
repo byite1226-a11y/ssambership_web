@@ -10,9 +10,5 @@ export function AdminStatusBadge(props: {
       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">{props.hint}</span>
     );
   }
-  const c = props.result.keyHints.status;
-  if (!c) {
-    return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">상태 기준 확인 필요</span>;
-  }
-  return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">상태 기준 확인됨</span>;
+  return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">최근 목록</span>;
 }

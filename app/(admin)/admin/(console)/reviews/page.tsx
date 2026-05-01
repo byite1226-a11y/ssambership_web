@@ -51,9 +51,10 @@ export default async function AdminReviewsPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="관리자 / 리뷰"
       title="리뷰 관리"
-      description="멘토 리뷰를 조회·조치합니다. 숨김과 블라인드는 공개 화면에서 둘 다 비노출되지만, 집계·운영 기록 관점에서 의미가 다릅니다. 내부 시스템 오류 원문은 표시하지 않습니다."
+      description="멘토 리뷰를 조회·조치합니다. 숨김과 블라인드는 공개 화면에서 모두 비노출되지만, 운영 기록상 구분됩니다. 기술적인 오류 메시지는 표시하지 않습니다."
       ctas={[
         { href: "/admin/reports", label: "신고 관리", tone: "slate" },
+        { href: "/admin/disputes", label: "분쟁 관리", tone: "slate" },
         { href: "/admin", label: "대시보드", tone: "blue" },
       ]}
       sections={[
@@ -63,7 +64,7 @@ export default async function AdminReviewsPage(props: PageProps) {
             "숨김 — 리뷰를 공개 화면과 공개 집계에서 제외합니다. (스팸, 테스트, 중복, 무관한 리뷰 등 노출하지 않을 리뷰) 블라인드 — 민감하거나 위반 가능성이 있는 리뷰를 공개 화면에서 제외하고 블라인드 상태로 기록합니다. (개인정보, 욕설, 외부 연락처, 정책 위반 가능 리뷰. 현재 버전에서도 공개 화면에서는 비노출입니다.) 검토 완료 — 현재 노출 상태를 유지한 채 검토 완료로 표시합니다. 조치 버튼은 스키마에 해당 컬럼이 있을 때만 표시됩니다.",
           status: meta ? "connected" : "skeleton",
         },
-        { title: "알림", body: "조치 결과는 이 화면 상단 메시지로 확인할 수 있습니다.", status: "skeleton" },
+        { title: "알림", body: "조치가 끝나면 이 화면 상단에 짧은 안내가 표시됩니다.", status: "connected" },
       ]}
       emptyState=""
       loadingState=""

@@ -44,14 +44,15 @@ export default async function AdminReportsPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="관리자 / 신고"
       title="신고 관리"
-      description="사용자가 접수한 신고를 확인하고 조치할 수 있습니다."
+      description="사용자가 접수한 신고를 확인하고, 검토·처리 완료·종결 등으로 상태를 바꿀 수 있습니다. 콘텐츠 삭제나 결제 취소는 이 화면만으로 끝나지 않을 수 있으니 필요 시 다른 메뉴에서 후속 조치해 주세요."
       ctas={[
+        { href: "/admin/disputes", label: "분쟁 관리", tone: "slate" },
         { href: "/admin/reviews", label: "리뷰 관리", tone: "slate" },
         { href: "/admin", label: "대시보드", tone: "blue" },
       ]}
       sections={[
-        { title: "신고 유형", body: "접수된 신고의 유형과 상태를 확인합니다.", status: list.table ? "connected" : "skeleton" },
-        { title: "조치", body: "검토 후 필요한 운영 조치를 진행합니다.", status: "skeleton" },
+        { title: "신고 유형", body: "접수된 신고의 유형·대상·상태를 목록에서 확인합니다.", status: list.table ? "connected" : "skeleton" },
+        { title: "조치", body: "각 행에서 검토 중·처리 완료·종결 등을 선택합니다. 메모는 운영 기록용으로 남깁니다.", status: list.table ? "connected" : "skeleton" },
       ]}
       emptyState=""
       loadingState=""
