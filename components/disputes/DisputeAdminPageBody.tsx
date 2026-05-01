@@ -2,6 +2,13 @@ import Link from "next/link";
 import type { DisputeBundle, DisputeActorSummary } from "@/lib/disputes/disputeQueries";
 import { pickText, statusBadgeText, w22EntityLine } from "@/lib/disputes/disputeQueries";
 import { DisputeKeyValueList } from "@/components/disputes/DisputeKeyValueList";
+import {
+  dismissDisputeAction,
+  resolveDisputeAction,
+  saveDisputeAdminNoteAction,
+  setDisputeUnderReviewAction,
+} from "@/lib/admin/adminDisputeActions";
+import { adminDisputeStatusLabel } from "@/lib/admin/disputeLabels";
 
 type Row = Record<string, unknown>;
 
@@ -16,13 +23,18 @@ function pickFirstString(row: Row | null, keys: string[]): string | null {
   return null;
 }
 
+function relationLine(label: string, table: string | null, row: Row | null, err: string | null): string {
+  if (err) return `${label}: 연계 정보를 불러오지 못했습니다.`;
+  if (!row) return `${label}: 연계 없음`;
+  return w22EntityLine(label, table, row, null);
+}
+
 function ActorLine(props: { label: string; a: DisputeActorSummary }) {
   return (
     <li className="text-sm">
       <span className="text-slate-500">{props.label}:</span>{" "}
       <span className="font-bold text-slate-900">{props.a.display}</span>{" "}
-      <code className="text-[10px] text-slate-400">{props.a.id ?? "—"}</code>{" "}
-      <span className="text-xs text-slate-500">({props.a.roleHint} · {props.a.probe})</span>
+      <code className="text-[10px] text-slate-400">{props.a.id ?? "—"}</code>
     </li>
   );
 }
@@ -30,32 +42,53 @@ function ActorLine(props: { label: string; a: DisputeActorSummary }) {
 export function DisputeAdminPageBody(props: {
   bundle: DisputeBundle;
   actors: { reporter: DisputeActorSummary; student: DisputeActorSummary; mentor: DisputeActorSummary } | null;
+  disputeId: string;
 }) {
   const d = props.bundle.dispute.row;
-  const st = statusBadgeText(d, ["status", "state", "phase", "resolution", "outcome"]);
+  const stRaw = statusBadgeText(d, ["status", "state", "phase", "resolution", "outcome"]);
+  const stKo = adminDisputeStatusLabel(stRaw);
   const b = props.bundle;
+  const isDisputesTable = b.dispute.table === "disputes";
+  const statusLower = String(d?.status ?? d?.state ?? "").toLowerCase();
+  const canReview = isDisputesTable && (statusLower === "open" || statusLower === "escalated");
+  const canResolveOrDismiss =
+    isDisputesTable && ["open", "under_review", "escalated"].includes(statusLower);
+  const noteDefault = pickFirstString(d, ["admin_note", "internal_note", "operator_note"]) ?? "";
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-amber-50/40 p-4">
-        <h2 className="text-sm font-extrabold text-slate-500">사건 요약(관리자)</h2>
+        <h2 className="text-sm font-extrabold text-slate-500">사건 요약</h2>
         <p className="mt-1 text-slate-900">
           {pickText(d, ["title", "name", "summary", "id"])} · {pickText(d, ["type", "kind", "category", "source"])}
         </p>
-        <p className="mt-1 text-xs text-slate-600">우선순위/심각도(있을 때): {pickText(d, ["priority", "severity", "impact", "urgency"])}</p>
+        <p className="mt-1 text-xs text-slate-600 whitespace-pre-wrap">{pickText(d, ["body", "reason", "description"])}</p>
+        <p className="mt-1 text-xs text-slate-600">우선순위·심각도: {pickText(d, ["priority", "severity", "impact", "urgency"])}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="text-xs text-slate-500">처리 상태</span>
-          <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-extrabold text-amber-950">{st}</span>
+          <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-extrabold text-amber-950">{stKo}</span>
+          <span className="text-[10px] text-slate-400">({stRaw})</span>
         </div>
-        <p className="mt-2 font-mono text-[11px] leading-relaxed text-slate-600">Supabase probe: {b.probe}</p>
+      </section>
+
+      <section className="rounded-2xl border border-amber-800/30 bg-amber-950/5 p-4">
+        <h2 className="text-sm font-extrabold text-amber-950">금전·환불·정산</h2>
+        <p className="mt-1 text-xs text-amber-950/90">
+          이 화면의 <strong>해결·종결</strong>은 분쟁 상태만 바꿉니다. 실제 환불 승인·정산 반영·주문 강제 완료는 수동 후속 처리가 필요할 수 있습니다. 환불은{" "}
+          <Link className="font-extrabold underline" href="/admin/refunds" prefetch={false}>
+            환불 관리
+          </Link>
+          에서 진행하세요.
+        </p>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
-        <h2 className="text-sm font-extrabold text-slate-900">관련 주문·결제·구독(한 줄)</h2>
+        <h2 className="text-sm font-extrabold text-slate-900">관련 주문·결제·구독</h2>
         <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-800">
-          <li>{w22EntityLine("환불", b.refund.table, b.refund.row, b.refund.error)}</li>
-          <li>{w22EntityLine("결제", b.payment.table, b.payment.row, b.payment.error)}</li>
-          <li>{w22EntityLine("구독", b.subscription.table, b.subscription.row, b.subscription.error)}</li>
-          <li>{w22EntityLine("맞춤의뢰", b.customOrder.table, b.customOrder.row, b.customOrder.error)}</li>
+          <li>{relationLine("환불", b.refund.table, b.refund.row, b.refund.error)}</li>
+          <li>{relationLine("결제", b.payment.table, b.payment.row, b.payment.error)}</li>
+          <li>{relationLine("구독", b.subscription.table, b.subscription.row, b.subscription.error)}</li>
+          <li>{relationLine("맞춤의뢰", b.customOrder.table, b.customOrder.row, b.customOrder.error)}</li>
         </ul>
         {(() => {
           const refId = pickFirstString(b.refund.row, ["id", "refund_id", "refundId"]);
@@ -69,7 +102,7 @@ export function DisputeAdminPageBody(props: {
                 href={`/admin/refunds?refundId=${encodeURIComponent(refId)}`}
                 prefetch={false}
               >
-                환불 큐(목록)에서 id 매칭
+                환불 관리에서 이 건 검색
               </Link>
             </p>
           );
@@ -78,64 +111,118 @@ export function DisputeAdminPageBody(props: {
 
       {props.actors ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-4">
-          <h2 className="text-sm font-extrabold text-slate-900">관련 사용자(users)</h2>
+          <h2 className="text-sm font-extrabold text-slate-900">관련 사용자</h2>
           <ul className="mt-2 list-inside list-disc space-y-1 text-slate-800">
-            <ActorLine label="신청/신고" a={props.actors.reporter} />
+            <ActorLine label="접수자(제출)" a={props.actors.reporter} />
             <ActorLine label="학생·의뢰" a={props.actors.student} />
             <ActorLine label="멘토" a={props.actors.mentor} />
           </ul>
         </section>
       ) : null}
 
+      {isDisputesTable ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+          <h2 className="text-sm font-extrabold text-slate-900">운영 조치</h2>
+          <p className="mt-1 text-xs text-slate-600">
+            상태 변경은 이 분쟁 기록에만 적용됩니다. 가능한 상태값: open, under_review, escalated, resolved, dismissed
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {canReview ? (
+              <form action={setDisputeUnderReviewAction}>
+                <input type="hidden" name="disputeId" value={props.disputeId} />
+                <button
+                  type="submit"
+                  title="open 또는 escalated 건을 검토 중으로 바꿉니다."
+                  className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-extrabold text-white hover:bg-indigo-700"
+                >
+                  검토 중으로
+                </button>
+              </form>
+            ) : null}
+            {canResolveOrDismiss ? (
+              <>
+                <form action={resolveDisputeAction} className="inline">
+                  <input type="hidden" name="disputeId" value={props.disputeId} />
+                  <button
+                    type="submit"
+                    title="분쟁을 해결(resolved)로 표시합니다. 환불은 자동 실행되지 않습니다."
+                    className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
+                  >
+                    해결 처리
+                  </button>
+                </form>
+                <form action={dismissDisputeAction} className="inline">
+                  <input type="hidden" name="disputeId" value={props.disputeId} />
+                  <button
+                    type="submit"
+                    title="분쟁을 종결(dismissed)로 표시합니다. 환불·정산은 별도 확인이 필요합니다."
+                    className="rounded-lg bg-slate-600 px-3 py-2 text-xs font-extrabold text-white hover:bg-slate-700"
+                  >
+                    종결 처리
+                  </button>
+                </form>
+              </>
+            ) : null}
+            {!canResolveOrDismiss && !canReview ? (
+              <p className="text-xs text-slate-600">이미 종료된 분쟁이거나, 상태를 더 바꿀 수 없습니다.</p>
+            ) : null}
+          </div>
+          <form action={saveDisputeAdminNoteAction} className="mt-4 space-y-2 border-t border-slate-100 pt-4">
+            <input type="hidden" name="disputeId" value={props.disputeId} />
+            <label className="block text-sm font-extrabold text-slate-800" htmlFor="admin-dispute-note">
+              운영 메모
+            </label>
+            <p className="text-xs text-slate-500">
+              운영 메모 필드가 스키마에 있을 때만 저장됩니다. (미적용 시 안내 메시지가 표시됩니다.)
+            </p>
+            <p className="text-xs text-slate-600">
+              종결된 분쟁도 내부 메모는 보강할 수 있습니다. 메모 저장은 환불·정산·주문 상태를 변경하지 않습니다.
+            </p>
+            <textarea
+              id="admin-dispute-note"
+              name="adminNote"
+              defaultValue={noteDefault}
+              rows={4}
+              className="w-full rounded-xl border border-slate-200 bg-white p-2 text-sm text-slate-900"
+              placeholder="내부 공유용 메모를 입력하세요."
+            />
+            <button type="submit" className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-extrabold text-white hover:bg-slate-800">
+              메모 저장
+            </button>
+          </form>
+        </section>
+      ) : (
+        <p className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          상태·메모 조치는 표준 분쟁 기록에만 사용할 수 있습니다. 현재 건은 다른 형식으로 연결되어 있어 이 화면에서 조치할 수 없습니다.
+        </p>
+      )}
+
       <div className="grid gap-2 md:grid-cols-2">
-        <DisputeKeyValueList title="dispute (원시)" row={d} maxKeys={14} />
+        <DisputeKeyValueList title="분쟁(원시)" row={d} maxKeys={16} />
         <div className="space-y-2">
-          <DisputeKeyValueList title="refunds" row={props.bundle.refund.row} maxKeys={8} />
-          <DisputeKeyValueList title="payments" row={props.bundle.payment.row} maxKeys={8} />
+          <DisputeKeyValueList title="환불" row={props.bundle.refund.row} maxKeys={8} />
+          <DisputeKeyValueList title="결제" row={props.bundle.payment.row} maxKeys={8} />
         </div>
-        <DisputeKeyValueList title="subscriptions" row={props.bundle.subscription.row} maxKeys={8} />
-        <DisputeKeyValueList title="custom_request_orders" row={props.bundle.customOrder.row} maxKeys={8} />
-      </div>
-
-      <label className="block text-sm text-slate-800">
-        <span className="font-extrabold">내부 메모(자리)</span>
-        <p className="text-xs text-slate-500">DB 컬럼·또는 admin_notes(후순) + 감사 로그와 함께 쓰기</p>
-        <textarea
-          readOnly
-          className="mt-1 w-full cursor-not-allowed rounded border border-slate-200 bg-slate-50 p-2 text-sm"
-          rows={3}
-          placeholder="server action + audit(후속)"
-        />
-      </label>
-
-      <div className="flex flex-wrap gap-2">
-        <button type="button" disabled className="cursor-not-allowed rounded-lg bg-slate-300 px-3 py-1.5 text-sm font-bold text-slate-600">
-          승인·환불(연동 예정)
-        </button>
-        <button type="button" disabled className="cursor-not-allowed rounded-lg bg-slate-300 px-3 py-1.5 text-sm font-bold text-slate-600">
-          반려·기각(연동 예정)
-        </button>
-        <button type="button" disabled className="cursor-not-allowed rounded-lg bg-amber-200/80 px-3 py-1.5 text-sm font-bold text-amber-950">
-          부분 환불(연동 예정)
-        </button>
+        <DisputeKeyValueList title="구독" row={props.bundle.subscription.row} maxKeys={8} />
+        <DisputeKeyValueList title="맞춤의뢰 주문" row={props.bundle.customOrder.row} maxKeys={8} />
       </div>
 
       <div>
         <h3 className="text-sm font-extrabold text-slate-800">처리 이력(로그)</h3>
-        <p className="text-xs text-slate-500">moderation_logs / dispute_events 후보: {b.modLogs.table ?? "—"}</p>
+        <p className="text-xs text-slate-500">연결된 로그 테이블: {b.modLogs.table ?? "—"}</p>
         {b.modLogs.rows.length ? (
           <ul className="mt-1 max-h-48 list-disc space-y-1 overflow-auto pl-5 text-xs text-slate-700">
             {b.modLogs.rows.map((r, i) => {
               const row = r as Row;
               return (
                 <li key={i}>
-                  {String(row.id ?? i)}: {String(row.event_type ?? row.type ?? row.action ?? row.verb ?? JSON.stringify(r).slice(0, 120))}
+                  {String(row.id ?? i)}: {String(row.event_type ?? row.type ?? row.action ?? row.verb ?? "이벤트")}
                 </li>
               );
             })}
           </ul>
         ) : (
-          <p className="text-sm text-slate-600">로그 없음 — {b.modLogs.error ?? "FK·RLS·테이블 프로브 확인"}</p>
+          <p className="text-sm text-slate-600">표시할 이력이 없습니다.</p>
         )}
       </div>
     </div>

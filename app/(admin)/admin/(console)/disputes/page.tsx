@@ -1,35 +1,65 @@
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { AdminDisputesListView } from "@/components/disputes/AdminDisputesListView";
 import { requireRole } from "@/lib/auth/routeGuard";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { loadDisputesListForAdmin } from "@/lib/disputes/disputeListQueries";
+import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 
-export default async function AdminDisputesListPage() {
+type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function AdminDisputesListPage(props: PageProps) {
   await requireRole("admin");
+  const sp = (await props.searchParams) ?? {};
+  const errRaw = sp.error;
+  const flashErrRaw = typeof errRaw === "string" ? errRaw : Array.isArray(errRaw) ? errRaw[0] : null;
+  const flashErr = flashErrRaw ? (toAdminDisplayError(flashErrRaw, "disputes") ?? "처리에 실패했습니다.") : null;
+
   const supabase = await createClient();
-  const { table, items, error, probe } = await loadDisputesListForAdmin(supabase, 50);
+  let adminBypass: ReturnType<typeof createServiceRoleClient> | undefined;
+  try {
+    adminBypass = createServiceRoleClient();
+  } catch {
+    adminBypass = undefined;
+  }
+  const { table, items, error, probe } = await loadDisputesListForAdmin(supabase, 50, {
+    adminBypassClient: adminBypass,
+  });
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="관리자 / 분쟁"
       title="분쟁 관리"
-      description="진행 중인 분쟁을 확인하고 상세 처리 화면으로 이동할 수 있습니다."
+      description="맞춤의뢰 등 접수된 분쟁을 조회하고, 검토·메모·해결·종결 처리합니다. 환불·정산·주문 금액은 이 화면에서 자동 변경되지 않으며 필요 시 별도 메뉴에서 수동 처리합니다. 내부 시스템 오류 원문은 표시하지 않습니다."
       ctas={[
         { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
         { href: "/admin/audit-logs", label: "감사 로그", tone: "blue" },
         { href: "/admin", label: "대시보드", tone: "slate" },
       ]}
       sections={[
-        { title: "분쟁 목록", body: "최근 접수된 분쟁을 확인합니다.", status: table ? "connected" : "skeleton" },
-        { title: "상세 처리", body: "분쟁별 상세 화면에서 처리 내역을 확인할 수 있습니다.", status: "connected" },
-        { title: "연결 항목", body: "주문, 결제, 환불 상태를 함께 확인합니다.", status: "skeleton" },
+        {
+          title: "분쟁 목록",
+          body: "표준 분쟁 기록 기준 최근 접수 순으로 표시합니다. 진행 중·검토 중·에스컬레이션은 대시보드 집계와 동일한 상태값을 사용합니다.",
+          status: table ? "connected" : "skeleton",
+        },
+        {
+          title: "상세·조치",
+          body: "행별 상세 보기에서 검토 중 전환, 운영 메모, 해결·종결을 진행합니다. 금전 처리는 환불 관리 등 후속 작업이 필요할 수 있습니다.",
+          status: "connected",
+        },
       ]}
-      emptyState="진행 중인 분쟁이 없습니다."
-      loadingState="목록을 불러오는 중입니다."
-      errorState={error && !items.length ? error : "목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-      dataPoints={["분쟁 접수", "처리 상태", "관련 주문·결제", "처리 이력"]}
+      emptyState=""
+      loadingState=""
+      errorState=""
+      dataPoints={[]}
     >
-      <AdminDisputesListView items={items} listError={error} table={table} probe={probe} />
+      <div className="space-y-4">
+        {flashErr ? (
+          <p className="rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm font-semibold text-red-950">{flashErr}</p>
+        ) : null}
+        <AdminDisputesListView items={items} listError={error} table={table} probe={probe} />
+      </div>
     </PageScaffold>
   );
 }

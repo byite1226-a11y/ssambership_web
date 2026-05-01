@@ -1,52 +1,95 @@
+import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { DisputeAdminPageBody } from "@/components/disputes/DisputeAdminPageBody";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { loadDisputeActorSummaries, loadDisputeById } from "@/lib/disputes/disputeQueries";
-import { DISPUTE_W22_DATA_MODEL } from "@/lib/disputes/disputeDataModel";
+import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export default async function AdminDisputeDetailPage(props: PageProps) {
   await requireRole("admin");
   const { id } = await props.params;
+  const sp = (await props.searchParams) ?? {};
+  const okRaw = sp.ok;
+  const errRaw = sp.error;
+  const flashOkRaw = typeof okRaw === "string" ? okRaw : Array.isArray(okRaw) ? okRaw[0] : null;
+  const flashErrRaw = typeof errRaw === "string" ? errRaw : Array.isArray(errRaw) ? errRaw[0] : null;
+  const flashErr = flashErrRaw ? (toAdminDisplayError(flashErrRaw, "disputes") ?? "처리에 실패했습니다.") : null;
+  const flashOk =
+    flashOkRaw === "reviewing"
+      ? "검토 중으로 변경했습니다."
+      : flashOkRaw === "resolved"
+        ? "해결 처리했습니다."
+        : flashOkRaw === "dismissed"
+          ? "종결 처리했습니다."
+          : flashOkRaw === "note"
+            ? "운영 메모를 저장했습니다."
+            : null;
+
   const supabase = await createClient();
-  const bundle = await loadDisputeById(supabase, id);
+  let adminBypass: ReturnType<typeof createServiceRoleClient> | undefined;
+  try {
+    adminBypass = createServiceRoleClient();
+  } catch {
+    adminBypass = undefined;
+  }
+  const bundle = await loadDisputeById(supabase, id, { adminBypassClient: adminBypass });
   const row = bundle.dispute.row;
-  const actors = row
-    ? await loadDisputeActorSummaries(supabase, row as Record<string, unknown>)
-    : null;
+  const actors = row ? await loadDisputeActorSummaries(supabase, row as Record<string, unknown>) : null;
+
+  const safeLoadError = row ? null : toAdminDisplayError(bundle.dispute.error, "disputes");
+
   return (
     <PageScaffold
-      eyebrow="Admin / W22 / Dispute"
-      title="분쟁·환불(운영) 상세"
-      description="W22 운영: 사건·관련 users·refunds/payments/구독/맞춤주문·로그. 승인/알림/첨부는 placeholder."
+      hideFooterPlaceholderCards
+      eyebrow="관리자 / 분쟁"
+      title="분쟁 상세"
+      description="분쟁 본문·당사자·연결 주문·결제·환불 정보를 확인하고 상태를 조정합니다. 금전·정산·환불 실행은 이 화면에서 자동으로 이루어지지 않습니다."
       ctas={[
         { href: "/admin/disputes", label: "분쟁 목록", tone: "blue" },
-        { href: "/admin/refunds", label: "환불 큐", tone: "slate" },
-        { href: "/admin/audit-logs", label: "감사 로그", tone: "blue" },
-        { href: "/admin", label: "어드민", tone: "slate" },
+        { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
+        { href: "/admin", label: "대시보드", tone: "slate" },
       ]}
       sections={[
-        { title: "조회", body: row ? bundle.probe : (bundle.dispute.error ?? "empty"), status: row ? "connected" : "skeleton" },
-        {
-          title: "이력",
-          body: bundle.modLogs.table ? `${bundle.modLogs.table} ${bundle.modLogs.rows.length}행` : (bundle.modLogs.error ?? "—"),
-          status: bundle.modLogs.table ? "connected" : "skeleton",
-        },
-        { title: "의사결정", body: "버튼 자리(액션 후속).", status: "skeleton" },
-        { title: "내부", body: "메모·감사(후속).", status: "skeleton" },
+        { title: "조회", body: row ? "분쟁 행을 불러왔습니다." : "분쟁을 찾지 못했습니다.", status: row ? "connected" : "skeleton" },
+        { title: "처리", body: "검토 중·메모·해결·종결은 아래 양식에서 진행합니다.", status: row ? "connected" : "skeleton" },
       ]}
-      emptyState="분쟁 id 없음."
-      loadingState="loading.tsx"
-      errorState={row ? "—" : (bundle.dispute.error ?? "RLS/권한")}
-      dataPoints={[...DISPUTE_W22_DATA_MODEL]}
+      emptyState=""
+      loadingState=""
+      errorState=""
+      dataPoints={[]}
     >
-      {row ? (
-        <DisputeAdminPageBody bundle={bundle} actors={actors} />
-      ) : (
-        <p className="text-sm text-amber-900">조회 실패/없음: {bundle.dispute.error ?? "id 미일치 — disputes 테이블·RLS를 확인하세요."}</p>
-      )}
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-2 text-sm">
+          <Link className="font-extrabold text-indigo-800 underline" href="/admin/disputes" prefetch={false}>
+            ← 분쟁 목록
+          </Link>
+          <span className="text-slate-300">|</span>
+          <Link className="font-extrabold text-slate-700 underline" href="/admin" prefetch={false}>
+            대시보드
+          </Link>
+        </div>
+        {flashOk ? (
+          <p className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 text-sm font-semibold text-emerald-950">{flashOk}</p>
+        ) : null}
+        {flashErr ? (
+          <p className="rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm font-semibold text-red-950">{flashErr}</p>
+        ) : null}
+        {row ? (
+          <DisputeAdminPageBody bundle={bundle} actors={actors} disputeId={id} />
+        ) : (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950">
+            <p className="font-semibold">분쟁을 불러오지 못했습니다.</p>
+            <p className="mt-1 text-xs text-amber-900/90">{safeLoadError ?? "요청한 분쟁이 없거나 접근할 수 없습니다."}</p>
+          </div>
+        )}
+      </div>
     </PageScaffold>
   );
 }

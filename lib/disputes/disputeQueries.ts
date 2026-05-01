@@ -82,32 +82,62 @@ async function fetchByIdInTable(
   return { table: t.table, row: null, err: "해당 id로 조회되지 않음" };
 }
 
-export async function loadDisputeById(supabase: SupabaseClient, id: string): Promise<DisputeBundle> {
-  const tProbe = await firstReadableAdminTable(supabase, [
-    "disputes",
-    "order_disputes",
-    "refund_disputes",
-    "user_disputes",
-    "support_tickets",
-  ] as const);
+/** 관리자 상세 전용: 세션으로 disputes 단건이 안 될 때만 전달(requireRole 이후 서버 전용). */
+export type LoadDisputeByIdOpts = {
+  adminBypassClient?: SupabaseClient;
+};
 
+export async function loadDisputeById(
+  supabase: SupabaseClient,
+  id: string,
+  opts?: LoadDisputeByIdOpts
+): Promise<DisputeBundle> {
   let dRow: Row | null = null;
-  let dErr: string | null = tProbe.error || null;
-  if (tProbe.table) {
-    const { data, error } = await supabase.from(tProbe.table).select("*").eq("id", id).maybeSingle();
-    if (data) dRow = data as Row;
-    else dErr = error?.message ?? dErr;
+  let dErr: string | null = null;
+  let resolvedTable: string | null = null;
+  /** disputes 본문·연계 조회에 사용(관리자 읽기 우회 시 첫 성공 클라이언트를 끝까지 유지) */
+  let readClient: SupabaseClient = supabase;
+
+  const direct = await supabase.from("disputes").select("*").eq("id", id).maybeSingle();
+  const sessionMiss = Boolean(direct.error || !direct.data);
+  if (!direct.error && direct.data) {
+    dRow = direct.data as Row;
+    resolvedTable = "disputes";
+  } else if (sessionMiss && opts?.adminBypassClient) {
+    const bypass = await opts.adminBypassClient.from("disputes").select("*").eq("id", id).maybeSingle();
+    if (!bypass.error && bypass.data) {
+      readClient = opts.adminBypassClient;
+      dRow = bypass.data as Row;
+      resolvedTable = "disputes";
+    }
+  }
+
+  if (!dRow) {
+    const tProbe = await firstReadableAdminTable(supabase, [
+      "disputes",
+      "order_disputes",
+      "refund_disputes",
+      "user_disputes",
+      "support_tickets",
+    ] as const);
+    dErr = tProbe.error || null;
+    resolvedTable = tProbe.table;
+    if (tProbe.table) {
+      const { data, error } = await supabase.from(tProbe.table).select("*").eq("id", id).maybeSingle();
+      if (data) dRow = data as Row;
+      else dErr = error?.message ?? dErr;
+    }
   }
 
   if (!dRow) {
     return {
-      dispute: { table: tProbe.table, row: null, error: dErr },
+      dispute: { table: resolvedTable, row: null, error: dErr },
       refund: { table: null, row: null, error: null },
       payment: { table: null, row: null, error: null },
       subscription: { table: null, row: null, error: null },
       customOrder: { table: null, row: null, error: null },
       modLogs: { table: null, rows: [], error: null },
-      probe: tProbe.error || tProbe.table || "disputes(미로드)",
+      probe: dErr || resolvedTable || "disputes(미로드)",
     };
   }
 
@@ -124,10 +154,10 @@ export async function loadDisputeById(supabase: SupabaseClient, id: string): Pro
   ]);
 
   const rRef = refundId
-    ? await fetchByIdInTable(supabase, ["refunds", "refund_requests", "mentor_refunds"] as const, refundId, ["id"])
+    ? await fetchByIdInTable(readClient, ["refunds", "refund_requests", "mentor_refunds"] as const, refundId, ["id"])
     : { table: null, row: null, err: null };
   let pRef = payId
-    ? await fetchByIdInTable(supabase, ["payments", "payment_intents", "order_payments"] as const, payId, [
+    ? await fetchByIdInTable(readClient, ["payments", "payment_intents", "order_payments"] as const, payId, [
         "id",
         "ext_id",
         "mcht_trd_no",
@@ -135,45 +165,45 @@ export async function loadDisputeById(supabase: SupabaseClient, id: string): Pro
       ])
     : { table: null, row: null, err: null };
   const sRef = subId
-    ? await fetchByIdInTable(supabase, ["subscriptions", "user_subscriptions"] as const, subId, ["id"])
+    ? await fetchByIdInTable(readClient, ["subscriptions", "user_subscriptions"] as const, subId, ["id"])
     : { table: null, row: null, err: null };
   const cRef = cOrderId
-    ? await fetchByIdInTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"] as const, cOrderId, ["id"])
+    ? await fetchByIdInTable(readClient, ["custom_request_orders", "custom_orders", "request_orders"] as const, cOrderId, ["id"])
     : { table: null, row: null, err: null };
 
   if (!pRef.row && cOrderId) {
-    const pByOrder = await fetchPaymentRowByOrderId(supabase, cOrderId);
+    const pByOrder = await fetchPaymentRowByOrderId(readClient, cOrderId);
     if (pByOrder.row) {
       pRef = { table: pByOrder.table, row: pByOrder.row, err: pByOrder.err };
     }
   }
 
   let mTab: { table: string | null; rows: Row[]; err: string | null } = { table: null, rows: [], err: null };
-  const modProbe = await firstReadableAdminTable(supabase, [
+  const modProbe = await firstReadableAdminTable(readClient, [
     "moderation_logs",
     "dispute_events",
     "support_events",
     "admin_audit_logs",
   ] as const);
   if (modProbe.table) {
-    const { column: dCol } = await pickExistingColumn(supabase, modProbe.table, ["dispute_id", "ticket_id", "subject_id", "resource_id", "ref_id"] as const);
+    const { column: dCol } = await pickExistingColumn(readClient, modProbe.table, ["dispute_id", "ticket_id", "subject_id", "resource_id", "ref_id"] as const);
     if (dCol) {
-      const { data, error } = await supabase.from(modProbe.table).select("*").eq(dCol, id).limit(20);
+      const { data, error } = await readClient.from(modProbe.table).select("*").eq(dCol, id).limit(20);
       mTab = { table: modProbe.table, rows: (data as Row[]) ?? [], err: error?.message ?? null };
     } else {
-      const { data, error } = await supabase.from(modProbe.table).select("*").limit(10);
+      const { data, error } = await readClient.from(modProbe.table).select("*").limit(10);
       mTab = { table: modProbe.table, rows: (data as Row[]) ?? [], err: error?.message ?? "dispute FK 없음" };
     }
   } else {
     mTab = { table: null, rows: [], err: modProbe.error || null };
   }
 
-  const probe = [tProbe.table, rRef.table, pRef.table, sRef.table, cRef.table, mTab.table]
+  const probe = [resolvedTable, rRef.table, pRef.table, sRef.table, cRef.table, mTab.table]
     .filter((x) => x != null && x !== "")
     .join(" · ");
 
   return {
-    dispute: { table: tProbe.table, row: dRow, error: null },
+    dispute: { table: resolvedTable, row: dRow, error: null },
     refund: { table: rRef.table, row: rRef.row, error: rRef.err },
     payment: { table: pRef.table, row: pRef.row, error: pRef.err },
     subscription: { table: sRef.table, row: sRef.row, error: sRef.err },
@@ -283,7 +313,10 @@ export async function loadDisputeActorSummaries(
     const display = (data.nickname?.trim() || data.full_name?.trim() || id) as string;
     return { id, display, roleHint, probe: "users" };
   }
-  const reporter = await one(pickUid(["reporter_id", "created_by", "applicant_id", "opened_by"]), "신청/신고");
+  const reporter = await one(
+    pickUid(["submitted_by", "reporter_id", "created_by", "applicant_id", "opened_by"]),
+    "신청/신고"
+  );
   const student = await one(pickUid(["student_id", "user_id", "buyer_id", "client_id", "plaintiff_id"]), "학생/의뢰자");
   const mentor = await one(
     pickUid(["mentor_id", "mentor_user_id", "expert_id", "defendant_id", "counterparty_id", "assigned_mentor_id"]),

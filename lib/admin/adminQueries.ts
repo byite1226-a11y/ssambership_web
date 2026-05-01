@@ -272,6 +272,18 @@ export async function loadAdminDashboardSummary(supabase: SupabaseClient): Promi
   let disputeApproximate = false;
   if (!dTable.table) {
     errors.disputes = dashboardErrorMessage(dTable.error);
+  } else if (dTable.table === "disputes") {
+    const { count, error: dErr } = await supabase
+      .from("disputes")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["open", "under_review", "escalated"]);
+    if (dErr) {
+      disputeActiveCount = null;
+      errors.disputes = dashboardErrorMessage(dErr.message);
+    } else {
+      disputeActiveCount = count ?? 0;
+      disputeApproximate = false;
+    }
   } else {
     const p = await countQueuePending(
       supabase,
@@ -400,7 +412,7 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
         ? "목록을 불러올 수 없습니다."
         : summary.disputeApproximate
           ? "진행 상태 필터가 맞지 않아 전체 건수로 표시합니다. 확인이 필요합니다."
-          : "진행 중인 분쟁 추정 건수입니다.",
+          : "분쟁 기록 기준 접수·검토·에스컬레이션 상태 건수입니다.",
     state: metricState(summary.disputeActiveCount, true),
   };
 
