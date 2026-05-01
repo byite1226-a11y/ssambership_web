@@ -301,23 +301,208 @@ export async function loadAdminReviewsList(supabase: SupabaseClient, limit = 30)
   return { table, sourceNote: "최근 생성된 항목부터 표시합니다.", rows: error ? [] : rows, error, keyHints: { status: hidden.column } };
 }
 
-export async function loadAdminSettlementsList(supabase: SupabaseClient, limit = 30): Promise<{
-  list: AdminListResult;
+const COSI_TABLE = "custom_order_settlement_items" as const;
+
+/** 맞춤의뢰 정산 항목 상태 → 운영자 표기 */
+export function adminSettlementStatusLabel(status: string): string {
+  const s = status.trim().toLowerCase();
+  const map: Record<string, string> = {
+    pending: "지급 대기",
+    on_hold: "보류",
+    payable: "지급 가능",
+    paid: "지급 완료",
+    cancelled: "취소",
+  };
+  return map[s] ?? `${status} (확인 필요)`;
+}
+
+function toMoneyInt(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return Math.round(v);
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : 0;
+  }
+  return 0;
+}
+
+export type AdminSettlementSummary = {
+  totalRows: number;
+  pendingMentorAmountSum: number;
+  paidMentorAmountSum: number;
+  pendingCount: number;
+  onHoldCount: number;
+  payableCount: number;
+  paidCount: number;
+  cancelledCount: number;
+};
+
+export type AdminSettlementListItem = {
+  id: string;
+  customRequestOrderId: string;
+  mentorId: string;
+  studentId: string | null;
+  grossAmount: number;
+  platformFeeAmount: number;
+  mentorAmount: number;
+  feeRate: number;
+  status: string;
+  reason: string | null;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** 주문 보조 조회 성공 시 툴팁용(한 줄) */
+  orderMetaLine: string | null;
+};
+
+function emptySettlementSummary(): AdminSettlementSummary {
+  return {
+    totalRows: 0,
+    pendingMentorAmountSum: 0,
+    paidMentorAmountSum: 0,
+    pendingCount: 0,
+    onHoldCount: 0,
+    payableCount: 0,
+    paidCount: 0,
+    cancelledCount: 0,
+  };
+}
+
+function summarizeSettlementRows(rows: AdminSettlementListItem[]): AdminSettlementSummary {
+  const s = emptySettlementSummary();
+  s.totalRows = rows.length;
+  for (const r of rows) {
+    const st = r.status.trim().toLowerCase();
+    const m = r.mentorAmount;
+    if (st === "pending" || st === "on_hold" || st === "payable") {
+      s.pendingMentorAmountSum += m;
+    }
+    if (st === "paid") {
+      s.paidMentorAmountSum += m;
+    }
+    if (st === "pending") s.pendingCount += 1;
+    else if (st === "on_hold") s.onHoldCount += 1;
+    else if (st === "payable") s.payableCount += 1;
+    else if (st === "paid") s.paidCount += 1;
+    else if (st === "cancelled") s.cancelledCount += 1;
+  }
+  return s;
+}
+
+function parseCosItem(r: Row): AdminSettlementListItem | null {
+  const id = r.id != null ? String(r.id) : "";
+  if (!id) return null;
+  const feeRaw = r.fee_rate;
+  const feeNum = typeof feeRaw === "number" ? feeRaw : Number(feeRaw);
+  return {
+    id,
+    customRequestOrderId: String(r.custom_request_order_id ?? ""),
+    mentorId: String(r.mentor_id ?? ""),
+    studentId: r.student_id != null && String(r.student_id).length ? String(r.student_id) : null,
+    grossAmount: toMoneyInt(r.gross_amount),
+    platformFeeAmount: toMoneyInt(r.platform_fee_amount),
+    mentorAmount: toMoneyInt(r.mentor_amount),
+    feeRate: Number.isFinite(feeNum) ? feeNum : 0,
+    status: String(r.status ?? "pending"),
+    reason: r.reason != null && String(r.reason).length ? String(r.reason) : null,
+    paidAt: r.paid_at != null ? String(r.paid_at) : null,
+    createdAt: String(r.created_at ?? ""),
+    updatedAt: String(r.updated_at ?? ""),
+    orderMetaLine: null,
+  };
+}
+
+function chunkIds(ids: string[], size: number): string[][] {
+  const out: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
+  return out;
+}
+
+/** 주문 보조 정보(실패해도 정산 목록은 유지) */
+async function fetchCustomRequestOrdersMap(supabase: SupabaseClient, orderIds: string[]): Promise<Map<string, Row>> {
+  const map = new Map<string, Row>();
+  const unique = [...new Set(orderIds.filter(Boolean))];
+  if (!unique.length) return map;
+  for (const part of chunkIds(unique, 80)) {
+    const { data, error } = await supabase
+      .from("custom_request_orders")
+      .select("id, payment_status, status, state, order_status, agreed_price, proposed_price, price, amount, completed_at")
+      .in("id", part);
+    if (error || !data) continue;
+    for (const row of data as Row[]) {
+      const oid = String(row.id ?? "");
+      if (oid) map.set(oid, row);
+    }
+  }
+  return map;
+}
+
+function buildOrderMetaLine(o: Row): string | null {
+  const parts: string[] = [];
+  const ps = o.payment_status;
+  if (ps != null && String(ps).trim()) parts.push(`결제: ${String(ps)}`);
+  const st = [o.status, o.state, o.order_status]
+    .map((x) => (x != null ? String(x).trim() : ""))
+    .filter(Boolean);
+  if (st.length) parts.push(`주문: ${st.join("/")}`);
+  const price =
+    o.agreed_price ?? o.proposed_price ?? o.price ?? o.amount;
+  if (price != null && String(price).trim() !== "") {
+    try {
+      parts.push(`금액: ${new Intl.NumberFormat("ko-KR").format(toMoneyInt(price))}원`);
+    } catch {
+      parts.push("금액: —");
+    }
+  }
+  if (o.completed_at != null && String(o.completed_at).trim()) {
+    parts.push(`완료: ${String(o.completed_at).slice(0, 19)}`);
+  }
+  return parts.length ? parts.join(" · ") : null;
+}
+
+export async function loadAdminSettlementsList(
+  supabase: SupabaseClient,
+  limit = 50
+): Promise<{
+  rows: AdminSettlementListItem[];
+  summary: AdminSettlementSummary;
+  queryOk: boolean;
   byMentorHint: string;
 }> {
-  const { table, error: te } = await firstReadableAdminTable(supabase, ["settlements", "payouts", "mentor_payouts", "payout_batches", "payout_items"]);
-  if (!table) {
-    return {
-      list: { table: null, sourceNote: "목록을 연결할 수 없습니다.", rows: [], error: te, keyHints: {} },
-      byMentorHint: "멘토별 정산 요약은 추후 확장 예정입니다.",
-    };
+  const byMentorHint = "멘토별 정산 요약은 추후 확장 예정입니다.";
+
+  const { data, error } = await supabase
+    .from(COSI_TABLE)
+    .select(
+      "id, custom_request_order_id, mentor_id, student_id, gross_amount, platform_fee_amount, mentor_amount, fee_rate, status, reason, paid_at, created_at, updated_at"
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return { rows: [], summary: emptySettlementSummary(), queryOk: false, byMentorHint };
   }
-  const { rows, error } = await selectWithOrder<Row>(supabase, table, limit);
-  const mentor = await pickExistingColumn(supabase, table, ["mentor_id", "mentor_user_id", "recipient_id", "user_id", "payee_id"]);
-  const st = await pickExistingColumn(supabase, table, ["status", "payout_status", "state", "settlement_state"]);
+
+  const rawRows = (data ?? []) as Row[];
+  const items: AdminSettlementListItem[] = [];
+  for (const r of rawRows) {
+    const it = parseCosItem(r);
+    if (it) items.push(it);
+  }
+
+  const orderMap = await fetchCustomRequestOrdersMap(
+    supabase,
+    items.map((i) => i.customRequestOrderId)
+  );
+  for (const it of items) {
+    const o = orderMap.get(it.customRequestOrderId);
+    if (o) it.orderMetaLine = buildOrderMetaLine(o);
+  }
+
   return {
-    list: { table, sourceNote: "최근 생성된 항목부터 표시합니다.", rows: error ? [] : rows, error, keyHints: { status: st.column, targetType: mentor.column } },
-    byMentorHint: "멘토별 정산 요약은 추후 확장 예정입니다.",
+    rows: items,
+    summary: summarizeSettlementRows(items),
+    queryOk: true,
+    byMentorHint,
   };
 }
 
