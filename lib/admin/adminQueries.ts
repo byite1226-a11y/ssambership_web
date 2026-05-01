@@ -934,18 +934,3 @@ export async function loadAdminSettlementsList(
   };
 }
 
-export async function loadAdminAuditLogList(supabase: SupabaseClient, limit = 40): Promise<AdminListResult> {
-  const { table, error: te } = await firstReadableAdminTable(supabase, ["audit_logs", "audit_events", "admin_audit_logs", "verification_logs", "moderation_logs", "notices", "disputes"]);
-  if (!table) {
-    return { table: null, sourceNote: "목록을 연결할 수 없습니다.", rows: [], error: te, keyHints: {} };
-  }
-  const { rows, error } = await selectWithOrder<Row>(supabase, table, limit);
-  const act = await pickExistingColumn(supabase, table, ["action", "event_type", "type", "kind", "verb"]);
-  return {
-    table,
-    sourceNote: "최근 운영 이벤트 기준으로 표시합니다.",
-    rows: error ? [] : rows,
-    error,
-    keyHints: { status: act.column, targetType: act.column },
-  };
-}

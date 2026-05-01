@@ -10,7 +10,8 @@ export type AdminErrorDisplayContext =
   | "reviews"
   | "disputes"
   | "settlements"
-  | "mentorApprovals";
+  | "mentorApprovals"
+  | "auditLogs";
 
 const FORBIDDEN_SUBSTRINGS = [
   "supabase",
@@ -57,6 +58,8 @@ export function adminListErrorDescription(context: AdminErrorDisplayContext): st
       return "정산 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
     case "mentorApprovals":
       return "멘토 승인 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+    case "auditLogs":
+      return "운영 로그를 불러올 수 없습니다. 연결 상태를 확인하거나 잠시 후 다시 시도해 주세요.";
     default:
       return "아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
   }
