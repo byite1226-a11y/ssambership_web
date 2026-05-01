@@ -276,7 +276,7 @@ export async function loadAdminReportsList(supabase: SupabaseClient, limit = 30)
 }
 
 export async function loadAdminRefundsList(supabase: SupabaseClient, limit = 30): Promise<AdminListResult> {
-  const { table, error: te } = await firstReadableAdminTable(supabase, ["refunds", "refund_requests"]);
+  const { table, error: te } = await firstReadableAdminTable(supabase, ["refunds"]);
   if (!table) {
     return { table: null, sourceNote: te, rows: [], error: te, keyHints: {} };
   }
