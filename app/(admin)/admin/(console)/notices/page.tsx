@@ -23,6 +23,7 @@ export default async function AdminNoticesPage(props: PageProps) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="관리자 / 공지"
       title="공지 및 프로모션"
       description="서비스 공지와 프로모션 안내를 관리합니다."
