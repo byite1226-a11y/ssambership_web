@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadMentorDirectoryUserRows, loadMentorProfilesForDirectory } from "@/lib/auth/mentorPublicRead";
 import { buildMentorProfileDisplay, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import type { MentorsListFilters, MentorsListSort } from "@/lib/mentor/mentorsListSearchParams";
+import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
 import { getStringField, pickExistingColumn } from "@/lib/qna/safeSelect";
 type Row = Record<string, unknown>;
 
@@ -98,7 +99,11 @@ async function batchReviewStats(
     ]);
     if (!mid) continue;
     const { column: ratingCol } = await pickExistingColumn(supabase, table, ["rating", "score", "stars"]);
-    const { data, error } = await supabase.from(table).select("*").in(mid, mentorIds).limit(2500);
+    const vis = await probePublicReviewVisibilityColumns(supabase, table);
+    let batchQ = supabase.from(table).select("*").in(mid, mentorIds).limit(2500);
+    if (vis.isHidden) batchQ = batchQ.eq(vis.isHidden, false);
+    if (vis.isBlinded) batchQ = batchQ.eq(vis.isBlinded, false);
+    const { data, error } = await batchQ;
     if (error) continue;
     const acc = new Map<string, { c: number; rs: number; rn: number }>();
     for (const row of (data as unknown as Row[]) ?? []) {

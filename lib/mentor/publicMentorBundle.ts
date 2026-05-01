@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchMentorProfileForPublicMentor, getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchMentorMediaSample } from "@/lib/mentor/mentorProfileQueries";
+import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import type { UserRow } from "@/lib/types/user";
 
@@ -59,19 +60,23 @@ async function fetchReviewsSummary(
       continue;
     }
     const { column, error: cErr } = await pickExistingColumn(supabase, table, REVIEW_FK);
+    const vis = await probePublicReviewVisibilityColumns(supabase, table);
     let count: number | null = null;
     let avgRating: number | null = null;
     let error: string | null = cErr;
     if (column) {
-      const { count: c, error: e1 } = await supabase
-        .from(table)
-        .select("*", { count: "exact", head: true })
-        .eq(column, mentorId);
+      let countQ = supabase.from(table).select("*", { count: "exact", head: true }).eq(column, mentorId);
+      if (vis.isHidden) countQ = countQ.eq(vis.isHidden, false);
+      if (vis.isBlinded) countQ = countQ.eq(vis.isBlinded, false);
+      const { count: c, error: e1 } = await countQ;
       if (e1) error = e1.message;
       else count = c ?? 0;
       const { column: ratingCol } = await pickExistingColumn(supabase, table, ["rating", "score", "stars"]);
       if (ratingCol && !error) {
-        const { data, error: e2 } = await supabase.from(table).select(ratingCol).eq(column, mentorId).limit(500);
+        let rateQ = supabase.from(table).select(ratingCol).eq(column, mentorId).limit(500);
+        if (vis.isHidden) rateQ = rateQ.eq(vis.isHidden, false);
+        if (vis.isBlinded) rateQ = rateQ.eq(vis.isBlinded, false);
+        const { data, error: e2 } = await rateQ;
         if (!e2 && data?.length) {
           const rows = data as unknown as Row[];
           const nums = rows
@@ -85,7 +90,10 @@ async function fetchReviewsSummary(
         }
       }
     } else {
-      const { count: c, error: e3 } = await supabase.from(table).select("*", { count: "exact", head: true });
+      let fullCountQ = supabase.from(table).select("*", { count: "exact", head: true });
+      if (vis.isHidden) fullCountQ = fullCountQ.eq(vis.isHidden, false);
+      if (vis.isBlinded) fullCountQ = fullCountQ.eq(vis.isBlinded, false);
+      const { count: c, error: e3 } = await fullCountQ;
       if (e3) error = e3.message;
       else count = c ?? null;
     }

@@ -1,6 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
+import type { AdminReviewModerationPlan } from "@/lib/admin/reviewLabels";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
 type Row = Record<string, unknown>;
@@ -128,7 +129,8 @@ export type AdminDashboardSummary = {
   reportOpenCount: number | null;
   disputeActiveCount: number | null;
   refundPendingCount: number | null;
-  reviewVisibleOrTotalCount: number | null;
+  /** 연결된 리뷰 테이블의 전체 행 수(숨김·블라인드 포함). RLS/관리자와 무관한 count 쿼리 기준. */
+  reviewTotalCount: number | null;
   settlementPendingAmount: number | null;
   settlementPendingCount: number | null;
   auditLogCount: number | null;
@@ -301,16 +303,16 @@ export async function loadAdminDashboardSummary(supabase: SupabaseClient): Promi
   }
 
   const wTable = await firstReadableAdminTable(supabase, ["reviews", "mentor_reviews", "mentor_review"] as const);
-  let reviewVisibleOrTotalCount: number | null = null;
+  let reviewTotalCount: number | null = null;
   if (!wTable.table) {
     errors.reviews = dashboardErrorMessage(wTable.error);
   } else {
     const t = await countAll(supabase, wTable.table);
     if (t.n === null) {
-      reviewVisibleOrTotalCount = null;
+      reviewTotalCount = null;
       errors.reviews = dashboardErrorMessage(t.error ?? undefined);
     } else {
-      reviewVisibleOrTotalCount = t.n;
+      reviewTotalCount = t.n;
     }
   }
 
@@ -350,7 +352,7 @@ export async function loadAdminDashboardSummary(supabase: SupabaseClient): Promi
     reportOpenCount,
     disputeActiveCount,
     refundPendingCount,
-    reviewVisibleOrTotalCount,
+    reviewTotalCount,
     settlementPendingAmount,
     settlementPendingCount,
     auditLogCount,
@@ -417,15 +419,15 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
 
   const qRev: AdminQueueMetric = {
     label: "리뷰 관리",
-    nText: fmt(summary.reviewVisibleOrTotalCount),
+    nText: fmt(summary.reviewTotalCount),
     href: "/admin/reviews",
     detail:
-      summary.reviewVisibleOrTotalCount === null
+      summary.reviewTotalCount === null
         ? "목록을 불러올 수 없습니다."
-        : summary.reviewVisibleOrTotalCount === 0
+        : summary.reviewTotalCount === 0
           ? "연결된 운영 데이터가 없습니다."
-          : "등록된 리뷰 전체 건수입니다.",
-    state: metricState(summary.reviewVisibleOrTotalCount, true),
+          : "연결된 리뷰 테이블 기준 전체 리뷰 건수입니다.(/admin/reviews 목록은 그중 최근 50건)",
+    state: metricState(summary.reviewTotalCount, true),
   };
 
   const amt = summary.settlementPendingAmount ?? 0;
@@ -633,7 +635,7 @@ export async function loadAdminRefundsList(supabase: SupabaseClient, limit = 30)
   };
 }
 
-export async function loadAdminReviewsList(supabase: SupabaseClient, limit = 30): Promise<AdminListResult> {
+export async function loadAdminReviewsList(supabase: SupabaseClient, limit = 50): Promise<AdminListResult> {
   const { table, error: te } = await firstReadableAdminTable(supabase, ["reviews", "mentor_reviews", "mentor_review"]);
   if (!table) {
     return { table: null, sourceNote: "목록을 연결할 수 없습니다.", rows: [], error: te, keyHints: {} };
@@ -641,6 +643,78 @@ export async function loadAdminReviewsList(supabase: SupabaseClient, limit = 30)
   const { rows, error } = await selectWithOrder<Row>(supabase, table, limit);
   const hidden = await pickExistingColumn(supabase, table, ["hidden", "is_hidden", "is_blind", "visible", "moderation_state"]);
   return { table, sourceNote: "최근 생성된 항목부터 표시합니다.", rows: error ? [] : rows, error, keyHints: { status: hidden.column } };
+}
+
+/** 리뷰 관리 조치용 컬럼 매핑(액션·표시 공통) */
+export async function probeAdminReviewModerationPlan(
+  supabase: SupabaseClient,
+  table: string
+): Promise<AdminReviewModerationPlan> {
+  const hiddenPrefer = await pickExistingColumn(supabase, table, ["is_hidden", "hidden"]);
+  const visiblePrefer = await pickExistingColumn(supabase, table, ["visible", "is_public", "is_visible"]);
+  let hide: AdminReviewModerationPlan["hide"] = null;
+  if (hiddenPrefer.column) {
+    hide = { column: hiddenPrefer.column, mode: "boolean_true" };
+  } else if (visiblePrefer.column) {
+    hide = { column: visiblePrefer.column, mode: "boolean_false_for_visible" };
+  }
+  const blindPick = await pickExistingColumn(supabase, table, ["is_blinded", "is_blind"]);
+  const blind = blindPick.column ? { column: blindPick.column } : null;
+  const modState = await pickExistingColumn(supabase, table, ["moderation_state", "moderation_status", "review_status"]);
+  const modAt = await pickExistingColumn(supabase, table, ["moderated_at", "reviewed_at", "admin_reviewed_at"]);
+  let reviewDone: AdminReviewModerationPlan["reviewDone"] = null;
+  if (modState.column) {
+    reviewDone = { column: modState.column, kind: "enum", enumValue: "reviewed" };
+  } else if (modAt.column) {
+    reviewDone = { column: modAt.column, kind: "timestamp", enumValue: "" };
+  }
+  return { hide, blind, reviewDone };
+}
+
+/** 숨김·블라인드 외 운영 메타(moderation_state, moderated_at, moderated_by) 컬럼명 */
+export type AdminReviewAuditColumnNames = {
+  moderationState: string | null;
+  moderatedAt: string | null;
+  moderatedBy: string | null;
+};
+
+export async function probeAdminReviewAuditColumnNames(
+  supabase: SupabaseClient,
+  table: string
+): Promise<AdminReviewAuditColumnNames> {
+  const st = await pickExistingColumn(supabase, table, ["moderation_state", "moderation_status"]);
+  const at = await pickExistingColumn(supabase, table, ["moderated_at"]);
+  const by = await pickExistingColumn(supabase, table, ["moderated_by"]);
+  return { moderationState: st.column, moderatedAt: at.column, moderatedBy: by.column };
+}
+
+export type AdminReviewsPageMeta = {
+  table: string;
+  authorColumn: string | null;
+  ratingColumn: string | null;
+  bodyColumn: string | null;
+  mentorColumn: string | null;
+  plan: AdminReviewModerationPlan;
+};
+
+export async function loadAdminReviewsPage(
+  supabase: SupabaseClient,
+  limit = 50
+): Promise<{ list: AdminListResult; meta: AdminReviewsPageMeta | null }> {
+  const list = await loadAdminReviewsList(supabase, limit);
+  if (!list.table) {
+    return { list, meta: null };
+  }
+  const table = list.table;
+  const authorColumn = (await pickExistingColumn(supabase, table, ["author_id", "user_id", "reviewer_id", "student_id"])).column;
+  const ratingColumn = (await pickExistingColumn(supabase, table, ["rating", "score", "stars"])).column;
+  const bodyColumn = (await pickExistingColumn(supabase, table, ["body", "comment", "content", "text"])).column;
+  const mentorColumn = (await pickExistingColumn(supabase, table, ["mentor_id", "mentor_user_id", "target_user_id", "to_user_id"])).column;
+  const plan = await probeAdminReviewModerationPlan(supabase, table);
+  return {
+    list,
+    meta: { table, authorColumn, ratingColumn, bodyColumn, mentorColumn, plan },
+  };
 }
 
 const COSI_TABLE = "custom_order_settlement_items" as const;

@@ -3,7 +3,7 @@
  * (조회 로직·에러 객체 자체는 변경하지 않고, UI에 넘기기 직전/렌더 시에만 사용)
  */
 
-export type AdminErrorDisplayContext = "default" | "notices" | "reports" | "settlements" | "mentorApprovals";
+export type AdminErrorDisplayContext = "default" | "notices" | "reports" | "reviews" | "settlements" | "mentorApprovals";
 
 const FORBIDDEN_SUBSTRINGS = [
   "supabase",
@@ -21,11 +21,14 @@ const FORBIDDEN_SUBSTRINGS = [
   "content_reports",
   "payout_items",
   "mentor_profiles",
+  "reviews",
+  "mentor_reviews",
   "sourcenote",
   "probe",
 ] as const;
 
-const DATASTORE_MESSAGE = /could not find|schema cache|relation does not exist|permission denied|does not exist|in the schema|invalid.*uuid|42703|42p01|42p02/i;
+const DATASTORE_MESSAGE =
+  /could not find|schema cache|relation does not exist|permission denied|does not exist|in the schema|invalid.*uuid|42703|42p01|42p02|row-level security|row level security|42501|42503/i;
 
 export const ADMIN_LIST_ERROR_TITLE = "목록을 불러오지 못했습니다.";
 
@@ -38,6 +41,8 @@ export function adminListErrorDescription(context: AdminErrorDisplayContext): st
       return "등록된 공지 또는 프로모션을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
     case "reports":
       return "신고 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+    case "reviews":
+      return "리뷰 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
     case "settlements":
       return "정산 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
     case "mentorApprovals":
