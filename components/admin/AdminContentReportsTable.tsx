@@ -1,4 +1,5 @@
 import { updateContentReportStatusAction } from "@/lib/admin/adminReportActions";
+import { adminContentTargetDisplay } from "@/lib/admin/adminOperationalLabels";
 import { contentReportRowIsActionable, contentReportStatusLabel } from "@/lib/admin/contentReportLabels";
 import type { AdminListResult } from "@/lib/admin/adminQueries";
 import { adminListFetchFailedCopy } from "@/lib/admin/adminDisplayError";
@@ -35,9 +36,11 @@ function targetLine(row: Row): { display: string; title: string | undefined } {
   const tt = pickStr(row, ["target_type", "subject_type", "resource_type"]);
   const tid = row.target_id ?? row.target_uuid;
   const idPrev = previewId(tid);
+  const { label, tooltip } = adminContentTargetDisplay(tt);
   if (!tt && idPrev.display === "—") return { display: "—", title: undefined };
-  const display = tid ? `${tt || "—"} · ${idPrev.display}` : tt || "—";
-  const title = [tt, idPrev.title].filter(Boolean).join(" · ") || undefined;
+  const display = tid ? `${label} · ${idPrev.display}` : label;
+  const titleParts = [tooltip, idPrev.title].filter(Boolean) as string[];
+  const title = titleParts.length ? titleParts.join(" · ") : undefined;
   return { display, title };
 }
 
@@ -111,7 +114,9 @@ export function AdminContentReportsTable(props: {
                 <td className="max-w-[220px] truncate px-3 py-2 text-slate-700" title={reasonLine(row)}>
                   {reasonLine(row)}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-slate-800">{label}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-800" title={statusRaw || undefined}>
+                  {label}
+                </td>
                 <td className="whitespace-nowrap px-3 py-2 text-slate-700">{formatTs(row.created_at)}</td>
                 <td className="min-w-[240px] px-3 py-2 align-top">
                   {actionable ? (

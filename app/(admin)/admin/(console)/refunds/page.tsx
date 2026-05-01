@@ -243,7 +243,7 @@ export default async function AdminRefundsPage(props: PageProps) {
                             </div>
                           </form>
                         ) : (
-                          <span className="text-xs font-medium text-slate-600">{refundStatusLabel(st)}</span>
+                          <span className="text-xs font-medium text-slate-500">—</span>
                         )}
                         {disputeHref ? (
                           <p className="mt-1 text-xs">

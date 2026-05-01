@@ -1,7 +1,7 @@
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { AdminQueueGrid } from "@/components/admin/AdminQueueGrid";
 import { createClient } from "@/lib/supabase/server";
-import { ADMIN_DASHBOARD_DATA_MODEL, loadAdminDashboardMetrics } from "@/lib/admin/adminQueries";
+import { loadAdminDashboardMetrics } from "@/lib/admin/adminQueries";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -27,7 +27,9 @@ export default async function AdminDashboardPage() {
           ? globalError
           : "일시적으로 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
       }
-      dataPoints={[...ADMIN_DASHBOARD_DATA_MODEL]}
+      dataPoints={[
+        "각 운영 메뉴는 왼쪽 사이드바 또는 상단 바로가기에서 이동할 수 있습니다. 금전·정산·주문 상태는 각 상세 메뉴에서 확인 후 처리하세요.",
+      ]}
     >
       <AdminQueueGrid cards={queueCards} />
     </PageScaffold>

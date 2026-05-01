@@ -82,17 +82,6 @@ async function countQueuePending(
 
 // —— dashboard —— //
 
-export const ADMIN_DASHBOARD_DATA_MODEL = [
-  "멘토 인증·승인",
-  "신고 접수",
-  "분쟁",
-  "환불",
-  "리뷰·평가",
-  "정산·지급",
-  "감사·기록",
-  "공지·프로모션",
-] as const;
-
 export type AdminQueueMetric = {
   label: string;
   nText: string;

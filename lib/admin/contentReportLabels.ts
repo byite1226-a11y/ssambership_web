@@ -7,14 +7,14 @@ export function contentReportStatusLabel(raw: string): string {
     case "reviewing":
       return "검토 중";
     case "resolved":
-      return "처리 완료";
+      return "해결";
     case "rejected":
-      return "반려";
+      return "거절";
     case "dismissed":
       return "종결";
     default:
       if (!s) return "—";
-      return `${raw.trim()} (확인 필요)`;
+      return "기타";
   }
 }
 

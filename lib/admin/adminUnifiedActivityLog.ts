@@ -2,6 +2,13 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
+import {
+  adminAppNoticeTypeLabel,
+  adminContentTargetDisplay,
+  adminOperationalStatusLabel,
+} from "@/lib/admin/adminOperationalLabels";
+import { contentReportStatusLabel } from "@/lib/admin/contentReportLabels";
+import { adminDisputeStatusLabel } from "@/lib/admin/disputeLabels";
 import { orderEventKindLabelForUi } from "@/lib/customRequest/orderLifecycleConstants";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
@@ -16,8 +23,12 @@ export type AdminActivityLogEntry = {
   occurredAtLabel: string;
   categoryLabel: string;
   targetLine: string;
+  /** 내부 target_type·ID 등 — 툴팁으로만 */
+  targetTooltip?: string | null;
   actorLine: string;
   statusLine: string;
+  /** 원문 status — 툴팁으로만 */
+  statusTooltip?: string | null;
   summaryLine: string;
   detailHref: string | null;
   detailLabel: string | null;
@@ -220,14 +231,21 @@ export async function loadAdminUnifiedActivityLog(
     for (const row of (data ?? []) as JsonRow[]) {
       const id = String(row.id ?? "");
       const iso = firstTs(row, ["updated_at", "created_at"]);
+      const tt = String(row.target_type ?? row.subject_type ?? row.resource_type ?? "").trim();
+      const { label: tgtLabel } = adminContentTargetDisplay(tt);
+      const tidRaw = row.target_id ?? row.target_uuid;
+      const tidStr = tidRaw != null && String(tidRaw).trim() ? String(tidRaw).trim() : "";
+      const statusRaw = typeof row.status === "string" ? String(row.status).trim() : "";
       entries.push({
         key: `report:${id}`,
         occurredAtIso: iso,
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "콘텐츠 신고",
-        targetLine: `${clipText(row.target_type, 40)} · ${shortId(row.target_id)}`,
+        targetLine: tidStr ? `${tgtLabel} · ${shortId(tidRaw)}` : tgtLabel,
+        targetTooltip: [tt, tidStr].filter(Boolean).join(" · ") || null,
         actorLine: `신고자 ${shortId(row.reporter_id)}`,
-        statusLine: clipText(row.status, 32),
+        statusLine: contentReportStatusLabel(statusRaw),
+        statusTooltip: statusRaw || null,
         summaryLine: clipText(row.reason ?? row.description, 140),
         detailHref: "/admin/reports",
         detailLabel: "신고 관리",
@@ -249,14 +267,17 @@ export async function loadAdminUnifiedActivityLog(
     for (const row of (data ?? []) as JsonRow[]) {
       const id = String(row.id ?? "");
       const iso = firstTs(row, ["updated_at", "created_at"]);
+      const st = String(row.status ?? "").trim();
       entries.push({
         key: `dispute:${id}`,
         occurredAtIso: iso,
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "분쟁",
         targetLine: `의뢰 주문 ${shortId(row.custom_request_order_id)}`,
+        targetTooltip: row.custom_request_order_id != null ? String(row.custom_request_order_id) : null,
         actorLine: `학생 ${shortId(row.student_id)} · 멘토 ${shortId(row.mentor_id)}`,
-        statusLine: clipText(row.status, 32),
+        statusLine: adminDisputeStatusLabel(st),
+        statusTooltip: st || null,
         summaryLine: clipText(row.body, 140),
         detailHref: `/admin/disputes/${encodeURIComponent(id)}`,
         detailLabel: "분쟁 상세",
@@ -283,14 +304,17 @@ export async function loadAdminUnifiedActivityLog(
         typeof cents === "number" && Number.isFinite(cents)
           ? `${(cents / 100).toLocaleString("ko-KR")}원(표시용)`
           : "금액 확인 필요";
+      const st = String(row.status ?? "").trim();
       entries.push({
         key: `refund:${id}`,
         occurredAtIso: iso,
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "환불",
         targetLine: `결제 ${shortId(row.payment_id)} · 주문 ${shortId(row.custom_request_order_id)}`,
+        targetTooltip: [row.payment_id, row.custom_request_order_id].filter(Boolean).map(String).join(" · ") || null,
         actorLine: `신청자 ${shortId(row.user_id)}`,
-        statusLine: clipText(row.status, 32),
+        statusLine: adminOperationalStatusLabel(st),
+        statusTooltip: st || null,
         summaryLine: `${amt} · 승인·정산은 별도 메뉴에서 수동 처리합니다.`,
         detailHref: `/admin/refunds?refundId=${encodeURIComponent(id)}`,
         detailLabel: "환불 관리",
@@ -314,14 +338,17 @@ export async function loadAdminUnifiedActivityLog(
       const hasMod = row.moderated_at != null && String(row.moderated_at).trim() !== "";
       const iso = firstTs(row, hasMod ? ["moderated_at", "created_at"] : ["created_at"]);
       const cat = hasMod ? "리뷰 조치" : "리뷰";
+      const modState = String(row.moderation_state ?? "").trim();
       entries.push({
         key: `review:${id}`,
         occurredAtIso: iso,
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: cat,
         targetLine: `멘토 ${shortId(row.mentor_id)} · 작성자 ${shortId(row.author_id)}`,
+        targetTooltip: [row.mentor_id, row.author_id].filter(Boolean).map(String).join(" · ") || null,
         actorLine: hasMod ? `조치자 ${shortId(row.moderated_by)}` : `작성자 ${shortId(row.author_id)}`,
-        statusLine: clipText(row.moderation_state ?? "—", 32),
+        statusLine: modState ? adminOperationalStatusLabel(modState) : "—",
+        statusTooltip: modState || null,
         summaryLine: clipText(row.body, 140),
         detailHref: "/admin/reviews",
         detailLabel: "리뷰 관리",
@@ -350,8 +377,10 @@ export async function loadAdminUnifiedActivityLog(
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "주문·의뢰 이벤트",
         targetLine: `의뢰 주문 ${idPrefix8(row.custom_request_order_id)}`,
+        targetTooltip: row.custom_request_order_id != null ? String(row.custom_request_order_id) : null,
         actorLine: buildOrderEventActorLine(row),
         statusLine: clipText(orderEventKindLabelForUi(eventKey || String(row.kind ?? row.event ?? "")), 32),
+        statusTooltip: [row.event, row.kind].filter(Boolean).map(String).join(" / ") || eventKey || null,
         summaryLine: buildOrderEventAuditSummary(row),
         detailHref: null,
         detailLabel: null,
@@ -379,9 +408,11 @@ export async function loadAdminUnifiedActivityLog(
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "공지",
         targetLine: clipText(row.title, 80),
+        targetTooltip: typeof row.title === "string" ? row.title : null,
         actorLine: `최종 ${shortId(row.updated_by ?? row.created_by)}`,
         statusLine: row.is_active === true ? "활성" : "비활성",
-        summaryLine: `유형 ${clipText(row.type, 24)}`,
+        statusTooltip: null,
+        summaryLine: `유형 ${adminAppNoticeTypeLabel(String(row.type))}`,
         detailHref: "/admin/notices",
         detailLabel: "공지·프로모션",
       });
@@ -408,8 +439,10 @@ export async function loadAdminUnifiedActivityLog(
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "프로모션",
         targetLine: clipText(row.title, 80),
+        targetTooltip: typeof row.title === "string" ? row.title : null,
         actorLine: `최종 ${shortId(row.updated_by ?? row.created_by)}`,
         statusLine: row.is_active === true ? "활성" : "비활성",
+        statusTooltip: null,
         summaryLine: "캠페인 변경 기록",
         detailHref: "/admin/notices",
         detailLabel: "공지·프로모션",
@@ -428,14 +461,17 @@ export async function loadAdminUnifiedActivityLog(
     for (const row of (data ?? []) as JsonRow[]) {
       const uid = String(row.user_id ?? "");
       const iso = firstTs(row, ["updated_at", "created_at"]);
+      const ver = String(row.verification_status ?? "").trim();
       entries.push({
         key: `mentor_profile:${uid}`,
         occurredAtIso: iso,
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "멘토 인증·프로필",
         targetLine: `멘토 ${shortId(uid)}`,
+        targetTooltip: uid || null,
         actorLine: shortId(uid),
-        statusLine: clipText(row.verification_status, 32),
+        statusLine: adminOperationalStatusLabel(ver),
+        statusTooltip: ver || null,
         summaryLine: clipText(row.university_name, 120),
         detailHref: "/admin/mentor-approvals",
         detailLabel: "멘토 승인",
@@ -457,14 +493,17 @@ export async function loadAdminUnifiedActivityLog(
     for (const row of (data ?? []) as JsonRow[]) {
       const id = String(row.id ?? "");
       const iso = firstTs(row, ["created_at"]);
+      const vSt = String(row.status ?? "").trim();
       entries.push({
         key: `ver_log:${id}`,
         occurredAtIso: iso,
         occurredAtLabel: formatTsKo(iso),
         categoryLabel: "인증·검증 로그",
         targetLine: `사용자 ${shortId(row.user_id)}`,
+        targetTooltip: row.user_id != null ? String(row.user_id) : null,
         actorLine: shortId(row.user_id),
-        statusLine: clipText(row.status, 32),
+        statusLine: adminOperationalStatusLabel(vSt),
+        statusTooltip: vSt || null,
         summaryLine: `${clipText(row.log_type, 40)} · ${clipText(row.memo, 100)}`,
         detailHref: "/admin/mentor-approvals",
         detailLabel: "멘토 승인",

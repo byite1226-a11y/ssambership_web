@@ -118,7 +118,10 @@ export default async function AdminSettlementsPage() {
         { title: "멘토별 보기", body: byMentorHint, status: "skeleton" },
       ]}
       hideFooterPlaceholderCards
-      dataPoints={["정산 대상", "지급 상태", "지급 일정", "처리 이력"]}
+      dataPoints={[
+        "이 화면은 지급 예정·상태 확인용이며, 실제 지급 실행은 별도 운영 절차에서 처리합니다.",
+        "각 운영 메뉴는 왼쪽 사이드바에서 이동할 수 있습니다. 금전·정산·주문은 관련 상세 메뉴에서 확인 후 처리하세요.",
+      ]}
     >
       <div className="space-y-4">
         {!queryOk ? (

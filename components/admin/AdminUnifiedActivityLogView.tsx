@@ -35,13 +35,18 @@ export function AdminUnifiedActivityLogView(props: Props) {
                 <tr key={e.key} className="border-b border-slate-100 last:border-0 align-top">
                   <td className="whitespace-nowrap px-3 py-2 text-xs text-slate-600">{e.occurredAtLabel}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-xs font-semibold text-slate-900">{e.categoryLabel}</td>
-                  <td className="max-w-[220px] px-3 py-2 text-xs text-slate-800" title={e.targetLine}>
+                  <td
+                    className="max-w-[220px] px-3 py-2 text-xs text-slate-800"
+                    title={e.targetTooltip ?? undefined}
+                  >
                     {e.targetLine}
                   </td>
                   <td className="max-w-[160px] px-3 py-2 font-mono text-[11px] text-slate-600" title={e.actorLine}>
                     {e.actorLine}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-xs text-slate-700">{e.statusLine}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-xs text-slate-700" title={e.statusTooltip ?? undefined}>
+                    {e.statusLine}
+                  </td>
                   <td className="max-w-[320px] px-3 py-2 text-xs text-slate-700" title={e.summaryLine}>
                     {e.summaryLine}
                   </td>

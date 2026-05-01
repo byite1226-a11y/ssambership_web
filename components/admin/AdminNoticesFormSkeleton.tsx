@@ -25,7 +25,9 @@ export function AdminNoticesFormSkeleton(props: { hints: Hints; errorMessage: st
       {hintTable && hints ? (
         <p className="text-xs text-slate-500">입력한 내용은 목록 형식에 맞게 저장됩니다.</p>
       ) : (
-        <p className="text-xs text-slate-500">공지·프로모션 저장소에 초안으로 등록됩니다.</p>
+        <p className="text-xs text-slate-500">
+          공지·프로모션 저장소에 초안으로 등록됩니다. 변경 이력을 더 살보려면 감사 로그 메뉴를 함께 확인할 수 있습니다.
+        </p>
       )}
 
       <label className="block text-sm font-extrabold text-slate-800">
@@ -64,7 +66,7 @@ export function AdminNoticesFormSkeleton(props: { hints: Hints; errorMessage: st
         활성(비활성은 저장 후 목록에서 조정)
       </label>
       <FormSubmitButton
-        idleLabel="저장(드래프트)"
+        idleLabel="임시 저장"
         pendingLabel="처리 중…"
         className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-bold text-white enabled:hover:bg-slate-800 disabled:bg-slate-300"
       />
