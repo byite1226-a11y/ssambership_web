@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { firstReadableAdminTable } from "@/lib/admin/adminQueries";
+import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { insertAdminNoticeDraft } from "@/lib/admin/adminNoticesMutations";
 
 const PATH = "/admin/notices";
@@ -18,42 +18,38 @@ function errQ(msg: string) {
 export async function submitAdminNoticeDraft(formData: FormData) {
   await requireRole("admin");
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
-  const resource = String(formData.get("resource") ?? "notice") as "notice" | "promotion";
+  const resource = String(formData.get("resource") ?? "notice") === "promotion" ? "promotion" : "notice";
   const target = String(formData.get("target") ?? "").trim();
   const start = String(formData.get("start") ?? "").trim();
   const end = String(formData.get("end") ?? "").trim();
   const active = formData.get("active") === "on";
 
   if (!title) {
-    redirect(errQ("제목을 입력하세요."));
-  }
-
-  const noticeTables = ["notices", "site_notices", "announcements", "app_notices"] as const;
-  const promoTables = ["promotions", "promo_banners", "site_promotions", "promotion_campaigns"] as const;
-  const candidates = resource === "promotion" ? promoTables : noticeTables;
-  const probe = await firstReadableAdminTable(supabase, candidates);
-  if (!probe.table) {
-    redirect(errQ(`쓰기 가능한 테이블 없음: ${probe.error}`));
+    redirect(errQ("제목을 입력해 주세요."));
   }
 
   const r = await insertAdminNoticeDraft(supabase, {
-    table: probe.table,
+    resource,
     title,
     body,
-    resource: resource === "promotion" ? "promotion" : "notice",
     target,
     start,
     end,
     active,
+    actorUserId: user?.id ?? null,
   });
 
   if (!r.ok) {
-    redirect(errQ(r.error));
+    const safe = toAdminDisplayError(r.error, "notices") ?? "저장에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+    redirect(errQ(safe));
   }
 
   revalidatePath(PATH);
-  redirect(`${PATH}?ok=1&new=${r.id}`);
+  redirect(`${PATH}?ok=1&new=${encodeURIComponent(r.id)}`);
 }

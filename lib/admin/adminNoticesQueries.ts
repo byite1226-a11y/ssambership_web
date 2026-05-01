@@ -1,14 +1,75 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import { firstReadableAdminTable } from "@/lib/admin/adminQueries";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
 const NOTICE_LIST_FAIL = "공지 목록을 불러올 수 없습니다.";
 const PROMO_LIST_FAIL = "프로모션 목록을 불러올 수 없습니다.";
+
+const TABLE_NOTICE = "app_notices" as const;
+const TABLE_PROMOTION = "promotion_campaigns" as const;
 
 type Row = Record<string, unknown>;
 
 function fmt(e: PostgrestError | null): string | null {
   return e ? e.message : null;
+}
+
+/** 폼 placeholder용(고정 스키마; DB 프로브 없음) */
+export const ADMIN_NOTICES_FORM_HINTS = {
+  title: "title",
+  body: "body",
+  type: "type",
+  target: "target",
+  start: "starts_at",
+  end: "ends_at",
+  active: "is_active",
+} as const;
+
+const NOTICE_TYPE_LABEL: Record<string, string> = {
+  notice: "공지",
+  event: "이벤트",
+  maintenance: "점검",
+  update: "업데이트",
+};
+
+function formatTs(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
+  const s = String(v);
+  if (s.includes("T")) return s.slice(0, 16).replace("T", " ");
+  return s.length > 19 ? s.slice(0, 19) : s;
+}
+
+function pickTargetCell(r: Row): string {
+  const v = r.target ?? r.target_screen ?? r.target_path ?? r.placement;
+  if (v === null || v === undefined || String(v).trim() === "") return "—";
+  return String(v);
+}
+
+function pickTitleCell(r: Row): string {
+  const v = r.title ?? r.name ?? r.headline;
+  if (v === null || v === undefined) return "—";
+  const s = String(v);
+  if (!s.length) return "—";
+  return s.length > 80 ? s.slice(0, 80) + "…" : s;
+}
+
+function pickStartEnd(r: Row): { start: string; end: string } {
+  const start = r.starts_at ?? r.start_at ?? r.valid_from ?? r.active_from;
+  const end = r.ends_at ?? r.end_at ?? r.valid_to ?? r.active_to;
+  return { start: formatTs(start), end: formatTs(end) };
+}
+
+function exposureFromRow(r: Row): { label: string; isOn: boolean } {
+  const v = r.is_active;
+  if (typeof v === "boolean") {
+    return { label: v ? "표시 중" : "숨김", isOn: v };
+  }
+  return { label: "숨김", isOn: false };
+}
+
+function periodLabel(start: string, end: string): string {
+  if (start === "—" && end === "—") return "기간 미설정";
+  if (start === "—") return `~ ${end}`;
+  if (end === "—") return `${start} ~`;
+  return `${start} ~ ${end}`;
 }
 
 export type NoticeListSection = {
@@ -18,163 +79,110 @@ export type NoticeListSection = {
   rows: Row[];
 };
 
-function pickTypeCell(r: Row): string {
-  for (const k of ["type", "notice_type", "kind", "category", "placement_type"]) {
-    if (k in r && r[k] !== null && r[k] !== undefined) return String(r[k]);
-  }
-  return "—";
-}
-
-function pickTargetCell(r: Row): string {
-  for (const k of ["target_screen", "target_path", "placement", "audience", "scope", "surface", "route"]) {
-    if (k in r && r[k] !== null && r[k] !== undefined) return String(r[k]);
-  }
-  return "—";
-}
-
-function pickTitleCell(r: Row): string {
-  for (const k of ["title", "name", "label", "headline", "summary"]) {
-    if (k in r && r[k] !== null && r[k] !== undefined) {
-      const s = String(r[k]);
-      if (s.length) return s.length > 40 ? s.slice(0, 40) + "…" : s;
-    }
-  }
-  return "—";
-}
-
-function pickStart(r: Row): string {
-  for (const k of ["starts_at", "start_at", "valid_from", "active_from", "start_date"]) {
-    if (k in r && r[k] !== null && r[k] !== undefined) return String(r[k]);
-  }
-  return "—";
-}
-
-function pickEnd(r: Row): string {
-  for (const k of ["ends_at", "end_at", "valid_to", "active_to", "end_date"]) {
-    if (k in r && r[k] !== null && r[k] !== undefined) return String(r[k]);
-  }
-  return "—";
-}
-
-function pickActive(r: Row): { label: string; isOn: boolean } {
-  for (const k of ["is_active", "active", "enabled", "published", "is_published"] as const) {
-    if (k in r) {
-      const v = r[k];
-      if (typeof v === "boolean") return { label: v ? "활성" : "비활성", isOn: v };
-    }
-  }
-  for (const k of ["status", "state"]) {
-    if (k in r && r[k] !== null && r[k] !== undefined) {
-      const s = String(r[k]);
-      return { label: s, isOn: /active|on|open|pub|1/i.test(s) };
-    }
-  }
-  return { label: "—", isOn: false };
-}
-
 export type NoticeListRow = {
   id: string;
   title: string;
-  type: string;
+  typeLabel: string;
   target: string;
-  start: string;
-  end: string;
-  active: { label: string; isOn: boolean };
+  periodLabel: string;
+  exposure: { label: string; isOn: boolean };
+  createdLabel: string;
   _raw: Row;
   _source: "notices" | "promotions";
 };
 
-function mapRows(rows: Row[], source: "notices" | "promotions"): NoticeListRow[] {
+function mapNoticeRows(rows: Row[]): NoticeListRow[] {
   return rows.map((r) => {
-    const id = String(r.id ?? r.uuid ?? r.key ?? "");
+    const id = String(r.id ?? "");
+    const { start, end } = pickStartEnd(r);
+    const rawType = String(r.type ?? "notice").toLowerCase();
     return {
       id,
       title: pickTitleCell(r),
-      type: pickTypeCell(r),
+      typeLabel: NOTICE_TYPE_LABEL[rawType] ?? rawType,
       target: pickTargetCell(r),
-      start: pickStart(r),
-      end: pickEnd(r),
-      active: pickActive(r),
+      periodLabel: periodLabel(start, end),
+      exposure: exposureFromRow(r),
+      createdLabel: formatTs(r.created_at),
       _raw: r,
-      _source: source,
+      _source: "notices",
     };
   });
 }
 
-async function selectOrderedList(supabase: SupabaseClient, table: string, limit: number): Promise<{ rows: Row[]; error: string | null }> {
-  const orderCols = ["created_at", "updated_at", "starts_at", "id"] as const;
-  for (const c of orderCols) {
-    const { data, error } = await supabase.from(table).select("*").order(c, { ascending: false }).limit(limit);
-    if (!error) return { rows: (data as Row[]) ?? [], error: null };
-    if (!/column|order|schema/i.test(error.message)) return { rows: [], error: error.message };
-  }
-  const { data, error } = await supabase.from(table).select("*").limit(limit);
-  return { rows: (data as Row[]) ?? [], error: fmt(error) };
+function mapPromoRows(rows: Row[]): NoticeListRow[] {
+  return rows.map((r) => {
+    const id = String(r.id ?? "");
+    const { start, end } = pickStartEnd(r);
+    return {
+      id,
+      title: pickTitleCell(r),
+      typeLabel: "프로모션",
+      target: pickTargetCell(r),
+      periodLabel: periodLabel(start, end),
+      exposure: exposureFromRow(r),
+      createdLabel: formatTs(r.created_at),
+      _raw: r,
+      _source: "promotions",
+    };
+  });
+}
+
+async function loadNoticeTable(
+  supabase: SupabaseClient,
+  limit: number
+): Promise<{ rows: Row[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from(TABLE_NOTICE)
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return { rows: [], error: fmt(error) };
+  return { rows: (data as Row[]) ?? [], error: null };
+}
+
+async function loadPromoTable(
+  supabase: SupabaseClient,
+  limit: number
+): Promise<{ rows: Row[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from(TABLE_PROMOTION)
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return { rows: [], error: fmt(error) };
+  return { rows: (data as Row[]) ?? [], error: null };
 }
 
 export async function loadAdminNoticesPage(supabase: SupabaseClient, listLimit = 50): Promise<{
-  noticeSection: NoticeListSection | null;
-  promoSection: NoticeListSection | null;
+  noticeSection: NoticeListSection;
+  promoSection: NoticeListSection;
   mappedNotices: NoticeListRow[];
   mappedPromos: NoticeListRow[];
   listErrors: string[];
-  probeSummary: string;
 }> {
-  const nProbe = await firstReadableAdminTable(supabase, ["notices", "site_notices", "announcements", "app_notices"] as const);
-  const pProbe = await firstReadableAdminTable(supabase, ["promotions", "promo_banners", "site_promotions", "promotion_campaigns"] as const);
-
   const listErrors: string[] = [];
-  let noticeSection: NoticeListSection | null = null;
-  let promoSection: NoticeListSection | null = null;
 
-  if (nProbe.table) {
-    const { rows, error } = await selectOrderedList(supabase, nProbe.table, listLimit);
-    if (error) listErrors.push(NOTICE_LIST_FAIL);
-    noticeSection = { name: "notices" as const, table: nProbe.table, error, rows: error ? [] : rows };
-  } else {
-    listErrors.push(NOTICE_LIST_FAIL);
-  }
+  const n = await loadNoticeTable(supabase, listLimit);
+  if (n.error) listErrors.push(NOTICE_LIST_FAIL);
+  const noticeSection: NoticeListSection = {
+    name: "notices",
+    table: TABLE_NOTICE,
+    error: n.error,
+    rows: n.error ? [] : n.rows,
+  };
 
-  if (pProbe.table) {
-    const { rows, error } = await selectOrderedList(supabase, pProbe.table, listLimit);
-    if (error) listErrors.push(PROMO_LIST_FAIL);
-    promoSection = { name: "promotions" as const, table: pProbe.table, error, rows: error ? [] : rows };
-  } else {
-    listErrors.push(PROMO_LIST_FAIL);
-  }
+  const p = await loadPromoTable(supabase, listLimit);
+  if (p.error) listErrors.push(PROMO_LIST_FAIL);
+  const promoSection: NoticeListSection = {
+    name: "promotions",
+    table: TABLE_PROMOTION,
+    error: p.error,
+    rows: p.error ? [] : p.rows,
+  };
 
-  const mappedNotices = noticeSection ? mapRows(noticeSection.rows, "notices") : [];
-  const mappedPromos = promoSection ? mapRows(promoSection.rows, "promotions") : [];
+  const mappedNotices = mapNoticeRows(noticeSection.rows);
+  const mappedPromos = mapPromoRows(promoSection.rows);
 
-  const probeSummary = [
-    nProbe.table ? `notices→${nProbe.table}` : `notices(✗)`,
-    pProbe.table ? `promotions→${pProbe.table}` : `promotions(✗)`,
-  ].join(" · ");
-
-  return { noticeSection, promoSection, mappedNotices, mappedPromos, listErrors, probeSummary };
-}
-
-/** 폼/insert 시 컬럼 힌트(스키마 확정 시만 의미) */
-export async function getNoticeTableColumnHints(
-  supabase: SupabaseClient,
-  table: string
-): Promise<{
-  title: string | null;
-  body: string | null;
-  type: string | null;
-  target: string | null;
-  start: string | null;
-  end: string | null;
-  active: string | null;
-}> {
-  const title = (await pickExistingColumn(supabase, table, ["title", "name", "headline", "summary"] as const)).column;
-  const body = (await pickExistingColumn(supabase, table, ["body", "content", "message", "excerpt", "summary"] as const)).column;
-  const type = (await pickExistingColumn(supabase, table, ["type", "kind", "notice_type", "category"] as const)).column;
-  const target = (await pickExistingColumn(supabase, table, ["target_screen", "placement", "target_path", "audience", "scope"] as const))
-    .column;
-  const start = (await pickExistingColumn(supabase, table, ["starts_at", "start_at", "valid_from", "active_from"] as const)).column;
-  const end = (await pickExistingColumn(supabase, table, ["ends_at", "end_at", "valid_to", "active_to"] as const)).column;
-  const active = (await pickExistingColumn(supabase, table, ["is_active", "active", "status", "enabled", "is_published"] as const))
-    .column;
-  return { title, body, type, target, start, end, active };
+  return { noticeSection, promoSection, mappedNotices, mappedPromos, listErrors };
 }

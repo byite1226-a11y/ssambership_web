@@ -1,74 +1,72 @@
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-function isMissingColumnError(err: PostgrestError | null): boolean {
-  if (!err) return false;
-  return /column|does not exist|schema cache/i.test(err.message);
+const TABLE_NOTICE = "app_notices" as const;
+const TABLE_PROMOTION = "promotion_campaigns" as const;
+
+function toTimestamptzOrNull(raw: string): string | null {
+  const t = raw.trim();
+  if (!t) return null;
+  return t;
 }
 
-async function insertWithCandidates(
-  supabase: SupabaseClient,
-  table: string,
-  payloads: Record<string, unknown>[]
-): Promise<{ row: Record<string, unknown> | null; error: string | null }> {
-  let last = "insert 후보 실패";
-  for (const payload of payloads) {
-    const { data, error } = await supabase.from(table).insert(payload).select("*").limit(1).maybeSingle();
-    if (!error) {
-      return { row: (data as Record<string, unknown> | null) ?? null, error: null };
-    }
-    last = error.message;
-    if (!isMissingColumnError(error)) {
-      return { row: null, error: error.message };
-    }
-  }
-  return { row: null, error: last };
-}
-
-export type AdminNoticeFormInput = {
-  table: string;
+export type AdminNoticeInsertInput = {
+  resource: "notice" | "promotion";
   title: string;
   body: string;
-  resource: "notice" | "promotion";
   target: string;
   start: string;
   end: string;
   active: boolean;
+  actorUserId: string | null;
 };
 
 export async function insertAdminNoticeDraft(
   supabase: SupabaseClient,
-  input: AdminNoticeFormInput
+  input: AdminNoticeInsertInput
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const now = new Date().toISOString();
-  const base: Record<string, unknown> = {
-    title: input.title,
-    body: input.body,
-    content: input.body,
-    summary: input.body,
-    type: input.resource === "promotion" ? "promotion" : "notice",
-    kind: input.resource,
-    target_screen: input.target || null,
-    placement: input.target || null,
-    starts_at: input.start || null,
-    ends_at: input.end || null,
-    start_at: input.start || null,
-    end_at: input.end || null,
-    is_active: input.active,
-    active: input.active,
-    status: input.active ? "active" : "draft",
-    created_at: now,
-    updated_at: now,
-  };
+  const uid = input.actorUserId;
+  const startsAt = toTimestamptzOrNull(input.start);
+  const endsAt = toTimestamptzOrNull(input.end);
 
-  const payloads: Record<string, unknown>[] = [base, { title: input.title, content: input.body, type: input.resource }];
+  if (input.resource === "promotion") {
+    const { data, error } = await supabase
+      .from(TABLE_PROMOTION)
+      .insert({
+        title: input.title,
+        body: input.body,
+        target: input.target.trim() || null,
+        is_active: input.active,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        created_by: uid,
+        updated_by: uid,
+      })
+      .select("id")
+      .single();
+    if (error) return { ok: false, error: error.message };
+    const id = data && typeof (data as { id?: unknown }).id === "string" ? (data as { id: string }).id : null;
+    if (!id) return { ok: false, error: "저장 후 식별자를 확인할 수 없습니다." };
+    return { ok: true, id };
+  }
 
-  const { row, error } = await insertWithCandidates(supabase, input.table, payloads);
-  if (error) {
-    return { ok: false, error };
-  }
-  const id = row && row.id !== undefined && row.id !== null ? String(row.id) : null;
-  if (!id) {
-    return { ok: false, error: "id를 확인할 수 없습니다." };
-  }
+  const { data, error } = await supabase
+    .from(TABLE_NOTICE)
+    .insert({
+      title: input.title,
+      body: input.body,
+      type: "notice",
+      target: input.target.trim() || null,
+      is_active: input.active,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      created_by: uid,
+      updated_by: uid,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { ok: false, error: error.message };
+  const id = data && typeof (data as { id?: unknown }).id === "string" ? (data as { id: string }).id : null;
+  if (!id) return { ok: false, error: "저장 후 식별자를 확인할 수 없습니다." };
   return { ok: true, id };
 }
