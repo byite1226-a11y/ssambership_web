@@ -7,14 +7,31 @@ import { approveAdminRefundAction, rejectAdminRefundAction } from "@/lib/admin/r
 
 type Row = Record<string, unknown>;
 
+const ID_PREVIEW_LEN = 10;
+
 function cell(v: unknown): string {
   if (v === null || v === undefined) return "—";
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
 }
 
+/** UUID 등 긴 문자열: 화면은 짧게, 전체는 title */
+function previewId(raw: unknown, maxLen = ID_PREVIEW_LEN): { display: string; title: string | undefined } {
+  const s = raw == null ? "" : String(raw).trim();
+  if (!s) return { display: "—", title: undefined };
+  if (s.length <= maxLen) return { display: s, title: s };
+  return { display: `${s.slice(0, maxLen)}…`, title: s };
+}
+
+function pickFirst(row: Row, keys: readonly string[]): unknown {
+  for (const k of keys) {
+    if (k in row) return row[k];
+  }
+  return undefined;
+}
+
 function pickStatus(row: Row): string {
-  const v = row.status ?? row.refund_status ?? row.state;
+  const v = pickFirst(row, ["status", "refund_status", "state"]);
   return typeof v === "string" ? v.trim().toLowerCase() : "";
 }
 
@@ -30,17 +47,13 @@ function refundStatusLabel(s: string): string {
     case "cancelled":
       return "취소";
     default:
-      return s || "—";
+      if (!s) return "—";
+      return `${s} (확인 필요)`;
   }
 }
 
 function isPendingRefund(row: Row): boolean {
   return pickStatus(row) === "pending";
-}
-
-function isTerminalRefund(row: Row): boolean {
-  const s = pickStatus(row);
-  return s === "succeeded" || s === "rejected" || s === "canceled" || s === "cancelled";
 }
 
 function firstString(row: Row, keys: readonly string[]): string | null {
@@ -49,6 +62,25 @@ function firstString(row: Row, keys: readonly string[]): string | null {
     if (typeof v === "string" && v.length > 0) return v;
   }
   return null;
+}
+
+function formatWonAmount(v: unknown): string {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "number" && Number.isFinite(v)) {
+    return `${new Intl.NumberFormat("ko-KR").format(Math.round(v))}원`;
+  }
+  const s = String(v).replace(/,/g, "").trim();
+  const n = Number(s);
+  if (!Number.isFinite(n)) return "—";
+  return `${new Intl.NumberFormat("ko-KR").format(Math.round(n))}원`;
+}
+
+function formatRequestedAt(v: unknown): string {
+  const s = cell(v);
+  if (s === "—") return "—";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(d);
 }
 
 type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
@@ -74,7 +106,7 @@ export default async function AdminRefundsPage(props: PageProps) {
 
   return (
     <PageScaffold
-      eyebrow="Admin / Refunds"
+      eyebrow="관리자 / 환불"
       title="환불 관리"
       description="환불 요청을 검토하고 승인 또는 거절할 수 있습니다."
       ctas={[
@@ -101,38 +133,45 @@ export default async function AdminRefundsPage(props: PageProps) {
 
         {focusRefundId ? (
           <p className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-3 text-sm text-indigo-950">
-            분쟁 연동에서 연 환불 ID <code className="font-mono text-indigo-900">{focusRefundId}</code> — 아래 목록의 id와 일치하는지 확인하세요.
+            연결된 환불 ID <code className="font-mono text-indigo-900">{focusRefundId}</code>와 아래 목록의 환불 ID가 같은지 확인해 주세요.
           </p>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-extrabold text-slate-800">환불 요청 목록</span>
-          <AdminStatusBadge result={list} />
+          <AdminStatusBadge result={list} hint="최근 요청부터 최대 50건" />
         </div>
 
+        <p className="text-sm text-slate-600">환불 요청의 결제 정보와 처리 상태를 확인할 수 있습니다.</p>
+
         {list.error && !rows.length ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm font-semibold text-amber-950">
-            Supabase: {list.error}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-950">
+            <p className="font-semibold">목록을 불러오지 못했습니다.</p>
+            <p className="mt-1 text-xs text-amber-900/90">{list.error}</p>
           </div>
         ) : null}
 
         {!list.table ? (
-          <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">refunds 테이블을 읽을 수 없습니다.</p>
+          <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            환불 목록을 불러올 수 없습니다. 연결과 권한을 확인해 주세요.
+          </p>
         ) : !rows.length ? (
-          <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">대기 중인 환불 요청이 없습니다.</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            <p className="font-semibold text-slate-800">현재 대기 중인 환불 요청이 없습니다.</p>
+            <p className="mt-2">환불 요청이 생성되면 이곳에서 승인 또는 거절할 수 있습니다.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-            <p className="border-b border-slate-100 px-3 py-2 text-xs text-slate-500">{list.sourceNote}</p>
             <table className="w-full min-w-[960px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80">
-                  <th className="px-2 py-2 font-extrabold text-slate-800">id</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">user_id</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">amount_cents</th>
+                  <th className="px-2 py-2 font-extrabold text-slate-800">환불 ID</th>
+                  <th className="px-2 py-2 font-extrabold text-slate-800">사용자</th>
+                  <th className="px-2 py-2 font-extrabold text-slate-800">환불 금액</th>
                   <th className="px-2 py-2 font-extrabold text-slate-800">상태</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">payment_id</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">custom_request_order_id</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">created_at</th>
+                  <th className="px-2 py-2 font-extrabold text-slate-800">결제 ID</th>
+                  <th className="px-2 py-2 font-extrabold text-slate-800">맞춤의뢰 ID</th>
+                  <th className="px-2 py-2 font-extrabold text-slate-800">요청일</th>
                   <th className="px-2 py-2 font-extrabold text-slate-800">처리</th>
                 </tr>
               </thead>
@@ -143,17 +182,28 @@ export default async function AdminRefundsPage(props: PageProps) {
                   const rowKey = refundIdValue || `row-${i}`;
                   const disputeHref = firstString(row, ["dispute_id", "case_id"]);
                   const pending = isPendingRefund(row);
-                  const terminal = isTerminalRefund(row);
                   const st = pickStatus(row);
+                  const idPv = previewId(row.id);
+                  const userPv = previewId(pickFirst(row, ["user_id"]));
+                  const payPv = previewId(pickFirst(row, ["payment_id"]));
+                  const orderPv = previewId(pickFirst(row, ["custom_request_order_id"]));
                   return (
                     <tr key={rowKey} className="border-b border-slate-100 last:border-0">
-                      <td className="max-w-[200px] truncate px-2 py-1.5 font-mono text-xs text-slate-800">{cell(row.id)}</td>
-                      <td className="max-w-[200px] truncate px-2 py-1.5 font-mono text-xs text-slate-800">{cell(row.user_id)}</td>
-                      <td className="px-2 py-1.5 text-slate-800">{cell(row.amount_cents)}</td>
+                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={idPv.title}>
+                        {idPv.display}
+                      </td>
+                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={userPv.title}>
+                        {userPv.display}
+                      </td>
+                      <td className="px-2 py-1.5 text-slate-800">{formatWonAmount(pickFirst(row, ["amount_cents", "amount"]))}</td>
                       <td className="px-2 py-1.5 text-slate-800">{refundStatusLabel(st)}</td>
-                      <td className="max-w-[180px] truncate px-2 py-1.5 font-mono text-xs text-slate-800">{cell(row.payment_id)}</td>
-                      <td className="max-w-[180px] truncate px-2 py-1.5 font-mono text-xs text-slate-800">{cell(row.custom_request_order_id)}</td>
-                      <td className="px-2 py-1.5 text-slate-800">{cell(row.created_at)}</td>
+                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={payPv.title}>
+                        {payPv.display}
+                      </td>
+                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={orderPv.title}>
+                        {orderPv.display}
+                      </td>
+                      <td className="whitespace-nowrap px-2 py-1.5 text-slate-800">{formatRequestedAt(pickFirst(row, ["created_at"]))}</td>
                       <td className="px-2 py-2 align-top">
                         {pending && refundIdValue ? (
                           <form className="flex min-w-[280px] flex-col gap-2">
@@ -182,10 +232,8 @@ export default async function AdminRefundsPage(props: PageProps) {
                               </button>
                             </div>
                           </form>
-                        ) : terminal ? (
-                          <span className="text-xs text-slate-500">{refundStatusLabel(st)}</span>
                         ) : (
-                          <span className="text-xs text-amber-800">알 수 없는 상태: {cell(row.status)}</span>
+                          <span className="text-xs font-medium text-slate-600">{refundStatusLabel(st)}</span>
                         )}
                         {disputeHref ? (
                           <p className="mt-1 text-xs">
@@ -194,7 +242,7 @@ export default async function AdminRefundsPage(props: PageProps) {
                               href={`/admin/disputes/${encodeURIComponent(disputeHref)}`}
                               prefetch={false}
                             >
-                              분쟁
+                              분쟁 보기
                             </Link>
                           </p>
                         ) : null}
