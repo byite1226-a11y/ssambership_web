@@ -1,35 +1,38 @@
-import { PageScaffold } from "@/components/shell/PageScaffold";
-import { CommunityMainHub } from "@/components/community/CommunityMainHub";
+import { CommunityHomeContent } from "@/components/community/CommunityHomeContent";
+import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
+import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { createClient } from "@/lib/supabase/server";
 import { listBoardPosts, listShortformPosts } from "@/lib/community/communityQueries";
 
 export default async function CommunityLandingPage() {
   const supabase = await createClient();
-  const [sh, br] = await Promise.all([listShortformPosts(supabase, 6), listBoardPosts(supabase, 8)]);
+  const [sh, br] = await Promise.all([listShortformPosts(supabase, 12), listBoardPosts(supabase, 16)]);
+  if (sh.error) console.error("[community] listShortformPosts", sh.error);
+  if (br.error) console.error("[community] listBoardPosts", br.error);
 
   return (
-    <PageScaffold
-      eyebrow="커뮤니티"
-      title="함께 읽는 콘텐츠"
-      description="짧은 숏폼과 게시판 글을 나눠 보여 드려요. 관심 있는 루트로 이동해 전체 글을 살펴보세요."
-      ctas={[
-        { href: "/question-room", label: "질문하기", tone: "blue" },
-        { href: "/community/shorts", label: "숏폼", tone: "slate" },
-        { href: "/community/board", label: "게시판", tone: "slate" },
-        { href: "/mentor/community/new", label: "멘토 · 글쓰기", tone: "slate" },
-      ]}
-      sections={[]}
-      dataPoints={[]}
+    <CommunityLayoutShell
+      activeNav="home"
+      hero={
+        <CommunityPageHero
+          eyebrow="커뮤니티"
+          title="함께 읽는 콘텐츠"
+          description="짧은 숏폼과 게시판 글을 한곳에서 만나 보세요. 사이드 메뉴에서 원하는 영역으로 이동할 수 있어요."
+          ctas={[
+            { href: "/question-room", label: "질문하기", tone: "blue" },
+            { href: "/community/shortform", label: "숏폼", tone: "slate" },
+            { href: "/community/board", label: "게시판", tone: "slate" },
+            { href: "/mentor/community/new", label: "멘토 · 글쓰기", tone: "slate" },
+          ]}
+        />
+      }
     >
-      <CommunityMainHub
-        activeTab="home"
+      <CommunityHomeContent
         shortRows={sh.rows}
-        shortError={sh.error}
+        shortFetchFailed={Boolean(sh.error)}
         boardRows={br.rows}
-        boardError={br.error}
-        writeCta={{ href: "/mentor/community/new", label: "멘토 · 글쓰기" }}
-        uploadCta={{ href: "/community/shorts", label: "숏폼 피드" }}
+        boardFetchFailed={Boolean(br.error)}
       />
-    </PageScaffold>
+    </CommunityLayoutShell>
   );
 }

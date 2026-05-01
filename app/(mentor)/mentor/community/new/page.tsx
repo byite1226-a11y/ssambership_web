@@ -31,7 +31,7 @@ export default async function MentorCommunityNewPage(props: PageProps) {
       title="커뮤니티 작성"
       description="멘토 전용입니다. 게시판 글과 숏폼 소식 중 하나를 선택해 등록합니다. 질문방·캐시 기능과는 별도입니다."
       ctas={[
-        { href: "/community/shorts", label: "숏폼 보기", tone: "slate" },
+        { href: "/community/shortform", label: "숏폼 보기", tone: "slate" },
         { href: "/community/board", label: "게시판 보기", tone: "slate" },
         { href: "/mentor/dashboard", label: "대시보드", tone: "slate" },
       ]}
@@ -41,13 +41,11 @@ export default async function MentorCommunityNewPage(props: PageProps) {
         { title: "권리·출처", body: "출처 표기와 권리 확인 동의가 필요합니다.", status: "connected" },
         { title: "검수", body: "운영 검수·신고 처리는 관리자 메뉴에서 별도로 진행됩니다.", status: "skeleton" },
       ]}
-      emptyState="—"
-      loadingState="—"
-      errorState="—"
       dataPoints={[
         "게시판과 숏폼 중 하나를 선택해 저장합니다.",
         "출처 표기와 권리 확인에 동의해야 제출할 수 있습니다.",
       ]}
+      hideFooterPlaceholderCards
     >
       <MentorCommunityComposeForm errorMessage={errorMessage} />
     </PageScaffold>

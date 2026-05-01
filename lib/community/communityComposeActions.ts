@@ -47,6 +47,7 @@ export async function submitMentorCommunityPost(formData: FormData) {
       redirect(buildErrorRedirect("shortform_save"));
     }
     revalidatePath("/community/shorts");
+    revalidatePath("/community/shortform");
     revalidatePath("/community");
     revalidatePath(`/community/shorts/${r.id}`);
     redirect(`/community/shorts/${r.id}`);

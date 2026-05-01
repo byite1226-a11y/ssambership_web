@@ -34,14 +34,9 @@ export default async function CommunityBoardDetailPage(props: Props) {
         { href: "/community/board", label: "목록", tone: "slate" },
         { href: "/community", label: "홈", tone: "slate" },
       ]}
-      sections={[
-        { title: "글", body: "제목·본문·작성자 정보", status: row ? "connected" : "skeleton" },
-        { title: "댓글", body: "댓글로 소통해 보세요", status: row ? "connected" : "skeleton" },
-      ]}
-      emptyState="이 게시글이 아직 없거나, 볼 수 없을 수 있어요."
-      loadingState="불러오는 중이에요."
-      errorState="다시 시도하거나, 목록에서 다른 글을 둘러봐 주세요."
+      sections={[]}
       dataPoints={[]}
+      hideFooterPlaceholderCards
     >
       <CommunityPostDetail
         variant="board"

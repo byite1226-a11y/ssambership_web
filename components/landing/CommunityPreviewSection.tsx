@@ -10,19 +10,19 @@ export function CommunityPreviewSection(props: {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6">
       <h2 className="text-lg font-extrabold text-slate-900">커뮤니티 미리보기</h2>
-      <p className="mt-1 text-xs text-slate-500">숏폼(shortform_posts)과 게시판(community_posts) 분리</p>
+      <p className="mt-1 text-xs text-slate-500">숏폼과 게시판에서 올라온 글을 함께 보여 드려요.</p>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div>
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-slate-800">숏폼</h3>
-            <Link href="/community/shorts" className="text-xs font-bold text-blue-700 underline">
+            <Link href="/community/shortform" className="text-xs font-bold text-blue-700 underline">
               더보기
             </Link>
           </div>
           {props.shorts.error ? (
-            <p className="mt-2 text-sm text-red-800">{props.shorts.error}</p>
+            <p className="mt-2 text-sm text-slate-600">목록을 불러오지 못했습니다.</p>
           ) : props.shorts.rows.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-600">글 없음 · {props.shorts.table ?? "shortform_posts"}</p>
+            <p className="mt-2 text-sm text-slate-600">아직 표시할 숏폼이 없습니다.</p>
           ) : (
             <ul className="mt-2 space-y-2">
               {props.shorts.rows.map((r, i) => (
@@ -42,9 +42,9 @@ export function CommunityPreviewSection(props: {
             </Link>
           </div>
           {props.boards.error ? (
-            <p className="mt-2 text-sm text-red-800">{props.boards.error}</p>
+            <p className="mt-2 text-sm text-slate-600">목록을 불러오지 못했습니다.</p>
           ) : props.boards.rows.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-600">글 없음 · {props.boards.table ?? "community_posts"}</p>
+            <p className="mt-2 text-sm text-slate-600">아직 표시할 게시글이 없습니다.</p>
           ) : (
             <ul className="mt-2 space-y-2">
               {props.boards.rows.map((r, i) => (

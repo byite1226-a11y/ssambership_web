@@ -35,7 +35,7 @@ export function CommunityMainHub(props: {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
         <TabLink href="/community" label="홈" active={props.activeTab === "home"} />
-        <TabLink href="/community/shorts" label="숏폼" active={props.activeTab === "shorts"} />
+        <TabLink href="/community/shortform" label="숏폼" active={props.activeTab === "shorts"} />
         <TabLink href="/community/board" label="게시판" active={props.activeTab === "board"} />
       </div>
 
@@ -46,11 +46,15 @@ export function CommunityMainHub(props: {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-lg font-extrabold text-slate-900">이번 주 숏폼</h2>
-          <Link href="/community/shorts" className="text-sm font-bold text-blue-700">
+          <Link href="/community/shortform" className="text-sm font-bold text-blue-700">
             전체 보기
           </Link>
         </div>
-        {props.shortError ? <div className="mt-2"><StateBanner kind="error" message={props.shortError} /></div> : null}
+        {props.shortError ? (
+          <div className="mt-2">
+            <StateBanner kind="error" message="숏폼을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />
+          </div>
+        ) : null}
         {!props.shortError && props.shortRows.length === 0 ? (
           <div className="mt-2">
             <StateBanner kind="empty" message="아직 등록된 숏폼이 없습니다. 숏폼 탭에서 새 글을 모아 볼 수 있어요." />
@@ -81,7 +85,11 @@ export function CommunityMainHub(props: {
             전체 보기
           </Link>
         </div>
-        {props.boardError ? <div className="mt-2"><StateBanner kind="error" message={props.boardError} /></div> : null}
+        {props.boardError ? (
+          <div className="mt-2">
+            <StateBanner kind="error" message="게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />
+          </div>
+        ) : null}
         {!props.boardError && props.boardRows.length === 0 ? (
           <div className="mt-2">
             <StateBanner kind="empty" message="아직 등록된 게시글이 없습니다. 게시판 탭에서 전체 글을 확인해 보세요." />
