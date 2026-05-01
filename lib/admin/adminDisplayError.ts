@@ -3,7 +3,7 @@
  * (조회 로직·에러 객체 자체는 변경하지 않고, UI에 넘기기 직전/렌더 시에만 사용)
  */
 
-export type AdminErrorDisplayContext = "default" | "notices" | "reports" | "settlements";
+export type AdminErrorDisplayContext = "default" | "notices" | "reports" | "settlements" | "mentorApprovals";
 
 const FORBIDDEN_SUBSTRINGS = [
   "supabase",
@@ -20,6 +20,7 @@ const FORBIDDEN_SUBSTRINGS = [
   "promotion_campaigns",
   "content_reports",
   "payout_items",
+  "mentor_profiles",
   "sourcenote",
   "probe",
 ] as const;
@@ -39,6 +40,8 @@ export function adminListErrorDescription(context: AdminErrorDisplayContext): st
       return "신고 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
     case "settlements":
       return "정산 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
+    case "mentorApprovals":
+      return "멘토 승인 목록을 불러올 수 없습니다. 아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
     default:
       return "아직 연결된 운영 데이터가 없거나 목록 연결을 준비 중입니다.";
   }

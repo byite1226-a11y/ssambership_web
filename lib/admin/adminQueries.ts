@@ -1,5 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
+import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
 type Row = Record<string, unknown>;
@@ -205,13 +206,14 @@ async function dashboardNoticesActiveCount(supabase: SupabaseClient): Promise<{ 
 export async function loadAdminDashboardSummary(supabase: SupabaseClient): Promise<AdminDashboardSummary> {
   const errors: AdminDashboardSummaryErrors = {};
 
-  const mTable = await firstReadableAdminTable(supabase, ["mentor_profiles"]);
+  const mentorRead = mentorProfilesAdminReadClient(supabase);
+  const mTable = await firstReadableAdminTable(mentorRead, ["mentor_profiles"]);
   let mentorApprovalPendingCount: number | null = null;
   if (!mTable.table) {
     errors.mentorApprovals = dashboardErrorMessage(mTable.error);
   } else {
     const p = await countQueuePending(
-      supabase,
+      mentorRead,
       mTable.table,
       ["verification_status", "status", "approval_status", "review_state"],
       ["pending", "submitted", "under_review", "awaiting", "PENDING"]
@@ -513,15 +515,16 @@ export type AdminListResult = {
 };
 
 export async function loadMentorApprovalsList(supabase: SupabaseClient, limit = 30): Promise<AdminListResult> {
-  const { table, error: te } = await firstReadableAdminTable(supabase, ["mentor_profiles"]);
+  const db = mentorProfilesAdminReadClient(supabase);
+  const { table, error: te } = await firstReadableAdminTable(db, ["mentor_profiles"]);
   if (!table) {
     return { table: null, sourceNote: "목록을 연결할 수 없습니다.", rows: [], error: te, keyHints: {} };
   }
-  const statusCol = await pickExistingColumn(supabase, table, ["verification_status", "status", "approval_status", "review_state"]);
+  const statusCol = await pickExistingColumn(db, table, ["verification_status", "status", "approval_status", "review_state"]);
   const preferPending = ["pending", "submitted", "under_review", "awaiting", "PENDING"] as const;
   if (statusCol.column) {
     for (const v of preferPending) {
-      const { data, error } = await supabase.from(table).select("*").eq(statusCol.column, v).limit(limit);
+      const { data, error } = await db.from(table).select("*").eq(statusCol.column, v).limit(limit);
       if (!error && data?.length) {
         return {
           table,
@@ -533,7 +536,7 @@ export async function loadMentorApprovalsList(supabase: SupabaseClient, limit = 
       }
     }
   }
-  const { rows, error: oe } = await selectWithOrder<Row>(supabase, table, limit);
+  const { rows, error: oe } = await selectWithOrder<Row>(db, table, limit);
   return {
     table,
     sourceNote: "최근 생성된 항목부터 표시합니다.",
@@ -541,6 +544,24 @@ export async function loadMentorApprovalsList(supabase: SupabaseClient, limit = 
     error: oe,
     keyHints: { status: statusCol.column, targetType: null, paymentRef: null },
   };
+}
+
+/** 멘토 승인 목록의 user_id에 대응하는 users 표시용(서비스 롤 등 읽기 클라이언트 권장). */
+export async function fetchAdminUsersDisplayByIds(
+  supabase: SupabaseClient,
+  ids: string[]
+): Promise<Map<string, { nickname: string | null; full_name: string | null }>> {
+  const map = new Map<string, { nickname: string | null; full_name: string | null }>();
+  const unique = [...new Set(ids.filter((x) => typeof x === "string" && x.length > 0))] as string[];
+  const slice = unique.slice(0, 80);
+  if (!slice.length) return map;
+  const { data } = await supabase.from("users").select("id, nickname, full_name").in("id", slice);
+  const rows = (data ?? []) as { id?: string; nickname?: string | null; full_name?: string | null }[];
+  for (const r of rows) {
+    const id = r.id != null ? String(r.id) : "";
+    if (id) map.set(id, { nickname: r.nickname ?? null, full_name: r.full_name ?? null });
+  }
+  return map;
 }
 
 export async function loadAdminReportsList(supabase: SupabaseClient, limit = 30): Promise<AdminListResult> {
