@@ -226,22 +226,36 @@ export async function loadAdminDashboardSummary(supabase: SupabaseClient): Promi
     }
   }
 
-  const rTable = await firstReadableAdminTable(supabase, ["reports", "abuse_reports", "content_reports"]);
   let reportOpenCount: number | null = null;
-  if (!rTable.table) {
-    errors.reports = dashboardErrorMessage(rTable.error);
-  } else {
-    const p = await countQueuePending(
-      supabase,
-      rTable.table,
-      ["status", "state", "report_status"],
-      ["open", "pending", "new", "submitted", "PENDING", "OPEN"]
-    );
-    if (!p.ok) {
+  const crProbe = await supabase.from("content_reports").select("id").limit(1);
+  if (!crProbe.error) {
+    const { count, error: crCountErr } = await supabase
+      .from("content_reports")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["pending", "reviewing"]);
+    if (crCountErr) {
       reportOpenCount = null;
-      errors.reports = dashboardErrorMessage(p.detail);
+      errors.reports = dashboardErrorMessage(crCountErr.message);
     } else {
-      reportOpenCount = p.n;
+      reportOpenCount = count ?? 0;
+    }
+  } else {
+    const rTable = await firstReadableAdminTable(supabase, ["reports", "abuse_reports", "content_reports"]);
+    if (!rTable.table) {
+      errors.reports = dashboardErrorMessage(rTable.error);
+    } else {
+      const p = await countQueuePending(
+        supabase,
+        rTable.table,
+        ["status", "state", "report_status"],
+        ["open", "pending", "new", "submitted", "PENDING", "OPEN"]
+      );
+      if (!p.ok) {
+        reportOpenCount = null;
+        errors.reports = dashboardErrorMessage(p.detail);
+      } else {
+        reportOpenCount = p.n;
+      }
     }
   }
 
@@ -564,8 +578,34 @@ export async function fetchAdminUsersDisplayByIds(
   return map;
 }
 
-export async function loadAdminReportsList(supabase: SupabaseClient, limit = 30): Promise<AdminListResult> {
-  const { table, error: te } = await firstReadableAdminTable(supabase, ["reports", "abuse_reports", "content_reports"]);
+const CONTENT_REPORTS_TABLE = "content_reports" as const;
+
+export async function loadAdminReportsList(supabase: SupabaseClient, limit = 50): Promise<AdminListResult> {
+  const crProbe = await supabase.from(CONTENT_REPORTS_TABLE).select("id").limit(1);
+  if (!crProbe.error) {
+    const { data, error } = await supabase
+      .from(CONTENT_REPORTS_TABLE)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    const tt = await pickExistingColumn(supabase, CONTENT_REPORTS_TABLE, [
+      "target_type",
+      "subject_type",
+      "resource_type",
+      "content_type",
+      "category",
+    ]);
+    const st = await pickExistingColumn(supabase, CONTENT_REPORTS_TABLE, ["status", "state", "report_status"]);
+    return {
+      table: CONTENT_REPORTS_TABLE,
+      sourceNote: "",
+      rows: error ? [] : ((data as Row[]) ?? []),
+      error: error ? error.message : null,
+      keyHints: { status: st.column ?? "status", targetType: tt.column ?? "target_type" },
+    };
+  }
+
+  const { table, error: te } = await firstReadableAdminTable(supabase, ["reports", "abuse_reports"]);
   if (!table) {
     return { table: null, sourceNote: "목록을 연결할 수 없습니다.", rows: [], error: te, keyHints: {} };
   }
