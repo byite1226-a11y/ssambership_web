@@ -7,14 +7,6 @@ import { approveAdminRefundAction, rejectAdminRefundAction } from "@/lib/admin/r
 
 type Row = Record<string, unknown>;
 
-function safeDecodeParam(s: string): string {
-  try {
-    return decodeURIComponent(s);
-  } catch {
-    return s;
-  }
-}
-
 function cell(v: unknown): string {
   if (v === null || v === undefined) return "—";
   if (typeof v === "object") return JSON.stringify(v);
@@ -98,12 +90,12 @@ export default async function AdminRefundsPage(props: PageProps) {
       <div className="space-y-4">
         {flashOk ? (
           <p className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 text-sm font-semibold text-emerald-950">
-            {safeDecodeParam(flashOk)}
+            {flashOk}
           </p>
         ) : null}
         {flashErr ? (
           <p className="rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm font-semibold text-red-950">
-            {safeDecodeParam(flashErr)}
+            {flashErr}
           </p>
         ) : null}
 

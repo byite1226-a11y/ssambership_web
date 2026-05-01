@@ -10,6 +10,7 @@ type GuardRole = AppRole;
 function loginPathFor(r: GuardRole): string {
   if (r === "student") return "/login/student";
   if (r === "mentor") return "/login/mentor";
+  if (r === "admin") return "/admin/login";
   return "/login";
 }
 
@@ -23,6 +24,7 @@ function rawReturnToFromRequestHeaders(h: Headers): string | null {
 function isAuthPathname(p: string): boolean {
   if (p === "/login" || p.startsWith("/login/")) return true;
   if (p === "/signup" || p.startsWith("/signup/")) return true;
+  if (p === "/admin/login" || p.startsWith("/admin/login?")) return true;
   return false;
 }
 
@@ -40,6 +42,12 @@ export async function requireRole(role: GuardRole): Promise<{ user: User; profil
   const { user, profile } = await getServerUserWithProfile();
   if (!user) {
     redirect(await loginRedirectUrlForGuard(role));
+  }
+  if (role === "admin") {
+    if (!profile || profile.role !== "admin") {
+      redirect(profile ? getPostLoginPath(profile.role) : await loginRedirectUrlForGuard("admin"));
+    }
+    return { user, profile };
   }
   if (profile && profile.role !== role) {
     redirect(getPostLoginPath(profile.role));

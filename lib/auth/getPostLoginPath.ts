@@ -76,6 +76,9 @@ export function resolvePostLoginPath(nextRaw: string | null | undefined, role: A
     return s;
   }
   if (role === "admin") {
+    if (s === "/admin/login" || s.startsWith("/admin/login?")) {
+      return "/admin";
+    }
     if (s.startsWith("/admin") || s === "/notifications" || s.startsWith("/notifications/")) {
       return s;
     }

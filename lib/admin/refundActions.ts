@@ -91,10 +91,11 @@ export async function approveAdminRefundAction(formData: FormData) {
   }
   const payload = asRpcPayload(data);
   if (payload.ok !== true) {
-    redirect(qError(payload.message ?? "환불을 승인할 수 없습니다."));
+    redirect(qError(payload.message ?? "환불 승인에 실패했습니다."));
   }
 
-  const msg = payload.message ?? "환불이 승인되었습니다.";
+  const msg =
+    payload.noop === true ? (payload.message ?? "이미 처리되었거나 대기 상태가 아닙니다.") : "환불 승인이 완료되었습니다.";
   revalidatePath(PATH);
   redirect(qOk(msg));
 }
@@ -130,10 +131,11 @@ export async function rejectAdminRefundAction(formData: FormData) {
   }
   const payload = asRpcPayload(data);
   if (payload.ok !== true) {
-    redirect(qError(payload.message ?? "환불을 거절할 수 없습니다."));
+    redirect(qError(payload.message ?? "환불 거절에 실패했습니다."));
   }
 
-  const msg = payload.message ?? "환불이 거절되었습니다.";
+  const msg =
+    payload.noop === true ? (payload.message ?? "이미 처리되었거나 대기 상태가 아닙니다.") : "환불 거절이 완료되었습니다.";
   revalidatePath(PATH);
   redirect(qOk(msg));
 }
