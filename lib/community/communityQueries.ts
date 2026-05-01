@@ -30,15 +30,6 @@ async function selectOrdered<T extends Row>(
   return { rows: (fb.data as T[] | null) ?? [], error: fmt(fb.error) };
 }
 
-export const COMMUNITY_DATA_POINTS = [
-  "shortform_posts (숏폼 전용)",
-  "community_posts (게시판 전용 — 숏과 분리)",
-  "comments (게시/숏 공통, post_type/ fk 구분 예정)",
-  "reports (신고)",
-  "users / mentor_profiles (작성자·role 뱃지)",
-  "source / rights fields (출처·권리)",
-] as const;
-
 export async function listShortformPosts(
   supabase: SupabaseClient,
   limit: number

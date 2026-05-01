@@ -56,7 +56,7 @@ export default async function CommunityShortformPage(props: Props) {
                 {typeof r.id === "string" ? (
                   <Link
                     className="mt-4 inline-flex w-full justify-center rounded-xl bg-blue-600 py-2 text-center text-xs font-bold text-white shadow-sm hover:bg-blue-700"
-                    href={`/community/shorts/${r.id}`}
+                    href={`/community/shortform/${r.id}`}
                   >
                     자세히 보기
                   </Link>

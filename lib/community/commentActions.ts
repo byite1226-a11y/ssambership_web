@@ -75,6 +75,7 @@ export async function submitCommunityCommentAction(formData: FormData) {
     revalidatePath("/community/shorts");
     revalidatePath("/community/shortform");
     revalidatePath(`/community/shorts/${postId}`);
+    revalidatePath(`/community/shortform/${postId}`);
   }
   revalidatePath("/community");
 

@@ -50,7 +50,8 @@ export async function submitMentorCommunityPost(formData: FormData) {
     revalidatePath("/community/shortform");
     revalidatePath("/community");
     revalidatePath(`/community/shorts/${r.id}`);
-    redirect(`/community/shorts/${r.id}`);
+    revalidatePath(`/community/shortform/${r.id}`);
+    redirect(`/community/shortform/${r.id}`);
   }
 
   const r2 = await insertMentorBoardPost(supabase, user.id, input);

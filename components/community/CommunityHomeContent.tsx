@@ -21,7 +21,7 @@ function ShortRowCard({ r, i }: { r: Row; i: number }) {
       <p className="text-sm font-extrabold text-slate-900">{pickTitle(r)}</p>
       <p className="mt-1 line-clamp-2 text-xs text-slate-600">{pickExcerpt(r) || "내용을 확인해 보세요."}</p>
       {id ? (
-        <Link href={`/community/shorts/${id}`} className="mt-2 inline-block text-xs font-bold text-blue-700 hover:underline">
+        <Link href={`/community/shortform/${id}`} className="mt-2 inline-block text-xs font-bold text-blue-700 hover:underline">
           글 읽기
         </Link>
       ) : null}

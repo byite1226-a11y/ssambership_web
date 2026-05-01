@@ -69,7 +69,7 @@ export function CommunityMainHub(props: {
               <p className="text-sm font-extrabold text-slate-900">{pickTitle(r)}</p>
               <p className="mt-1 line-clamp-2 text-xs text-slate-600">{pickExcerpt(r) || "내용이 곧 표시돼요."}</p>
               {typeof r.id === "string" ? (
-                <Link href={`/community/shorts/${r.id}`} className="mt-2 inline-block text-xs font-bold text-blue-700">
+                <Link href={`/community/shortform/${r.id}`} className="mt-2 inline-block text-xs font-bold text-blue-700">
                   글 읽기
                 </Link>
               ) : null}
