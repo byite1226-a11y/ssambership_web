@@ -11,30 +11,29 @@ export default async function AdminMentorApprovalsPage() {
 
   return (
     <PageScaffold
-      eyebrow="Admin / Mentor Approvals"
+      eyebrow="관리자 / 멘토 승인"
       title="멘토 승인 관리"
-      description="mentor_profiles(또는 이에 준하는 테이블)에서 읽은 실제 행. 승인/반려는 RLS+server action 연결 전 단계."
+      description="멘토 신청 내역을 검토하고 승인 또는 반려할 수 있습니다."
       ctas={[
         { href: "/admin", label: "대시보드", tone: "slate" },
         { href: "/admin/audit-logs", label: "감사 로그", tone: "blue" },
       ]}
       sections={[
-        { title: "읽기 소스", body: list.table ? `테이블: ${list.table}` : list.error ?? "—", status: list.table ? "connected" : "skeleton" },
-        { title: "감사·알림", body: "승인 결과 → audit_logs / notifications (다음).", status: "skeleton" },
+        { title: "목록", body: "승인 대기 건이 우선 표시됩니다.", status: list.table ? "connected" : "skeleton" },
+        { title: "알림", body: "승인·반려 결과 알림은 추후 연결됩니다.", status: "skeleton" },
       ]}
-      emptyState="pending 필터에 맞는 행이 없으면 최근 행(날짜/ id 정렬)으로 대체 표시하거나 0건 안내."
-      dataPoints={["mentor_profiles", "users", "notifications", "audit_logs", "verification_docs(후보)"]}
+      emptyState="승인 대기 멘토 신청이 없거나, 아직 표시할 항목이 없습니다."
+      dataPoints={["신청 정보", "검증 서류", "승인 상태", "처리 이력"]}
     >
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-extrabold text-slate-800">승인 대기 / 목록</span>
+          <span className="text-sm font-extrabold text-slate-800">승인 대기 목록</span>
           <AdminStatusBadge result={list} />
         </div>
-        <AdminRecordTable result={list} idLabel="멘토 프로필 id" />
+        <AdminRecordTable result={list} />
         <div className="grid gap-4 lg:grid-cols-[1fr,280px]">
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-sm font-extrabold text-slate-800">승인 / 반려 (자리)</p>
-            <p className="text-xs text-slate-500">{list.sourceNote}</p>
+            <p className="text-sm font-extrabold text-slate-800">승인 · 반려</p>
             <AdminApproveRejectRow />
           </div>
           <AdminDetailPanelSlot />

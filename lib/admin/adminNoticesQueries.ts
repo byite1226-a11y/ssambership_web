@@ -2,6 +2,9 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { firstReadableAdminTable } from "@/lib/admin/adminQueries";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
+const NOTICE_LIST_FAIL = "공지 목록을 불러올 수 없습니다.";
+const PROMO_LIST_FAIL = "프로모션 목록을 불러올 수 없습니다.";
+
 type Row = Record<string, unknown>;
 
 function fmt(e: PostgrestError | null): string | null {
@@ -126,18 +129,18 @@ export async function loadAdminNoticesPage(supabase: SupabaseClient, listLimit =
 
   if (nProbe.table) {
     const { rows, error } = await selectOrderedList(supabase, nProbe.table, listLimit);
-    if (error) listErrors.push(`notices: ${error}`);
+    if (error) listErrors.push(NOTICE_LIST_FAIL);
     noticeSection = { name: "notices" as const, table: nProbe.table, error, rows: error ? [] : rows };
   } else {
-    listErrors.push(`notices: ${nProbe.error}`);
+    listErrors.push(NOTICE_LIST_FAIL);
   }
 
   if (pProbe.table) {
     const { rows, error } = await selectOrderedList(supabase, pProbe.table, listLimit);
-    if (error) listErrors.push(`promotions: ${error}`);
+    if (error) listErrors.push(PROMO_LIST_FAIL);
     promoSection = { name: "promotions" as const, table: pProbe.table, error, rows: error ? [] : rows };
   } else {
-    listErrors.push(`promotions: ${pProbe.error}`);
+    listErrors.push(PROMO_LIST_FAIL);
   }
 
   const mappedNotices = noticeSection ? mapRows(noticeSection.rows, "notices") : [];

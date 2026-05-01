@@ -2,6 +2,7 @@
 
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitAdminNoticeDraft } from "@/lib/admin/adminNoticesActions";
+import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 
 type Hints = {
   title: string | null;
@@ -15,18 +16,16 @@ type Hints = {
 
 export function AdminNoticesFormSkeleton(props: { hints: Hints; errorMessage: string | null; ok: boolean; hintTable: string | null }) {
   const { hints, errorMessage, ok, hintTable } = props;
+  const safeError = toAdminDisplayError(errorMessage, "notices");
   return (
     <form action={submitAdminNoticeDraft} className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-      <h3 className="text-sm font-extrabold text-slate-900">새 항목 (draft insert)</h3>
-      {ok ? <p className="text-sm font-bold text-emerald-800">저장/삽입 성공(목록 Revalidate). 상세 id는 쿼리 <code>new=</code> (후속).</p> : null}
-      {errorMessage ? <p className="text-sm font-bold text-red-800">{errorMessage}</p> : null}
+      <h3 className="text-sm font-extrabold text-slate-900">새 공지 또는 프로모션</h3>
+      {ok ? <p className="text-sm font-bold text-emerald-800">저장되었습니다. 목록에서 확인할 수 있습니다.</p> : null}
+      {safeError ? <p className="text-sm font-bold text-red-800">{safeError}</p> : null}
       {hintTable && hints ? (
-        <p className="text-xs text-slate-500">
-          컬럼 힌트 ({hintTable}): title→{hints.title ?? "?"}, body→{hints.body ?? "?"}, type→{hints.type ?? "?"}, target→
-          {hints.target ?? "?"}, 기간→{hints.start ?? "?"} / {hints.end ?? "?"}, 활성→{hints.active ?? "?"}
-        </p>
+        <p className="text-xs text-slate-500">입력한 내용은 목록 형식에 맞게 저장됩니다.</p>
       ) : (
-        <p className="text-xs text-slate-500">notices / promotions 중 읽기 가능한 첫 테이블에 insert(후보만)합니다.</p>
+        <p className="text-xs text-slate-500">공지·프로모션 저장소에 초안으로 등록됩니다.</p>
       )}
 
       <label className="block text-sm font-extrabold text-slate-800">
@@ -47,7 +46,7 @@ export function AdminNoticesFormSkeleton(props: { hints: Hints; errorMessage: st
         </label>
         <label className="text-sm font-extrabold text-slate-800">
           타겟/노출 화면(문자)
-          <input name="target" className="mt-1 w-full rounded border border-slate-200 bg-white px-2 py-1.5" placeholder="home, pricing, …" />
+          <input name="target" className="mt-1 w-full rounded border border-slate-200 bg-white px-2 py-1.5" placeholder="예: 홈, 요금제" />
         </label>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -62,7 +61,7 @@ export function AdminNoticesFormSkeleton(props: { hints: Hints; errorMessage: st
       </div>
       <label className="flex items-center gap-2 text-sm text-slate-800">
         <input type="checkbox" name="active" value="on" defaultChecked />
-        활성(또는 draft/비활성·스키마에 맞는 값으로 후처리)
+        활성(비활성은 저장 후 목록에서 조정)
       </label>
       <FormSubmitButton
         idleLabel="저장(드래프트)"

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { AdminDisputeListItem } from "@/lib/disputes/disputeListQueries";
+import { adminListFetchFailedCopy } from "@/lib/admin/adminDisplayError";
 
 const badge = (s: string) => {
   const u = s.toLowerCase();
@@ -16,24 +17,34 @@ type Props = {
 };
 
 /**
- * 관리자 분쟁 목록 — 학생용 `DisputesListView`와 동일 배지·CTA 패턴, 컬럼만 확장
+ * 관리자 분쟁 목록 — 학생용 목록과 유사한 배지·상세 이동 패턴
  */
 export function AdminDisputesListView(props: Props) {
-  const { items, listError, table, probe } = props;
+  const { items, listError, table, probe: _probe } = props;
+  void _probe;
   if (listError && !items.length) {
-    return <p className="text-sm font-bold text-amber-900">조회: {listError}</p>;
+    const { title, description } = adminListFetchFailedCopy("default");
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-950">
+        <p className="font-semibold">{title}</p>
+        <p className="mt-1 text-xs text-amber-900/95">{description}</p>
+      </div>
+    );
   }
   if (!table) {
-    return <p className="text-sm text-slate-600">disputes 계열 테이블을 읽을 수 없습니다. {listError}</p>;
+    const { title, description } = adminListFetchFailedCopy("default");
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-950">
+        <p className="font-semibold">{title}</p>
+        <p className="mt-1 text-xs text-amber-900/95">{description}</p>
+      </div>
+    );
   }
   if (!items.length) {
-    return <p className="text-sm text-slate-600">분쟁 0건. {probe}</p>;
+    return <p className="text-sm text-slate-600">진행 중인 분쟁이 없습니다.</p>;
   }
   return (
     <div className="space-y-2 text-sm">
-      <p className="text-xs text-slate-500">
-        {table} · {probe}
-      </p>
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full min-w-[960px] text-left text-sm">
           <thead>
@@ -41,7 +52,7 @@ export function AdminDisputesListView(props: Props) {
               <th className="px-2 py-2">사건 제목·유형</th>
               <th className="px-2 py-2">상태</th>
               <th className="px-2 py-2">신청·학생·멘토</th>
-              <th className="px-2 py-2">주문·결제·구독(FK)</th>
+              <th className="px-2 py-2">주문·결제·구독</th>
               <th className="px-2 py-2">생성 / 수정</th>
               <th className="px-2 py-2" />
             </tr>

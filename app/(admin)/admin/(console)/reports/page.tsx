@@ -8,37 +8,32 @@ import { loadAdminReportsList } from "@/lib/admin/adminQueries";
 export default async function AdminReportsPage() {
   const supabase = await createClient();
   const list = await loadAdminReportsList(supabase, 30);
-  const targetHint = list.keyHints.targetType;
-
   return (
     <PageScaffold
-      eyebrow="Admin / Reports"
+      eyebrow="관리자 / 신고"
       title="신고 관리"
-      description="reports / abuse_reports 등 읽기 가능한 첫 테이블의 실제 행. 질문방·커뮤니티 소스 쿼리는 변경 없음(관리자 읽기만)."
+      description="사용자가 접수한 신고를 확인하고 조치할 수 있습니다."
       ctas={[
         { href: "/admin/reviews", label: "리뷰 관리", tone: "slate" },
         { href: "/admin", label: "대시보드", tone: "blue" },
       ]}
       sections={[
-        { title: "대상 유형", body: targetHint ? `컬럼 힌트: ${targetHint}` : "target_type / subject_type / resource_type (스키마 확정)", status: targetHint ? "connected" : "skeleton" },
-        { title: "조치", body: "경고/숨김/정지: moderation + audit (다음).", status: "skeleton" },
+        { title: "신고 유형", body: "접수된 신고의 유형과 상태를 확인합니다.", status: "connected" },
+        { title: "조치", body: "검토 후 필요한 운영 조치를 진행합니다.", status: "skeleton" },
       ]}
-      emptyState="신고 0건이면 안내. 열/RLS가 맞지 않으면 skeleton + 오류."
-      dataPoints={["reports", "abuse_reports", "content_reports", "disputes(후보)", "audit_logs"]}
+      emptyState="접수된 신고가 없습니다."
+      dataPoints={["접수 내용", "대상 유형", "처리 상태", "처리 이력"]}
     >
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-extrabold text-slate-800">신고 목록</span>
           <AdminStatusBadge result={list} />
-          {targetHint ? (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-800">대상 유형 열: {targetHint}</span>
-          ) : null}
         </div>
-        <AdminRecordTable result={list} />
+        <AdminRecordTable result={list} errorDisplayContext="reports" />
         <div className="grid gap-4 lg:grid-cols-[1fr,280px]">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
-            <p className="font-extrabold text-slate-800">증거/원문</p>
-            <p className="mt-1">thread_id / post_id / message_id 등 링크는 스키마 확정 후 + 상세 라우트</p>
+            <p className="font-extrabold text-slate-800">원문·증빙</p>
+            <p className="mt-1">게시글·메시지 등 연결 링크는 상세 화면에서 확인할 수 있도록 준비 중입니다.</p>
           </div>
           <AdminDetailPanelSlot />
         </div>
