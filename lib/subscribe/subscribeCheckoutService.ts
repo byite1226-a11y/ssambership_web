@@ -98,6 +98,118 @@ function planRowDebitAmountCents(planRow: Row): number {
   return Math.round(krwDisplay * 100);
 }
 
+/** DB `record_subscription_cash_debit`: idempotency_key = 'sub_debit_' || payment_id */
+function subscriptionCashDebitIdempotencyKey(paymentId: string): string {
+  return `sub_debit_${paymentId}`;
+}
+
+async function hasExistingSubscriptionCashDebitLedger(paymentId: string): Promise<boolean> {
+  const admin = createServiceRoleClient();
+  const key = subscriptionCashDebitIdempotencyKey(paymentId);
+  const { data, error } = await admin.from("cash_ledger").select("id").eq("idempotency_key", key).maybeSingle();
+  if (error) {
+    console.error("[hasExistingSubscriptionCashDebitLedger] select failed", { paymentId, key, error });
+    return false;
+  }
+  return Boolean(data && (data as Row).id != null);
+}
+
+/** `newSubscription`: 차감 전제 불충족 시 전체 체크아웃 실패. `alreadySucceeded`: 구독·결제 성과 유지, 원장만 스킵·로그. */
+type SubscriptionCashLedgerRepairMode = "newSubscription" | "alreadySucceeded";
+
+/**
+ * 플랜 기준 차감액이 양수이고 구독 id가 있을 때만: 원장에 `sub_debit_<paymentId>` 가 없으면 RPC 1회.
+ * RPC가 멱등(on conflict do nothing)이므로 레이스에서도 이중 차감 없음.
+ */
+async function repairMissingSubscriptionCashLedgerIfNeeded(
+  supabase: SupabaseClient,
+  args: {
+    mode: SubscriptionCashLedgerRepairMode;
+    studentId: string;
+    paymentId: string;
+    mentorId: string;
+    planTier: SubscribePlanTier;
+    subscriptionId: string | null;
+    /** 신규 구독 경로에서 이미 조회한 플랜 행 — 재조회 실패 시에도 차감액을 동일하게 쓰기 위함 */
+    planRowHint?: Row | null;
+  }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { mode, studentId, paymentId, mentorId, planTier, subscriptionId, planRowHint } = args;
+  const logTag = `[repairMissingSubscriptionCashLedger:${mode}]`;
+
+  let planRow: Row | null = planRowHint ?? null;
+  if (!planRow) {
+    const plans = await fetchPlansForMentor(supabase, mentorId);
+    if (plans.error) {
+      console.error(`${logTag} fetchPlansForMentor`, plans.error, { paymentId, mentorId });
+      if (mode === "alreadySucceeded") {
+        console.warn(`${logTag} skip ledger repair (plan fetch failed); preserving succeeded payment + subscription UX`, {
+          paymentId,
+          studentId,
+        });
+        return { ok: true };
+      }
+      return {
+        ok: false,
+        error: "플랜 정보를 불러오지 못해 캐시 원장을 점검·반영할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      };
+    }
+    const { byTier } = assignPlansByTier(plans.rows);
+    planRow = byTier[planTier];
+  }
+  const amountCents = planRow ? planRowDebitAmountCents(planRow) : 0;
+  if (amountCents <= 0) {
+    const details = {
+      studentId,
+      paymentId,
+      mentorId,
+      planTier,
+      hasPlanRow: Boolean(planRow),
+      amountCents,
+    };
+    if (mode === "newSubscription") {
+      console.error(`${logTag} non-positive debit amount (blocking new subscription)`, details);
+      return {
+        ok: false,
+        error:
+          "구독 플랜에서 캐시 차감할 유효 금액을 찾을 수 없습니다. 멘토 플랜 금액 설정을 확인하거나 잠시 후 다시 시도해 주세요.",
+      };
+    }
+    console.warn(`${logTag} skip ledger repair: non-positive debit amount (no subscription cash debit for this path)`, details);
+    return { ok: true };
+  }
+  if (!subscriptionId) {
+    const details = {
+      studentId,
+      paymentId,
+      mentorId,
+      planTier,
+      amountCents,
+    };
+    if (mode === "newSubscription") {
+      console.error(`${logTag} missing subscriptionId (blocking new subscription)`, details);
+      return {
+        ok: false,
+        error: "구독 정보가 올바르지 않아 캐시 원장을 반영할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      };
+    }
+    console.warn(
+      `${logTag} skip ledger repair: no active subscription id for pair (cannot attach subscription debit row)`,
+      details
+    );
+    return { ok: true };
+  }
+  if (await hasExistingSubscriptionCashDebitLedger(paymentId)) {
+    return { ok: true };
+  }
+  console.warn(`${logTag} applying subscription cash debit (ledger row was missing for this payment)`, {
+    paymentId,
+    subscriptionId,
+    amountCents,
+  });
+  return recordSubscriptionCashDebitRpc(studentId, subscriptionId, paymentId, amountCents);
+}
+
 async function recordSubscriptionCashDebitRpc(
   userId: string,
   subscriptionId: string,
@@ -105,7 +217,16 @@ async function recordSubscriptionCashDebitRpc(
   amountCents: number
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (amountCents <= 0) {
-    return { ok: true };
+    console.error("[recordSubscriptionCashDebitRpc] refused: p_amount_cents must be positive (019 RPC)", {
+      userId,
+      subscriptionId,
+      paymentId,
+      amountCents,
+    });
+    return {
+      ok: false,
+      error: "구독 플랜에서 캐시 차감 금액을 확인할 수 없습니다. 플랜 금액 설정을 점검해 주세요.",
+    };
   }
   try {
     const admin = createServiceRoleClient();
@@ -118,7 +239,10 @@ async function recordSubscriptionCashDebitRpc(
     if (error) {
       const m = String(error.message ?? error);
       if (/CASH_INSUFFICIENT|잔액|balance|P0001/i.test(m) || m.includes("CASH")) {
-        return { ok: false, error: "캐시 잔액이 부족합니다. 충전 후 다시 시도해 주세요." };
+        return {
+          ok: false,
+          error: "캐시 잔액이 부족합니다. 캐시 충전 후 다시 시도하거나 운영팀에 문의해 주세요.",
+        };
       }
       return { ok: false, error: "캐시 정산(구독 결제)에 실패했습니다. 잠시 후 다시 시도해 주세요." };
     }
@@ -138,7 +262,15 @@ async function tryReversalSubscriptionCashDebit(
   subscriptionId: string,
   amountCents: number
 ): Promise<void> {
-  if (amountCents <= 0) return;
+  if (amountCents <= 0) {
+    console.error("[tryReversalSubscriptionCashDebit] skip rollback: non-positive amountCents", {
+      userId,
+      paymentId,
+      subscriptionId,
+      amountCents,
+    });
+    return;
+  }
   try {
     const admin = createServiceRoleClient();
     const { error } = await admin.rpc("record_subscription_cash_rollback", {
@@ -299,15 +431,27 @@ export async function finalizeSubscriptionCheckout(
       const existingSub = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
       const subscriptionId = existingSub ? String((existingSub.row as Row).id ?? "") : null;
       /**
-       * 결제가 이미 성공 상태인 complete 재호출(멱등)에서는 캐시 차감을 다시 하지 않는다.
-       * 정상 앱 complete 흐름에서는 cash debit 이후 payment를 succeeded로 마킹하므로,
-       * 이 분기는 이미 차감된 결제의 room 보장/복구 경로다.
-       * 재시도 시 중복 차감/잔액 부족으로 room 연결까지 막히면 PaymentForm의 두 번째 complete가 무의미해질 수 있어,
-       * 멱등 재호출에서는 차감을 생략한다.
-       * 단, 향후 PG webhook이 앱 밖에서 payment를 succeeded로 먼저 변경하는 구조가 생기면
-       * cash_ledger 보정 로직이 필요하다.
+       * 결제가 이미 성공 상태인 complete 재호출(멱등)에서는 **기존 원장이 있으면** RPC를 다시 호출하지 않는다
+       * (`sub_debit_<paymentId>` 멱등 키 + `record_subscription_cash_debit` on conflict do nothing).
+       * PG·웹훅 등으로 payment만 먼저 succeeded 된 뒤 앱이 이 분기만 탄 경우 원장 누락이 있을 수 있어,
+       * 활성 구독 + 플랜 차감액이 있으면 원장이 없을 때만 1회 보정한다(이중 차감 없음).
        */
       const subIdForRoom = subscriptionId && subscriptionId.length > 0 ? subscriptionId : null;
+      const ledgerRepair = await repairMissingSubscriptionCashLedgerIfNeeded(supabase, {
+        mode: "alreadySucceeded",
+        studentId,
+        paymentId,
+        mentorId,
+        planTier,
+        subscriptionId: subIdForRoom,
+      });
+      if (!ledgerRepair.ok) {
+        return {
+          ok: false,
+          error: ledgerRepair.error,
+          code: "db",
+        };
+      }
       const roomR = await ensureMentorStudentRoomWithServiceRetry(
         supabase,
         studentId,
@@ -371,12 +515,18 @@ export async function finalizeSubscriptionCheckout(
   subId = subInsert.subscriptionId;
 
   const amountCents = planRowDebitAmountCents(planRow);
-  if (amountCents > 0) {
-    const d = await recordSubscriptionCashDebitRpc(studentId, subId, paymentId, amountCents);
-    if (!d.ok) {
-      await tryDeleteSubscriptionById(supabase, subId);
-      return { ok: false, error: d.error, code: "db" };
-    }
+  const debit = await repairMissingSubscriptionCashLedgerIfNeeded(supabase, {
+    mode: "newSubscription",
+    studentId,
+    paymentId,
+    mentorId,
+    planTier,
+    subscriptionId: subId,
+    planRowHint: planRow,
+  });
+  if (!debit.ok) {
+    await tryDeleteSubscriptionById(supabase, subId);
+    return { ok: false, error: debit.error, code: "db" };
   }
 
   const payUpdate = await markPaymentSucceeded(supabase, payTable, paymentId, stCol);
