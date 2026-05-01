@@ -1,4 +1,5 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
 type Row = Record<string, unknown>;
@@ -61,7 +62,7 @@ async function countQueuePending(
   table: string,
   colCandidates: readonly string[],
   valueCandidates: readonly string[]
-): Promise<{ n: number; detail: string; ok: boolean }> {
+): Promise<{ n: number; detail: string; ok: boolean; usedTotalFallback?: boolean }> {
   for (const col of colCandidates) {
     const { column } = await pickExistingColumn(supabase, table, [col]);
     if (!column) continue;
@@ -74,7 +75,7 @@ async function countQueuePending(
   }
   const t = await countAll(supabase, table);
   if (t.n === null) return { n: 0, detail: t.error ?? "건수를 확인할 수 없습니다.", ok: false };
-  return { n: t.n, detail: `전체 ${t.n}건`, ok: true };
+  return { n: t.n, detail: `전체 ${t.n}건`, ok: true, usedTotalFallback: true };
 }
 
 // —— dashboard —— //
@@ -82,11 +83,12 @@ async function countQueuePending(
 export const ADMIN_DASHBOARD_DATA_MODEL = [
   "멘토 인증·승인",
   "신고 접수",
+  "분쟁",
   "환불",
   "리뷰·평가",
   "정산·지급",
   "감사·기록",
-  "공지·분쟁",
+  "공지·프로모션",
 ] as const;
 
 export type AdminQueueMetric = {
@@ -99,11 +101,148 @@ export type AdminQueueMetric = {
 
 export type AdminScaffold = { title: string; body: string; status: "connected" | "skeleton" };
 
-export async function loadAdminDashboardMetrics(
-  supabase: SupabaseClient
-): Promise<{ queueCards: AdminQueueMetric[]; scaffolds: AdminScaffold[]; globalError: string | null }> {
+function safeDashboardError(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  return toAdminDisplayError(raw, "default") ?? "목록을 불러올 수 없습니다.";
+}
+
+/** errors 객체에 넣을 때: 원문이 없어도 항상 비어 있지 않은 한 줄 안내 */
+function dashboardErrorMessage(raw: string | undefined): string {
+  return safeDashboardError(raw) ?? "목록을 불러올 수 없습니다.";
+}
+
+export type AdminDashboardSummaryErrors = Partial<{
+  mentorApprovals: string;
+  reports: string;
+  disputes: string;
+  refunds: string;
+  reviews: string;
+  settlements: string;
+  auditLogs: string;
+  notices: string;
+}>;
+
+export type AdminDashboardSummary = {
+  mentorApprovalPendingCount: number | null;
+  reportOpenCount: number | null;
+  disputeActiveCount: number | null;
+  refundPendingCount: number | null;
+  reviewVisibleOrTotalCount: number | null;
+  settlementPendingAmount: number | null;
+  settlementPendingCount: number | null;
+  auditLogCount: number | null;
+  noticesActiveCount: number | null;
+  /** 상태 컬럼 매칭 실패 시 전체 건수로 대체한 경우 */
+  disputeApproximate: boolean;
+  errors: AdminDashboardSummaryErrors;
+};
+
+function wonLabel(n: number): string {
+  return `${new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 }).format(Math.round(n))}원`;
+}
+
+function metricState(n: number | null, okZero: boolean): AdminQueueMetric["state"] {
+  if (n === null) return "skeleton";
+  if (okZero && n === 0) return "empty";
+  return "connected";
+}
+
+async function dashboardRefundPendingCount(
+  supabase: SupabaseClient,
+  table: string
+): Promise<{ n: number | null; err?: string }> {
+  const { count, error } = await supabase.from(table).select("*", { count: "exact", head: true }).eq("status", "pending");
+  if (error) return { n: null, err: error.message };
+  return { n: count ?? 0 };
+}
+
+async function dashboardSettlementPending(supabase: SupabaseClient): Promise<{
+  count: number | null;
+  amount: number | null;
+  err?: string;
+}> {
+  const pageSize = 1000;
+  let offset = 0;
+  let amount = 0;
+  let count = 0;
+  for (;;) {
+    const { data, error } = await supabase
+      .from(COSI_TABLE)
+      .select("mentor_amount, status")
+      .in("status", ["pending", "on_hold", "payable"])
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (error) return { count: null, amount: null, err: error.message };
+    const rows = (data ?? []) as { mentor_amount?: unknown; status?: unknown }[];
+    if (!rows.length) break;
+    count += rows.length;
+    for (const r of rows) {
+      amount += toMoneyInt(r.mentor_amount);
+    }
+    if (rows.length < pageSize) break;
+    offset += pageSize;
+  }
+  return { count, amount, err: undefined };
+}
+
+async function dashboardNoticesActiveCount(supabase: SupabaseClient): Promise<{ n: number | null; err?: string }> {
+  let total = 0;
+  const errs: string[] = [];
+  const a = await supabase.from("app_notices").select("*", { count: "exact", head: true }).eq("is_active", true);
+  if (a.error) errs.push(a.error.message);
+  else total += a.count ?? 0;
+  const b = await supabase.from("promotion_campaigns").select("*", { count: "exact", head: true }).eq("is_active", true);
+  if (b.error) errs.push(b.error.message);
+  else total += b.count ?? 0;
+  if (errs.length === 2) return { n: null, err: errs[0] };
+  if (errs.length === 1 && total === 0) return { n: null, err: errs[0] };
+  return { n: total };
+}
+
+/**
+ * 관리자 대시보드용 집계(각 메뉴와 동일한 테이블·상태 기준을 최대한 맞춤).
+ */
+export async function loadAdminDashboardSummary(supabase: SupabaseClient): Promise<AdminDashboardSummary> {
+  const errors: AdminDashboardSummaryErrors = {};
+
   const mTable = await firstReadableAdminTable(supabase, ["mentor_profiles"]);
+  let mentorApprovalPendingCount: number | null = null;
+  if (!mTable.table) {
+    errors.mentorApprovals = dashboardErrorMessage(mTable.error);
+  } else {
+    const p = await countQueuePending(
+      supabase,
+      mTable.table,
+      ["verification_status", "status", "approval_status", "review_state"],
+      ["pending", "submitted", "under_review", "awaiting", "PENDING"]
+    );
+    if (!p.ok) {
+      mentorApprovalPendingCount = null;
+      errors.mentorApprovals = dashboardErrorMessage(p.detail);
+    } else {
+      mentorApprovalPendingCount = p.n;
+    }
+  }
+
   const rTable = await firstReadableAdminTable(supabase, ["reports", "abuse_reports", "content_reports"]);
+  let reportOpenCount: number | null = null;
+  if (!rTable.table) {
+    errors.reports = dashboardErrorMessage(rTable.error);
+  } else {
+    const p = await countQueuePending(
+      supabase,
+      rTable.table,
+      ["status", "state", "report_status"],
+      ["open", "pending", "new", "submitted", "PENDING", "OPEN"]
+    );
+    if (!p.ok) {
+      reportOpenCount = null;
+      errors.reports = dashboardErrorMessage(p.detail);
+    } else {
+      reportOpenCount = p.n;
+    }
+  }
+
   const dTable = await firstReadableAdminTable(supabase, [
     "disputes",
     "order_disputes",
@@ -111,113 +250,255 @@ export async function loadAdminDashboardMetrics(
     "user_disputes",
     "support_tickets",
   ] as const);
-  const fTable = await firstReadableAdminTable(supabase, ["refunds"]);
-  const wTable = await firstReadableAdminTable(supabase, ["reviews", "mentor_reviews"] as const);
-  const sTable = await firstReadableAdminTable(supabase, ["settlements", "payouts", "mentor_payouts", "payout_batches"]);
-  const aTable = await firstReadableAdminTable(supabase, ["audit_logs", "audit_events", "verification_logs", "admin_audit_logs"] as const);
-
-  const globalError =
-    [mTable, rTable, dTable, fTable, wTable, sTable, aTable]
-      .map((t) => t.error)
-      .find((e) => e && /row-level|permission|RLS|denied/i.test(e!)) || null;
-
-  function baseMetric(
-    tProbe: { table: string | null; error: string },
-    path: string,
-    label: string
-  ): AdminQueueMetric {
-    if (!tProbe.table) {
-      return { label, nText: "—", href: path, detail: "목록을 불러올 수 없습니다.", state: "skeleton" };
-    }
-    return { label, nText: "…", href: path, detail: "목록 연결됨", state: "skeleton" };
-  }
-
-  const qMentor = baseMetric(mTable, "/admin/mentor-approvals", "멘토 승인 대기");
-  const qRep = baseMetric(rTable, "/admin/reports", "신고 접수");
-  const qDis = baseMetric(dTable, "/admin/disputes", "분쟁 진행");
-  const qRef = baseMetric(fTable, "/admin/refunds", "환불 요청");
-  const qRev = baseMetric(wTable, "/admin/reviews", "리뷰 관리");
-  const qSet = baseMetric(sTable, "/admin/settlements", "정산 현황");
-  const qAud = baseMetric(aTable, "/admin/audit-logs", "감사 로그");
-
-  if (mTable.table) {
-    const p = await countQueuePending(
-      supabase,
-      mTable.table,
-      ["verification_status", "status", "approval_status", "review_state"],
-      ["pending", "submitted", "under_review", "awaiting", "PENDING"]
-    );
-    qMentor.nText = String(p.n);
-    qMentor.detail = p.detail;
-    qMentor.state = p.ok && p.n === 0 ? "empty" : p.ok ? "connected" : "skeleton";
-  }
-  if (rTable.table) {
-    const p = await countQueuePending(
-      supabase,
-      rTable.table,
-      ["status", "state", "report_status"],
-      ["open", "pending", "new", "submitted", "PENDING", "OPEN"]
-    );
-    qRep.nText = String(p.n);
-    qRep.detail = p.detail;
-    qRep.state = p.ok && p.n === 0 ? "empty" : p.ok ? "connected" : "skeleton";
-  }
-  if (dTable.table) {
+  let disputeActiveCount: number | null = null;
+  let disputeApproximate = false;
+  if (!dTable.table) {
+    errors.disputes = dashboardErrorMessage(dTable.error);
+  } else {
     const p = await countQueuePending(
       supabase,
       dTable.table,
       ["status", "state", "phase", "resolution", "outcome"],
       ["open", "pending", "new", "submitted", "PENDING", "OPEN", "review", "awaiting"]
     );
-    qDis.nText = String(p.n);
-    qDis.detail = p.detail;
-    qDis.state = p.ok && p.n === 0 ? "empty" : p.ok ? "connected" : "skeleton";
+    if (!p.ok) {
+      disputeActiveCount = null;
+      errors.disputes = dashboardErrorMessage(p.detail);
+    } else {
+      disputeActiveCount = p.n;
+      disputeApproximate = Boolean(p.usedTotalFallback);
+    }
   }
-  if (fTable.table) {
-    const p = await countQueuePending(
-      supabase,
-      fTable.table,
-      ["status", "refund_status", "state"],
-      ["pending", "requested", "open", "PENDING", "REVIEW"]
-    );
-    qRef.nText = String(p.n);
-    qRef.detail = p.detail;
-    qRef.state = p.ok && p.n === 0 ? "empty" : p.ok ? "connected" : "skeleton";
+
+  const fTable = await firstReadableAdminTable(supabase, ["refunds"]);
+  let refundPendingCount: number | null = null;
+  if (!fTable.table) {
+    errors.refunds = dashboardErrorMessage(fTable.error);
+  } else {
+    const rp = await dashboardRefundPendingCount(supabase, fTable.table);
+    if (rp.err) {
+      refundPendingCount = null;
+      errors.refunds = dashboardErrorMessage(rp.err);
+    } else {
+      refundPendingCount = rp.n;
+    }
   }
-  if (wTable.table) {
+
+  const wTable = await firstReadableAdminTable(supabase, ["reviews", "mentor_reviews", "mentor_review"] as const);
+  let reviewVisibleOrTotalCount: number | null = null;
+  if (!wTable.table) {
+    errors.reviews = dashboardErrorMessage(wTable.error);
+  } else {
     const t = await countAll(supabase, wTable.table);
-    qRev.nText = t.n !== null ? String(t.n) : "—";
-    qRev.detail = t.error ? "목록을 불러오지 못했습니다." : `전체 ${t.n}건`;
-    qRev.state = t.n === null ? "skeleton" : t.n === 0 ? "empty" : "connected";
+    if (t.n === null) {
+      reviewVisibleOrTotalCount = null;
+      errors.reviews = dashboardErrorMessage(t.error ?? undefined);
+    } else {
+      reviewVisibleOrTotalCount = t.n;
+    }
   }
-  if (sTable.table) {
-    const t = await countAll(supabase, sTable.table);
-    qSet.nText = t.n !== null ? String(t.n) : "—";
-    qSet.detail = t.error ? "목록을 불러오지 못했습니다." : `전체 ${t.n}건`;
-    qSet.state = t.n === null ? "skeleton" : t.n === 0 ? "empty" : "connected";
+
+  let settlementPendingAmount: number | null = null;
+  let settlementPendingCount: number | null = null;
+  const sp = await dashboardSettlementPending(supabase);
+  if (sp.err) {
+    errors.settlements = dashboardErrorMessage(sp.err);
+  } else {
+    settlementPendingAmount = sp.amount;
+    settlementPendingCount = sp.count;
   }
-  if (aTable.table) {
+
+  const aTable = await firstReadableAdminTable(supabase, ["audit_logs", "audit_events", "verification_logs", "admin_audit_logs"] as const);
+  let auditLogCount: number | null = null;
+  if (!aTable.table) {
+    errors.auditLogs = dashboardErrorMessage(aTable.error);
+  } else {
     const t = await countAll(supabase, aTable.table);
-    qAud.nText = t.n !== null ? String(t.n) : "—";
-    qAud.detail = t.error ? "목록을 불러오지 못했습니다." : `전체 ${t.n}건`;
-    qAud.state = t.n === null ? "skeleton" : t.n === 0 ? "empty" : "connected";
+    if (t.n === null) {
+      auditLogCount = null;
+      errors.auditLogs = dashboardErrorMessage(t.error ?? undefined);
+    } else {
+      auditLogCount = t.n;
+    }
   }
+
+  let noticesActiveCount: number | null = null;
+  const nc = await dashboardNoticesActiveCount(supabase);
+  noticesActiveCount = nc.n;
+  if (nc.n === null && nc.err) {
+    errors.notices = dashboardErrorMessage(nc.err);
+  }
+
+  return {
+    mentorApprovalPendingCount,
+    reportOpenCount,
+    disputeActiveCount,
+    refundPendingCount,
+    reviewVisibleOrTotalCount,
+    settlementPendingAmount,
+    settlementPendingCount,
+    auditLogCount,
+    noticesActiveCount,
+    disputeApproximate,
+    errors,
+  };
+}
+
+function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[] {
+  const fmt = (n: number | null) => (n === null ? "—" : String(n));
+
+  const qMentor: AdminQueueMetric = {
+    label: "멘토 승인 대기",
+    nText: fmt(summary.mentorApprovalPendingCount),
+    href: "/admin/mentor-approvals",
+    detail:
+      summary.mentorApprovalPendingCount === null
+        ? "목록을 불러올 수 없습니다."
+        : summary.mentorApprovalPendingCount === 0
+          ? "연결된 운영 데이터가 없습니다."
+          : "승인 대기·검토 중 멘토 신청 건수입니다.",
+    state: metricState(summary.mentorApprovalPendingCount, true),
+  };
+
+  const qRep: AdminQueueMetric = {
+    label: "신고 접수",
+    nText: fmt(summary.reportOpenCount),
+    href: "/admin/reports",
+    detail:
+      summary.reportOpenCount === null
+        ? "목록을 불러올 수 없습니다."
+        : summary.reportOpenCount === 0
+          ? "연결된 운영 데이터가 없습니다."
+          : "접수·진행 중 신고 건수입니다.",
+    state: metricState(summary.reportOpenCount, true),
+  };
+
+  const qDis: AdminQueueMetric = {
+    label: "분쟁 진행",
+    nText: fmt(summary.disputeActiveCount),
+    href: "/admin/disputes",
+    detail:
+      summary.disputeActiveCount === null
+        ? "목록을 불러올 수 없습니다."
+        : summary.disputeApproximate
+          ? "진행 상태 필터가 맞지 않아 전체 건수로 표시합니다. 확인이 필요합니다."
+          : "진행 중인 분쟁 추정 건수입니다.",
+    state: metricState(summary.disputeActiveCount, true),
+  };
+
+  const qRef: AdminQueueMetric = {
+    label: "환불 요청",
+    nText: fmt(summary.refundPendingCount),
+    href: "/admin/refunds",
+    detail:
+      summary.refundPendingCount === null
+        ? "목록을 불러올 수 없습니다."
+        : summary.refundPendingCount === 0
+          ? "연결된 운영 데이터가 없습니다."
+          : "상태가 대기인 환불 요청 건수입니다.",
+    state: metricState(summary.refundPendingCount, true),
+  };
+
+  const qRev: AdminQueueMetric = {
+    label: "리뷰 관리",
+    nText: fmt(summary.reviewVisibleOrTotalCount),
+    href: "/admin/reviews",
+    detail:
+      summary.reviewVisibleOrTotalCount === null
+        ? "목록을 불러올 수 없습니다."
+        : summary.reviewVisibleOrTotalCount === 0
+          ? "연결된 운영 데이터가 없습니다."
+          : "등록된 리뷰 전체 건수입니다.",
+    state: metricState(summary.reviewVisibleOrTotalCount, true),
+  };
+
+  const amt = summary.settlementPendingAmount ?? 0;
+  const qSet: AdminQueueMetric = {
+    label: "정산 현황",
+    nText:
+      summary.settlementPendingCount === null
+        ? "—"
+        : `${summary.settlementPendingCount}건`,
+    href: "/admin/settlements",
+    detail:
+      summary.settlementPendingAmount === null || summary.settlementPendingCount === null
+        ? "목록을 불러올 수 없습니다."
+        : `${wonLabel(amt)} 지급 대기(멘토 정산금)`,
+    state:
+      summary.settlementPendingCount === null && summary.settlementPendingAmount === null
+        ? "skeleton"
+        : summary.settlementPendingCount === 0
+          ? "empty"
+          : "connected",
+  };
+
+  const qAud: AdminQueueMetric = {
+    label: "감사 로그",
+    nText: fmt(summary.auditLogCount),
+    href: "/admin/audit-logs",
+    detail:
+      summary.auditLogCount === null
+        ? "목록을 불러올 수 없습니다."
+        : summary.auditLogCount === 0
+          ? "연결된 운영 데이터가 없습니다."
+          : "누적 로그 건수입니다.",
+    state: metricState(summary.auditLogCount, true),
+  };
+
+  const qNotices: AdminQueueMetric = {
+    label: "공지·프로모션",
+    nText: fmt(summary.noticesActiveCount),
+    href: "/admin/notices",
+    detail:
+      summary.noticesActiveCount === null
+        ? "목록을 불러올 수 없습니다."
+        : summary.noticesActiveCount === 0
+          ? "연결된 운영 데이터가 없습니다."
+          : "활성 공지·프로모션 합계입니다.",
+    state: metricState(summary.noticesActiveCount, true),
+  };
+
+  return [qMentor, qRep, qDis, qRef, qRev, qSet, qAud, qNotices];
+}
+
+export async function loadAdminDashboardMetrics(
+  supabase: SupabaseClient
+): Promise<{ queueCards: AdminQueueMetric[]; scaffolds: AdminScaffold[]; globalError: string | null }> {
+  const summary = await loadAdminDashboardSummary(supabase);
+  const queueCards = summaryToQueueCards(summary);
+
+  const hasErr = Object.keys(summary.errors).length > 0;
+  const globalError = hasErr ? "일부 집계를 불러오지 못했습니다. 각 메뉴에서 상세를 확인해 주세요." : null;
 
   const scaffolds: AdminScaffold[] = [
     {
       title: "운영 상태",
-      body: "주요 업무 메뉴의 연결과 목록 조회를 확인했습니다.",
-      status: globalError ? "skeleton" : "connected",
+      body: "주요 운영 메뉴와 최근 집계 상태를 확인할 수 있습니다.",
+      status: hasErr ? "skeleton" : "connected",
     },
     {
       title: "권한 보호",
-      body: "관리자만 접근할 수 있는 화면입니다.",
+      body: "관리자 권한이 확인된 세션에서만 접근할 수 있습니다.",
       status: "connected",
     },
-    { title: "다음 작업", body: "승인·신고·환불·정산·기록 등 세부 기능을 단계적으로 연결합니다.", status: "skeleton" },
+    {
+      title: "다음 작업",
+      body: "세부 처리는 각 관리 메뉴에서 진행합니다.",
+      status: "skeleton",
+    },
+    {
+      title: "운영 지표",
+      body: "최근 운영 데이터를 기준으로 집계합니다.",
+      status: "connected",
+    },
+    {
+      title: "긴급 알림",
+      body: "별도 알림 채널은 아직 연결되어 있지 않습니다.",
+      status: "skeleton",
+    },
   ];
 
-  return { queueCards: [qMentor, qRep, qDis, qRef, qRev, qSet, qAud], scaffolds, globalError };
+  return { queueCards, scaffolds, globalError };
 }
 
 // —— sub-pages: list fetches (실데이터, 없으면 empty + error) —— //
