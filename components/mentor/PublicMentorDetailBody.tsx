@@ -7,7 +7,9 @@ import { getStringField } from "@/lib/qna/safeSelect";
 import type { UserRow } from "@/lib/types/user";
 import {
   USER_UI_MENTOR_MEDIA_LOAD_FAILED,
+  USER_UI_MENTOR_PROFILE_LOAD_FAILED,
   USER_UI_MENTOR_REVIEWS_LOAD_FAILED,
+  USER_UI_MENTOR_USER_LOAD_FAILED,
 } from "@/lib/constants/userFacingMessages";
 
 function Field(props: { label: string; value: string; mono?: boolean }) {
@@ -34,6 +36,12 @@ export function PublicMentorDetailBody(props: {
   if (bundle.reviews.error) {
     console.error("[PublicMentorDetailBody] reviews", bundle.reviews.error, bundle.reviews.probe);
   }
+  if (bundle.userError) {
+    console.error("[PublicMentorDetailBody] userError", bundle.userError);
+  }
+  if (bundle.profileError) {
+    console.error("[PublicMentorDetailBody] profileError", bundle.profileError);
+  }
   const mediaRows = bundle.media.rows;
   const { byTier, fillProbe } = assignPlansByTier(bundle.plans.rows as Record<string, unknown>[]);
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
@@ -59,9 +67,11 @@ export function PublicMentorDetailBody(props: {
                     : display.university || display.department || "학교·학과 정보가 아직 없어요"}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">역할: {userRow.role} · 계정: {userRow.status}</p>
-                {bundle.userError ? <p className="mt-2 text-xs font-bold text-amber-800">사용자 정보: {bundle.userError}</p> : null}
+                {bundle.userError ? (
+                  <p className="mt-2 text-xs font-bold text-amber-800">{USER_UI_MENTOR_USER_LOAD_FAILED}</p>
+                ) : null}
                 {bundle.profileError ? (
-                  <p className="mt-1 text-xs font-bold text-amber-800">프로필: {bundle.profileError}</p>
+                  <p className="mt-1 text-xs font-bold text-amber-800">{USER_UI_MENTOR_PROFILE_LOAD_FAILED}</p>
                 ) : null}
               </div>
             </div>

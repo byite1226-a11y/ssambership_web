@@ -9,6 +9,16 @@ export const USER_UI_MENTOR_MEDIA_LOAD_FAILED =
   "멘토 자료를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 export const USER_UI_MENTOR_REVIEWS_LOAD_FAILED =
   "후기 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+export const USER_UI_MENTOR_USER_LOAD_FAILED =
+  "멘토 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+export const USER_UI_MENTOR_PROFILE_LOAD_FAILED =
+  "프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+
+/** 멘토 채널 */
+export const USER_UI_MENTOR_CHANNEL_LOAD_FAILED =
+  "채널 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+export const USER_UI_MENTOR_CHANNEL_EMPTY =
+  "아직 등록된 채널 콘텐츠가 없습니다. 멘토가 자료를 등록하면 이곳에서 확인할 수 있습니다.";
 
 /** 공개 캐시(/cash) */
 export const USER_UI_CASH_BALANCE_LOAD_FAILED =
