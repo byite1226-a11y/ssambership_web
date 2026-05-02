@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
 import { createClient } from "@/lib/supabase/server";
+import { isCommunityPostUuid } from "@/lib/community/communityQueries";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TABLE = "content_reports";
 
 const ALLOWED_REASONS = new Set([
@@ -47,12 +47,15 @@ export async function submitCommunityContentReportAction(formData: FormData) {
   if (variant !== "board" && variant !== "shortform") {
     redirect(applyReportSearch(returnPath || "/community", "err", "invalid"));
   }
-  if (!UUID_RE.test(postId)) {
+  if (!postId || !isCommunityPostUuid(postId)) {
+    console.error("[communityContentReport] rejected: missing or invalid target_id");
     redirect(applyReportSearch(returnPath || "/community", "err", "invalid"));
   }
   if (!returnPath.startsWith("/")) {
     redirect("/community");
   }
+
+  const targetId = postId;
 
   const reason = ALLOWED_REASONS.has(reasonRaw) ? reasonRaw : "기타";
   const descTrim = description.trim();
@@ -65,7 +68,7 @@ export async function submitCommunityContentReportAction(formData: FormData) {
   const { error } = await supabase.from(TABLE).insert({
     reporter_id: user.id,
     target_type,
-    target_id: postId,
+    target_id: targetId,
     reason,
     description: descriptionOut,
   });
@@ -86,11 +89,11 @@ export async function submitCommunityContentReportAction(formData: FormData) {
   revalidatePath("/admin/reports");
   revalidatePath("/admin");
   revalidatePath("/community/board");
-  revalidatePath(`/community/board/${postId}`);
+  revalidatePath(`/community/board/${targetId}`);
   revalidatePath("/community/shortform");
-  revalidatePath(`/community/shortform/${postId}`);
+  revalidatePath(`/community/shortform/${targetId}`);
   revalidatePath("/community/shorts");
-  revalidatePath(`/community/shorts/${postId}`);
+  revalidatePath(`/community/shorts/${targetId}`);
   revalidatePath("/community");
 
   redirect(applyReportSearch(returnPath, "ok"));
