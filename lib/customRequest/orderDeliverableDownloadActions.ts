@@ -80,24 +80,28 @@ export async function downloadCustomOrderDeliverableAction(formData: FormData): 
   const dr = drow as Row;
 
   const path = pickStoragePathFromDeliverableRow(dr);
-  if (!path || path.startsWith("http://") || path.startsWith("https://")) {
-    if (path?.startsWith("http")) {
-      redirect(path);
-    }
+  const trimmedPath = typeof path === "string" ? path.trim() : "";
+  if (!trimmedPath) {
     redirect(orderPath(orderId) + "?error=" + encodeURIComponent("이 납품에 연결된 스토리지 파일이 없습니다(텍스트-only 납품)."));
+  }
+  if (trimmedPath.startsWith("http://") || trimmedPath.startsWith("https://")) {
+    console.error("[downloadCustomOrderDeliverableAction] rejected storage_path: http(s) prefix");
+    redirect(
+      orderPath(orderId) + "?error=" + encodeURIComponent("납품 파일 경로가 올바르지 않아 다운로드할 수 없습니다.")
+    );
   }
 
   const vRaw = dr.version;
   const vNum = typeof vRaw === "number" && Number.isFinite(vRaw) ? vRaw : Number(vRaw);
   const expectedV = Number.isFinite(vNum) && vNum > 0 ? Math.floor(vNum) : undefined;
-  const pCheck = validateDeliverableStoragePath(path, orderId, expectedV);
+  const pCheck = validateDeliverableStoragePath(trimmedPath, orderId, expectedV);
   if (pCheck.ok === false) {
     redirect(orderPath(orderId) + "?error=" + encodeURIComponent("저장소 경로를 확인할 수 없어 다운로드할 수 없습니다."));
   }
 
   const { data: signed, error: se } = await supabase.storage
     .from(DELIVERABLE_STORAGE_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SEC);
+    .createSignedUrl(trimmedPath, SIGNED_URL_TTL_SEC);
   if (se || !signed?.signedUrl) {
     redirect(
       orderPath(orderId) + "?error=" + encodeURIComponent(se?.message ?? "다운로드 링크를 만들 수 없습니다. 잠시 후 다시 시도하세요.")

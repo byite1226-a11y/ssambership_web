@@ -402,12 +402,28 @@ export async function loadOrderBundle(
         deliv = { table: dT.table, sourceNote: `deliverables · ${fk}`, rows: (data as Row[]) ?? [], error: null };
       }
     } else {
-      const { rows, error } = await selectWithOrder<Row>(supabase, dT.table, 20);
-      deliv = { table: dT.table, sourceNote: "order_id FK 없음(후속)", rows, error };
+      console.warn("[loadOrderBundle] deliverables: order FK column unresolved; skipped child rows", {
+        orderId,
+        table: dT.table,
+      });
+      deliv = {
+        table: dT.table,
+        sourceNote: "납품: 주문 FK 컬럼을 찾지 못해 이 주문의 납품 목록을 표시하지 않습니다.",
+        rows: [],
+        error: null,
+      };
     }
   } else if (dT.table) {
-    const { rows, error } = await selectWithOrder<Row>(supabase, dT.table, 20);
-    deliv = { table: dT.table, sourceNote: oT.table ? "order 누락" : dT.error, rows, error };
+    console.warn("[loadOrderBundle] deliverables: order table missing; skipped unrelated rows", {
+      orderId,
+      deliverablesTable: dT.table,
+    });
+    deliv = {
+      table: dT.table,
+      sourceNote: oT.table ? "주문을 찾을 수 없어 납품 목록을 불러오지 않았습니다." : (dT.error ?? "납품 목록을 건너뜁니다."),
+      rows: [],
+      error: null,
+    };
   }
 
   const dis = await firstReadableCustomTable(supabase, ["disputes", "order_disputes", "custom_disputes"]);
@@ -418,8 +434,16 @@ export async function loadOrderBundle(
       const { data, error } = await supabase.from(dis.table).select("*").eq(fk, orderId).limit(20);
       disputes = { table: dis.table, sourceNote: "분쟁(조회만)", rows: (data as Row[]) ?? [], error: fmt(error) };
     } else {
-      const { rows, error } = await selectWithOrder<Row>(supabase, dis.table, 10);
-      disputes = { table: dis.table, sourceNote: "order FK 없음", rows, error };
+      console.warn("[loadOrderBundle] disputes: order FK column unresolved; skipped child rows", {
+        orderId,
+        table: dis.table,
+      });
+      disputes = {
+        table: dis.table,
+        sourceNote: "분쟁: 주문 FK 컬럼을 찾지 못해 이 주문의 분쟁 목록을 표시하지 않습니다.",
+        rows: [],
+        error: null,
+      };
     }
   }
 

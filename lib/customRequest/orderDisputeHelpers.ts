@@ -61,7 +61,8 @@ export async function getDisputeRowsForOrderId(
 }
 
 /**
- * 서버 액션에서 조회에 실패하면(테이블 없음 등) 잠그지 않는다. 열이 있을 때만 잠근다.
+ * 서버 액션 전용: 분쟁을 읽을 수 없으면(스키마 미배포·FK 미탐지) 기존과 같이 잠그지 않는다.
+ * 실제 조회 오류(RLS·일시 장애 등)는 보수적으로 잠근다. (호출부는 멘토/학생 액션·정산 삽입뿐.)
  */
 export async function getActiveDisputeBlockMessage(
   supabase: SupabaseClient,
@@ -69,7 +70,15 @@ export async function getActiveDisputeBlockMessage(
 ): Promise<string | null> {
   const { rows, error } = await getDisputeRowsForOrderId(supabase, orderId);
   if (error) {
-    return null;
+    const e = error;
+    if (
+      /relation|does not exist|schema cache/i.test(e) ||
+      /테이블 없음|disputes 테이블 없음|order FK 열 없음/i.test(e)
+    ) {
+      return null;
+    }
+    console.error("[getActiveDisputeBlockMessage] dispute query failed", { orderId, error: e });
+    return "분쟁 상태를 확인할 수 없어 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.";
   }
   if (hasActiveDisputeForOrderRows(rows)) {
     return "진행 중인 분쟁이 있어 이 작업을 할 수 없습니다.";
