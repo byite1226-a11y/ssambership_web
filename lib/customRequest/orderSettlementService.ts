@@ -21,6 +21,14 @@ type Row = Record<string, unknown>;
 
 const SETTLEMENT_TABLE = "custom_order_settlement_items" as const;
 
+/** 동시 수락·unique index로 인한 insert 충돌(Postgres 23505 등). */
+function isPostgresUniqueViolation(err: { code?: string; message?: string; details?: string; hint?: string } | null): boolean {
+  if (!err) return false;
+  if (err.code === "23505") return true;
+  const blob = [err.message, err.details, err.hint].filter(Boolean).join(" ").toLowerCase();
+  return /duplicate key|unique constraint|already exists/i.test(blob);
+}
+
 function pickOrderStudentId(r: Row): string | null {
   for (const k of ["student_id", "buyer_id", "user_id", "client_id", "author_id", "requester_id"] as const) {
     const v = r[k];
@@ -167,6 +175,21 @@ export async function insertCustomOrderSettlementIfRequiredBeforeComplete(
   if (insErr) {
     if (/relation|does not exist|schema cache/i.test(insErr.message)) {
       return { ok: false, error: "정산 예정을 저장할 수 없습니다. 스키마를 적용했는지 확인하세요." };
+    }
+    if (isPostgresUniqueViolation(insErr)) {
+      console.warn(
+        "[insertCustomOrderSettlementIfRequiredBeforeComplete] settlement unique violation (concurrent insert?), orderId:",
+        orderId
+      );
+      const verified = await loadCustomOrderSettlementItemByOrderId(supabase, orderId);
+      if (verified.error) {
+        console.warn(
+          "[insertCustomOrderSettlementIfRequiredBeforeComplete] post-unique verify read failed (still treating as already_exists)",
+          orderId
+        );
+      }
+      void verified.row;
+      return { ok: true, created: false, reason: "already_exists" };
     }
     return { ok: false, error: insErr.message };
   }
