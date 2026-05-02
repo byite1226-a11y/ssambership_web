@@ -11,6 +11,7 @@ import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsQueries";
 import { aggregateThreadStatsForRooms } from "@/lib/home/threadStats";
+import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 
 type Row = Record<string, unknown>;
 
@@ -28,7 +29,14 @@ export type MentorDashboardData = {
   connectedRoomCount: number;
   threadStats: Awaited<ReturnType<typeof aggregateThreadStatsForRooms>>;
   payouts: Awaited<ReturnType<typeof loadMentorPayoutsPageData>>;
-  customRecent: { table: string | null; rows: Row[]; error: string | null; probe: string };
+  customRecent: {
+    table: string | null;
+    rows: Row[];
+    error: string | null;
+    probe: string;
+    /** open / under_review 분쟁이 붙은 주문 id (RLS·당사자 한정) */
+    activeDisputeOrderIds: Set<string>;
+  };
   notifyProbe: { label: string; detail: string; status: "skeleton" | "connected" | "empty" };
 };
 
@@ -36,7 +44,13 @@ export async function fetchRecentCustomOrders(
   supabase: SupabaseClient,
   mentorId: string,
   limit = 5
-): Promise<{ table: string | null; rows: Row[]; error: string | null; probe: string }> {
+): Promise<{
+  table: string | null;
+  rows: Row[];
+  error: string | null;
+  probe: string;
+  activeDisputeOrderIds: Set<string>;
+}> {
   for (const t of ["custom_request_orders", "request_orders"] as const) {
     const { error: pe } = await supabase.from(t).select("id").limit(1);
     if (pe) continue;
@@ -48,7 +62,7 @@ export async function fetchRecentCustomOrders(
       "selected_mentor_id",
     ]);
     if (!mc) {
-      return { table: t, rows: [], error: null, probe: "" };
+      return { table: t, rows: [], error: null, probe: "", activeDisputeOrderIds: new Set() };
     }
     const o1 = await supabase
       .from(t)
@@ -58,17 +72,23 @@ export async function fetchRecentCustomOrders(
       .limit(limit);
     if (o1.error) {
       if (!/order|column/i.test(o1.error.message)) {
-        return { table: t, rows: [], error: o1.error.message, probe: "" };
+        return { table: t, rows: [], error: o1.error.message, probe: "", activeDisputeOrderIds: new Set() };
       }
       const o2 = await supabase.from(t).select("*").eq(mc, mentorId).limit(limit);
       if (o2.error) {
-        return { table: t, rows: [], error: o2.error.message, probe: "" };
+        return { table: t, rows: [], error: o2.error.message, probe: "", activeDisputeOrderIds: new Set() };
       }
-      return { table: t, rows: (o2.data as Row[]) ?? [], error: null, probe: "" };
+      const rows = (o2.data as Row[]) ?? [];
+      const ids = rows.map((r) => (typeof r.id === "string" ? r.id : "")).filter(Boolean);
+      const activeDisputeOrderIds = await fetchActiveOpenDisputeOrderIdSet(supabase, ids);
+      return { table: t, rows, error: null, probe: "", activeDisputeOrderIds };
     }
-    return { table: t, rows: (o1.data as Row[]) ?? [], error: null, probe: "" };
+    const rows = (o1.data as Row[]) ?? [];
+    const ids = rows.map((r) => (typeof r.id === "string" ? r.id : "")).filter(Boolean);
+    const activeDisputeOrderIds = await fetchActiveOpenDisputeOrderIdSet(supabase, ids);
+    return { table: t, rows, error: null, probe: "", activeDisputeOrderIds };
   }
-  return { table: null, rows: [], error: null, probe: "" };
+  return { table: null, rows: [], error: null, probe: "", activeDisputeOrderIds: new Set() };
 }
 
 async function notificationsCountProbe(
@@ -124,11 +144,15 @@ export async function loadMentorDashboardData(
   };
 }
 
-export function customOrderLine(r: Row) {
+export function customOrderLine(r: Row, activeDisputeOrderIds?: ReadonlySet<string> | null) {
+  const id = typeof r.id === "string" && r.id.trim() ? r.id.trim() : "";
   const title = pickDisplayField(r, ["title", "subject", "label", "name"]);
   const titleLine = title !== "—" ? title : "맞춤의뢰";
   const when = pickDisplayField(r, ["updated_at", "created_at"]);
   const whenShort = when !== "—" && when.length > 10 ? when.slice(0, 10) : when;
+  if (activeDisputeOrderIds && id && activeDisputeOrderIds.has(id)) {
+    return `분쟁 접수 · 운영 검토 중 · ${titleLine} · ${whenShort}`;
+  }
   return `${pickDisplayField(r, ["status", "state", "order_status"])} · ${titleLine} · ${whenShort}`;
 }
 
@@ -180,8 +204,12 @@ export function mentorCustomOrderWorkroomHref(orderId: string): string {
   return `/custom-request/orders/${encodeURIComponent(orderId)}`;
 }
 
-/** 목록·카드: 결제 미확인이면 결제 대기 문구를 우선한다. */
-export function mentorCustomOrderStatusHeadline(row: Row): string {
+/** 목록·카드: open/under_review 분쟁을 최우선, 다음 결제 미확인 시 결제 대기. */
+export function mentorCustomOrderStatusHeadline(row: Row, activeDisputeOrderIds?: ReadonlySet<string> | null): string {
+  const id = typeof row.id === "string" && row.id.trim() ? row.id.trim() : "";
+  if (activeDisputeOrderIds && id && activeDisputeOrderIds.has(id)) {
+    return "분쟁 접수 · 운영 검토 중";
+  }
   if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
     return "결제 대기 · 진행 대기";
   }

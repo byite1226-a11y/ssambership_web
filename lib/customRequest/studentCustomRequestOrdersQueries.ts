@@ -131,7 +131,8 @@ export type StudentCustomOrderListRowView = {
 
 export async function enrichStudentCustomOrderListRows(
   supabase: SupabaseClient,
-  rows: Row[]
+  rows: Row[],
+  activeDisputeOrderIds?: ReadonlySet<string> | null
 ): Promise<StudentCustomOrderListRowView[]> {
   const mentorIds = [...new Set(rows.map((r) => pickMentorIdFromOrderRow(r)).filter((x): x is string => !!x))];
   const { byUser: profByUser } = await loadMentorProfilesForDirectory(supabase, mentorIds);
@@ -161,7 +162,11 @@ export async function enrichStudentCustomOrderListRows(
           : "—";
 
     const norm = normalizedPrimaryOrderStatus(r);
-    const orderStatusLabel = norm ? orderStatusLabelForUi(norm) : "—";
+    const orderStatusLabel = activeDisputeOrderIds?.has(id)
+      ? "분쟁 접수 · 운영 검토 중"
+      : norm
+        ? orderStatusLabelForUi(norm)
+        : "—";
     const payRaw = pickPaymentRaw(r);
     const paymentStatusLabel = payRaw ? paymentStatusLabelForUi(payRaw) : "—";
 

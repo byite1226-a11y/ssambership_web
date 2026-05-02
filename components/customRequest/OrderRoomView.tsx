@@ -232,6 +232,9 @@ export function OrderRoomView(props: {
 
   const revBlock = studentRevisionRequestDisabledReason(actorRole, view, o as Row, detail);
   const disputeFormBlock = openDisputeApplicationDisabledReason(actorRole, o as Row, detail);
+  const hasActiveDispute = Boolean(detail.hasActiveDispute);
+  const activeDisputeActionBlock =
+    hasActiveDispute ? "진행 중인 분쟁이 있어 이 작업을 할 수 없습니다." : null;
   const oid = String((o as Row).id ?? "");
   const idForDisplay = String(oid || orderId).trim();
 
@@ -292,6 +295,7 @@ export function OrderRoomView(props: {
               mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
               studentRevisionRequestDisabledReason={revBlock}
               openDisputeApplicationDisabledReason={disputeFormBlock}
+              mentorRevisionJumpDisabledReason={view === "mentor" ? activeDisputeActionBlock : null}
             />
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">기록</p>

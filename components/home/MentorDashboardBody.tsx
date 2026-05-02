@@ -166,7 +166,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
               {customRecent.rows.map((r, i) => {
                 const row = r as Record<string, unknown>;
                 const oid = typeof row.id === "string" && row.id.trim() ? row.id.trim() : null;
-                const line = customOrderLine(row);
+                const line = customOrderLine(row, customRecent.activeDisputeOrderIds);
                 return (
                   <li key={oid ?? i}>
                     {oid ? (

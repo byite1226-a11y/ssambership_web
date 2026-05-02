@@ -310,13 +310,18 @@ export async function loadOrderDetailPageData(
   const latestDeliverable = delRows[0] ?? null;
   const hasActiveDispute = hasActiveDisputeForOrderRows(bundle.disputes.rows);
 
+  const headerBase = buildHeader(o, post.row, application.row, mentorDisplay);
+  const header = hasActiveDispute
+    ? { ...headerBase, statusLine: "분쟁 접수 · 운영 검토 중" }
+    : headerBase;
+
   return {
     bundle,
     post,
     application,
     mentorDisplay,
     events,
-    header: buildHeader(o, post.row, application.row, mentorDisplay),
+    header,
     latestDeliverable,
     messages,
     revisions,

@@ -6,6 +6,7 @@ import {
   loadMentorRecentApplicationsWithPostHints,
   pickDisplayField,
 } from "@/lib/customRequest/customRequestQueries";
+import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 import {
   fetchMentorCustomRequestOrdersFromPrimaryTable,
   mentorCustomOrderPaymentLine,
@@ -23,6 +24,12 @@ export default async function MentorCustomRequestDashboardPage() {
   const supabase = await createClient();
   const { items: recentApplied } = await loadMentorRecentApplicationsWithPostHints(supabase, user.id, 5);
   const orders = await fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 12);
+  const dashOrderIds = orders.rows
+    .map((r) => (typeof (r as { id?: unknown }).id === "string" ? String((r as { id: string }).id) : ""))
+    .filter(Boolean);
+  const activeDisputeOrderIds = orders.error
+    ? new Set<string>()
+    : await fetchActiveOpenDisputeOrderIdSet(supabase, dashOrderIds);
 
   return (
     <PageScaffold
@@ -117,7 +124,7 @@ export default async function MentorCustomRequestDashboardPage() {
                       >
                         <span className="min-w-0 font-bold text-slate-900">{titleLine}</span>
                         <span className="shrink-0 text-xs font-semibold text-slate-600">
-                          {mentorCustomOrderStatusHeadline(r)} · {mentorCustomOrderPaymentLine(r)}
+                          {mentorCustomOrderStatusHeadline(r, activeDisputeOrderIds)} · {mentorCustomOrderPaymentLine(r)}
                         </span>
                       </Link>
                     </li>

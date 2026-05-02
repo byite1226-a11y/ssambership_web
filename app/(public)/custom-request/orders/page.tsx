@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
+import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 import {
   enrichStudentCustomOrderListRows,
   fetchStudentCustomRequestOrdersFromPrimaryTable,
@@ -14,7 +15,9 @@ export default async function StudentCustomRequestOrdersListPage() {
   const { user } = await requireRole("student");
   const supabase = await createClient();
   const { rows, error } = await fetchStudentCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80);
-  const enriched = error ? [] : await enrichStudentCustomOrderListRows(supabase, rows);
+  const orderIds = rows.map((r) => (typeof (r as { id?: unknown }).id === "string" ? String((r as { id: string }).id) : "")).filter(Boolean);
+  const activeDisputeOrderIds = error ? new Set<string>() : await fetchActiveOpenDisputeOrderIdSet(supabase, orderIds);
+  const enriched = error ? [] : await enrichStudentCustomOrderListRows(supabase, rows, activeDisputeOrderIds);
 
   return (
     <PageScaffold

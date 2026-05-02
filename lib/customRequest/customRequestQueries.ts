@@ -429,7 +429,12 @@ export async function loadOrderBundle(
   const dis = await firstReadableCustomTable(supabase, ["disputes", "order_disputes", "custom_disputes"]);
   let disputes: CustomListResult = { table: null, sourceNote: dis.error, rows: [], error: dis.error };
   if (dis.table) {
-    const { column: fk } = await pickExistingColumn(supabase, dis.table, ["order_id", "custom_order_id"]);
+    const { column: fk } = await pickExistingColumn(supabase, dis.table, [
+      "custom_request_order_id",
+      "order_id",
+      "custom_order_id",
+      "request_order_id",
+    ]);
     if (fk) {
       const { data, error } = await supabase.from(dis.table).select("*").eq(fk, orderId).limit(20);
       disputes = { table: dis.table, sourceNote: "분쟁(조회만)", rows: (data as Row[]) ?? [], error: fmt(error) };

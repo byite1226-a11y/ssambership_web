@@ -6,7 +6,7 @@ type Row = Record<string, unknown>;
 
 /**
  * 004 `disputes.status` CHECK: open | under_review | resolved | dismissed | escalated
- * — 진행 중(당사자 액션 잠글 때) open·under_review·escalated 만 본다.
+ * — 주문방 UI·액션 잠금의 "진행 중 분쟁": open · under_review · escalated (resolved·dismissed 제외).
  */
 const ACTIVE_DISPUTE_STATUSES = new Set(["open", "under_review", "escalated"]);
 
@@ -31,6 +31,48 @@ export function hasActiveDisputeForOrderRows(rows: Row[] | null | undefined): bo
     }
   }
   return false;
+}
+
+/**
+ * 주문 목록·대시보드: RLS 하에서 보이는 분쟁만 집계(당사자 본인 주문만).
+ * `custom_request_order_id` 우선 FK(getDisputeRowsForOrderId / loadOrderBundle 과 동일).
+ */
+export async function fetchActiveOpenDisputeOrderIdSet(
+  supabase: SupabaseClient,
+  orderIds: string[]
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  const trimmed = [...new Set(orderIds.map((id) => String(id).trim()).filter(Boolean))];
+  if (!trimmed.length) {
+    return out;
+  }
+  const dis = await firstReadableCustomTable(supabase, ["disputes", "order_disputes", "custom_disputes"]);
+  if (!dis.table) {
+    return out;
+  }
+  const { column: fk } = await pickExistingColumn(supabase, dis.table, [
+    "custom_request_order_id",
+    "order_id",
+    "custom_order_id",
+    "request_order_id",
+  ]);
+  if (!fk) {
+    return out;
+  }
+  const { data, error } = await supabase.from(dis.table).select("*").in(fk, trimmed);
+  if (error || !data?.length) {
+    return out;
+  }
+  for (const row of data as Row[]) {
+    if (!hasActiveDisputeForOrderRows([row])) {
+      continue;
+    }
+    const v = row[fk];
+    if (typeof v === "string" && v.trim()) {
+      out.add(v.trim());
+    }
+  }
+  return out;
 }
 
 /**

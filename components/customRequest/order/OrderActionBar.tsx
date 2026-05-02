@@ -34,6 +34,8 @@ type Props = {
   studentRevisionRequestDisabledReason: string | null;
   /** null이면 #order-disputes 로 이동 가능(학생·멘토) */
   openDisputeApplicationDisabledReason: string | null;
+  /** null이면 멘토도 #order-revisions 링크(진행 중 분쟁 시 잠금) */
+  mentorRevisionJumpDisabledReason?: string | null;
 };
 
 function Chevr() {
@@ -53,6 +55,7 @@ export function OrderActionBar(props: Props) {
     mentorStartDisabledReason,
     studentRevisionRequestDisabledReason,
     openDisputeApplicationDisabledReason,
+    mentorRevisionJumpDisabledReason = null,
   } = props;
   if (orderTerminal) {
     const notice =
@@ -96,7 +99,7 @@ export function OrderActionBar(props: Props) {
             </div>
             <Chevr />
           </a>
-        ) : view === "mentor" && actorRole === "mentor" ? (
+        ) : view === "mentor" && actorRole === "mentor" && !mentorRevisionJumpDisabledReason ? (
           <a href="#order-revisions" className={neutralCard}>
             <div className="flex min-w-0 items-start gap-3">
               <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
@@ -107,6 +110,22 @@ export function OrderActionBar(props: Props) {
             </div>
             <Chevr />
           </a>
+        ) : view === "mentor" && actorRole === "mentor" ? (
+          <button
+            type="button"
+            disabled
+            className={disabledCard}
+            title={mentorRevisionJumpDisabledReason ?? "수정 요청 내역을 열 수 없습니다."}
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="text-sm font-bold">수정 요청하기</p>
+                <p className="mt-0.5 text-xs font-normal text-slate-500">진행 중인 분쟁이 있을 때는 사용할 수 없습니다.</p>
+              </div>
+            </div>
+            <Chevr />
+          </button>
         ) : view === "student" && actorRole === "student" ? (
           <button
             type="button"

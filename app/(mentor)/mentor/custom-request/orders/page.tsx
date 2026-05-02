@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
+import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import {
   fetchMentorCustomRequestOrdersFromPrimaryTable,
@@ -20,6 +21,10 @@ export default async function MentorCustomRequestOrdersListPage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
   const { rows, error } = await fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80);
+  const orderIds = rows
+    .map((r) => (typeof (r as { id?: unknown }).id === "string" ? String((r as { id: string }).id) : ""))
+    .filter(Boolean);
+  const activeDisputeOrderIds = error ? new Set<string>() : await fetchActiveOpenDisputeOrderIdSet(supabase, orderIds);
 
   return (
     <PageScaffold
@@ -65,7 +70,7 @@ export default async function MentorCustomRequestOrdersListPage() {
                     <p className="mt-1 text-xs text-slate-500">주문 ID · {id}</p>
                   </div>
                   <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-800">
-                    {mentorCustomOrderStatusHeadline(r)}
+                    {mentorCustomOrderStatusHeadline(r, activeDisputeOrderIds)}
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">

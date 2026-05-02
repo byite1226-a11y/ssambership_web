@@ -206,6 +206,15 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
   if (view === "student") {
     return (
       <header className="border-b border-slate-100 bg-white px-5 py-3 sm:px-6">
+        {detail.hasActiveDispute ? (
+          <div
+            role="status"
+            className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
+          >
+            분쟁이 접수되어 운영 검토 중입니다. 납품 수락·수정 요청·추가 분쟁 신청은 일시적으로 사용할 수 없으며, 우측 작업
+            관리에서도 동일하게 제한됩니다.
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-3">
           <Link
             href={backHref}
@@ -235,6 +244,15 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
 
   return (
     <header className="border-b border-slate-100 bg-white px-5 py-3 sm:px-6">
+      {detail.hasActiveDispute ? (
+        <div
+          role="status"
+          className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
+        >
+          분쟁이 접수되어 운영 검토 중입니다. 납품 등록·작업 진행·수정 요청 내역 확인 등은 우측 패널 정책에 따라 제한될 수
+          있습니다.
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-3">
         <Link
           href={backHref}
@@ -332,6 +350,11 @@ export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDi
     <div className="space-y-3">
       <div id="order-room-order-info" className={ORDER_ROOM_CARD_CLASS + " space-y-3 scroll-mt-4"}>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">주문 정보</p>
+        {detail.hasActiveDispute ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-2 text-xs font-semibold text-amber-950">
+            분쟁 접수 · 운영 검토 중입니다. 표시되는 주문 단계와 별도로, 납품·수락·수정 요청·분쟁 재신청은 제한됩니다.
+          </div>
+        ) : null}
         <dl className="space-y-2 text-sm">
           <div className="flex flex-wrap justify-between gap-2">
             <dt className="text-slate-500">주문번호</dt>
