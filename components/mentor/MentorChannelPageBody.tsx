@@ -3,7 +3,6 @@ import {
   groupChannelItemsByBucket,
   type MentorChannelListItem,
 } from "@/lib/mentor/mentorChannelQueries";
-import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 const BUCKET_LABEL: Record<string, string> = {
   shortform: "숏폼",
@@ -45,14 +44,26 @@ export function MentorChannelPageBody(props: {
   const { items, listError, probe } = props;
 
   if (listError) {
-    console.error("[MentorChannelPageBody] listError", listError, probe);
     return (
-      <div className="space-y-4 rounded-2xl border border-red-200 bg-red-50/80 p-5">
-        <p className="text-sm font-extrabold text-red-900">불러오기 오류</p>
-        <p className="text-sm text-red-800">{USER_UI_LOAD_FAILED}</p>
-        <Link href="/mentor/dashboard" className="inline-block text-sm font-bold text-red-900 underline">
-          대시보드로
-        </Link>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5">
+          <p className="text-sm font-extrabold text-amber-900">채널 자료는 아직 준비 중입니다</p>
+          <p className="mt-2 text-sm text-amber-950">
+            미디어·연결 테이블이 아직 없거나 접근할 수 없을 때도 여기서 안내합니다. 등록이 가능해지면 목록이 채워져요.
+          </p>
+          <p className="mt-2 text-xs text-amber-900/80">{probe}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/mentor/profile/edit"
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-500"
+          >
+            프로필·연결 정보 편집
+          </Link>
+          <Link href="/mentor/dashboard" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
+            대시보드로
+          </Link>
+        </div>
       </div>
     );
   }

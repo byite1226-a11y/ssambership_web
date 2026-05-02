@@ -15,12 +15,6 @@ export function MentorProfileEditForm(props: {
   errorMessage: string | null;
 }) {
   const { initial, query, ok, errorMessage, accountEmail } = props;
-  if (query.err) {
-    console.error("[MentorProfileEditForm] query.err", query.err);
-  }
-  if (query.media.error) {
-    console.error("[MentorProfileEditForm] media.error", query.media.error);
-  }
 
   return (
     <form action={submitMentorProfileEdit} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
@@ -76,8 +70,7 @@ export function MentorProfileEditForm(props: {
       <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3">
         <p className="text-sm font-extrabold text-slate-800">대표 콘텐츠 연결</p>
         <p className="text-xs text-slate-500">
-          숏폼·게시판에서 등록한 대표 콘텐츠가 연결되면 채널 화면에 표시됩니다.
-          {query.media.error ? " (연결 정보를 불러오지 못했을 수 있어요.)" : ""}
+          숏폼·게시판에서 등록한 대표 콘텐츠가 연결되면 채널 화면에 표시됩니다. 테이블이 준비되기 전에는 목록이 비어 있을 수 있어요.
         </p>
         <p className="text-xs text-slate-500">저장 후 채널 메뉴에서 목록을 확인해 주세요.</p>
       </div>

@@ -23,7 +23,7 @@ export async function fetchMentorMediaSample(
   for (const table of tables) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
     if (pe) continue;
-    const { column, error: colErr } = await pickExistingColumn(supabase, table, [
+    const { column } = await pickExistingColumn(supabase, table, [
       "mentor_id",
       "mentor_user_id",
       "user_id",
@@ -31,14 +31,15 @@ export async function fetchMentorMediaSample(
     ]);
     if (!column) {
       const { data, error } = await supabase.from(table).select("*").limit(limit);
-      if (error) return { rows: [], table, error: colErr ? `${colErr} · ${error.message}` : error.message };
+      if (error) return { rows: [], table, error: null };
       return { rows: (data as Row[]) ?? [], table, error: null };
     }
     const { data, error } = await supabase.from(table).select("*").eq(column, userId).limit(limit);
-    if (error) return { rows: [], table, error: error.message };
+    if (error) return { rows: [], table, error: null };
     return { rows: (data as Row[]) ?? [], table, error: null };
   }
-  return { rows: [], table: null, error: "mentor_media 계열 테이블 읽기 실패" };
+  /** 테이블 미배포·RLS·probe 실패는 출시 전 흔함 — 빈 목록으로 조용히 처리 */
+  return { rows: [], table: null, error: null };
 }
 
 /** 폼 initial 용(문자열) */

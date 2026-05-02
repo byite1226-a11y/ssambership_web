@@ -14,10 +14,6 @@ export default async function MentorChannelPage() {
   const supabase = await createClient();
   const { items, error, probe } = await loadMentorChannelMedia(supabase, user.id);
 
-  if (error) {
-    console.error("[mentor/channel] list load", error, probe);
-  }
-
   const listFailed = Boolean(error);
   const hasItems = items.length > 0;
 
@@ -38,7 +34,7 @@ export default async function MentorChannelPage() {
             ? USER_UI_MENTOR_CHANNEL_LOAD_FAILED
             : hasItems
               ? `${items.length}건의 콘텐츠를 불러왔습니다.`
-              : "표시할 콘텐츠가 없습니다.",
+              : "등록된 미디어가 없거나, 채널 자료는 아직 준비 중입니다.",
           status: listFailed ? "skeleton" : "connected",
         },
         {

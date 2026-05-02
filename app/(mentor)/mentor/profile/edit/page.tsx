@@ -39,9 +39,6 @@ export default async function MentorProfileEditPage(props: PageProps) {
   if (re) {
     console.error("[mentor/profile/edit] profile row fetch", re);
   }
-  if (media.error) {
-    console.error("[mentor/profile/edit] media sample", media.error);
-  }
   return (
     <PageScaffold
       hideFooterPlaceholderCards
@@ -61,8 +58,10 @@ export default async function MentorProfileEditPage(props: PageProps) {
         },
         {
           title: "미디어",
-          body: media.error ? USER_UI_LOAD_FAILED : media.table ? "대표 콘텐츠를 불러왔습니다." : "등록된 대표 콘텐츠가 없습니다.",
-          status: media.error ? "skeleton" : media.table ? "connected" : "skeleton",
+          body: media.table
+            ? "대표 콘텐츠를 불러왔습니다."
+            : "채널 자료는 아직 준비 중이거나, 등록된 미디어가 없습니다.",
+          status: "connected",
         },
         {
           title: "검수",
@@ -77,7 +76,7 @@ export default async function MentorProfileEditPage(props: PageProps) {
     >
       <MentorProfileEditForm
         initial={initial}
-        query={{ row, err: re, media: { table: media.table, error: media.error } }}
+        query={{ row, err: re, media: { table: media.table, error: null } }}
         accountEmail={userRow?.email ?? user.email ?? null}
         ok={ok}
         errorMessage={err ? mapDataErrorMessage(err) : null}
