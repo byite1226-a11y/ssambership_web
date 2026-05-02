@@ -56,15 +56,16 @@ export function PlanComparisonCards(props: {
               </div>
               <p className="mt-2 text-2xl font-black text-slate-900">{priceLabelFromPlanRow(row)}</p>
               <p className="mt-1 text-xs text-slate-600">주간 신규 질문: {weeklyQuestionsLabel(row)}</p>
-              {row
-                ? (
-                    <p className="mt-2 line-clamp-2 text-xs text-slate-500">
-                      {getStringFieldLocal(row) ?? "플랜 설명 컬럼(후속)"}
-                    </p>
-                  )
-                : (
-                    <p className="mt-2 text-xs font-bold text-amber-800">DB 행 없음 — 동일 티어 플랜이 없으면 슬롯만 표시</p>
-                  )}
+              {row ? (
+                <p className="mt-2 line-clamp-2 text-xs text-slate-500">
+                  {getStringFieldLocal(row) ?? "학습 상황에 맞춰 선택할 수 있는 구독 옵션입니다."}
+                </p>
+              ) : (
+                <div className="mt-2 space-y-1 text-xs font-bold text-amber-800">
+                  <p>현재 표시할 요금제가 없습니다.</p>
+                  <p className="font-semibold text-amber-900/90">요금제 정보가 준비되면 이곳에서 확인할 수 있습니다.</p>
+                </div>
+              )}
               <div className="mt-auto pt-4">
                 <Link
                   href={`/subscribe?mentorId=${encodeURIComponent(mentorId)}&plan=${t.id}`}

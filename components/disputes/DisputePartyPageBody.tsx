@@ -75,10 +75,10 @@ export function DisputePartyPageBody(props: { bundle: DisputeBundle; reasonLabel
       </section>
 
       <div className="grid gap-2 md:grid-cols-2">
-        <DisputeKeyValueList title="관련 환불(refunds)" row={bundle.refund.row} />
-        <DisputeKeyValueList title="관련 결제(payments / order_id 연계 시)" row={bundle.payment.row} />
-        <DisputeKeyValueList title="구독(subscriptions) 연계" row={bundle.subscription.row} />
-        <DisputeKeyValueList title="맞춤의뢰 주문(custom_request_orders · 별도 거래)" row={bundle.customOrder.row} />
+        <DisputeKeyValueList title="환불 정보" row={bundle.refund.row} />
+        <DisputeKeyValueList title="결제 정보" row={bundle.payment.row} />
+        <DisputeKeyValueList title="구독 정보" row={bundle.subscription.row} />
+        <DisputeKeyValueList title="맞춤의뢰 주문 정보" row={bundle.customOrder.row} />
       </div>
 
       <p className="text-xs text-slate-500">일부 항목은 진행 단계에 따라 비어 있을 수 있어요.</p>

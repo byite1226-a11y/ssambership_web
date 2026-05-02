@@ -1,14 +1,14 @@
+/** PageScaffold `dataPoints` 등 화면 안내용(쿼리 식별자 아님) */
 export const MENTOR_PROFILE_DATA_MODEL = [
-  "mentor_profiles (user_id, intro_line, university_name, department_name, teaching_subjects, high_school_name, student_id_image_url, verification_status)",
-  "mentor_media (대표·미디어 연결 — 읽기 probe)",
-  "users (닉/이름과 동기화 — 본 턴은 읽기만)",
-  "구독 가능: accepts_subscriptions 등 스키마 확정 후",
+  "프로필 기본 정보",
+  "멘토 소개와 활동 정보",
+  "채널 콘텐츠 준비 상태",
+  "공개 프로필 표시 정보",
 ] as const;
 
-/** 멘토 채널 — 타입/공개 컬럼 확정 시 분류 정확도↑ */
 export const MENTOR_CHANNEL_DATA_MODEL = [
-  "mentor_media | mentor_content_links | mentor_link_items (user/mentor FK + content_type? + is_public?)",
-  "업로드/Storage/shortform_posts — 본 단계는 CTA 자리만",
+  "등록한 대표 콘텐츠",
+  "공개·유형별로 나누어 보기",
 ] as const;
 
 /** 공개 멘토 목록 /mentors */
@@ -22,12 +22,12 @@ export const PUBLIC_MENTORS_LIST_DATA_MODEL = [
 
 /** 공개 멘토 상세 */
 export const PUBLIC_MENTOR_DATA_MODEL = [
-  "users(id=mentorId, role=mentor)",
-  "mentor_profiles — lib/mentor/mentorDisplayFields.ts와 편집 폼 동일 키 풀",
-  "mentor_media 샘플 — 대표 콘텐츠",
-  "reviews | mentor_reviews | subscription_reviews — 카운트·rating 컬럼 probe",
-  "plans | mentor_plans | subscription_plans — 멘토 FK probe",
-  "reviews_summary 뷰 — 스키마 추가 시 연결 예정",
+  "멘토 계정 확인",
+  "프로필 및 소개",
+  "대표 콘텐츠",
+  "리뷰·평점 요약",
+  "구독 요금제",
+  "추가 안내(준비 중)",
 ] as const;
 
 export const MENTOR_PAYOUTS_DATA_MODEL = [
