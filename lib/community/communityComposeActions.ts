@@ -15,6 +15,7 @@ function buildErrorRedirect(code: string) {
 }
 
 export async function submitMentorCommunityPost(formData: FormData) {
+  /** 멘토가 아니면 requireRole에서 리다이렉트되어 저장되지 않음 */
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
 

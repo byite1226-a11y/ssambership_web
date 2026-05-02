@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CommunitySectionCard } from "@/components/community/CommunitySectionCard";
-import { pickExcerpt, pickTitle } from "@/lib/community/communityQueries";
+import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
+import { pickTitle } from "@/lib/community/communityQueries";
 
 type Row = Record<string, unknown>;
 
@@ -10,24 +11,6 @@ type Props = {
   boardRows: Row[];
   boardFetchFailed: boolean;
 };
-
-function ShortRowCard({ r, i }: { r: Row; i: number }) {
-  const id = typeof r.id === "string" ? r.id : null;
-  return (
-    <li
-      key={id ?? `s-${i}`}
-      className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm transition hover:border-slate-300"
-    >
-      <p className="text-sm font-extrabold text-slate-900">{pickTitle(r)}</p>
-      <p className="mt-1 line-clamp-2 text-xs text-slate-600">{pickExcerpt(r) || "내용을 확인해 보세요."}</p>
-      {id ? (
-        <Link href={`/community/shortform/${id}`} className="mt-2 inline-block text-xs font-bold text-blue-700 hover:underline">
-          글 읽기
-        </Link>
-      ) : null}
-    </li>
-  );
-}
 
 function BoardRowLine({ r, i }: { r: Row; i: number }) {
   const id = typeof r.id === "string" ? r.id : null;
@@ -60,14 +43,21 @@ export function CommunityHomeContent(props: Props) {
     <div className="space-y-6">
       <CommunitySectionCard title="추천 숏폼" action={{ href: "/community/shortform", label: "전체 보기" }}>
         {shortFetchFailed ? (
-          <p className="text-sm text-slate-600">숏폼을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+          <p className="text-sm text-slate-600">숏폼 영상을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : shortRows.length === 0 ? (
-          <p className="text-sm text-slate-600">아직 등록된 숏폼이 없습니다.</p>
+          <p className="text-sm text-slate-600">아직 등록된 숏폼 영상이 없습니다.</p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {shortRows.slice(0, 6).map((r, i) => (
-              <ShortRowCard key={typeof r.id === "string" ? r.id : `sr-${i}`} r={r} i={i} />
-            ))}
+          <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
+            {shortRows.slice(0, 6).map((r, i) => {
+              const id = typeof r.id === "string" ? r.id : null;
+              return id ? (
+                <CommunityShortformVideoCard key={id} row={r} href={`/community/shortform/${id}`} linkLabel="영상 보기" />
+              ) : (
+                <li key={`sr-${i}`} className="list-none rounded-2xl border border-slate-200 p-4 text-sm text-slate-500">
+                  항목을 표시할 수 없습니다.
+                </li>
+              );
+            })}
           </ul>
         )}
       </CommunitySectionCard>
@@ -100,32 +90,9 @@ export function CommunityHomeContent(props: Props) {
         )}
       </CommunitySectionCard>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <Link
-          href="/question-room"
-          className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
-        >
-          질문하기
-        </Link>
-        <Link
-          href="/mentor/community/new"
-          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm hover:border-slate-300"
-        >
-          멘토 · 글쓰기
-        </Link>
-        <Link
-          href="/community/shortform"
-          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 shadow-sm hover:border-slate-300"
-        >
-          숏폼 피드
-        </Link>
-        <Link
-          href="/mentor/question-room"
-          className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-900 shadow-sm hover:bg-emerald-100"
-        >
-          답변 대기 보기(멘토)
-        </Link>
-      </div>
+      <p className="text-sm text-slate-600">
+        숏폼 영상·게시판은 왼쪽 메뉴와 위 버튼으로도 이동할 수 있어요. 좋은 글은 스크랩하고, 문제가 있으면 신고해 주세요.
+      </p>
     </div>
   );
 }

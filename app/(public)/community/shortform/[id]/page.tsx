@@ -1,9 +1,21 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { CommunityPostDetail } from "@/components/community/CommunityPostDetail";
-import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
+import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
 import { createClient } from "@/lib/supabase/server";
-import { getShortformPost, loadCommunityComments, pickTitle } from "@/lib/community/communityQueries";
+import { getShortformPost, isCommunityPostUuid, loadCommunityComments, pickTitle } from "@/lib/community/communityQueries";
+import type { AppRole } from "@/lib/types/user";
+
+function shortformDetailDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
+  if (role === "mentor") {
+    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요. 새 숏폼은 업로드 메뉴에서 등록할 수 있어요.";
+  }
+  if (!loggedIn) {
+    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 확인해 보세요. 댓글·스크랩은 로그인 후 이용할 수 있습니다.";
+  }
+  return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요.";
+}
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -15,12 +27,35 @@ export default async function CommunityShortformDetailPage(props: Props) {
   const sp = (await props.searchParams) ?? {};
   const cErr = sp.commentError;
   const commentErrorCode = typeof cErr === "string" ? cErr : Array.isArray(cErr) ? cErr[0] : null;
+  const reportOkRaw = sp.reportOk;
+  const reportOk =
+    reportOkRaw === "1" ||
+    reportOkRaw === "true" ||
+    (Array.isArray(reportOkRaw) && (reportOkRaw[0] === "1" || reportOkRaw[0] === "true"));
+  const rErr = sp.reportError;
+  const reportErrorCode = typeof rErr === "string" ? rErr : Array.isArray(rErr) ? rErr[0] : null;
 
   const supabase = await createClient();
-  const { user } = await getServerAuthUser();
-  const canComment = user != null;
+  const { user, profile } = await getServerUserWithProfile();
+  const loggedIn = user != null;
+  const canComment = loggedIn;
+  const canReport = loggedIn;
 
-  const { row, error } = await getShortformPost(supabase, id);
+  const idOk = isCommunityPostUuid(id);
+  let row: Record<string, unknown> | null = null;
+  let loadError: string | null = null;
+
+  if (idOk) {
+    const res = await getShortformPost(supabase, id);
+    if (res.error) {
+      console.error("[community/shortform/detail] getShortformPost", id, res.error);
+      loadError = "숏폼을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    } else {
+      row = res.row;
+    }
+  }
+
+  const missingPost = !idOk || (idOk && !row && !loadError);
   const { rows: comments, error: commentsQueryError } = row
     ? await loadCommunityComments(supabase, "shortform", id)
     : { rows: [], error: null as string | null };
@@ -33,11 +68,13 @@ export default async function CommunityShortformDetailPage(props: Props) {
         <CommunityPageHero
           eyebrow="커뮤니티 · 숏폼"
           title="숏폼"
-          description="짧은 영상과 함께 읽는 커뮤니티 글이에요."
-          ctas={[
-            { href: "/community/shortform", label: "목록", tone: "slate" },
-            { href: "/community", label: "커뮤니티 홈", tone: "slate" },
-          ]}
+          description={shortformDetailDescription(profile?.role, loggedIn)}
+          ctas={buildCommunityHeroCtas({
+            surface: "shortform_detail",
+            role: profile?.role,
+            loggedIn,
+            nextPath: returnPath,
+          })}
         />
       }
     >
@@ -48,13 +85,17 @@ export default async function CommunityShortformDetailPage(props: Props) {
           returnPath={returnPath}
           title={row ? pickTitle(row) : "숏폼"}
           row={row}
-          error={error}
+          loadError={loadError}
+          missingPost={missingPost}
           backHref="/community/shortform"
           listLabel="숏폼 목록"
           comments={comments}
           commentsQueryError={commentsQueryError}
           canComment={canComment}
+          canReport={canReport}
           commentErrorCode={commentErrorCode}
+          reportOk={reportOk}
+          reportErrorCode={reportErrorCode}
         />
       </div>
     </CommunityLayoutShell>

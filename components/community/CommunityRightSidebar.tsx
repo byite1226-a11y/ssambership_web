@@ -1,8 +1,12 @@
 import Link from "next/link";
+import type { CommunityRightAsidePromo } from "@/components/community/CommunityNavTypes";
 
 const TOPICS = ["학습 루틴 나누기", "포트폴리오 피드백", "면접 질문 모음", "자격증 후기", "이직 준비 팁"];
 
-export function CommunityRightSidebar() {
+export function CommunityRightSidebar(props: { promo: CommunityRightAsidePromo }) {
+  const ctaHref = props.promo === "shortform" ? "/community/shortform" : "/community/board";
+  const ctaLabel = props.promo === "shortform" ? "숏폼 보기" : "게시판 둘러보기";
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -28,10 +32,10 @@ export function CommunityRightSidebar() {
         <h3 className="text-sm font-extrabold text-slate-900">우수 활동자 도전</h3>
         <p className="mt-2 text-xs leading-relaxed text-slate-600">이번 주 활동으로 배지와 노출 기회를 노려 보세요.</p>
         <Link
-          href="/community/board"
+          href={ctaHref}
           className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-blue-600 py-2 text-center text-xs font-bold text-white shadow-sm hover:bg-blue-700"
         >
-          게시판 둘러보기
+          {ctaLabel}
         </Link>
       </section>
     </div>

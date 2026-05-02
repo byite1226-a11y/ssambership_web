@@ -8,7 +8,7 @@ export function MentorCommunityComposeForm(props: { errorMessage: string | null 
     <form action={submitMentorCommunityPost} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
       <h1 className="text-xl font-black text-slate-900">게시물 작성 (멘토)</h1>
       <p className="text-sm text-slate-600">
-        게시판 글과 숏폼 소식 중 하나를 선택해 등록합니다. 제출 시 멘토 권한이 확인됩니다.
+        게시판 글 또는 숏폼 영상 중 하나를 선택해 등록합니다. 제출 시 멘토 권한이 확인됩니다.
       </p>
 
       {props.errorMessage ? (
@@ -23,7 +23,7 @@ export function MentorCommunityComposeForm(props: { errorMessage: string | null 
           className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         >
           <option value="board">게시판 글</option>
-          <option value="shortform">숏폼 소식</option>
+          <option value="shortform">숏폼 영상</option>
         </select>
       </label>
 

@@ -149,3 +149,63 @@ export async function loadCommunityComments(
   });
   return { rows, error: null };
 }
+
+/** 게시글 id — UUID가 아니면 PostgREST 조회 전에 막기 */
+const COMMUNITY_POST_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isCommunityPostUuid(id: string): boolean {
+  return COMMUNITY_POST_UUID_RE.test(id.trim());
+}
+
+/** 기존 행에 썸네일·표지 URL이 있으면 사용(스키마 변경 없음) */
+export function pickMediaThumbnailUrl(row: Row): string | null {
+  const keys = [
+    "thumbnail_url",
+    "thumbnailUrl",
+    "cover_url",
+    "cover_image",
+    "image_url",
+    "poster_url",
+    "video_thumbnail_url",
+    "og_image_url",
+    "thumb_url",
+  ] as const;
+  for (const k of keys) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim().toLowerCase().startsWith("http")) return v.trim();
+  }
+  return null;
+}
+
+export function formatCommunityPostDate(row: Row): string | null {
+  for (const k of ["created_at", "published_at", "updated_at"] as const) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) {
+      try {
+        const d = new Date(v);
+        if (!Number.isNaN(d.getTime())) {
+          return d.toLocaleDateString("ko-KR", { dateStyle: "medium" });
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  return null;
+}
+
+/** 카드 메타용 짧은 역할 문구 */
+export function pickAuthorRoleSummary(row: Row): string | null {
+  const r =
+    (typeof row.author_role === "string" && row.author_role.trim()) ||
+    (typeof row.role === "string" && row.role.trim()) ||
+    (typeof row.writer_type === "string" && row.writer_type.trim()) ||
+    null;
+  if (!r) return null;
+  const low = r.toLowerCase();
+  if (low === "mentor" || r === "멘토") return "멘토";
+  if (low === "student" || r === "학생") return "학생";
+  if (low === "admin" || r === "관리자") return "관리자";
+  if (low === "user") return "회원";
+  return "회원";
+}

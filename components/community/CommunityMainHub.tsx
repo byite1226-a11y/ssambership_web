@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { StateBanner } from "@/components/community/StateBanner";
-import { pickExcerpt, pickTitle } from "@/lib/community/communityQueries";
+import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
+import { pickTitle } from "@/lib/community/communityQueries";
 
 type Row = Record<string, unknown>;
 
@@ -29,7 +30,6 @@ export function CommunityMainHub(props: {
   recommendSlot?: ReactNode;
   categoryFilterSlot?: ReactNode;
   writeCta: { href: string; label: string };
-  uploadCta: { href: string; label: string };
 }) {
   return (
     <div className="space-y-6">
@@ -45,36 +45,32 @@ export function CommunityMainHub(props: {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-extrabold text-slate-900">이번 주 숏폼</h2>
+          <h2 className="text-lg font-extrabold text-slate-900">추천 숏폼 영상</h2>
           <Link href="/community/shortform" className="text-sm font-bold text-blue-700">
             전체 보기
           </Link>
         </div>
         {props.shortError ? (
           <div className="mt-2">
-            <StateBanner kind="error" message="숏폼을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />
+            <StateBanner kind="error" message="숏폼 영상을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." />
           </div>
         ) : null}
         {!props.shortError && props.shortRows.length === 0 ? (
           <div className="mt-2">
-            <StateBanner kind="empty" message="아직 등록된 숏폼이 없습니다. 숏폼 탭에서 새 글을 모아 볼 수 있어요." />
+            <StateBanner kind="empty" message="아직 등록된 숏폼 영상이 없습니다." />
           </div>
         ) : null}
-        <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {props.shortRows.slice(0, 3).map((r, i) => (
-            <li
-              key={typeof r.id === "string" ? r.id : `s-${i}`}
-              className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 shadow-sm"
-            >
-              <p className="text-sm font-extrabold text-slate-900">{pickTitle(r)}</p>
-              <p className="mt-1 line-clamp-2 text-xs text-slate-600">{pickExcerpt(r) || "내용이 곧 표시돼요."}</p>
-              {typeof r.id === "string" ? (
-                <Link href={`/community/shortform/${r.id}`} className="mt-2 inline-block text-xs font-bold text-blue-700">
-                  글 읽기
-                </Link>
-              ) : null}
-            </li>
-          ))}
+        <ul className="mt-3 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
+          {props.shortRows.slice(0, 3).map((r, i) => {
+            const id = typeof r.id === "string" ? r.id : null;
+            return id ? (
+              <CommunityShortformVideoCard key={id} row={r} href={`/community/shortform/${id}`} linkLabel="영상 보기" />
+            ) : (
+              <li key={`s-${i}`} className="list-none rounded-2xl border border-slate-200 p-4 text-sm text-slate-500">
+                {pickTitle(r)}
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -119,22 +115,16 @@ export function CommunityMainHub(props: {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Link
-          href="/question-room"
+          href="/community"
           className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
         >
-          질문하기
+          커뮤니티 홈
         </Link>
         <Link
           href={props.writeCta.href}
           className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm hover:border-slate-300"
         >
           {props.writeCta.label}
-        </Link>
-        <Link
-          href={props.uploadCta.href}
-          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 shadow-sm hover:border-slate-300"
-        >
-          {props.uploadCta.label}
         </Link>
         <Link
           href="/mentor/question-room"

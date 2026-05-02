@@ -1,0 +1,97 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
+import { createClient } from "@/lib/supabase/server";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TABLE = "content_reports";
+
+const ALLOWED_REASONS = new Set([
+  "부적절한 내용",
+  "스팸·광고",
+  "욕설·비방",
+  "개인정보 노출",
+  "기타",
+]);
+
+function applyReportSearch(path: string, kind: "ok" | "err", errCode?: string): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const u = new URL(normalized, "https://ssambership.local");
+  if (kind === "ok") {
+    u.searchParams.delete("reportError");
+    u.searchParams.set("reportOk", "1");
+  } else {
+    u.searchParams.delete("reportOk");
+    if (errCode) u.searchParams.set("reportError", errCode);
+  }
+  return `${u.pathname}${u.search}`;
+}
+
+export async function submitCommunityContentReportAction(formData: FormData) {
+  const variant = String(formData.get("postVariant") ?? "").trim();
+  const postId = String(formData.get("postId") ?? "").trim();
+  const returnPath = String(formData.get("returnPath") ?? "").trim();
+  const reasonRaw = String(formData.get("reason") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+
+  const { user } = await getServerAuthUser();
+  if (!user) {
+    if (returnPath.startsWith("/")) {
+      redirect(`/login?next=${encodeURIComponent(returnPath)}`);
+    }
+    redirect("/login");
+  }
+
+  if (variant !== "board" && variant !== "shortform") {
+    redirect(applyReportSearch(returnPath || "/community", "err", "invalid"));
+  }
+  if (!UUID_RE.test(postId)) {
+    redirect(applyReportSearch(returnPath || "/community", "err", "invalid"));
+  }
+  if (!returnPath.startsWith("/")) {
+    redirect("/community");
+  }
+
+  const reason = ALLOWED_REASONS.has(reasonRaw) ? reasonRaw : "기타";
+  const descTrim = description.trim();
+  const desc = descTrim.length > 500 ? descTrim.slice(0, 500) : descTrim;
+  const descriptionOut = desc.length > 0 ? desc : null;
+
+  const target_type = variant === "board" ? "community_post" : "shortform";
+
+  const supabase = await createClient();
+  const { error } = await supabase.from(TABLE).insert({
+    reporter_id: user.id,
+    target_type,
+    target_id: postId,
+    reason,
+    description: descriptionOut,
+  });
+
+  if (error) {
+    console.error("[communityContentReport] insert failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    const denied =
+      error.code === "42501" ||
+      /permission denied|row-level security|rls|policy/i.test(String(error.message ?? ""));
+    redirect(applyReportSearch(returnPath, "err", denied ? "denied" : "save"));
+  }
+
+  revalidatePath("/admin/reports");
+  revalidatePath("/admin");
+  revalidatePath("/community/board");
+  revalidatePath(`/community/board/${postId}`);
+  revalidatePath("/community/shortform");
+  revalidatePath(`/community/shortform/${postId}`);
+  revalidatePath("/community/shorts");
+  revalidatePath(`/community/shorts/${postId}`);
+  revalidatePath("/community");
+
+  redirect(applyReportSearch(returnPath, "ok"));
+}

@@ -11,7 +11,7 @@ type TabId = (typeof TABS)[number]["id"];
 
 export function CommunityShortformTabs(props: { active: TabId }) {
   return (
-    <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-4" role="tablist" aria-label="숏폼 정렬">
+    <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-4" role="tablist" aria-label="숏폼 영상 탭">
       {TABS.map((t) => {
         const href = t.id === "all" ? "/community/shortform" : `/community/shortform?tab=${t.id}`;
         const on = props.active === t.id;
