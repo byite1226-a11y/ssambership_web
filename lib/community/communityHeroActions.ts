@@ -1,5 +1,6 @@
 import type { CommunityHeroCta } from "@/components/community/CommunityPageHero";
 import type { AppRole } from "@/lib/types/user";
+import { communityMePath } from "@/lib/community/communityMeTab";
 
 /** 공개 커뮤니티 히어로가 위치한 화면(탐색·작성 동선 분기) */
 export type CommunityHeroSurface =
@@ -55,7 +56,7 @@ export function buildCommunityHeroCtas(params: {
         ];
       case "me":
         return [
-          { href: "/community/board", label: "내 게시글", tone: "slate" },
+          { href: communityMePath("posts"), label: "내 게시글", tone: "slate" },
           { href: "/community/shortform", label: "내 숏폼", tone: "slate" },
           { href: "/community", label: "커뮤니티 홈", tone: "slate" },
           { href: "/mentor/community/new", label: "멘토 글쓰기", tone: "blue" },
@@ -103,7 +104,10 @@ export function buildCommunityHeroCtas(params: {
           { href: "/community/board", label: "게시판 보기", tone: "slate" },
         ];
       case "me":
-        return [login, { href: "/community", label: "커뮤니티 홈", tone: "slate" }];
+        return [
+          { href: `/login?next=${next}`, label: "로그인하고 댓글·스크랩 활동을 확인하기", tone: "blue" },
+          { href: "/community", label: "커뮤니티 홈", tone: "slate" },
+        ];
       case "compose_gate":
         return [login];
     }
