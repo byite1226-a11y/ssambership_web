@@ -71,6 +71,99 @@ export async function listBoardPosts(
   return { ...res, table: t, error: res.error };
 }
 
+function rowTimestampMs(row: Row): number {
+  for (const k of ["created_at", "updated_at", "published_at"] as const) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) {
+      const t = new Date(v).getTime();
+      if (!Number.isNaN(t)) return t;
+    }
+  }
+  return 0;
+}
+
+/** 내 활동: 게시판 글 — author_id 기준(스키마·RLS와 일치) */
+export async function loadMyCommunityBoardPosts(
+  supabase: SupabaseClient,
+  userId: string,
+  limit: number
+): Promise<{ rows: Row[]; error: string | null }> {
+  const probe = await firstReadableTable(supabase, ["community_posts"] as const);
+  if (!probe.table) return { rows: [], error: null };
+  const t = probe.table;
+  const res = await selectOrdered<Row>(async (orderBy) => {
+    let q = supabase.from(t).select("*").eq("author_id", userId);
+    if (orderBy) q = q.order(orderBy, { ascending: false });
+    return await q.limit(limit);
+  });
+  if (res.error && !/column|does not exist|order|schema cache/i.test(res.error)) {
+    return { rows: [], error: res.error };
+  }
+  return { rows: res.rows, error: null };
+}
+
+/** 내 활동: 숏폼 — author_id 우선, 스키마에 따라 user_id 폴백 */
+export async function loadMyShortformPosts(
+  supabase: SupabaseClient,
+  userId: string,
+  limit: number
+): Promise<{ rows: Row[]; error: string | null }> {
+  const probe = await firstReadableTable(supabase, ["shortform_posts"] as const);
+  if (!probe.table) return { rows: [], error: null };
+  const t = probe.table;
+  let res = await selectOrdered<Row>(async (orderBy) => {
+    let q = supabase.from(t).select("*").eq("author_id", userId);
+    if (orderBy) q = q.order(orderBy, { ascending: false });
+    return await q.limit(limit);
+  });
+  if (res.error && /author_id|column|does not exist|schema cache/i.test(res.error)) {
+    res = await selectOrdered<Row>(async (orderBy) => {
+      let q = supabase.from(t).select("*").eq("user_id", userId);
+      if (orderBy) q = q.order(orderBy, { ascending: false });
+      return await q.limit(limit);
+    });
+  }
+  if (res.error && !/column|does not exist|order|schema cache/i.test(res.error)) {
+    return { rows: [], error: res.error };
+  }
+  return { rows: res.rows, error: null };
+}
+
+export async function countMyCommunityBoardPosts(supabase: SupabaseClient, userId: string): Promise<number | null> {
+  const probe = await firstReadableTable(supabase, ["community_posts"] as const);
+  if (!probe.table) return null;
+  const t = probe.table;
+  const { count, error } = await supabase.from(t).select("*", { count: "exact", head: true }).eq("author_id", userId);
+  if (error) return null;
+  return typeof count === "number" ? count : null;
+}
+
+export async function countMyShortformPosts(supabase: SupabaseClient, userId: string): Promise<number | null> {
+  const probe = await firstReadableTable(supabase, ["shortform_posts"] as const);
+  if (!probe.table) return null;
+  const t = probe.table;
+  let { count, error } = await supabase.from(t).select("*", { count: "exact", head: true }).eq("author_id", userId);
+  if (error && /author_id|column|does not exist|schema cache/i.test(error.message)) {
+    ({ count, error } = await supabase.from(t).select("*", { count: "exact", head: true }).eq("user_id", userId));
+  }
+  if (error) return null;
+  return typeof count === "number" ? count : null;
+}
+
+/** 게시판·숏폼 행을 합쳐 최근 순으로 max개 */
+export function mergeMeRecentCommunityItems(
+  boardRows: Row[],
+  shortformRows: Row[],
+  max: number
+): { kind: "board" | "shortform"; row: Row }[] {
+  const items = [
+    ...boardRows.map((row) => ({ kind: "board" as const, row })),
+    ...shortformRows.map((row) => ({ kind: "shortform" as const, row })),
+  ];
+  items.sort((a, b) => rowTimestampMs(b.row) - rowTimestampMs(a.row));
+  return items.slice(0, max);
+}
+
 export async function getBoardPost(
   supabase: SupabaseClient,
   id: string
@@ -162,6 +255,38 @@ const COMMUNITY_POST_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
 
 export function isCommunityPostUuid(id: string): boolean {
   return COMMUNITY_POST_UUID_RE.test(id.trim());
+}
+
+/** /community/me 목록·요약용 직렬화 아이템 */
+export type CommunityMePostListItem = {
+  kind: "board" | "shortform";
+  id: string;
+  title: string;
+  dateLabel: string | null;
+  linkHref: string | null;
+};
+
+export function toCommunityMePostListItem(kind: "board" | "shortform", row: Row): CommunityMePostListItem | null {
+  const id = typeof row.id === "string" ? row.id.trim() : "";
+  if (!id) return null;
+  const base = kind === "board" ? "/community/board" : "/community/shortform";
+  return {
+    kind,
+    id,
+    title: pickTitle(row),
+    dateLabel: formatCommunityPostDate(row),
+    linkHref: isCommunityPostUuid(id) ? `${base}/${encodeURIComponent(id)}` : null,
+  };
+}
+
+export function buildCommunityMePostsList(boardRows: Row[], shortformRows: Row[], max: number): CommunityMePostListItem[] {
+  const merged = mergeMeRecentCommunityItems(boardRows, shortformRows, max);
+  const out: CommunityMePostListItem[] = [];
+  for (const { kind, row } of merged) {
+    const item = toCommunityMePostListItem(kind, row);
+    if (item) out.push(item);
+  }
+  return out;
 }
 
 /** 기존 행에 썸네일·표지 URL이 있으면 사용(스키마 변경 없음) */
