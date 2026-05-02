@@ -101,6 +101,13 @@ export function pickExcerpt(r: Row): string {
   return "";
 }
 
+/** 목록 UI용 댓글 수 표기 */
+export function pickCommentCountDisplay(r: Row): string {
+  if (typeof r.comment_count === "number") return String(r.comment_count);
+  if (typeof r.comments_count === "number") return String(r.comments_count);
+  return "—";
+}
+
 export type CommunityPostType = "board" | "shortform";
 
 /** UI·액션과 맞춘 댓글(내부 id 등 비노출) */

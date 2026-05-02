@@ -1,4 +1,5 @@
 import { CommunityHomeContent } from "@/components/community/CommunityHomeContent";
+import { CommunityHomeIntroStrip } from "@/components/community/CommunityHomeIntroStrip";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
@@ -44,12 +45,17 @@ export default async function CommunityLandingPage() {
         />
       }
     >
-      <CommunityHomeContent
-        shortRows={sh.rows}
-        shortFetchFailed={Boolean(sh.error)}
-        boardRows={br.rows}
-        boardFetchFailed={Boolean(br.error)}
-      />
+      <div className="space-y-6">
+        <CommunityHomeIntroStrip />
+        <CommunityHomeContent
+          shortRows={sh.rows}
+          shortFetchFailed={Boolean(sh.error)}
+          boardRows={br.rows}
+          boardFetchFailed={Boolean(br.error)}
+          viewerRole={role}
+          loggedIn={loggedIn}
+        />
+      </div>
     </CommunityLayoutShell>
   );
 }

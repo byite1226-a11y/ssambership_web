@@ -1,17 +1,12 @@
-import Link from "next/link";
+import { CommunityBoardEmptyPanel } from "@/components/community/CommunityBoardEmptyPanel";
+import { CommunityBoardPostRow } from "@/components/community/CommunityBoardPostRow";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
 import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
-import { listBoardPosts, pickTitle } from "@/lib/community/communityQueries";
-
-function commentCount(r: Record<string, unknown>): string {
-  if (typeof r.comment_count === "number") return String(r.comment_count);
-  if (typeof r.comments_count === "number") return String(r.comments_count);
-  return "—";
-}
+import { listBoardPosts } from "@/lib/community/communityQueries";
 
 function boardListDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
   if (role === "mentor") {
@@ -53,46 +48,26 @@ export default async function CommunityBoardPage() {
         />
       }
     >
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {failed ? (
-          <p className="p-6 text-sm text-slate-600">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-        ) : empty ? (
-          <p className="p-6 text-sm text-slate-600">아직 등록된 글이 없습니다. 멘토 작성으로 새 글을 올려 보세요.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {rows.map((r, i) => {
-              const id = typeof r.id === "string" ? r.id : null;
-              return (
-                <li
-                  key={id ?? `bd-${i}`}
-                  className="flex flex-col gap-3 px-5 py-4 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm">
-                      {typeof r.category === "string" ? (
-                        <span className="text-xs font-bold text-slate-500">[{r.category}]</span>
-                      ) : null}{" "}
-                      <span className="font-extrabold text-slate-900">{pickTitle(r)}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">댓글 {commentCount(r)}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {id ? (
-                      <Link
-                        href={`/community/board/${id}`}
-                        className="inline-flex rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
-                      >
-                        읽기
-                      </Link>
-                    ) : (
-                      <span className="text-xs font-medium text-slate-400">읽기 불가</span>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <div className="space-y-4">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700 shadow-inner">
+          <p className="font-extrabold text-slate-900">게시판 안내</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
+            공부법·해설·후기·학습 팁 중심의 글을 카드 형태로 모았어요. 카테고리·작성자 역할·댓글 수를 함께 확인해 보세요.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          {failed ? (
+            <p className="p-4 text-sm text-slate-600">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+          ) : empty ? (
+            <CommunityBoardEmptyPanel role={role} loggedIn={loggedIn} />
+          ) : (
+            <ul className="space-y-4">
+              {rows.map((r, i) => (
+                <CommunityBoardPostRow key={typeof r.id === "string" ? r.id : `bd-${i}`} row={r} index={i} />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </CommunityLayoutShell>
   );

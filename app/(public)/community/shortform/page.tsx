@@ -2,6 +2,7 @@ import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShel
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { CommunityShortformTabs, parseShortformTab } from "@/components/community/CommunityShortformTabs";
 import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
+import { CommunityShortformEmptyPanel } from "@/components/community/CommunityShortformEmptyPanel";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
 import type { AppRole } from "@/lib/types/user";
@@ -54,11 +55,22 @@ export default async function CommunityShortformPage(props: Props) {
       }
     >
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <CommunityShortformTabs active={activeTab} />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">탐색</p>
+            <p className="mt-1 text-sm font-semibold text-slate-800">추천 · 최신 · 인기 · 전체</p>
+            <p className="mt-0.5 text-xs text-slate-500">원하는 탭으로 이동해 숏폼을 빠르게 탐색해 보세요.</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <CommunityShortformTabs active={activeTab} />
+        </div>
         {listFailed ? (
           <p className="mt-6 text-sm text-slate-600">숏폼 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : empty ? (
-          <p className="mt-6 text-sm text-slate-600">아직 등록된 숏폼 영상이 없습니다.</p>
+          <div className="mt-6">
+            <CommunityShortformEmptyPanel role={role} loggedIn={loggedIn} />
+          </div>
         ) : (
           <ul className="mt-6 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-3">
             {rows.map((r, i) => {

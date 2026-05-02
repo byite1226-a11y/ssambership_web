@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { StateBanner } from "@/components/community/StateBanner";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
-import { pickTitle, type CommunityCommentListItem } from "@/lib/community/communityQueries";
+import {
+  formatCommunityPostDate,
+  pickExcerpt,
+  pickMediaThumbnailUrl,
+  pickTitle,
+  type CommunityCommentListItem,
+} from "@/lib/community/communityQueries";
 import { submitCommunityCommentAction } from "@/lib/community/commentActions";
 import { submitCommunityContentReportAction } from "@/lib/community/communityReportActions";
 
@@ -48,6 +54,14 @@ function mapReportError(code: string | null | undefined): string | null {
   return "신고를 접수하지 못했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
+function PlayGlyph() {
+  return (
+    <svg className="h-14 w-14 text-white drop-shadow-md" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  );
+}
+
 export function CommunityPostDetail(props: {
   variant: "shortform" | "board";
   postId: string;
@@ -71,7 +85,11 @@ export function CommunityPostDetail(props: {
   const t = props.row ? pickTitle(props.row) : props.title;
   const body = bodyText(props.row);
   const author = props.row ? authorLabel(props.row) : "작성자";
+  const dateStr = props.row ? formatCommunityPostDate(props.row) : null;
+  const thumb = props.row ? pickMediaThumbnailUrl(props.row) : null;
+  const teaser = props.row ? pickExcerpt(props.row) : "";
   const postType = props.variant === "board" ? "board" : "shortform";
+  const bodyOrTeaser = body || teaser;
   const commentErrMsg = mapCommentError(props.commentErrorCode);
   const reportErrMsg = mapReportError(props.reportErrorCode);
   const n = props.comments.length;
@@ -91,29 +109,119 @@ export function CommunityPostDetail(props: {
       {reportErrMsg ? <StateBanner kind="error" message={reportErrMsg} /> : null}
 
       {props.row ? (
-        <article className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h1 className="text-2xl font-black text-slate-900">{t}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-            <span className="font-semibold text-slate-800">{author}</span>
-            <AuthorRoleBadge row={props.row} />
-          </div>
-          {body ? (
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-800">{body}</p>
-          ) : (
-            <p className="mt-4 text-sm text-slate-500">등록된 본문이 없습니다.</p>
-          )}
+        <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <header className="border-b border-slate-100 bg-white px-6 pb-5 pt-6">
+            <div className="flex flex-wrap items-center gap-2">
+              {typeof props.row.category === "string" && props.row.category.trim() ? (
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-extrabold text-blue-800 ring-1 ring-blue-100">
+                  {props.row.category.trim()}
+                </span>
+              ) : null}
+              <AuthorRoleBadge row={props.row} />
+            </div>
+            <h1 className="mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-3xl">{t}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+              <span className="font-semibold text-slate-800">{author}</span>
+              {dateStr ? (
+                <>
+                  <span className="text-slate-300" aria-hidden>
+                    ·
+                  </span>
+                  <time>{dateStr}</time>
+                </>
+              ) : null}
+            </div>
+          </header>
 
           {props.variant === "shortform" ? (
-            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              <p>숏폼 영상 플레이어는 준비 중입니다. 제목·설명으로 내용을 먼저 확인해 주세요.</p>
+            <div className="grid gap-8 px-6 py-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
+              <div className="mx-auto w-full max-w-[320px] lg:mx-0 lg:sticky lg:top-24">
+                <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border-2 border-slate-200 bg-gradient-to-b from-slate-200 via-slate-100 to-slate-200 shadow-inner">
+                  {thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- 외부 썸네일 URL 동적 표시
+                    <img src={thumb} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center px-6 text-center">
+                      <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">숏폼 영상</p>
+                      <p className="mt-2 text-sm font-bold text-slate-700">영상 준비 중</p>
+                      <p className="mt-2 text-xs leading-relaxed text-slate-600">세로(9:16) 영상이 연결되면 이 영역에 표시됩니다.</p>
+                    </div>
+                  )}
+                  <div
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20"
+                    aria-hidden
+                  >
+                    <span className="rounded-full bg-black/45 p-3 ring-2 ring-white/30">
+                      <PlayGlyph />
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-3 text-center text-xs leading-relaxed text-slate-500">
+                  재생은 준비 중입니다. 오른쪽 설명·본문으로 내용을 먼저 확인해 주세요.
+                </p>
+              </div>
+              <div className="min-w-0 space-y-5">
+                <section aria-labelledby="sf-body-heading">
+                  <h2 id="sf-body-heading" className="text-sm font-extrabold text-slate-900">
+                    설명 · 본문
+                  </h2>
+                  {bodyOrTeaser ? (
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-800">{bodyOrTeaser}</p>
+                  ) : (
+                    <p className="mt-2 text-sm text-slate-500">등록된 본문이 없습니다.</p>
+                  )}
+                </section>
+              </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="px-6 py-6">
+              <section aria-labelledby="bd-body-heading">
+                <h2 id="bd-body-heading" className="text-sm font-extrabold text-slate-900">
+                  본문
+                </h2>
+                {bodyOrTeaser ? (
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">{bodyOrTeaser}</p>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-500">등록된 본문이 없습니다.</p>
+                )}
+              </section>
+            </div>
+          )}
         </article>
       ) : null}
 
       {props.row ? (
-        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm">
+          <h2 className="text-base font-extrabold text-slate-900">관련 콘텐츠</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            관련 숏폼·게시글 추천 데이터를 준비 중입니다. 아래에서 커뮤니티 안을 더 둘러보세요.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/community/shortform"
+              className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
+            >
+              숏폼 보기
+            </Link>
+            <Link
+              href="/community/board"
+              className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
+            >
+              게시판 보기
+            </Link>
+            <Link
+              href="/community"
+              className="inline-flex rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-900 shadow-sm hover:bg-blue-100"
+            >
+              커뮤니티 홈
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
+      {props.row ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 pb-3">
             <h2 className="text-base font-extrabold text-slate-900">댓글</h2>
             <span className="text-sm text-slate-500">{n}개</span>
           </div>
@@ -141,7 +249,7 @@ export function CommunityPostDetail(props: {
             </ul>
           ) : null}
 
-          <div className="mt-5 border-t border-slate-200 pt-4">
+          <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
             {props.canComment ? (
               <form action={submitCommunityCommentAction} className="space-y-3">
                 <input type="hidden" name="postType" value={postType} />
@@ -184,7 +292,7 @@ export function CommunityPostDetail(props: {
 
       {props.row ? (
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-extrabold text-slate-900">신고</h2>
+          <h2 className="border-b border-slate-100 pb-3 text-base font-extrabold text-slate-900">신고</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             이 글은 즉시 삭제·숨김·블라인드 처리되지 않습니다. 운영 정책에 따라{" "}
             <span className="font-semibold text-slate-800">관리자 검토 요청</span>으로 접수되며, 확인 후 필요한 조치가
