@@ -30,7 +30,7 @@ export default async function NotificationsPage(props: Props) {
 
   const role: AppRole = (profile?.role as AppRole) ?? "student";
   if (authErr && !profile) {
-    /* RLS may still return rows; 프로필 없이도 알림 id만 맞으면 읽힘 */
+    /* 프로필 없이도 알림 id가 일치하면 목록이 표시될 수 있음 */
   }
 
   return (

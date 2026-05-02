@@ -393,7 +393,7 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
   };
 
   const qDis: AdminQueueMetric = {
-    label: "분쟁 진행",
+    label: "분쟁 관리",
     nText: fmt(summary.disputeActiveCount),
     href: "/admin/disputes",
     detail:
@@ -433,7 +433,7 @@ function summaryToQueueCards(summary: AdminDashboardSummary): AdminQueueMetric[]
 
   const amt = summary.settlementPendingAmount ?? 0;
   const qSet: AdminQueueMetric = {
-    label: "정산 현황",
+    label: "정산 관리",
     nText:
       summary.settlementPendingCount === null
         ? "—"

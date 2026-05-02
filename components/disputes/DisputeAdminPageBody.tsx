@@ -124,7 +124,7 @@ export function DisputeAdminPageBody(props: {
         <section className="rounded-2xl border border-slate-200 bg-white p-4">
           <h2 className="text-sm font-extrabold text-slate-900">운영 조치</h2>
           <p className="mt-1 text-xs text-slate-600">
-            상태 변경은 이 분쟁 기록에만 적용됩니다. 가능한 상태값: open, under_review, escalated, resolved, dismissed
+            상태 변경은 이 분쟁 기록에만 적용됩니다. 접수·검토 중·운영 검토 중·해결·종결 단계로 구분해 관리합니다.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {canReview ? (
@@ -132,7 +132,7 @@ export function DisputeAdminPageBody(props: {
                 <input type="hidden" name="disputeId" value={props.disputeId} />
                 <button
                   type="submit"
-                  title="open 또는 escalated 건을 검토 중으로 바꿉니다."
+                  title="접수 또는 운영 검토 중인 건을 검토 중으로 바꿉니다."
                   className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-extrabold text-white hover:bg-indigo-700"
                 >
                   검토 중으로
@@ -145,7 +145,7 @@ export function DisputeAdminPageBody(props: {
                   <input type="hidden" name="disputeId" value={props.disputeId} />
                   <button
                     type="submit"
-                    title="분쟁을 해결(resolved)로 표시합니다. 환불은 자동 실행되지 않습니다."
+                    title="분쟁을 해결됨으로 표시합니다. 환불은 자동 실행되지 않습니다."
                     className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-extrabold text-white hover:bg-emerald-800"
                   >
                     해결 처리
@@ -155,7 +155,7 @@ export function DisputeAdminPageBody(props: {
                   <input type="hidden" name="disputeId" value={props.disputeId} />
                   <button
                     type="submit"
-                    title="분쟁을 종결(dismissed)로 표시합니다. 환불·정산은 별도 확인이 필요합니다."
+                    title="분쟁을 종결됨으로 표시합니다. 환불·정산은 별도 확인이 필요합니다."
                     className="rounded-lg bg-slate-600 px-3 py-2 text-xs font-extrabold text-white hover:bg-slate-700"
                   >
                     종결 처리
@@ -198,7 +198,7 @@ export function DisputeAdminPageBody(props: {
       )}
 
       <div className="grid gap-2 md:grid-cols-2">
-        <DisputeKeyValueList title="분쟁(원시)" row={d} maxKeys={16} />
+        <DisputeKeyValueList title="분쟁 기록(핵심 필드)" row={d} maxKeys={16} />
         <div className="space-y-2">
           <DisputeKeyValueList title="환불" row={props.bundle.refund.row} maxKeys={8} />
           <DisputeKeyValueList title="결제" row={props.bundle.payment.row} maxKeys={8} />

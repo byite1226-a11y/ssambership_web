@@ -86,13 +86,13 @@ export async function fetchCashLedgerForUser(
   return { rows: (data as LedgerLineRow[]) ?? [], table: probe.table, error: null };
 }
 
-/** 문서/스키마 연결 예정 포인트(화면에 그대로 노출 가능) */
+/** 캐시·지갑 화면 하단 안내(사용자용) */
 export const CASH_DATA_MODEL = [
-  "payments (캐시 충전/결제 intent, 맞춤의뢰와 분리)",
-  "refunds",
-  "subscriptions (멤버십 구독 — /subscribe 흐름, 캐시 잔액과 분리)",
-  "notifications (결제·환불 알림)",
-  "wallets + ledger (잔액/원장 — 본 화면만의 소스 of truth로 확정 예정)",
+  "캐시 충전·결제 내역(맞춤의뢰와 별도)",
+  "환불 처리",
+  "멤버십 구독(캐시와 별도 흐름)",
+  "결제·환불 알림",
+  "잔액·사용 내역(원장)",
 ] as const;
 
 const PAY_TABLES = ["payments", "payment_intents", "order_payments"] as const;
@@ -129,10 +129,26 @@ export async function fetchRecentPaymentsForUser(
   return { table: null, rows: [], error: null, probe: "payments 조회 경로 없음" };
 }
 
+function formatCashUnitsFromMinorUnits(cents: number): string {
+  const n = cents / 100;
+  const abs = Math.abs(n);
+  const body = abs.toLocaleString("ko-KR", { maximumFractionDigits: 0 });
+  return `현재 잔액 ${n < 0 ? "-" : ""}${body}캐시`;
+}
+
 export function formatWalletRowDisplay(row: Record<string, unknown> | null): string {
   if (!row) return "";
-  if (typeof row.balance_cents === "number") return `잔액 ${row.balance_cents} (단위: 스키마에 cents 가정)`;
-  if (typeof row.amount_cents === "number") return `잔액 ${row.amount_cents} (amount_cents)`;
-  if (typeof row.balance === "number" || typeof row.balance === "string") return `잔액 ${String(row.balance)}`;
-  return "잔액 컬럼을 wallets 스키마에 맞게 표시하세요 (balance / balance_cents 등).";
+  if (typeof row.balance_cents === "number" && Number.isFinite(row.balance_cents)) {
+    return formatCashUnitsFromMinorUnits(row.balance_cents);
+  }
+  if (typeof row.amount_cents === "number" && Number.isFinite(row.amount_cents)) {
+    return formatCashUnitsFromMinorUnits(row.amount_cents);
+  }
+  if (typeof row.balance === "number" && Number.isFinite(row.balance)) {
+    return `현재 잔액 ${row.balance.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}캐시`;
+  }
+  if (typeof row.balance === "string" && row.balance.trim()) {
+    return `현재 잔액 ${row.balance.trim()}`;
+  }
+  return "잔액 정보를 확인했습니다.";
 }

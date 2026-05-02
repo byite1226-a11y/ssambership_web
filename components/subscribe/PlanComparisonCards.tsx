@@ -22,8 +22,9 @@ export function PlanComparisonCards(props: {
   fillProbe: string;
 }) {
   const { mentorId, byTier, selectedTier, plansError, plansProbe, fillProbe } = props;
+  void plansProbe;
+  void fillProbe;
   if (plansError) {
-    console.error("[PlanComparisonCards] plansError", plansError, plansProbe, fillProbe);
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
         <p className="text-sm font-extrabold text-red-900">플랜 조회 오류</p>

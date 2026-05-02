@@ -17,7 +17,7 @@ function ListBlock(props: { title: string; items: MentorChannelListItem[] }) {
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
         <p className="text-sm font-extrabold text-slate-800">{title}</p>
-        <p className="mt-1 text-xs text-slate-500">항목 없음 · 타입 컬럼이 없으면 &quot;기타&quot; 구간에만 쌓일 수 있음</p>
+        <p className="mt-1 text-xs text-slate-500">등록된 항목이 없습니다.</p>
       </div>
     );
   }
@@ -42,6 +42,7 @@ export function MentorChannelPageBody(props: {
   probe: string;
 }) {
   const { items, listError, probe } = props;
+  void probe;
 
   if (listError) {
     return (
@@ -49,9 +50,8 @@ export function MentorChannelPageBody(props: {
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5">
           <p className="text-sm font-extrabold text-amber-900">채널 자료는 아직 준비 중입니다</p>
           <p className="mt-2 text-sm text-amber-950">
-            미디어·연결 테이블이 아직 없거나 접근할 수 없을 때도 여기서 안내합니다. 등록이 가능해지면 목록이 채워져요.
+            등록된 자료가 없거나 아직 연결되지 않았을 수 있어요. 준비가 되면 이곳에 표시됩니다.
           </p>
-          <p className="mt-2 text-xs text-amber-900/80">{probe}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link

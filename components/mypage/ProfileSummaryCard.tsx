@@ -1,8 +1,12 @@
 import type { UserRow } from "@/lib/types/user";
 
-/**
- * 멘토/학생 공용: 프로필 한 줄·역할·보조 메타(스키마 연동 시 필드만 늘리면 됨)
- */
+const AREA_ROLE_KO: Record<"student" | "mentor" | "admin", string> = {
+  student: "학생",
+  mentor: "멘토",
+  admin: "관리자",
+};
+
+/** 멘토/학생 공용 프로필 요약 카드 */
 export function ProfileSummaryCard(props: {
   profile: UserRow | null;
   fallbackEmail: string | null;
@@ -19,9 +23,9 @@ export function ProfileSummaryCard(props: {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900">프로필</h2>
-          <p className="mt-1 text-sm text-slate-500">public.users + Auth 세션 (RLS)</p>
+          <p className="mt-1 text-sm text-slate-500">프로필 정보를 불러왔습니다.</p>
         </div>
-        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">역할: {areaRole}</span>
+        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">{AREA_ROLE_KO[areaRole]}</span>
       </div>
       {profileError ? (
         <p className="mt-3 text-sm font-semibold text-amber-800">프로필: {profileError}</p>

@@ -6,7 +6,7 @@ export function HeroSection() {
       <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">W02 · 메인 웹</p>
       <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">질문부터 구독까지, 한곳에서</h1>
       <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600">
-        멘토 탐색·질문방·커뮤니티·맞춤의뢰·캐시/구독 결제를 하나의 제품 흐름으로 연결합니다. 아래 블록은 Supabase 실조회(또는 RLS로 빈 상태)입니다.
+        멘토 탐색·질문방·커뮤니티·맞춤의뢰·캐시/구독 결제를 하나의 흐름으로 연결합니다. 아래 숫자는 서비스 운영 데이터를 기준으로 표시됩니다.
       </p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/mentors" className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-extrabold text-white hover:bg-blue-500">

@@ -14,12 +14,12 @@ export default async function MentorDashboardPage() {
       hideFooterPlaceholderCards
       eyebrow="홈"
       title="멘토 대시보드"
-      description="답변·질문방·맞춤의뢰·정산·분쟁으로 바로 갈 수 있어요. 숫자는 스키마·권한에 맞게 집계돼요."
+      description="답변·질문방·맞춤의뢰·정산·분쟁으로 바로 갈 수 있어요. 숫자는 권한과 연결 상태에 따라 달라질 수 있어요."
       ctas={[
         { href: "/mentor/question-room", label: "질문방 관리", tone: "green" },
         { href: "/mentor/custom-request/orders", label: "맞춤의뢰 주문", tone: "blue" },
         { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰", tone: "blue" },
-        { href: "/mentor/support/disputes", label: "분쟁·환불", tone: "blue" },
+        { href: "/mentor/support/disputes", label: "분쟁 현황 보기", tone: "blue" },
         { href: "/mentor/payouts", label: "정산", tone: "slate" },
         { href: "/mentor/profile", label: "프로필", tone: "slate" },
         { href: "/mentor/community/new", label: "커뮤니티 글쓰기", tone: "slate" },

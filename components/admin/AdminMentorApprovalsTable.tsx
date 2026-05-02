@@ -73,7 +73,7 @@ export function AdminMentorApprovalsTable(props: {
     <div className="space-y-3">
       {missingStatus ? (
         <p className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-950">
-          승인 상태를 변경할 수 있는 컬럼을 찾지 못했습니다. 스키마를 확인한 뒤 다시 시도해 주세요.
+          승인 상태를 변경할 수 있는 항목을 찾지 못했습니다. 잠시 후 다시 시도하거나 시스템 담당자에게 문의해 주세요.
         </p>
       ) : null}
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">

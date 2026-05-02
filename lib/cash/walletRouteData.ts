@@ -8,16 +8,16 @@ import {
 } from "@/lib/cash/cashQueries";
 
 export const WALLET_CHARGE_DATA_MODEL = [
-  "cash_wallets / wallets(잔액)",
-  "cash_topup_packages(최대 5슬롯 UI)",
-  "cash_ledger(최근 사용 요약 — 맞춤의뢰와 별도)",
-  "payments(최근 결제 스냅샷)",
+  "지갑 잔액",
+  "충전 상품 안내",
+  "최근 캐시 사용 요약(맞춤의뢰와 별도)",
+  "최근 결제 요약",
 ] as const;
 
 export const WALLET_LEDGER_DATA_MODEL = [
-  "cash_ledger(원장)",
-  "payments(참조 id — 맞춤의뢰 order와 혼동 금지, payload로 구분 예정)",
-  "wallets(상단 잔액)",
+  "캐시 사용 내역(원장)",
+  "맞춤의뢰 결제와 구분되는 캐시 흐름",
+  "상단 잔액",
 ] as const;
 
 export type WalletChargePageData = {

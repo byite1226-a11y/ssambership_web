@@ -38,7 +38,7 @@ export default async function StudentMyPage() {
         { href: "/question-room", label: "질문방", tone: "blue" },
         { href: "/custom-request/orders", label: "맞춤의뢰 주문", tone: "slate" },
         { href: "/notifications", label: "알림", tone: "slate" },
-        { href: "/support/disputes", label: "분쟁", tone: "slate" },
+        { href: "/support/disputes", label: "분쟁·환불 현황", tone: "slate" },
         { href: "/subscriptions", label: "구독", tone: "slate" },
         { href: "/wallet/charge", label: "캐시·지갑", tone: "slate" },
       ]}

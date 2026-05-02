@@ -53,13 +53,6 @@ export default async function MentorDetailByIdPage(props: Props) {
   const subscribePath = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
   const studentLoginForSubscribe = `/login/student?next=${encodeURIComponent(subscribePath)}`;
 
-  if (bundle.profileError) {
-    console.error("[mentors/[mentorId]] profileError", bundle.profileError);
-  }
-  if (bundle.media.error) console.error("[mentors/[mentorId]] media", bundle.media.error);
-  if (bundle.reviews.error) console.error("[mentors/[mentorId]] reviews", bundle.reviews.error);
-  if (bundle.plans.error) console.error("[mentors/[mentorId]] plans", bundle.plans.error);
-
   return (
     <PageScaffold
       hideFooterPlaceholderCards

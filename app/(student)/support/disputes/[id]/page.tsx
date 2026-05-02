@@ -28,7 +28,7 @@ export default async function StudentDisputeDetailPage(props: PageProps) {
       title="분쟁·환불 상세"
       description="접수하신 분쟁의 진행 상태와 관련 정보를 확인할 수 있습니다."
       ctas={[
-        { href: "/support/disputes", label: "분쟁 목록", tone: "blue" },
+        { href: "/support/disputes", label: "분쟁·환불 현황", tone: "blue" },
         { href: "/mypage", label: "마이페이지", tone: "slate" },
         { href: "/home", label: "홈", tone: "slate" },
       ]}

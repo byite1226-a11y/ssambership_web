@@ -71,7 +71,7 @@ export function AdminDisputesListView(props: Props) {
               .filter((it) => it.id && it.id !== "—")
               .map((it) => {
                 const idPv = previewId(it.id);
-                const st = adminDisputeStatusLabel(it.statusLabel);
+                const st = adminDisputeStatusLabel(it.statusRaw || it.statusLabel);
                 return (
                   <tr key={it.id} className="border-b border-slate-100 last:border-0">
                     <td className="max-w-[120px] truncate px-3 py-2 font-mono text-xs text-slate-800" title={idPv.title}>
@@ -84,7 +84,7 @@ export function AdminDisputesListView(props: Props) {
                       {it.actorSummary}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-extrabold ${badge(it.statusLabel)}`}>{st}</span>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-extrabold ${badge(it.statusRaw || it.statusLabel)}`}>{st}</span>
                     </td>
                     <td className="max-w-[260px] truncate px-3 py-2 text-xs text-slate-700" title={it.summaryReason !== "—" ? it.summaryReason : undefined}>
                       {it.summaryReason}

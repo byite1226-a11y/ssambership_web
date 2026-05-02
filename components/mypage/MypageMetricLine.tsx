@@ -1,9 +1,9 @@
 import type { MypageMetric } from "@/lib/mypage/mypageQueries";
 
 const statusLabel: Record<MypageMetric["status"], string> = {
-  connected: "connected",
-  empty: "empty",
-  skeleton: "skeleton",
+  connected: "연결됨",
+  empty: "내역 없음",
+  skeleton: "확인 중",
 };
 
 const statusClass: Record<MypageMetric["status"], string> = {

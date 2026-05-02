@@ -36,7 +36,7 @@ type Row = Record<string, unknown>;
 /** 분쟁 open/under_review/escalated 시 납품·수락·수정요청·작업시작을 잠금(서버 액션과 동기). */
 function disputeLifecycleBlockReason(detail: OrderDetailPageData): string | null {
   if (hasActiveDisputeForOrderRows(detail.bundle.disputes.rows ?? [])) {
-    return "진행 중인 분쟁이 있어 이 작업을 할 수 없습니다.";
+    return "진행 중인 분쟁이 있어 이 작업은 제한됩니다.";
   }
   return null;
 }
@@ -233,8 +233,7 @@ export function OrderRoomView(props: {
   const revBlock = studentRevisionRequestDisabledReason(actorRole, view, o as Row, detail);
   const disputeFormBlock = openDisputeApplicationDisabledReason(actorRole, o as Row, detail);
   const hasActiveDispute = Boolean(detail.hasActiveDispute);
-  const activeDisputeActionBlock =
-    hasActiveDispute ? "진행 중인 분쟁이 있어 이 작업을 할 수 없습니다." : null;
+  const activeDisputeActionBlock = hasActiveDispute ? "진행 중인 분쟁이 있어 이 작업은 제한됩니다." : null;
   const oid = String((o as Row).id ?? "");
   const idForDisplay = String(oid || orderId).trim();
 
@@ -295,6 +294,7 @@ export function OrderRoomView(props: {
               mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
               studentRevisionRequestDisabledReason={revBlock}
               openDisputeApplicationDisabledReason={disputeFormBlock}
+              hasActiveDispute={hasActiveDispute}
               mentorRevisionJumpDisabledReason={view === "mentor" ? activeDisputeActionBlock : null}
             />
             <div className="space-y-3">

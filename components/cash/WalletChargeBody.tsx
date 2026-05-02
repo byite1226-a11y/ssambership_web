@@ -12,6 +12,26 @@ const FAQ = [
   "맞춤의뢰 주문은 맞춤의뢰 메뉴에서 따로 확인해 주세요.",
 ] as const;
 
+function pickFirstString(row: Record<string, unknown>, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) return v.trim().slice(0, 120);
+    if (typeof v === "number") return String(v);
+  }
+  return null;
+}
+
+function packageCardLine(row: Record<string, unknown>): string {
+  return pickFirstString(row, ["title", "name", "label", "description", "summary"]) ?? "충전 상품";
+}
+
+function paymentCardLine(r: Record<string, unknown>): string {
+  const amt = pickFirstString(r, ["amount", "amount_krw", "total", "price"]);
+  const status = pickFirstString(r, ["status", "state"]);
+  const parts = [amt ? `금액: ${amt}` : null, status ? `상태: ${status}` : null].filter(Boolean) as string[];
+  return parts.length ? parts.join(" · ") : "결제 내역";
+}
+
 function Banner({ kind, message }: { kind: "error" | "empty" | "info"; message: string }) {
   const skin =
     kind === "error"
@@ -24,18 +44,13 @@ function Banner({ kind, message }: { kind: "error" | "empty" | "info"; message: 
 
 export function WalletChargeBody(props: {
   data: WalletChargePageData;
-  userIdShort: string;
   actionOk?: string | null;
   actionError?: string | null;
   /** 서버: `CASH_TOPUP_ALLOW_TEST_CHARGE === "true"` 일 때만 true */
   allowTestTopup?: boolean;
 }) {
-  const { data, userIdShort, actionOk, actionError, allowTestTopup = false } = props;
+  const { data, actionOk, actionError, allowTestTopup = false } = props;
   const { balance, packages, ledgerPreview, payments } = data;
-  if (balance.error) console.error("[WalletChargeBody] balance", balance.error);
-  if (packages.error) console.error("[WalletChargeBody] packages", packages.error);
-  if (ledgerPreview.error) console.error("[WalletChargeBody] ledgerPreview", ledgerPreview.error);
-  if (payments.error) console.error("[WalletChargeBody] payments", payments.error);
 
   const balanceText = balance.error
     ? ""
@@ -60,7 +75,6 @@ export function WalletChargeBody(props: {
             <Banner kind="empty" message="잔액을 표시할 데이터가 없습니다." />
           </div>
         ) : null}
-        <p className="mt-2 text-xs text-slate-500">user …{userIdShort}</p>
         <div id="test-topup" className="mt-4">
           {allowTestTopup ? (
             <WalletTopupTestForm />
@@ -74,7 +88,7 @@ export function WalletChargeBody(props: {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="text-lg font-extrabold text-slate-900">충전 패키지(최대 5슬롯)</h2>
+        <h2 className="text-lg font-extrabold text-slate-900">충전 상품</h2>
         {packages.error ? <div className="mt-2"><Banner kind="error" message={USER_UI_LOAD_FAILED} /></div> : null}
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {slots.map((row, i) => (
@@ -83,9 +97,9 @@ export function WalletChargeBody(props: {
               className="min-h-[100px] rounded-xl border border-slate-200 p-3 text-sm"
             >
               {row ? (
-                <pre className="max-h-40 overflow-auto text-xs text-slate-800">{JSON.stringify(row, null, 2)}</pre>
+                <p className="text-sm font-semibold text-slate-800">{packageCardLine(row as Record<string, unknown>)}</p>
               ) : (
-                <p className="text-xs text-slate-500">슬롯 {i + 1} — 표시할 패키지가 없습니다.</p>
+                <p className="text-xs text-slate-500">표시할 상품이 없습니다.</p>
               )}
             </li>
           ))}
@@ -125,7 +139,7 @@ export function WalletChargeBody(props: {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-        <h2 className="text-lg font-extrabold text-slate-900">최근 결제(스냅샷)</h2>
+        <h2 className="text-lg font-extrabold text-slate-900">최근 결제</h2>
         {payments.error ? <div className="mt-2"><Banner kind="error" message={USER_UI_LOAD_FAILED} /></div> : null}
         {!payments.error && payments.rows.length === 0 ? (
           <div className="mt-2">
@@ -134,8 +148,8 @@ export function WalletChargeBody(props: {
         ) : null}
         <ul className="mt-2 space-y-1 text-xs text-slate-700">
           {payments.rows.map((r, i) => (
-            <li key={i} className="font-mono">
-              {JSON.stringify(r).slice(0, 200)}…
+            <li key={i} className="rounded border border-slate-100 bg-slate-50/80 px-2 py-1.5">
+              {paymentCardLine(r as Record<string, unknown>)}
             </li>
           ))}
         </ul>
@@ -153,19 +167,14 @@ export function WalletChargeBody(props: {
         {!allowTestTopup ? (
           <p className="w-full text-sm text-slate-600 sm:w-auto sm:self-center">PG 결제 연동 준비 중입니다.</p>
         ) : null}
-        <button
-          type="button"
-          disabled
-          className="cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2 text-sm font-bold text-slate-600"
-          title="PG·intent 연동 후"
-        >
-          PG 연동 결제(자리)
+        <button type="button" disabled className="cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2 text-sm font-bold text-slate-600" title="준비 중">
+          결제 진행(준비 중)
         </button>
         <Link className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800" href="/wallet/ledger">
           사용 내역
         </Link>
         <Link className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600" href="/cash">
-          기존 /cash (공개)
+          공개 캐시 안내
         </Link>
       </div>
     </div>

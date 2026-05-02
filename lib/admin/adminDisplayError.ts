@@ -53,7 +53,7 @@ export function adminListErrorDescription(context: AdminErrorDisplayContext): st
     case "reviews":
       return "리뷰 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "disputes":
-      return "분쟁 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
+      return "분쟁 관리 화면을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "settlements":
       return "정산 목록을 불러오지 못했습니다. 권한·연결을 확인하거나 잠시 후 다시 시도해 주세요.";
     case "mentorApprovals":

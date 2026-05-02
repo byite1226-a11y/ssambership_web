@@ -252,7 +252,7 @@ export default async function AdminRefundsPage(props: PageProps) {
                               href={`/admin/disputes/${encodeURIComponent(disputeHref)}`}
                               prefetch={false}
                             >
-                              분쟁 보기
+                              분쟁 관리에서 보기
                             </Link>
                           </p>
                         ) : null}

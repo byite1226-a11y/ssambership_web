@@ -52,7 +52,7 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
       title="분쟁 상세"
       description="분쟁 본문·당사자·연결 주문·결제·환불 정보를 확인하고 상태를 조정합니다. 금전·정산·환불 실행은 이 화면에서 자동으로 이루어지지 않습니다."
       ctas={[
-        { href: "/admin/disputes", label: "분쟁 목록", tone: "blue" },
+        { href: "/admin/disputes", label: "분쟁 관리", tone: "blue" },
         { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
         { href: "/admin", label: "대시보드", tone: "slate" },
       ]}
@@ -68,7 +68,7 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2 text-sm">
           <Link className="font-extrabold text-indigo-800 underline" href="/admin/disputes" prefetch={false}>
-            ← 분쟁 목록
+            ← 분쟁 관리
           </Link>
           <span className="text-slate-300">|</span>
           <Link className="font-extrabold text-slate-700 underline" href="/admin" prefetch={false}>

@@ -13,7 +13,7 @@ export const MYPAGE_DATA_MODEL = [
 ] as const;
 
 export type MypageMetric = {
-  /** empty면 조회는 됐으나 0건, skeleton이면 스키마/권한/칼럼 이슈 */
+  /** empty면 조회는 됐으나 0건, skeleton이면 일시적으로 집계를 불러오지 못한 상태 */
   label: string;
   valueText: string;
   status: "connected" | "empty" | "skeleton";
@@ -143,11 +143,13 @@ export async function loadStudentMypageBundle(
   const payConn = p.connected;
   const notifConn = n.connected;
 
+  const roleLabel =
+    profile?.role === "student" ? "학생" : profile?.role === "mentor" ? "멘토" : profile?.role === "admin" ? "운영" : "계정";
   const scaff: ScaffoldRow[] = [
     {
       title: "프로필",
       body: profile
-        ? `닉네임·이름: ${profile.nickname ?? profile.full_name ?? "—"} (${profile.role})`
+        ? `닉네임·이름: ${profile.nickname ?? profile.full_name ?? "—"} (${roleLabel})`
         : (profileError ?? "프로필을 불러오지 못했어요."),
       status: profile ? "connected" : "skeleton",
     },

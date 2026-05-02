@@ -7,6 +7,26 @@ import {
   USER_UI_CASH_PACKAGES_LOAD_FAILED,
 } from "@/lib/constants/userFacingMessages";
 
+function pickFirstString(row: Record<string, unknown>, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) return v.trim().slice(0, 120);
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+  }
+  return null;
+}
+
+function packageCardTitle(row: Record<string, unknown>): string {
+  return pickFirstString(row, ["title", "name", "label", "description", "summary"]) ?? "충전 상품";
+}
+
+function packageCardExtra(row: Record<string, unknown>): string | null {
+  const amt = pickFirstString(row, ["amount", "amount_krw", "price", "total", "price_krw"]);
+  const bonus = pickFirstString(row, ["bonus", "bonus_credits", "extra"]);
+  const parts = [amt ? `${amt}원` : null, bonus ? `보너스 ${bonus}` : null].filter(Boolean) as string[];
+  return parts.length ? parts.join(" · ") : null;
+}
+
 function Banner({ kind, message }: { kind: "loading" | "error" | "empty" | "info"; message: string }) {
   const skin =
     kind === "loading"
@@ -29,13 +49,6 @@ export function CashTopUpEntry(props: {
   primaryCta: { href: string; label: string };
   secondaryCta?: { href: string; label: string };
 }) {
-  if (props.balanceError) {
-    console.error("[CashTopUpEntry] balanceError", props.balanceError);
-  }
-  if (props.packageError) {
-    console.error("[CashTopUpEntry] packageError", props.packageError);
-  }
-
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -69,11 +82,15 @@ export function CashTopUpEntry(props: {
           </div>
         ) : null}
         <ul className="mt-3 space-y-2">
-          {props.packageRows.map((row, i) => (
-            <li key={typeof row.id === "string" ? row.id : `pkg-${i}`} className="rounded-xl border border-slate-200 p-3 text-sm text-slate-800">
-              <pre className="max-h-32 overflow-auto text-xs">{JSON.stringify(row, null, 2)}</pre>
-            </li>
-          ))}
+          {props.packageRows.map((row, i) => {
+            const extra = packageCardExtra(row);
+            return (
+              <li key={typeof row.id === "string" ? row.id : `pkg-${i}`} className="rounded-xl border border-slate-200 p-3 text-sm text-slate-800">
+                <p className="font-extrabold text-slate-900">{packageCardTitle(row)}</p>
+                {extra ? <p className="mt-1 text-xs text-slate-600">{extra}</p> : null}
+              </li>
+            );
+          })}
         </ul>
       </section>
 

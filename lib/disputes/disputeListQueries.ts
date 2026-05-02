@@ -9,6 +9,8 @@ export type DisputeListItem = {
   id: string;
   typeLabel: string;
   statusLabel: string;
+  /** 배지 색 등 UI용 원문 상태(영문·DB값) */
+  statusRaw: string;
   orderSummary: string;
   row: Row;
 };
@@ -40,21 +42,84 @@ function pickStatus(r: Row): string {
   return "—";
 }
 
+function isUuidLike(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s.trim());
+}
+
+function shortRef(v: unknown): string {
+  if (v == null || v === "") return "";
+  const s = String(v).trim();
+  if (!s) return "";
+  if (isUuidLike(s)) return `···${s.slice(-6)}`;
+  if (s.length > 18) return `${s.slice(0, 8)}…`;
+  return s;
+}
+
+/** 학생·멘토 목록용 한글 상태 */
+function partyDisputeStatusKo(raw: string): string {
+  const s = raw.trim().toLowerCase();
+  if (!s || s === "—") return "—";
+  const map: Record<string, string> = {
+    open: "접수됨",
+    new: "접수됨",
+    submitted: "접수됨",
+    pending: "검토 중",
+    under_review: "검토 중",
+    escalated: "운영 검토 중",
+    resolved: "해결됨",
+    dismissed: "종료됨",
+    closed: "종료됨",
+    rejected: "반려됨",
+  };
+  return map[s] ?? raw;
+}
+
+function partyDisputeTypeKo(raw: string): string {
+  const s = raw.trim().toLowerCase();
+  if (!s || s === "—") return "—";
+  const map: Record<string, string> = {
+    refund: "환불",
+    payment: "결제",
+    order: "주문",
+    subscription: "구독",
+    custom_request: "맞춤의뢰",
+    dispute: "분쟁",
+  };
+  if (map[s]) return map[s];
+  if (s.length <= 32 && s.includes("_")) return s.replace(/_/g, " ");
+  const t = raw.trim();
+  return t.length > 40 ? `${t.slice(0, 20)}…` : t;
+}
+
 function orderLine(r: Row): string {
-  const parts: string[] = [];
-  for (const k of ["payment_id", "refund_id", "order_id", "subscription_id", "custom_request_order_id", "mentor_order_id"]) {
-    if (k in r && r[k] !== null && r[k] !== undefined) {
-      parts.push(`${k}: ${String(r[k]).slice(0, 36)}`);
-    }
+  const cro =
+    r.custom_request_order_id ?? r.custom_order_id ?? r.request_order_id ?? r.mentor_order_id ?? r.custom_request_order;
+  if (cro != null && String(cro).trim() !== "") {
+    return `맞춤의뢰 주문 ${shortRef(cro)}`;
   }
-  return parts.length ? parts.join(" · ") : "—";
+  const oid = r.order_id ?? r.order_id_linked;
+  if (oid != null && String(oid).trim() !== "") {
+    return `주문 ${shortRef(oid)}`;
+  }
+  const pay = r.payment_id ?? r.subscription_id;
+  if (pay != null && String(pay).trim() !== "") {
+    return `결제·구독 ${shortRef(pay)}`;
+  }
+  const rf = r.refund_id;
+  if (rf != null && String(rf).trim() !== "") {
+    return `환불 ${shortRef(rf)}`;
+  }
+  return "—";
 }
 
 export function mapRowToListItem(r: Row): DisputeListItem {
+  const st = pickStatus(r);
+  const ty = pickType(r);
   return {
     id: idOf(r) || "—",
-    typeLabel: pickType(r),
-    statusLabel: pickStatus(r),
+    typeLabel: partyDisputeTypeKo(ty),
+    statusLabel: partyDisputeStatusKo(st),
+    statusRaw: st === "—" ? "" : st.trim().toLowerCase(),
     orderSummary: orderLine(r),
     row: r,
   };
@@ -113,19 +178,6 @@ function summaryFromRow(r: Row): string {
   return t.length > 120 ? `${t.slice(0, 117)}…` : t;
 }
 
-function orderRefFromRow(r: Row): string {
-  const id =
-    r.custom_request_order_id ??
-    r.order_id ??
-    r.custom_order_id ??
-    r.request_order_id ??
-    r.mentor_order_id ??
-    r.order_id_linked;
-  if (id == null || String(id).trim() === "") return "—";
-  const s = String(id).trim();
-  return s.length > 12 ? `${s.slice(0, 10)}…` : s;
-}
-
 export function mapRowToAdminListItem(r: Row): AdminDisputeListItem {
   const base = mapRowToListItem(r);
   const titleFromFields = pickText(r, ["title", "name", "summary", "subject"]);
@@ -139,7 +191,7 @@ export function mapRowToAdminListItem(r: Row): AdminDisputeListItem {
     createdAt: formatTsKo(c0),
     updatedAt: formatTsKo(u0),
     summaryReason: summaryFromRow(r),
-    orderRef: orderRefFromRow(r),
+    orderRef: orderLine(r),
   };
 }
 

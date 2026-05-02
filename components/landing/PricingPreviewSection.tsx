@@ -14,15 +14,13 @@ const TIERS: { id: keyof PlansByTier; label: string; rec?: boolean }[] = [
 
 export function PricingPreviewSection(props: { plans: GlobalPlansLoad; byTier: PlansByTier; fillProbe: string }) {
   const { plans, byTier, fillProbe } = props;
+  void fillProbe;
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900">요금제 미리보기</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            {plans.table ? `${plans.table} · ` : ""}
-            {plans.probe} · {fillProbe}
-          </p>
+          <p className="mt-1 text-xs text-slate-500">아래 금액은 안내용이며, 멘토를 선택하면 확정 요금을 확인할 수 있어요.</p>
         </div>
         <Link href="/mentors" className="text-sm font-extrabold text-blue-700 underline">
           멘토 선택·구독/결제 →
@@ -47,7 +45,7 @@ export function PricingPreviewSection(props: { plans: GlobalPlansLoad; byTier: P
           );
         })}
       </div>
-      <p className="mt-3 text-xs text-slate-500">멘토별 가격은 /mentors 선택 후 /subscribe?mentorId=… 에서 확정.</p>
+      <p className="mt-3 text-xs text-slate-500">멘토별 가격은 멘토 선택 후 구독 화면에서 최종 확인해 주세요.</p>
     </section>
   );
 }

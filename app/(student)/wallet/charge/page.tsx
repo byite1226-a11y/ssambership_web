@@ -14,10 +14,6 @@ export default async function WalletChargePage({ searchParams }: Props) {
   const { user } = await requireRole("student");
   const supabase = await createClient();
   const data = await loadWalletChargePageData(supabase, user.id);
-  if (data.balance.error) console.error("[wallet/charge] balance", data.balance.error);
-  if (data.packages.error) console.error("[wallet/charge] packages", data.packages.error);
-  if (data.ledgerPreview.error) console.error("[wallet/charge] ledgerPreview", data.ledgerPreview.error);
-  if (data.payments.error) console.error("[wallet/charge] payments", data.payments.error);
   const sp = (await searchParams) ?? {};
   const actionOk = typeof sp.ok === "string" && sp.ok.length > 0 ? sp.ok : null;
   const actionError = typeof sp.error === "string" && sp.error.length > 0 ? sp.error : null;
@@ -66,7 +62,6 @@ export default async function WalletChargePage({ searchParams }: Props) {
     >
       <WalletChargeBody
         data={data}
-        userIdShort={user.id.slice(0, 8)}
         actionOk={actionOk}
         actionError={actionError ? mapDataErrorMessage(actionError) : null}
         allowTestTopup={allowTestTopup}

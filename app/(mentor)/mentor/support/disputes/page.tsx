@@ -13,10 +13,6 @@ export default async function MentorDisputesListPage() {
   const supabase = await createClient();
   const { table, items, error, usedColumn, probe } = await loadDisputesListForUser(supabase, user.id, "mentor", 40);
 
-  if (error) {
-    console.error("[mentor/support/disputes] list load failed", error);
-  }
-
   const listFailed = Boolean(error && !items.length);
   const hasRows = items.length > 0;
 
@@ -24,8 +20,8 @@ export default async function MentorDisputesListPage() {
     <PageScaffold
       hideFooterPlaceholderCards
       eyebrow="지원 · 분쟁"
-      title="분쟁·환불(멘토)"
-      description="맞춤의뢰 등과 연결된 분쟁·환불 신청을 확인하고, 처리 상태를 볼 수 있습니다."
+      title="분쟁·환불 현황"
+      description="맞춤의뢰 등으로 접수된 분쟁을 확인하고, 진행 상태를 살펴볼 수 있습니다. 새 건 처리는 운영자가 담당합니다."
       ctas={[
         { href: "/mentor/dashboard", label: "대시보드", tone: "green" },
         { href: "/mentor/payouts", label: "정산", tone: "slate" },

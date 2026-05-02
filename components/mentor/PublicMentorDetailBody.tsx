@@ -30,18 +30,6 @@ export function PublicMentorDetailBody(props: {
   bundle: Extract<PublicMentorLoadResult, { kind: "ok" }>;
 }) {
   const { mentorId, userRow, display, bundle } = props;
-  if (bundle.media.error) {
-    console.error("[PublicMentorDetailBody] media", bundle.media.error, bundle.media.probe);
-  }
-  if (bundle.reviews.error) {
-    console.error("[PublicMentorDetailBody] reviews", bundle.reviews.error, bundle.reviews.probe);
-  }
-  if (bundle.userError) {
-    console.error("[PublicMentorDetailBody] userError", bundle.userError);
-  }
-  if (bundle.profileError) {
-    console.error("[PublicMentorDetailBody] profileError", bundle.profileError);
-  }
   const mediaRows = bundle.media.rows;
   const { byTier, fillProbe } = assignPlansByTier(bundle.plans.rows as Record<string, unknown>[]);
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
@@ -66,7 +54,9 @@ export function PublicMentorDetailBody(props: {
                     ? `${display.university} · ${display.department}`
                     : display.university || display.department || "학교·학과 정보가 아직 없어요"}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">역할: {userRow.role} · 계정: {userRow.status}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  멘토 · 계정 상태: {userRow.status === "active" ? "이용 중" : userRow.status ?? "—"}
+                </p>
                 {bundle.userError ? (
                   <p className="mt-2 text-xs font-bold text-amber-800">{USER_UI_MENTOR_USER_LOAD_FAILED}</p>
                 ) : null}

@@ -22,7 +22,7 @@ export function HomeLanding(props: { data: HomeLandingData }) {
       <CommunityPreviewSection shorts={d.shorts} boards={d.boards} />
       <LandingCTASection />
       <footer className="border-t border-slate-200 pt-6 text-xs text-slate-500">
-        <p className="font-extrabold text-slate-700">데이터 연결 포인트</p>
+        <p className="font-extrabold text-slate-700">서비스 구성 안내</p>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           {LANDING_DATA_MODEL.map((x) => (
             <li key={x}>{x}</li>

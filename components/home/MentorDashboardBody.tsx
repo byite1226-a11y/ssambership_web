@@ -79,7 +79,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <CtaButton href="/mentor/support/disputes" tone="amber">
-            분쟁·환불
+            분쟁 현황 보기
           </CtaButton>
           <CtaButton href="/mentor/profile" tone="slate">
             프로필
@@ -135,7 +135,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
               className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold"
               href="/mentor/support/disputes"
             >
-              분쟁
+              분쟁 현황 보기
             </Link>
           </div>
         </section>

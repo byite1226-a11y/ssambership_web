@@ -2,6 +2,7 @@
 
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitMentorProfileEdit } from "@/lib/mentor/mentorProfileEditActions";
+import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Q = { row: Record<string, unknown> | null; err: string | null; media: { table: string | null; error: string | null } };
@@ -24,18 +25,27 @@ export function MentorProfileEditForm(props: {
       {query.err && !query.row ? <p className="text-sm font-bold text-amber-900">{USER_UI_LOAD_FAILED}</p> : null}
       {query.row ? (
         <p className="text-xs text-slate-500">
-          verification: <span className="font-bold text-slate-800">{initial.verification || "—"}</span> · student_id_image_url(학생증): {initial.photoUrl || "—"}
+          멘토 인증: <span className="font-bold text-slate-800">{mentorVerificationKo(initial.verification)}</span>
+          {" · "}
+          학생증 인증 자료:{" "}
+          {initial.photoUrl ? (
+            <a className="font-bold text-blue-700 hover:underline" href={initial.photoUrl} target="_blank" rel="noreferrer">
+              등록됨 (보기)
+            </a>
+          ) : (
+            <span className="font-bold text-slate-800">없음</span>
+          )}
         </p>
       ) : null}
 
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-        프로필(대표) 이미지: 업로드/Storage(후속). 현재:
+        대표 프로필 이미지는 추후 업로드로 연결될 예정입니다. 현재:{" "}
         {initial.photoUrl ? (
-          <a className="ml-1 font-mono text-xs text-blue-700 hover:underline" href={initial.photoUrl} target="_blank" rel="noreferrer">
-            {initial.photoUrl}
+          <a className="font-bold text-blue-700 hover:underline" href={initial.photoUrl} target="_blank" rel="noreferrer">
+            등록됨
           </a>
         ) : (
-          " 없음"
+          "없음"
         )}
         <input type="file" disabled className="mt-1 block w-full text-xs" />
       </div>
@@ -55,7 +65,7 @@ export function MentorProfileEditForm(props: {
         </label>
       </div>
       <label className="block text-sm font-extrabold text-slate-800">
-        과목(콤마 구분 — teaching_subjects)
+        과목(콤마로 구분)
         <input name="subjects" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" defaultValue={initial.subjects} />
       </label>
       <label className="block text-sm font-extrabold text-slate-800">
@@ -70,14 +80,14 @@ export function MentorProfileEditForm(props: {
       <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3">
         <p className="text-sm font-extrabold text-slate-800">대표 콘텐츠 연결</p>
         <p className="text-xs text-slate-500">
-          숏폼·게시판에서 등록한 대표 콘텐츠가 연결되면 채널 화면에 표시됩니다. 테이블이 준비되기 전에는 목록이 비어 있을 수 있어요.
+          숏폼·게시판에서 등록한 대표 콘텐츠가 연결되면 채널 화면에 표시됩니다. 등록된 대표 콘텐츠가 없으면 목록이 비어 있을 수 있어요.
         </p>
         <p className="text-xs text-slate-500">저장 후 채널 메뉴에서 목록을 확인해 주세요.</p>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-800">
         <input type="checkbox" name="subscribeOpen" value="on" defaultChecked={initial.subOpen} />
-        구독(멤버십) 가능 상태(스키마 컬럼: accepts_subscriptions 등, 후보 upsert)
+        멤버십 구독을 받을 수 있게 공개합니다
       </label>
 
       <FormSubmitButton

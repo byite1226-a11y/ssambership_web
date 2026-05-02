@@ -17,7 +17,7 @@ export default async function MentorQuestionRoomListPage() {
       ctas={[
         { href: "/mentor/question-room#question-rooms", label: "답변 대기 보기", tone: "blue" },
         { href: "/mentor/dashboard", label: "대시보드", tone: "slate" },
-        { href: "/mentor/support/disputes", label: "분쟁", tone: "slate" },
+        { href: "/mentor/support/disputes", label: "분쟁 현황 보기", tone: "slate" },
       ]}
       sections={[]}
       dataPoints={[]}

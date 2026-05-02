@@ -13,10 +13,6 @@ export default async function StudentDisputesListPage() {
   const supabase = await createClient();
   const { table, items, error, usedColumn, probe } = await loadDisputesListForUser(supabase, user.id, "student", 40);
 
-  if (error) {
-    console.error("[student/support/disputes] list load failed", error);
-  }
-
   const listFailed = Boolean(error && !items.length);
   const hasRows = items.length > 0;
 
@@ -24,7 +20,7 @@ export default async function StudentDisputesListPage() {
     <PageScaffold
       hideFooterPlaceholderCards
       eyebrow="지원 · 분쟁"
-      title="분쟁 접수 및 처리 현황"
+      title="분쟁·환불 현황"
       description="맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있습니다."
       ctas={[
         { href: "/home", label: "홈", tone: "slate" },
@@ -33,7 +29,7 @@ export default async function StudentDisputesListPage() {
       sections={[
         {
           title: "안내",
-          body: "목록에서 상세를 누르면 해당 건의 진행 내용을 확인할 수 있어요.",
+          body: "목록에서 상세 보기를 누르면 해당 건의 진행 상태를 확인할 수 있어요.",
           status: hasRows ? "connected" : listFailed ? "skeleton" : "connected",
         },
       ]}

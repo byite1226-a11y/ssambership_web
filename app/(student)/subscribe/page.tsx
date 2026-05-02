@@ -79,9 +79,6 @@ export default async function StudentSubscribePage(props: Props) {
   const d = data;
   const hasPlanData = d.plans.rows.length > 0;
   const hasPlanForTier = Boolean(d.byTier[planParam]);
-  if (d.plans.error) {
-    console.error("[subscribe] plans error", d.plans.error, d.plans.probe);
-  }
 
   return (
     <PageScaffold

@@ -25,6 +25,7 @@ export default async function MentorPayoutsPage() {
       description="맞춤의뢰 정산 예정·완료 금액과 주문별 내역을 확인하세요. 구독·기타 요약은 참고용입니다."
       ctas={[
         { href: "/mentor/dashboard", label: "대시보드", tone: "slate" },
+        { href: "/mentor/support/disputes", label: "분쟁 현황 보기", tone: "slate" },
         { href: "/mentor/profile", label: "프로필", tone: "green" },
         { href: "/mentor/profile/edit", label: "프로필 편집", tone: "slate" },
       ]}
@@ -41,7 +42,11 @@ export default async function MentorPayoutsPage() {
           body: bundle.payoutTable ? "연결된 지급 내역 소스가 있습니다." : (bundle.payoutError ?? "추가 지급 내역을 찾지 못했습니다."),
           status: bundle.payoutTable ? "connected" : "skeleton",
         },
-        { title: "캐시·환불", body: "캐시 충전·환불은 지갑·고객지원 메뉴에서 이어집니다.", status: "skeleton" },
+        {
+          title: "캐시·분쟁·환불",
+          body: "캐시 충전·환불은 지갑 메뉴에서, 접수된 분쟁은 분쟁 현황에서 확인할 수 있어요.",
+          status: "skeleton",
+        },
       ]}
       emptyState={!hasAny ? "아직 표시할 정산·수익 정보가 없습니다." : "아래에서 상세를 확인하세요."}
       loadingState="정산 정보를 불러오는 중입니다."

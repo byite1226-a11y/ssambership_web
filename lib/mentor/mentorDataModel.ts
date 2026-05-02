@@ -13,11 +13,11 @@ export const MENTOR_CHANNEL_DATA_MODEL = [
 
 /** 공개 멘토 목록 /mentors */
 export const PUBLIC_MENTORS_LIST_DATA_MODEL = [
-  "users — role=mentor, 최신순 fetchLimit(기본 80)",
-  "mentor_profiles — user_id in (…) 배치",
-  "reviews_summary | mentor_review_stats | reviews… — in-batch 집계",
-  "plans | mentor_plans | … — Standard 우선·아니면 최저가",
-  "subjects taxonomy — 필터는 현재 문자열 부분일치(후속)",
+  "멘토 계정 기준 목록",
+  "프로필 요약",
+  "리뷰·평점 요약",
+  "요금제 안내(참고)",
+  "과목·태그 검색",
 ] as const;
 
 /** 공개 멘토 상세 */

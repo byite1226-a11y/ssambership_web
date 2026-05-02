@@ -34,6 +34,8 @@ type Props = {
   studentRevisionRequestDisabledReason: string | null;
   /** null이면 #order-disputes 로 이동 가능(학생·멘토) */
   openDisputeApplicationDisabledReason: string | null;
+  /** 진행 중 분쟁이 있으면 신규 신청 대신 아래 패널로 안내 */
+  hasActiveDispute?: boolean;
   /** null이면 멘토도 #order-revisions 링크(진행 중 분쟁 시 잠금) */
   mentorRevisionJumpDisabledReason?: string | null;
 };
@@ -55,6 +57,7 @@ export function OrderActionBar(props: Props) {
     mentorStartDisabledReason,
     studentRevisionRequestDisabledReason,
     openDisputeApplicationDisabledReason,
+    hasActiveDispute = false,
     mentorRevisionJumpDisabledReason = null,
   } = props;
   if (orderTerminal) {
@@ -80,6 +83,7 @@ export function OrderActionBar(props: Props) {
     actorRole === "student" && view === "student" && !studentRevisionRequestDisabledReason && orderId.trim().length > 0;
   const canDisputeJump =
     (actorRole === "student" || actorRole === "mentor") &&
+    !hasActiveDispute &&
     !openDisputeApplicationDisabledReason &&
     orderId.trim().length > 0;
 
@@ -121,7 +125,7 @@ export function OrderActionBar(props: Props) {
               <Pencil className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <p className="text-sm font-bold">수정 요청하기</p>
-                <p className="mt-0.5 text-xs font-normal text-slate-500">진행 중인 분쟁이 있을 때는 사용할 수 없습니다.</p>
+                <p className="mt-0.5 text-xs font-normal text-slate-500">진행 중인 분쟁이 있어 이 작업은 제한됩니다.</p>
               </div>
             </div>
             <Chevr />
@@ -209,10 +213,23 @@ export function OrderActionBar(props: Props) {
             </button>
           )
         ) : null}
-        {canDisputeJump ? (
+        {hasActiveDispute ? (
+          <a href="#order-disputes" className={orangeCard}>
+            <div className="flex min-w-0 items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <div>
+                <p className="text-sm font-bold">진행 중인 분쟁 보기</p>
+                <p className="mt-0.5 text-xs font-normal text-orange-900/85">
+                  아래 분쟁 패널에서 접수하신 건의 진행 상태를 확인할 수 있어요.
+                </p>
+              </div>
+            </div>
+            <Chevr />
+          </a>
+        ) : canDisputeJump ? (
           <a href="#order-disputes" className={redCard}>
             <div className="flex min-w-0 items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <div>
                 <p className="text-sm font-bold">분쟁 신청하기</p>
                 <p className="mt-0.5 text-xs font-normal opacity-80">이견·문제를 공식 절차로 올릴 수 있습니다.</p>
@@ -228,7 +245,7 @@ export function OrderActionBar(props: Props) {
             title={openDisputeApplicationDisabledReason ?? "분쟁을 신청할 수 없습니다."}
           >
             <div className="flex min-w-0 items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <div>
                 <p className="text-sm font-bold">분쟁 신청하기</p>
                 <p className="mt-0.5 text-xs font-normal text-slate-500">이 단계에서는 사용할 수 없습니다.</p>

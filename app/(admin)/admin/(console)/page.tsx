@@ -15,8 +15,8 @@ export default async function AdminDashboardPage() {
       ctas={[
         { href: "/admin/mentor-approvals", label: "멘토 승인", tone: "blue" },
         { href: "/admin/reports", label: "신고", tone: "slate" },
-        { href: "/admin/disputes", label: "분쟁", tone: "slate" },
-        { href: "/admin/refunds", label: "환불", tone: "slate" },
+        { href: "/admin/disputes", label: "분쟁 관리", tone: "slate" },
+        { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
         { href: "/admin/audit-logs", label: "감사 로그", tone: "slate" },
       ]}
       sections={scaffolds}

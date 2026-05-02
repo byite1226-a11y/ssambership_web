@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { DisputeListItem } from "@/lib/disputes/disputeListQueries";
 
 const badge = (s: string) => {
-  const u = s.toLowerCase();
-  if (/open|new|submitted|pend|ing/i.test(u)) return "bg-amber-100 text-amber-900";
-  if (/close|resolv|done|approved|rejected|fail/i.test(u)) return "bg-slate-200 text-slate-800";
+  const u = (s || "").toLowerCase();
+  if (/open|new|submitted|pend|ing|under_review|escalat/i.test(u)) return "bg-amber-100 text-amber-900";
+  if (/close|resolv|done|dismiss|approved|rejected|fail/i.test(u)) return "bg-slate-200 text-slate-800";
   return "bg-emerald-100 text-emerald-900";
 };
 
@@ -19,25 +19,17 @@ type Props = {
 
 const LIST_LOAD_FAIL =
   "분쟁 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
-const NO_TABLE_COPY =
-  "분쟁 목록을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.";
+const NO_TABLE_COPY = "분쟁·환불 현황을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.";
 const EMPTY_LIST_COPY = "현재 확인할 분쟁이 없습니다.";
 
 export function DisputesListView(props: Props) {
   const { items, detailHref, listError, table } = props;
   if (listError && !items.length) {
-    console.error("[DisputesListView] list error (not shown in UI)", listError);
     return <p className="text-sm font-bold text-amber-900">{LIST_LOAD_FAIL}</p>;
   }
   if (!table) {
-    if (props.listError) {
-      console.error(
-        "[DisputesListView] no table (not shown in UI)",
-        props.listError,
-        props.probe,
-        props.usedColumn
-      );
-    }
+    void props.probe;
+    void props.usedColumn;
     return <p className="text-sm text-slate-600">{NO_TABLE_COPY}</p>;
   }
   if (!items.length) {
@@ -51,7 +43,7 @@ export function DisputesListView(props: Props) {
             <tr className="border-b border-slate-200 bg-slate-50">
               <th className="px-2 py-2">유형</th>
               <th className="px-2 py-2">상태</th>
-              <th className="px-2 py-2">주문/결제</th>
+              <th className="px-2 py-2">관련 주문·결제</th>
               <th className="px-2 py-2" />
             </tr>
           </thead>
@@ -62,7 +54,7 @@ export function DisputesListView(props: Props) {
                 <tr key={it.id} className="border-b border-slate-100 last:border-0">
                   <td className="max-w-[160px] px-2 py-2 text-slate-800">{it.typeLabel}</td>
                   <td className="px-2 py-2">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-extrabold ${badge(it.statusLabel)}`}>
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-extrabold ${badge(it.statusRaw)}`}>
                       {it.statusLabel}
                     </span>
                   </td>
@@ -72,7 +64,7 @@ export function DisputesListView(props: Props) {
                       className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-extrabold text-white hover:bg-slate-800"
                       href={detailHref(it.id)}
                     >
-                      상세
+                      상세 보기
                     </Link>
                   </td>
                 </tr>

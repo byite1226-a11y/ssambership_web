@@ -19,11 +19,11 @@ const TYPE_FK = [
 const ORDER_CANDIDATES = ["created_at", "inserted_at", "sent_at", "updated_at", "id"] as const;
 
 export const NOTIFICATIONS_HUB_DATA_MODEL = [
-  "notifications (수신자 FK, type, read 상태, created_at — 스키마별 상이)",
-  "users (발신/수신 표기 후속)",
-  "question_threads / mentor_student_rooms (딥링크 payload 후속)",
-  "payments, custom_request_orders (엔티티 id → 링크)",
-  "notices, site_notices (공지 연동)",
+  "받은 알림 목록",
+  "발신·수신 표시",
+  "질문방·주문 관련 바로가기",
+  "결제·의뢰 알림 연결",
+  "공지·이벤트 연동",
 ] as const;
 
 export type NotificationHubLoad = {

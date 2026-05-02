@@ -39,8 +39,8 @@ export default async function AdminDisputesListPage(props: PageProps) {
       ]}
       sections={[
         {
-          title: "분쟁 목록",
-          body: "표준 분쟁 기록 기준 최근 접수 순으로 표시합니다. 진행 중·검토 중·에스컬레이션은 대시보드 집계와 동일한 상태값을 사용합니다.",
+          title: "접수 목록",
+          body: "표준 분쟁 기록 기준 최근 접수 순으로 표시합니다. 접수·검토 중·운영 검토 중 건은 대시보드 집계와 같은 진행 상태 기준으로 묶어 보여 줍니다.",
           status: table ? "connected" : "skeleton",
         },
         {

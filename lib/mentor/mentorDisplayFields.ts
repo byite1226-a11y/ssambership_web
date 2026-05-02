@@ -53,3 +53,24 @@ export function buildMentorProfileDisplay(
     verification: getProfileFieldString(profileRow, ["verification_status", "kyc_status"]),
   };
 }
+
+/** 멘토 인증 상태 — 사용자 화면용 */
+export function mentorVerificationKo(raw: string | null | undefined): string {
+  const t = String(raw ?? "").trim();
+  if (!t || /^null$/i.test(t)) return "미등록";
+  const s = t.toLowerCase();
+  const map: Record<string, string> = {
+    approved: "인증 완료",
+    verified: "인증 완료",
+    complete: "인증 완료",
+    pending: "검토 중",
+    in_review: "검토 중",
+    reviewing: "검토 중",
+    under_review: "검토 중",
+    rejected: "반려",
+    denied: "반려",
+    none: "미등록",
+    unset: "미등록",
+  };
+  return map[s] ?? (t.length > 28 ? `${t.slice(0, 24)}…` : t);
+}

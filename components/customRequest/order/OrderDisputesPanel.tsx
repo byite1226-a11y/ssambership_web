@@ -51,18 +51,20 @@ export function OrderDisputesPanel({
 
   return (
     <section id="order-disputes" className={`${ORDER_ROOM_CARD_CLASS} text-sm text-slate-800`}>
-      <h3 className="text-sm font-bold text-slate-900">분쟁</h3>
+      <h3 className="text-sm font-bold text-slate-900">분쟁·환불</h3>
       <p className="mt-1 text-xs text-slate-600">
         {workspaceCompact
-          ? "납품·수락·수정·작업은 열린 분쟁 시 제한될 수 있습니다."
-          : "주문 진행 중 문제가 있을 때 의뢰자 또는 멘토가 분쟁을 신청합니다. 열린 분쟁이 있으면 납품·수락·수정 요청·작업 시작이 제한됩니다(메시지는 별도)."}
+          ? "진행 중인 분쟁이 있으면 납품·수락·수정·작업 등이 제한될 수 있습니다."
+          : actorRole === "mentor"
+            ? "접수된 분쟁은 운영에서 검토합니다. 진행 중이면 일부 작업이 제한될 수 있으며, 새 신청은 정책에 따라 허용됩니다."
+            : "주문 진행 중 문제가 있을 때 의뢰자 또는 멘토가 분쟁을 신청할 수 있어요. 진행 중인 분쟁이 있으면 납품·수락·수정 요청·작업 시작이 제한됩니다."}
       </p>
 
       {!orderTerminal && canForm && openDisputeApplicationDisabledReason == null ? (
         <form action={submitCustomOrderDisputeAction} className="mt-4 space-y-2">
           <input type="hidden" name="orderId" value={orderId} />
           <label className="sr-only" htmlFor="order-dispute-body">
-            분쟁 내용
+            신청 내용
           </label>
           <textarea
             id="order-dispute-body"
@@ -77,7 +79,7 @@ export function OrderDisputesPanel({
             type="submit"
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
           >
-            분쟁 신청
+            분쟁 신청하기
           </button>
         </form>
       ) : !orderTerminal && canForm && openDisputeApplicationDisabledReason ? (
