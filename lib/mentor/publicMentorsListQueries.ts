@@ -7,7 +7,7 @@ import { getStringField, pickExistingColumn } from "@/lib/qna/safeSelect";
 type Row = Record<string, unknown>;
 
 export const PUBLIC_MENTORS_RLS_HINT =
-  "스키마(001_initial_auth_profile.sql) 기준 users·mentor_profiles SELECT는 본인만 허용됩니다. 비로그인·타인 목록은 공개 SELECT 정책 또는 service/RPC(public_list_mentors 등)가 필요합니다.";
+  "멘토 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. 문제가 계속되면 고객 지원으로 문의해 주세요.";
 
 export type MentorPublicListCard = {
   mentorId: string;

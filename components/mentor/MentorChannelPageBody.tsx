@@ -3,6 +3,7 @@ import {
   groupChannelItemsByBucket,
   type MentorChannelListItem,
 } from "@/lib/mentor/mentorChannelQueries";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 const BUCKET_LABEL: Record<string, string> = {
   shortform: "숏폼",
@@ -44,11 +45,11 @@ export function MentorChannelPageBody(props: {
   const { items, listError, probe } = props;
 
   if (listError) {
+    console.error("[MentorChannelPageBody] listError", listError, probe);
     return (
       <div className="space-y-4 rounded-2xl border border-red-200 bg-red-50/80 p-5">
         <p className="text-sm font-extrabold text-red-900">불러오기 오류</p>
-        <p className="text-sm text-red-800">{listError}</p>
-        <p className="text-xs text-red-700/90">{probe}</p>
+        <p className="text-sm text-red-800">{USER_UI_LOAD_FAILED}</p>
         <Link href="/mentor/dashboard" className="inline-block text-sm font-bold text-red-900 underline">
           대시보드로
         </Link>
@@ -63,10 +64,7 @@ export function MentorChannelPageBody(props: {
       <div className="space-y-4">
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5">
           <p className="text-sm font-extrabold text-amber-900">등록된 대표 콘텐츠가 없습니다</p>
-          <p className="mt-1 text-xs text-amber-900/90">{probe}</p>
-          <p className="mt-3 text-sm text-amber-950">
-            Supabase: <span className="font-mono">mentor_media</span> 등에 행이 생기면 이 목록이 채워집니다.
-          </p>
+          <p className="mt-3 text-sm text-amber-950">프로필에서 콘텐츠를 등록하면 이 목록이 채워집니다.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-600">
@@ -90,7 +88,6 @@ export function MentorChannelPageBody(props: {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-4">
-        <p className="text-xs font-bold text-slate-500">{probe}</p>
         <div className="flex flex-wrap gap-2">
           <span className="rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-600">
             미디어 업로드(후속)

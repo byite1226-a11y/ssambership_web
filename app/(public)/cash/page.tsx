@@ -3,17 +3,24 @@ import { CashTopUpEntry } from "@/components/cash/CashTopUpEntry";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { CASH_DATA_MODEL, fetchCashTopupPackages, fetchWalletBalanceByUserId, formatWalletRowDisplay } from "@/lib/cash/cashQueries";
+import { USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
 
 export default async function PublicCashTopUpPage() {
   const supabase = await createClient();
   const { user, profile } = await getServerUserWithProfile();
   const pkg = await fetchCashTopupPackages(supabase);
+  if (pkg.error) {
+    console.error("[cash] packages", pkg.error);
+  }
 
   let balanceLine = "";
   let balanceError: string | null = null;
   if (user && profile?.role === "student") {
     const w = await fetchWalletBalanceByUserId(supabase, user.id);
-    if (w.error) balanceError = w.error;
+    if (w.error) {
+      balanceError = w.error;
+      console.error("[cash] wallet balance", w.error);
+    }
     else if (w.row) balanceLine = formatWalletRowDisplay(w.row);
   }
 
@@ -29,14 +36,14 @@ export default async function PublicCashTopUpPage() {
         { href: "/mentors", label: "멤버십(멘토 선택)", tone: "slate" },
       ]}
       sections={[
-        { title: "충전 패키지", body: "cash_* 패키지 카탈로그(테이블 후보 조회).", status: "skeleton" },
-        { title: "잔액(학생)", body: "wallets 계열 1행 조회(로그인 학생만).", status: "skeleton" },
-        { title: "유의사항", body: "캐시·원장 전용, 맞춤의뢰 제외.", status: "skeleton" },
-        { title: "결제 연동", body: "payments + notifications (추후).", status: "skeleton" },
+        { title: "충전 패키지", body: "이용 가능한 충전 금액을 선택할 수 있어요.", status: "skeleton" },
+        { title: "잔액", body: "로그인한 학생은 잔액을 확인할 수 있어요.", status: "skeleton" },
+        { title: "유의사항", body: "캐시는 멤버십·질문 등 서비스 내 이용에 쓰여요.", status: "skeleton" },
+        { title: "결제", body: "결제 연동은 단계적으로 확장됩니다.", status: "skeleton" },
       ]}
-      emptyState="로그인하지 않으면 잔액은 비어 있고, 충전 패키지는 스키마 연결 후 표시됩니다."
-      loadingState="서버에서 한 번에 조회합니다(추후 Suspense/클라이언트 전환 가능)."
-      errorState="테이블 미생성·RLS·컬럼명 불일치 시 하단에 오류/빈 상태로 구분됩니다."
+      emptyState="표시할 항목이 없을 수 있어요. 아래에서 안내를 확인해 주세요."
+      loadingState="불러오는 중입니다."
+      errorState={pkg.error || balanceError ? USER_UI_OPS_ISSUE : "—"}
       dataPoints={["cash_topup_packages(후보)", "wallets(후보)", "payments", "refunds", "subscriptions(구독, 분리)", "notifications"]}
     >
       <CashTopUpEntry

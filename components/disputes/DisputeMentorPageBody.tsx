@@ -1,6 +1,7 @@
 import type { DisputeBundle } from "@/lib/disputes/disputeQueries";
 import { pickText, statusBadgeText } from "@/lib/disputes/disputeQueries";
 import { DisputeKeyValueList } from "@/components/disputes/DisputeKeyValueList";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Row = Record<string, unknown>;
 
@@ -9,6 +10,9 @@ type Row = Record<string, unknown>;
  */
 export function DisputeMentorPageBody(props: { bundle: DisputeBundle }) {
   const { bundle } = props;
+  if (bundle.modLogs.error) {
+    console.error("[DisputeMentorPageBody] modLogs.error", bundle.modLogs.error);
+  }
   const d = bundle.dispute.row;
   const state = statusBadgeText(d, ["status", "state", "phase", "progress", "resolution"]);
   const title = pickText(d, ["title", "summary", "id"]);
@@ -25,7 +29,7 @@ export function DisputeMentorPageBody(props: { bundle: DisputeBundle }) {
           <span className="text-xs text-slate-500">처리 상태</span>
           <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-extrabold text-slate-800">{state}</span>
         </div>
-        <p className="mt-1 text-xs text-slate-500">table: {bundle.dispute.table}</p>
+        <p className="mt-1 text-xs text-slate-500">사건 정보를 불러왔습니다.</p>
       </section>
 
       <div className="grid gap-2 md:grid-cols-2">
@@ -53,11 +57,11 @@ export function DisputeMentorPageBody(props: { bundle: DisputeBundle }) {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-slate-600">없음. {bundle.modLogs.error}</p>
+          <p className="text-sm text-slate-600">{bundle.modLogs.error ? USER_UI_LOAD_FAILED : "표시할 처리 이력이 없습니다."}</p>
         )}
       </div>
 
-      <p className="text-xs text-slate-500">W22: {bundle.probe} — RLS/스키마</p>
+      <p className="text-xs text-slate-500">일부 항목은 진행 단계에 따라 비어 있을 수 있어요.</p>
     </div>
   );
 }

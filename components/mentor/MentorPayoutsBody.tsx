@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { MentorPayoutsBundle } from "@/lib/mentor/mentorPayoutsQueries";
 import { formatKrwWon } from "@/lib/mentor/mentorPayoutsQueries";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Row = Record<string, unknown>;
 
@@ -62,12 +63,14 @@ function intCell(v: unknown): string {
 export function MentorPayoutsBody({ bundle }: { bundle: MentorPayoutsBundle }) {
   const keys = bundle.tableRows[0] ? Object.keys(bundle.tableRows[0]).slice(0, 6) : [];
   const sp = bundle.settlementPayouts;
+  if (sp.error) {
+    console.error("[MentorPayoutsBody] settlementPayouts.error", sp.error);
+  }
 
   return (
     <div className="space-y-8">
       <section className="space-y-3">
         <h2 className="text-base font-extrabold text-slate-900">맞춤의뢰 정산 내역</h2>
-        {sp.probe && !sp.error ? <p className="text-xs text-slate-600">{sp.probe}</p> : null}
         {sp.loadedVia === "service_role" ? (
           <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950">
             일시적으로 보조 연결로 불러왔습니다. 표시되는 금액과 링크는 본인에게 배정된 정산만 포함됩니다.
@@ -75,7 +78,7 @@ export function MentorPayoutsBody({ bundle }: { bundle: MentorPayoutsBundle }) {
         ) : null}
         {sp.error ? (
           <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-900" role="alert">
-            정산 항목을 불러오지 못했습니다. {sp.error}
+            {USER_UI_LOAD_FAILED}
           </p>
         ) : null}
 

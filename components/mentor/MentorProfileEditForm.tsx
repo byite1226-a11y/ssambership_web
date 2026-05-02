@@ -2,6 +2,7 @@
 
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitMentorProfileEdit } from "@/lib/mentor/mentorProfileEditActions";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Q = { row: Record<string, unknown> | null; err: string | null; media: { table: string | null; error: string | null } };
 type I = { intro: string; university: string; department: string; subjects: string; highSchool: string; tags: string; subOpen: boolean; photoUrl: string; verification: string };
@@ -14,13 +15,19 @@ export function MentorProfileEditForm(props: {
   errorMessage: string | null;
 }) {
   const { initial, query, ok, errorMessage, accountEmail } = props;
+  if (query.err) {
+    console.error("[MentorProfileEditForm] query.err", query.err);
+  }
+  if (query.media.error) {
+    console.error("[MentorProfileEditForm] media.error", query.media.error);
+  }
 
   return (
     <form action={submitMentorProfileEdit} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
       {ok ? <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">저장되었습니다.</p> : null}
       {errorMessage ? <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-900">{errorMessage}</p> : null}
-      {accountEmail ? <p className="text-xs text-slate-500">public.users / 계정: {accountEmail}</p> : null}
-      {query.err && !query.row ? <p className="text-sm font-bold text-amber-900">읽기: {query.err}</p> : null}
+      {accountEmail ? <p className="text-xs text-slate-500">로그인 계정: {accountEmail}</p> : null}
+      {query.err && !query.row ? <p className="text-sm font-bold text-amber-900">{USER_UI_LOAD_FAILED}</p> : null}
       {query.row ? (
         <p className="text-xs text-slate-500">
           verification: <span className="font-bold text-slate-800">{initial.verification || "—"}</span> · student_id_image_url(학생증): {initial.photoUrl || "—"}
@@ -68,8 +75,11 @@ export function MentorProfileEditForm(props: {
 
       <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3">
         <p className="text-sm font-extrabold text-slate-800">대표 콘텐츠 연결</p>
-        <p className="text-xs text-slate-500">숏폼/게시판(커뮤니티) id 링크 — 상세(후속). {query.media.table ? `probe: ${query.media.table}` : "미연결"}{query.media.error ? ` · ${query.media.error}` : ""}</p>
-        <p className="text-xs text-slate-500">(이번 턴 읽기만; 커뮤니티·채널 코드 변경 없음)</p>
+        <p className="text-xs text-slate-500">
+          숏폼·게시판에서 등록한 대표 콘텐츠가 연결되면 채널 화면에 표시됩니다.
+          {query.media.error ? " (연결 정보를 불러오지 못했을 수 있어요.)" : ""}
+        </p>
+        <p className="text-xs text-slate-500">저장 후 채널 메뉴에서 목록을 확인해 주세요.</p>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-800">

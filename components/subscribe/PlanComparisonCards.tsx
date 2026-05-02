@@ -5,6 +5,7 @@ import {
   weeklyQuestionsLabel,
   type SubscribePlanTier,
 } from "@/lib/subscribe/subscribePageQueries";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 const TIERS: { id: SubscribePlanTier; label: string; recommend?: boolean }[] = [
   { id: "limited", label: "Limited" },
@@ -22,20 +23,17 @@ export function PlanComparisonCards(props: {
 }) {
   const { mentorId, byTier, selectedTier, plansError, plansProbe, fillProbe } = props;
   if (plansError) {
+    console.error("[PlanComparisonCards] plansError", plansError, plansProbe, fillProbe);
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
         <p className="text-sm font-extrabold text-red-900">플랜 조회 오류</p>
-        <p className="mt-1 text-sm text-red-800">{plansError}</p>
-        <p className="mt-2 text-xs text-red-800/90">{plansProbe}</p>
+        <p className="mt-1 text-sm text-red-800">{USER_UI_LOAD_FAILED}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-bold text-slate-500">
-        {plansProbe} · {fillProbe}
-      </p>
       <div className="grid gap-4 md:grid-cols-3">
         {TIERS.map((t) => {
           const row = byTier[t.id];

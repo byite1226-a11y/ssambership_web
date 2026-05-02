@@ -9,6 +9,7 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { SUBSCRIBE_PAGE_DATA_MODEL } from "@/lib/subscribe/subscribeDataModel";
 import { loadStudentSubscribePage, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 import { createClient } from "@/lib/supabase/server";
+import { USER_UI_LOAD_FAILED, USER_UI_NOTHING_TO_SHOW, USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -37,7 +38,7 @@ export default async function StudentSubscribePage(props: Props) {
       <PageScaffold
         eyebrow="Subscribe"
         title="멘토를 선택해 주세요"
-        description="URL에 mentorId(멘토 users.id)가 필요합니다. 멘토 상세·목록에서 구독으로 진입하세요. 더미 없음."
+        description="멘토를 선택한 뒤 구독 화면으로 들어와 주세요. 멘토 상세 또는 목록에서 구독을 눌러 주세요."
         ctas={[
           { href: "/mentors", label: "멘토 찾기", tone: "blue" },
           { href: "/home", label: "홈", tone: "slate" },
@@ -55,11 +56,12 @@ export default async function StudentSubscribePage(props: Props) {
   }
 
   if (data.kind === "mentor_error") {
+    console.error("[subscribe] mentor_error", data.message);
     return (
       <PageScaffold
-        eyebrow="Subscribe"
+        eyebrow="구독"
         title="멘토를 불러올 수 없습니다"
-        description={data.message}
+        description="멘토 정보를 확인하는 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요."
         ctas={[
           { href: "/mentors", label: "멘토 찾기", tone: "slate" },
         ]}
@@ -67,7 +69,7 @@ export default async function StudentSubscribePage(props: Props) {
         emptyState=""
         dataPoints={[...SUBSCRIBE_PAGE_DATA_MODEL]}
       >
-        <p className="text-sm text-red-800">{data.message}</p>
+        <p className="text-sm text-red-800">{USER_UI_LOAD_FAILED}</p>
       </PageScaffold>
     );
   }
@@ -75,37 +77,48 @@ export default async function StudentSubscribePage(props: Props) {
   const d = data;
   const hasPlanData = d.plans.rows.length > 0;
   const hasPlanForTier = Boolean(d.byTier[planParam]);
+  if (d.plans.error) {
+    console.error("[subscribe] plans error", d.plans.error, d.plans.probe);
+  }
 
   return (
     <PageScaffold
-      eyebrow="Student / Subscribe"
+      eyebrow="구독"
       title="구독·결제"
-      description="멘토·티어는 URL/카드로 고정, CTA는 /api/subscribe intent→complete(스텁). PG·웹훅·환불은 후속."
+      description="선택한 멘토의 플랜을 비교하고 구독·결제를 진행할 수 있습니다."
       ctas={[
         { href: `/mentors/${d.mentorId}`, label: "멘토 공개 프로필", tone: "slate" },
         { href: "/subscriptions", label: "내 구독", tone: "green" },
       ]}
       sections={[
         { title: "멘토", body: d.display.displayName, status: "connected" },
-        { title: "플랜", body: d.plans.probe, status: hasPlanData ? "connected" : "skeleton" },
-        { title: "기존 구독", body: d.subscription.probe, status: d.subscription.row ? "connected" : "skeleton" },
-        { title: "결제(샘플)", body: d.payment.probe, status: d.payment.row ? "connected" : "skeleton" },
+        {
+          title: "플랜",
+          body: d.plans.error ? USER_UI_LOAD_FAILED : hasPlanData ? "요금제를 불러왔습니다." : USER_UI_NOTHING_TO_SHOW,
+          status: hasPlanData ? "connected" : "skeleton",
+        },
+        {
+          title: "기존 구독",
+          body: d.subscription.row ? "이전 구독 정보가 있습니다." : "표시할 기존 구독이 없습니다.",
+          status: d.subscription.row ? "connected" : "skeleton",
+        },
+        {
+          title: "결제",
+          body: d.payment.row ? "최근 결제 정보를 확인했습니다." : "표시할 결제 샘플이 없습니다.",
+          status: d.payment.row ? "connected" : "skeleton",
+        },
       ]}
-      emptyState="멘토 미선택 시 상단 no_mentor."
-      loadingState="loading.tsx"
-      errorState={d.plans.error ?? d.profileError ?? "—"}
+      emptyState={USER_UI_NOTHING_TO_SHOW}
+      loadingState="불러오는 중입니다."
+      errorState={d.plans.error || d.profileError ? USER_UI_OPS_ISSUE : "—"}
       dataPoints={[...SUBSCRIBE_PAGE_DATA_MODEL]}
     >
       <div className="space-y-6">
         {d.plans.error || !hasPlanData
           ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50/95 p-4 text-sm text-amber-950" role="status">
-                <p className="font-bold">구독을 시작하려면 멘토 요금제(멘토 플랜)가 필요합니다.</p>
-                <p className="mt-1">
-                  {d.plans.error
-                    ? `플랜을 불러오지 못했습니다: ${d.plans.error}`
-                    : "이 멘토에 등록된 플랜이 아직 없습니다. 멘토가 요금제를 등록하거나, 운영/스테이징 DB에 mentor_plans가 있는지 확인하세요."}
-                </p>
+                <p className="font-bold">구독을 시작하려면 멘토 요금제가 필요합니다.</p>
+                <p className="mt-1">{d.plans.error ? USER_UI_LOAD_FAILED : "이 멘토에 등록된 플랜이 아직 없을 수 있어요. 잠시 후 다시 확인해 주세요."}</p>
               </div>
             )
           : null}
@@ -140,8 +153,6 @@ export default async function StudentSubscribePage(props: Props) {
             mentorName={d.display.displayName}
             selectedTier={planParam}
             byTier={d.byTier}
-            subscriptionProbe={d.subscription.probe}
-            paymentProbe={d.payment.probe}
             hasSubRow={Boolean(d.subscription.row)}
           />
           <PaymentForm
@@ -150,21 +161,18 @@ export default async function StudentSubscribePage(props: Props) {
             hasPlanForTier={hasPlanForTier}
             disabledReason={
               d.plans.error
-                ? `플랜 조회 오류로 결제를 열 수 없습니다: ${d.plans.error}`
+                ? USER_UI_LOAD_FAILED
                 : !hasPlanData
-                  ? "멘토 플랜(plans) 데이터가 없습니다."
+                  ? "표시할 멘토 요금제가 없습니다."
                   : !hasPlanForTier
-                    ? "이 티어에 대응하는 plans 행이 없습니다(상단 프로브 확인)."
+                    ? "선택한 플랜에 맞는 요금제가 없습니다. 다른 티어를 선택해 주세요."
                     : undefined
             }
           />
         </div>
+        <p className="text-xs text-slate-500">결제는 안내에 따라 진행되며, 완료 후 질문방 등 후속 단계가 이어질 수 있어요.</p>
         <p className="text-xs text-slate-500">
-          공개 <code>mentor_profiles</code>와 직접 대화 시나리오는 RLS·정책 확정과 동일. 편집 전용(이름 입력 없음) 필드는 멘토
-          쪽 이전 응답과 동일.
-        </p>
-        <p className="text-xs text-slate-500">
-          이후: PG 위젯 자리, 웹훅에서 동일 complete, <Link href="/payments" className="font-bold text-blue-700">/payments</Link> 상세 정합.
+          결제 내역은 <Link href="/payments" className="font-bold text-blue-700">결제 목록</Link>에서 확인할 수 있어요.
         </p>
       </div>
     </PageScaffold>

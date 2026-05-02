@@ -9,8 +9,6 @@ export function OrderSummaryCard(props: {
   mentorName: string;
   selectedTier: SubscribePlanTier;
   byTier: PlansByTier;
-  subscriptionProbe: string;
-  paymentProbe: string;
   hasSubRow: boolean;
 }) {
   const row = props.byTier[props.selectedTier];
@@ -35,8 +33,8 @@ export function OrderSummaryCard(props: {
           <dd className="text-slate-800">{weeklyQuestionsLabel(row)}</dd>
         </div>
         <div className="border-t border-slate-200 pt-2 text-xs text-slate-500">
-          <p>기존 구독: {props.hasSubRow ? "감지됨" : "없음/미감지"} — {props.subscriptionProbe}</p>
-          <p className="mt-1">최근 결제 샘플: {props.paymentProbe}</p>
+          <p>기존 구독: {props.hasSubRow ? "있음" : "없음"}</p>
+          <p className="mt-1">최근 결제 정보는 멘토·플랜 설정에 따라 달라질 수 있어요.</p>
         </div>
       </dl>
     </section>

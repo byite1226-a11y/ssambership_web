@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
 import { firstReadableAdminTable } from "@/lib/admin/adminQueries";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Row = Record<string, unknown>;
 
@@ -241,11 +242,13 @@ export function w22EntityLine(
   row: Row | null,
   err: string | null
 ): string {
+  void table;
   if (err) {
-    return `${label}: ${err}`;
+    console.error("[w22EntityLine]", label, err);
+    return `${label}: ${USER_UI_LOAD_FAILED}`;
   }
   if (!row) {
-    return `${label}: 연계 없음${table ? ` · 테이블 ${table}` : ""}`;
+    return `${label}: 연계 정보 없음`;
   }
   const id = pickText(row, ["id", "uuid"]);
   const money = pickText(row, ["amount", "total", "amount_krw", "gross", "refund_amount", "price", "net"]);
@@ -254,7 +257,7 @@ export function w22EntityLine(
   if (id !== "—") bits.push(`id ${id}`);
   if (money !== "—") bits.push(money);
   if (st !== "—") bits.push(`상태 ${st}`);
-  return `${label} [${table ?? "—"}] ${bits.join(" · ")}`.trim();
+  return `${label}: ${bits.join(" · ")}`.trim();
 }
 
 /** 학생(기본)은 신고/원고 컬럼, 멘토는 counterparty(선택) */

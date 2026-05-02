@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 export function MentorCheckoutSummary(props: {
   mentorId: string;
@@ -7,6 +8,9 @@ export function MentorCheckoutSummary(props: {
   profileError: string | null;
 }) {
   const d = props.display;
+  if (props.profileError) {
+    console.error("[MentorCheckoutSummary] profileError", props.profileError);
+  }
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -22,9 +26,7 @@ export function MentorCheckoutSummary(props: {
           프로필로 돌아가기
         </Link>
       </div>
-      {props.profileError ? (
-        <p className="mt-2 text-sm font-bold text-amber-800">mentor_profiles: {props.profileError}</p>
-      ) : null}
+      {props.profileError ? <p className="mt-2 text-sm font-bold text-amber-800">{USER_UI_LOAD_FAILED}</p> : null}
       <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div>
           <dt className="font-extrabold text-slate-500">대학교</dt>

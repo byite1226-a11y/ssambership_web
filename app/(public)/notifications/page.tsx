@@ -6,6 +6,7 @@ import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
 import { createClient } from "@/lib/supabase/server";
 import { loadNotificationsHub, NOTIFICATIONS_HUB_DATA_MODEL } from "@/lib/notifications/notificationsHubQueries";
 import type { AppRole } from "@/lib/types/user";
+import { USER_UI_LOAD_FAILED, USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
 
 type Props = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -23,6 +24,9 @@ export default async function NotificationsPage(props: Props) {
 
   const supabase = await createClient();
   const hub = await loadNotificationsHub(supabase, user.id, { filter: f });
+  if (hub.error) {
+    console.error("[notifications] hub load", hub.error);
+  }
 
   const role: AppRole = (profile?.role as AppRole) ?? "student";
   if (authErr && !profile) {
@@ -31,9 +35,9 @@ export default async function NotificationsPage(props: Props) {
 
   return (
     <PageScaffold
-      eyebrow="Ops / Notifications"
+      eyebrow="알림"
       title="알림"
-      description="Supabase `notifications` 기준 수신함. 읽지 않음/전체, 유형·시간, 딥링크(placeholder 포함). 실시간·읽음 처리·설정은 후속."
+      description="받은 알림을 확인하고, 관련 화면으로 이동할 수 있습니다."
       ctas={[
         { href: getPostLoginPath(role), label: role === "mentor" ? "멘토 홈" : "학생 홈", tone: "slate" },
         { href: role === "mentor" ? "/mentor/question-room" : "/question-room", label: "질문방", tone: "blue" },
@@ -41,16 +45,16 @@ export default async function NotificationsPage(props: Props) {
       ]}
       sections={[
         {
-          title: "notifications",
-          body: hub.error ?? `행 ${hub.rows.length} (filter=${f}, user=${hub.userColumn ?? "—"})`,
+          title: "수신함",
+          body: hub.error ? USER_UI_LOAD_FAILED : `${hub.rows.length}건 (${f === "unread" ? "읽지 않음" : "전체"})`,
           status: hub.error && hub.rows.length === 0 ? "skeleton" : "connected",
         },
-        { title: "딥링크", body: "target_url || type 휴리스틱 → question-room / wallet / custom-request/orders/…", status: "connected" },
-        { title: "읽음", body: "배지만 표기 · 업데이트 뮤테이션은 후속", status: "skeleton" },
+        { title: "바로가기", body: "알림 유형에 따라 질문방·지갑 등으로 연결될 수 있어요.", status: "connected" },
+        { title: "읽음 표시", body: "읽음 처리는 이후 업데이트에서 지원할 예정이에요.", status: "skeleton" },
       ]}
-      emptyState="알림이 없으면 empty 카드(더미 row 없음)."
-      loadingState="/notifications/loading — 서버 조회"
-      errorState="테이블 없음/RLS — 메시지·재시도(후속)"
+      emptyState="새 알림이 없습니다."
+      loadingState="불러오는 중입니다."
+      errorState={hub.error && hub.rows.length === 0 ? USER_UI_OPS_ISSUE : "—"}
       dataPoints={[...NOTIFICATIONS_HUB_DATA_MODEL]}
     >
       <NotificationsHubView hub={hub} filter={f} role={role} />

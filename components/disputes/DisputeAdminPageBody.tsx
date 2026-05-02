@@ -209,7 +209,7 @@ export function DisputeAdminPageBody(props: {
 
       <div>
         <h3 className="text-sm font-extrabold text-slate-800">처리 이력(로그)</h3>
-        <p className="text-xs text-slate-500">연결된 로그 테이블: {b.modLogs.table ?? "—"}</p>
+        <p className="text-xs text-slate-500">처리 이력 {b.modLogs.rows.length}건</p>
         {b.modLogs.rows.length ? (
           <ul className="mt-1 max-h-48 list-disc space-y-1 overflow-auto pl-5 text-xs text-slate-700">
             {b.modLogs.rows.map((r, i) => {

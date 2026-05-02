@@ -3,12 +3,13 @@ import { formatWalletRowDisplay } from "@/lib/cash/cashQueries";
 import type { WalletChargePageData } from "@/lib/cash/walletRouteData";
 import { ledgerTypeLabel } from "@/lib/cash/ledgerRowDisplay";
 import { WalletTopupTestForm } from "@/components/cash/WalletTopupTestForm";
+import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 const FAQ = [
-  "캐시는 멤버십 구독·맞춤의뢰·수강 견적 결제와 별도 흐름입니다. 이 화면은 충전·잔액·원장만 다룹니다.",
-  "충전은 PG/결제 intent(payments) 연동 후 ‘결제하기’가 살아납니다(이번 턴은 CTA 자리).",
-  "잔액·원장은 `cash_wallets` / `cash_ledger` (또는 후보 테이블) 기준으로 표시됩니다.",
-  "맞춤의뢰 주문·에스크로는 `/custom-request/…` 를 사용하며 여기에 섞지 않습니다.",
+  "캐시는 멤버십·맞춤의뢰 등과 별도로, 충전·잔액·사용 내역을 관리하는 흐름입니다.",
+  "충전은 결제 연동이 완료되면 안내에 따라 진행할 수 있습니다.",
+  "잔액과 사용 내역은 이 화면과 원장 메뉴에서 확인할 수 있어요.",
+  "맞춤의뢰 주문은 맞춤의뢰 메뉴에서 따로 확인해 주세요.",
 ] as const;
 
 function Banner({ kind, message }: { kind: "error" | "empty" | "info"; message: string }) {
@@ -31,11 +32,16 @@ export function WalletChargeBody(props: {
 }) {
   const { data, userIdShort, actionOk, actionError, allowTestTopup = false } = props;
   const { balance, packages, ledgerPreview, payments } = data;
+  if (balance.error) console.error("[WalletChargeBody] balance", balance.error);
+  if (packages.error) console.error("[WalletChargeBody] packages", packages.error);
+  if (ledgerPreview.error) console.error("[WalletChargeBody] ledgerPreview", ledgerPreview.error);
+  if (payments.error) console.error("[WalletChargeBody] payments", payments.error);
+
   const balanceText = balance.error
     ? ""
     : balance.row
       ? formatWalletRowDisplay(balance.row)
-      : "지갑 행 없음(스키마·RLS)";
+      : "지갑 정보를 찾을 수 없습니다.";
 
   const packageRows = packages.rows.slice(0, 5);
   const slots = Array.from({ length: 5 }, (_, i) => packageRows[i] ?? null);
@@ -47,14 +53,13 @@ export function WalletChargeBody(props: {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-extrabold text-slate-900">현재 잔액</h2>
-        {balance.error ? <div className="mt-2"><Banner kind="error" message={balance.error} /></div> : null}
+        {balance.error ? <div className="mt-2"><Banner kind="error" message={USER_UI_LOAD_FAILED} /></div> : null}
         {!balance.error && balanceText ? <p className="mt-2 text-2xl font-black text-slate-900">{balanceText}</p> : null}
         {!balance.error && !balanceText ? (
           <div className="mt-2">
             <Banner kind="empty" message="잔액을 표시할 데이터가 없습니다." />
           </div>
         ) : null}
-        {balance.table ? <p className="mt-1 text-xs text-slate-500">source: {balance.table}</p> : null}
         <p className="mt-2 text-xs text-slate-500">user …{userIdShort}</p>
         <div id="test-topup" className="mt-4">
           {allowTestTopup ? (
@@ -70,7 +75,7 @@ export function WalletChargeBody(props: {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-extrabold text-slate-900">충전 패키지(최대 5슬롯)</h2>
-        {packages.error ? <div className="mt-2"><Banner kind="error" message={packages.error} /></div> : null}
+        {packages.error ? <div className="mt-2"><Banner kind="error" message={USER_UI_LOAD_FAILED} /></div> : null}
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {slots.map((row, i) => (
             <li
@@ -80,12 +85,11 @@ export function WalletChargeBody(props: {
               {row ? (
                 <pre className="max-h-40 overflow-auto text-xs text-slate-800">{JSON.stringify(row, null, 2)}</pre>
               ) : (
-                <p className="text-xs text-slate-500">슬롯 {i + 1} — `cash_topup_packages`에 행이 없으면 비어 있음(더미 금지)</p>
+                <p className="text-xs text-slate-500">슬롯 {i + 1} — 표시할 패키지가 없습니다.</p>
               )}
             </li>
           ))}
         </ul>
-        {packages.table ? <p className="mt-2 text-xs text-slate-500">source: {packages.table}</p> : null}
       </section>
 
       <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 text-sm text-amber-950">
@@ -99,7 +103,7 @@ export function WalletChargeBody(props: {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-extrabold text-slate-900">최근 사용(원장 요약)</h2>
-        {ledgerPreview.error ? <div className="mt-2"><Banner kind="error" message={ledgerPreview.error} /></div> : null}
+        {ledgerPreview.error ? <div className="mt-2"><Banner kind="error" message={USER_UI_LOAD_FAILED} /></div> : null}
         {!ledgerPreview.error && ledgerPreview.rows.length === 0 ? (
           <div className="mt-2">
             <Banner kind="empty" message="원장이 없습니다. 충전·사용이 쌓이면 표시됩니다." />
@@ -113,7 +117,6 @@ export function WalletChargeBody(props: {
             </li>
           ))}
         </ul>
-        {ledgerPreview.table ? <p className="mt-1 text-xs text-slate-500">source: {ledgerPreview.table}</p> : null}
         <p className="mt-2 text-xs">
           <Link className="font-bold text-blue-700 underline" href="/wallet/ledger">
             전체 원장·필터 →
@@ -123,10 +126,10 @@ export function WalletChargeBody(props: {
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
         <h2 className="text-lg font-extrabold text-slate-900">최근 결제(스냅샷)</h2>
-        {payments.error ? <div className="mt-2"><Banner kind="error" message={payments.error} /></div> : null}
+        {payments.error ? <div className="mt-2"><Banner kind="error" message={USER_UI_LOAD_FAILED} /></div> : null}
         {!payments.error && payments.rows.length === 0 ? (
           <div className="mt-2">
-            <Banner kind="empty" message="payments에서 해당 사용자 row가 없습니다." />
+            <Banner kind="empty" message="표시할 결제 내역이 없습니다." />
           </div>
         ) : null}
         <ul className="mt-2 space-y-1 text-xs text-slate-700">
@@ -136,7 +139,6 @@ export function WalletChargeBody(props: {
             </li>
           ))}
         </ul>
-        {payments.table ? <p className="mt-1 text-xs text-slate-500">source: {payments.table} — {payments.probe}</p> : <p className="text-xs text-slate-500">{payments.probe}</p>}
       </section>
 
       <div className="flex flex-wrap gap-2">

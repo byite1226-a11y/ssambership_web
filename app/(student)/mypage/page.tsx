@@ -5,6 +5,7 @@ import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { loadStudentMypageBundle, MYPAGE_DATA_MODEL } from "@/lib/mypage/mypageQueries";
+import { USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
 
 export default async function StudentMyPage() {
   const { user, profile, error: profileLoadError } = await getServerUserWithProfile();
@@ -22,12 +23,15 @@ export default async function StudentMyPage() {
     profile,
     profileLoadError?.message ?? null
   );
+  if (bundle.profileError) {
+    console.error("[mypage] profileError", bundle.profileError);
+  }
 
   return (
     <PageScaffold
-      eyebrow="Student / MyPage"
+      eyebrow="마이페이지"
       title="마이페이지"
-      description="프로필·구독·질문방·결제/캐시 진입·알림·리뷰/신고 자리를 한 화면에 묶습니다. 질문방/캐시/커뮤니티 로직은 기존 라우트를 그대로 가리킵니다."
+      description="프로필과 구독·질문방·결제·캐시·알림 등 주요 메뉴로 바로 이동할 수 있어요."
       ctas={[
         { href: "/home", label: "학생 홈", tone: "slate" },
         { href: "/question-room", label: "질문방", tone: "blue" },
@@ -40,15 +44,11 @@ export default async function StudentMyPage() {
       sections={bundle.scaffoldSummary}
       emptyState={
         bundle.profile
-          ? "닉네임·학년 등 필수 필드가 비어 있으면 완성 CTA(다음 단계)."
-          : "public.users에 아직 행이 없으면 가입 sync(트리거) 또는 수동 upsert를 점검합니다."
+          ? "프로필의 닉네임·학년 등 필수 정보를 채우면 다음 단계로 진행할 수 있어요."
+          : "계정 정보를 준비하는 중일 수 있어요. 잠시 후 다시 확인해 주세요."
       }
-      loadingState="loading.tsx"
-      errorState={
-        bundle.profileError
-          ? `프로필 조회: ${bundle.profileError}`
-          : "Supabase RLS·네트워크 오류 시 재시도/지원 안내(로그는 서버)."
-      }
+      loadingState="불러오는 중입니다."
+      errorState={bundle.profileError ? USER_UI_OPS_ISSUE : "—"}
       dataPoints={[...MYPAGE_DATA_MODEL]}
     >
       <StudentMypageMain bundle={bundle} sessionEmail={user.email ?? null} />

@@ -7,6 +7,7 @@ import { MENTOR_PROFILE_DATA_MODEL } from "@/lib/mentor/mentorDataModel";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { USER_UI_LOAD_FAILED, USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
 
 type PageProps = { searchParams?: Promise<{ error?: string; ok?: string }> };
 
@@ -35,24 +36,42 @@ export default async function MentorProfileEditPage(props: PageProps) {
   };
 
   const hasRow = Boolean(row);
+  if (re) {
+    console.error("[mentor/profile/edit] profile row fetch", re);
+  }
+  if (media.error) {
+    console.error("[mentor/profile/edit] media sample", media.error);
+  }
   return (
     <PageScaffold
       eyebrow="Mentor / Profile / Edit"
       title="프로필·채널 편집"
-      description="mentor_profiles upsert(핵심) + tags/구독토글 컬럼은 후보만(스키마 맞지 않으면 무시). 검증/학생증 URL은 읽기만(업로드 후속). 질문·커뮤·캐시·맞춤·마이페이지·어드민 미변경."
+      description="소개·학력·과목 등 프로필과 채널 정보를 수정할 수 있습니다."
       ctas={[
         { href: "/mentor/profile", label: "프로필(요약)", tone: "slate" },
         { href: "/mentor/dashboard", label: "대시보드", tone: "green" },
         { href: "/mentor/channel", label: "채널", tone: "slate" },
       ]}
       sections={[
-        { title: "데이터", body: hasRow ? "mentor_profiles: 읽기 성공" : re ? `읽기 실패: ${re}` : "빈 행(upsert로 생성)", status: re ? "skeleton" : "connected" },
-        { title: "미디어", body: media.table ? `${media.table}` : "mentor_media 없음/오류", status: media.error ? "skeleton" : media.table ? "connected" : "skeleton" },
-        { title: "검수", body: "verification_status / student_id_image_url 유지.", status: "skeleton" },
+        {
+          title: "프로필",
+          body: hasRow ? "저장된 프로필을 불러왔습니다." : re ? USER_UI_LOAD_FAILED : "새 프로필을 만들 수 있어요.",
+          status: re && !hasRow ? "skeleton" : "connected",
+        },
+        {
+          title: "미디어",
+          body: media.error ? USER_UI_LOAD_FAILED : media.table ? "대표 콘텐츠를 불러왔습니다." : "등록된 대표 콘텐츠가 없습니다.",
+          status: media.error ? "skeleton" : media.table ? "connected" : "skeleton",
+        },
+        {
+          title: "검수",
+          body: "학생증·검수 상태는 별도 절차에 따라 표시됩니다.",
+          status: "skeleton",
+        },
       ]}
-      emptyState="프로필 행이 없을 때도 저장(upsert)로 생성·갱신합니다."
-      loadingState="RSC에서 users·mentor_profiles를 로딩(클라이언트 SWR·스켈은 후속)."
-      errorState={re && !row ? re : "저장/RLS 오류는 배너·?error= 로 표시."}
+      emptyState="아래 폼에서 프로필을 작성·저장할 수 있습니다."
+      loadingState="불러오는 중입니다."
+      errorState={re && !row ? USER_UI_OPS_ISSUE : "저장 결과는 화면 상단 안내를 확인해 주세요."}
       dataPoints={[...MENTOR_PROFILE_DATA_MODEL]}
     >
       <MentorProfileEditForm
