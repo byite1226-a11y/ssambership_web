@@ -5,27 +5,40 @@ import { createClient } from "@/lib/supabase/server";
 import { loadDisputesListForUser } from "@/lib/disputes/disputeListQueries";
 import { DISPUTE_LIST_DATA_MODEL, DISPUTE_W22_DATA_MODEL } from "@/lib/disputes/disputeDataModel";
 
+const EMPTY_COPY = "현재 확인할 분쟁이 없습니다.";
+const LOAD_ERROR_COPY = "분쟁 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+
 export default async function StudentDisputesListPage() {
   const { user } = await requireRole("student");
   const supabase = await createClient();
   const { table, items, error, usedColumn, probe } = await loadDisputesListForUser(supabase, user.id, "student", 40);
+
+  if (error) {
+    console.error("[student/support/disputes] list load failed", error);
+  }
+
+  const listFailed = Boolean(error && !items.length);
+  const hasRows = items.length > 0;
+
   return (
     <PageScaffold
-      eyebrow="Support / Disputes"
-      title="내 분쟁·환불"
-      description="disputes 계열 · 학생(원고) FK로 필터. QnA·캐시·맞춤·멘토·어드민·(기존 상세 페이지) 미변경."
+      eyebrow="지원 · 분쟁"
+      title="분쟁 접수 및 처리 현황"
+      description="맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있습니다."
       ctas={[
         { href: "/home", label: "홈", tone: "slate" },
         { href: "/mypage", label: "마이페이지", tone: "slate" },
       ]}
       sections={[
-        { title: "목록", body: table ? `테이블: ${table} · ${probe}` : (error ?? "—"), status: table ? "connected" : "skeleton" },
-        { title: "권한", body: "학생 계정으로 로그인한 경우에만 이용할 수 있어요.", status: "connected" },
-        { title: "상세", body: "행의 상세 → /support/disputes/[id] (기존).", status: "connected" },
+        {
+          title: "안내",
+          body: "목록에서 상세를 누르면 해당 건의 진행 내용을 확인할 수 있어요.",
+          status: hasRows ? "connected" : listFailed ? "skeleton" : "connected",
+        },
       ]}
-      emptyState="분쟁/신청이 없을 때(또는 RLS) 안내."
-      loadingState="RSC."
-      errorState={error && !items.length ? error : "—"}
+      emptyState={EMPTY_COPY}
+      loadingState="목록을 불러오는 중입니다."
+      errorState={listFailed ? LOAD_ERROR_COPY : "—"}
       dataPoints={[...DISPUTE_LIST_DATA_MODEL, ...DISPUTE_W22_DATA_MODEL]}
     >
       <DisputesListView

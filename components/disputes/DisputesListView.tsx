@@ -17,22 +17,34 @@ type Props = {
   probe: string;
 };
 
+const LIST_LOAD_FAIL =
+  "분쟁 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+const NO_TABLE_COPY =
+  "분쟁 목록을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.";
+const EMPTY_LIST_COPY = "현재 확인할 분쟁이 없습니다.";
+
 export function DisputesListView(props: Props) {
-  const { items, detailHref, listError, usedColumn, table, probe } = props;
+  const { items, detailHref, listError, table } = props;
   if (listError && !items.length) {
-    return <p className="text-sm font-bold text-amber-900">조회: {listError}</p>;
+    console.error("[DisputesListView] list error (not shown in UI)", listError);
+    return <p className="text-sm font-bold text-amber-900">{LIST_LOAD_FAIL}</p>;
   }
   if (!table) {
-    return <p className="text-sm text-slate-600">disputes 계열 테이블을 읽을 수 없습니다. {listError}</p>;
+    if (props.listError) {
+      console.error(
+        "[DisputesListView] no table (not shown in UI)",
+        props.listError,
+        props.probe,
+        props.usedColumn
+      );
+    }
+    return <p className="text-sm text-slate-600">{NO_TABLE_COPY}</p>;
   }
   if (!items.length) {
-    return <p className="text-sm text-slate-600">내 분쟁·신청 0건. (필터: {usedColumn ?? "—"}) {probe}</p>;
+    return <p className="text-sm text-slate-600">{EMPTY_LIST_COPY}</p>;
   }
   return (
     <div className="space-y-2 text-sm">
-      <p className="text-xs text-slate-500">
-        {table} · {usedColumn ? `user 필터: ${usedColumn}` : "—"} · {probe}
-      </p>
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
