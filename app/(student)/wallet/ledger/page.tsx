@@ -17,6 +17,7 @@ export default async function WalletLedgerPage(props: Props) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="Student / Wallet / Ledger"
       title="캐시 원장"
       description="정식 라인 `(student)/wallet/ledger` — 기간·유형 필터 자리, 타임라인·테이블. 맞춤의뢰와 분리."

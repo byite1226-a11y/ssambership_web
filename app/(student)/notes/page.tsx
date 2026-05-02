@@ -3,6 +3,7 @@ import { PageScaffold } from "@/components/shell/PageScaffold";
 export default function StudentNotesPage() {
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="Student / Notes"
       title="연결 노트"
       description="질문방 메시지와 분리된 학습용 노트 저장소입니다. room/thread 흐름과 별개로 관리합니다."

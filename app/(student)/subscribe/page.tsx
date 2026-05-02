@@ -36,6 +36,7 @@ export default async function StudentSubscribePage(props: Props) {
   if (data.kind === "no_mentor") {
     return (
       <PageScaffold
+        hideFooterPlaceholderCards
         eyebrow="Subscribe"
         title="멘토를 선택해 주세요"
         description="멘토를 선택한 뒤 구독 화면으로 들어와 주세요. 멘토 상세 또는 목록에서 구독을 눌러 주세요."
@@ -59,6 +60,7 @@ export default async function StudentSubscribePage(props: Props) {
     console.error("[subscribe] mentor_error", data.message);
     return (
       <PageScaffold
+        hideFooterPlaceholderCards
         eyebrow="구독"
         title="멘토를 불러올 수 없습니다"
         description="멘토 정보를 확인하는 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요."
@@ -83,6 +85,7 @@ export default async function StudentSubscribePage(props: Props) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="구독"
       title="구독·결제"
       description="선택한 멘토의 플랜을 비교하고 구독·결제를 진행할 수 있습니다."

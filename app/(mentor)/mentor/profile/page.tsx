@@ -3,6 +3,7 @@ import { PageScaffold } from "@/components/shell/PageScaffold";
 export default function MentorProfilePage() {
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="멘토"
       title="멘토 프로필"
       description="소개, 전공, 검증 상태를 정리하고 학생에게 보이는 정보를 관리합니다."

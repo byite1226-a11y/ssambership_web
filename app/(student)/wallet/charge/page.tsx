@@ -25,6 +25,7 @@ export default async function WalletChargePage({ searchParams }: Props) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="캐시"
       title="캐시 충전"
       description="잔액·충전 패키지·최근 사용 내역을 확인하고 충전할 수 있습니다."

@@ -23,6 +23,7 @@ export default async function StudentDisputeDetailPage(props: PageProps) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="지원 · 분쟁"
       title="분쟁·환불 상세"
       description="접수하신 분쟁의 진행 상태와 관련 정보를 확인할 수 있습니다."

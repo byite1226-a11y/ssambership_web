@@ -22,6 +22,7 @@ export default async function StudentDisputesListPage() {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="지원 · 분쟁"
       title="분쟁 접수 및 처리 현황"
       description="맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있습니다."

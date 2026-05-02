@@ -11,6 +11,7 @@ export default async function MentorDashboardPage() {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="홈"
       title="멘토 대시보드"
       description="답변·질문방·맞춤의뢰·정산·분쟁으로 바로 갈 수 있어요. 숫자는 스키마·권한에 맞게 집계돼요."

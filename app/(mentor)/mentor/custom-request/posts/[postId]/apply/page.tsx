@@ -36,6 +36,7 @@ export default async function MentorCustomRequestApplyPage(props: PageProps) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="멘토 / 맞춤의뢰"
       title="지원서 작성"
       description="제안 가격·예상 납기·제안 내용을 입력해 주세요. 제출 후에는 동일 의뢰에 다시 제출할 수 없어요."

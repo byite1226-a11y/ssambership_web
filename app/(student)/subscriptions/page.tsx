@@ -3,6 +3,7 @@ import { PageScaffold } from "@/components/shell/PageScaffold";
 export default function StudentSubscriptionsPage() {
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="Student / Subscriptions"
       title="구독 관리"
       description="학생 구독, 결제, 환불 신청 흐름을 운영 데이터와 함께 미리 고정합니다."

@@ -22,6 +22,7 @@ export default async function MentorDisputesListPage() {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="지원 · 분쟁"
       title="분쟁·환불(멘토)"
       description="맞춤의뢰 등과 연결된 분쟁·환불 신청을 확인하고, 처리 상태를 볼 수 있습니다."

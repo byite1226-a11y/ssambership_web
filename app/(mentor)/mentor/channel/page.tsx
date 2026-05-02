@@ -23,6 +23,7 @@ export default async function MentorChannelPage() {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="멘토 · 채널"
       title="멘토 채널 · 대표 콘텐츠"
       description="등록한 대표 콘텐츠를 유형별로 모아 보여 줍니다. 새 자료는 프로필·연결 메뉴에서 준비할 수 있어요."

@@ -15,6 +15,7 @@ export default async function StudentHomePage() {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="홈"
       title="학생 대시보드"
       description="질문방·구독·캐시·의뢰로 이어지는 흐름을 한 화면에서 점검하세요. 비어 있으면 안내만 보여요."

@@ -29,6 +29,7 @@ export default async function MentorCustomRequestPostDetailPage(props: PageProps
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="멘토 / 맞춤의뢰"
       title="의뢰 상세"
       description="의뢰 내용을 확인한 뒤, 모집이 열려 있을 때만 지원서를 제출할 수 있어요."

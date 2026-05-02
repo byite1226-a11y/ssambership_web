@@ -29,6 +29,7 @@ export default async function StudentMyPage() {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="마이페이지"
       title="마이페이지"
       description="프로필과 구독·질문방·결제·캐시·알림 등 주요 메뉴로 바로 이동할 수 있어요."

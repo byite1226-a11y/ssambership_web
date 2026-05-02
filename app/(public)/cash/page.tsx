@@ -33,6 +33,7 @@ export default async function PublicCashTopUpPage() {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="캐시"
       title="캐시 충전"
       description="캐시 충전 안내와 충전 상품을 확인하고, 학생 로그인 후 정식 충전 화면으로 이동할 수 있습니다. 맞춤의뢰 결제와는 별도입니다."

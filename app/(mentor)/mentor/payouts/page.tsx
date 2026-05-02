@@ -19,6 +19,7 @@ export default async function MentorPayoutsPage() {
     bundle.customOrderSettlements.rows.length > 0;
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="Mentor / Payouts"
       title="정산 · 수익"
       description="맞춤의뢰 정산 예정·완료 금액과 주문별 내역을 확인하세요. 구독·기타 요약은 참고용입니다."

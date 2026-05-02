@@ -44,6 +44,7 @@ export default async function MentorProfileEditPage(props: PageProps) {
   }
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="Mentor / Profile / Edit"
       title="프로필·채널 편집"
       description="소개·학력·과목 등 프로필과 채널 정보를 수정할 수 있습니다."

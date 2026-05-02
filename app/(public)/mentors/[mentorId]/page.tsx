@@ -18,6 +18,7 @@ export default async function MentorDetailByIdPage(props: Props) {
   if (bundle.kind === "not_found") {
     return (
       <PageScaffold
+        hideFooterPlaceholderCards
         eyebrow="멤버십"
         title="멘토를 찾을 수 없어요"
         description={bundle.message}
@@ -34,6 +35,7 @@ export default async function MentorDetailByIdPage(props: Props) {
   if (bundle.kind === "not_mentor") {
     return (
       <PageScaffold
+        hideFooterPlaceholderCards
         eyebrow="멤버십"
         title="멘토 프로필이 아니에요"
         description={bundle.message}
@@ -60,6 +62,7 @@ export default async function MentorDetailByIdPage(props: Props) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="멤버십"
       title={display.displayName}
       description="멘토 소개·콘텐츠·리뷰·플랜을 한곳에서 확인하세요. 구독·결제는 기존 구독 화면 흐름을 따릅니다."

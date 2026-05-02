@@ -35,6 +35,7 @@ export default async function NotificationsPage(props: Props) {
 
   return (
     <PageScaffold
+      hideFooterPlaceholderCards
       eyebrow="알림"
       title="알림"
       description="받은 알림을 확인하고, 관련 화면으로 이동할 수 있습니다."
