@@ -6,7 +6,8 @@ type Row = Record<string, unknown>;
 
 /**
  * 004 `disputes.status` CHECK: open | under_review | resolved | dismissed | escalated
- * — 주문방 UI·액션 잠금의 "진행 중 분쟁": open · under_review · escalated (resolved·dismissed 제외).
+ * — 주문방 UI·액션 잠금의 "진행 중 분쟁": open · under_review · escalated.
+ *   resolved · dismissed · closed 등 종료 상태는 active로 보지 않음.
  */
 const ACTIVE_DISPUTE_STATUSES = new Set(["open", "under_review", "escalated"]);
 

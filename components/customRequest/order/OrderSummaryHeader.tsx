@@ -19,6 +19,18 @@ import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type View = "student" | "mentor";
 
+/** active 분쟁 시 OrderStatusBadge 대신 — 주문 row의 norm과 무관하게 동일 문구 */
+function ActiveDisputeOrderStatusBadge() {
+  return (
+    <span
+      className="inline-flex max-w-full items-center rounded-full border border-amber-300/90 bg-amber-100 px-2.5 py-0.5 text-xs font-semibold leading-tight text-amber-950"
+      title="진행 중인 분쟁이 있어 주문 단계 칩보다 우선 표시됩니다."
+    >
+      분쟁 검토 중
+    </span>
+  );
+}
+
 function pickPaymentStatusRaw(row: Record<string, unknown> | null | undefined): string {
   if (!row) return "";
   for (const k of ["payment_status", "payment_state"] as const) {
@@ -223,7 +235,7 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
             ← 맞춤의뢰
           </Link>
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-            <OrderStatusBadge norm={orderNorm} />
+            {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
             <PaymentStatusBadge paymentRaw={payRaw} />
             <Link
               href="#order-room-order-info"
@@ -261,7 +273,7 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
           ← 맞춤의뢰
         </Link>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-          <OrderStatusBadge norm={orderNorm} />
+          {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
           <PaymentStatusBadge paymentRaw={payRaw} />
           <span className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
             멘토
@@ -384,9 +396,7 @@ export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDi
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100/90 pt-2">
             <dt className="text-slate-500">주문 상태</dt>
-            <dd>
-              <OrderStatusBadge norm={orderNorm} />
-            </dd>
+            <dd>{detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}</dd>
           </div>
         </dl>
         <p className="text-xs text-slate-500">
