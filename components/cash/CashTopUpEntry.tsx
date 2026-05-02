@@ -1,5 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import {
+  USER_UI_CASH_BALANCE_LOAD_FAILED,
+  USER_UI_CASH_PACKAGES_EMPTY_PRIMARY,
+  USER_UI_CASH_PACKAGES_EMPTY_SECONDARY,
+  USER_UI_CASH_PACKAGES_LOAD_FAILED,
+} from "@/lib/constants/userFacingMessages";
 
 function Banner({ kind, message }: { kind: "loading" | "error" | "empty" | "info"; message: string }) {
   const skin =
@@ -19,19 +25,30 @@ export function CashTopUpEntry(props: {
   balanceError: string | null;
   packageRows: Record<string, unknown>[];
   packageError: string | null;
-  packageTable: string | null;
   notices: ReactNode;
   primaryCta: { href: string; label: string };
   secondaryCta?: { href: string; label: string };
-  dataModelPoints: readonly string[];
 }) {
+  if (props.balanceError) {
+    console.error("[CashTopUpEntry] balanceError", props.balanceError);
+  }
+  if (props.packageError) {
+    console.error("[CashTopUpEntry] packageError", props.packageError);
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-extrabold text-slate-900">현재 잔액</h2>
         {props.balanceLoading ? <Banner kind="loading" message="잔액 조회 중…" /> : null}
-        {!props.balanceLoading && props.balanceError ? <Banner kind="error" message={props.balanceError} /> : null}
-        {!props.balanceLoading && !props.balanceError && !props.balanceLine ? <Banner kind="empty" message="로그인 후 학생 지갑에서 잔액이 표시됩니다(캐시 전용)." /> : null}
+        {!props.balanceLoading && props.balanceError ? (
+          <div className="mt-2">
+            <Banner kind="error" message={USER_UI_CASH_BALANCE_LOAD_FAILED} />
+          </div>
+        ) : null}
+        {!props.balanceLoading && !props.balanceError && !props.balanceLine ? (
+          <Banner kind="empty" message="로그인 후 학생 지갑에서 잔액이 표시됩니다(캐시 전용)." />
+        ) : null}
         {!props.balanceLoading && !props.balanceError && props.balanceLine ? (
           <p className="mt-2 text-2xl font-black text-slate-900">{props.balanceLine}</p>
         ) : null}
@@ -40,10 +57,15 @@ export function CashTopUpEntry(props: {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-extrabold text-slate-900">충전 패키지</h2>
-        {props.packageError ? <div className="mt-2"><Banner kind="error" message={props.packageError} /></div> : null}
-        {props.packageRows.length === 0 && !props.packageError ? (
+        {props.packageError ? (
           <div className="mt-2">
-            <Banner kind="empty" message="조회된 패키지가 없습니다. 스키마/RLS를 연결하면 목록이 채워집니다." />
+            <Banner kind="error" message={USER_UI_CASH_PACKAGES_LOAD_FAILED} />
+          </div>
+        ) : null}
+        {props.packageRows.length === 0 && !props.packageError ? (
+          <div className="mt-2 space-y-2">
+            <Banner kind="empty" message={USER_UI_CASH_PACKAGES_EMPTY_PRIMARY} />
+            <p className="text-sm text-slate-600">{USER_UI_CASH_PACKAGES_EMPTY_SECONDARY}</p>
           </div>
         ) : null}
         <ul className="mt-3 space-y-2">
@@ -53,7 +75,6 @@ export function CashTopUpEntry(props: {
             </li>
           ))}
         </ul>
-        {props.packageTable ? <p className="mt-2 text-xs text-slate-500">source table: {props.packageTable}</p> : null}
       </section>
 
       <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-6">
@@ -70,15 +91,6 @@ export function CashTopUpEntry(props: {
             {props.secondaryCta.label}
           </Link>
         ) : null}
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-        <h3 className="text-sm font-extrabold text-slate-900">Supabase / 원장 연결 예정</h3>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
-          {props.dataModelPoints.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
       </section>
     </div>
   );

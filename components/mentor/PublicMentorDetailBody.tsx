@@ -5,6 +5,10 @@ import type { PublicMentorLoadResult } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { getStringField } from "@/lib/qna/safeSelect";
 import type { UserRow } from "@/lib/types/user";
+import {
+  USER_UI_MENTOR_MEDIA_LOAD_FAILED,
+  USER_UI_MENTOR_REVIEWS_LOAD_FAILED,
+} from "@/lib/constants/userFacingMessages";
 
 function Field(props: { label: string; value: string; mono?: boolean }) {
   return (
@@ -24,6 +28,12 @@ export function PublicMentorDetailBody(props: {
   bundle: Extract<PublicMentorLoadResult, { kind: "ok" }>;
 }) {
   const { mentorId, userRow, display, bundle } = props;
+  if (bundle.media.error) {
+    console.error("[PublicMentorDetailBody] media", bundle.media.error, bundle.media.probe);
+  }
+  if (bundle.reviews.error) {
+    console.error("[PublicMentorDetailBody] reviews", bundle.reviews.error, bundle.reviews.probe);
+  }
   const mediaRows = bundle.media.rows;
   const { byTier, fillProbe } = assignPlansByTier(bundle.plans.rows as Record<string, unknown>[]);
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
@@ -78,8 +88,9 @@ export function PublicMentorDetailBody(props: {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 className="text-lg font-extrabold text-slate-900">대표 콘텐츠</h2>
-            <p className="mt-1 text-xs text-slate-500">{bundle.media.probe}</p>
-            {bundle.media.error ? <p className="mt-2 text-sm font-bold text-red-800">{bundle.media.error}</p> : null}
+            {bundle.media.error ? (
+              <p className="mt-2 text-sm font-bold text-red-800">{USER_UI_MENTOR_MEDIA_LOAD_FAILED}</p>
+            ) : null}
             {!mediaRows.length && !bundle.media.error ? (
               <p className="mt-3 text-sm text-slate-600">표시할 콘텐츠가 없어요. 연결·권한이 정리되면 이곳에 모입니다.</p>
             ) : (
@@ -99,8 +110,9 @@ export function PublicMentorDetailBody(props: {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
             <h2 className="text-lg font-extrabold text-slate-900">리뷰</h2>
-            <p className="mt-1 text-xs text-slate-500">{bundle.reviews.probe}</p>
-            {bundle.reviews.error ? <p className="mt-2 text-sm font-bold text-amber-800">{bundle.reviews.error}</p> : null}
+            {bundle.reviews.error ? (
+              <p className="mt-2 text-sm font-bold text-amber-800">{USER_UI_MENTOR_REVIEWS_LOAD_FAILED}</p>
+            ) : null}
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <Field label="리뷰 수" value={bundle.reviews.count != null ? String(bundle.reviews.count) : "—"} />
               <Field
@@ -126,7 +138,7 @@ export function PublicMentorDetailBody(props: {
             <summary className="cursor-pointer font-extrabold">편집 화면과 항목이 다를 수 있어요(참고)</summary>
             <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
               <li>이름·표시: 공개는 계정/프로필에서 온 값을 씁니다.</li>
-              <li>리뷰·요금: 일부는 조회용 probe이며, 멘토용 편집 폼과 1:1이 아닐 수 있어요.</li>
+              <li>리뷰·요금: 공개 화면에 보이는 값은 조회 시점 기준이며, 멘토용 편집 화면과 항목이 다를 수 있어요.</li>
             </ul>
           </details>
         </div>
