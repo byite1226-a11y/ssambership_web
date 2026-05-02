@@ -56,9 +56,49 @@ function mapReportError(code: string | null | undefined): string | null {
 
 function PlayGlyph() {
   return (
-    <svg className="h-14 w-14 text-white drop-shadow-md" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <svg className="h-16 w-16 text-white drop-shadow-md sm:h-[4.5rem] sm:w-[4.5rem]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
       <path d="M8 5v14l11-7z" />
     </svg>
+  );
+}
+
+function pickShortformExtraTags(row: Record<string, unknown>): string | null {
+  for (const k of ["tags", "hashtags", "keywords", "topic"] as const) {
+    const v = row[k];
+    if (Array.isArray(v) && v.length) {
+      const s = v.map(String).filter(Boolean).slice(0, 5).join(" · ");
+      return s || null;
+    }
+    if (typeof v === "string" && v.trim()) return v.trim().slice(0, 160);
+  }
+  return null;
+}
+
+function ShortformExploreStrip() {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50/90 p-3">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">더 둘러보기</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Link
+          href="/community/shortform"
+          className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
+        >
+          숏폼 목록
+        </Link>
+        <Link
+          href="/community/board"
+          className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
+        >
+          게시판 보기
+        </Link>
+        <Link
+          href="/community"
+          className="inline-flex rounded-lg border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-bold text-blue-900 shadow-sm hover:bg-blue-100"
+        >
+          커뮤니티 홈
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -90,6 +130,7 @@ export function CommunityPostDetail(props: {
   const teaser = props.row ? pickExcerpt(props.row) : "";
   const postType = props.variant === "board" ? "board" : "shortform";
   const bodyOrTeaser = body || teaser;
+  const tagLine = props.row && props.variant === "shortform" ? pickShortformExtraTags(props.row) : null;
   const commentErrMsg = mapCommentError(props.commentErrorCode);
   const reportErrMsg = mapReportError(props.reportErrorCode);
   const n = props.comments.length;
@@ -108,7 +149,91 @@ export function CommunityPostDetail(props: {
       {props.reportOk ? <StateBanner kind="success" message="신고가 접수되었습니다." /> : null}
       {reportErrMsg ? <StateBanner kind="error" message={reportErrMsg} /> : null}
 
-      {props.row ? (
+      {props.row && props.variant === "shortform" ? (
+        <article className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-950/[0.04] via-white to-blue-50/25 shadow-md">
+          <div className="grid gap-6 p-5 sm:gap-8 sm:p-6 lg:grid-cols-[minmax(0,min(440px,46%))_minmax(0,1fr)] lg:items-start">
+            <div className="flex min-w-0 flex-col">
+              <div className="relative mx-auto aspect-[9/16] w-full max-w-[440px] overflow-hidden rounded-2xl border-2 border-slate-300/80 bg-gradient-to-b from-slate-300 via-slate-100 to-slate-200 shadow-inner lg:mx-0 lg:max-w-none lg:sticky lg:top-24">
+                {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- 외부 썸네일 URL 동적 표시
+                  <img src={thumb} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center px-6 text-center">
+                    <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">숏폼 영상</p>
+                    <p className="mt-2 text-base font-bold text-slate-800">영상 준비 중</p>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-600">세로(9:16) 클립 형태로 표시됩니다.</p>
+                  </div>
+                )}
+                <div
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/35 via-black/10 to-transparent"
+                  aria-hidden
+                >
+                  <span className="rounded-full bg-black/50 p-4 ring-2 ring-white/40 shadow-lg">
+                    <PlayGlyph />
+                  </span>
+                </div>
+              </div>
+              <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500 lg:text-left">
+                재생은 준비 중입니다. 오른쪽에서 소개와 댓글을 확인해 주세요.
+              </p>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+                  숏폼
+                </span>
+                {typeof props.row.category === "string" && props.row.category.trim() ? (
+                  <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-extrabold text-blue-800 ring-1 ring-blue-100">
+                    {props.row.category.trim()}
+                  </span>
+                ) : null}
+                <AuthorRoleBadge row={props.row} />
+              </div>
+
+              <h1 className="text-2xl font-black leading-tight text-slate-900 sm:text-3xl">{t}</h1>
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                <span className="font-semibold text-slate-800">{author}</span>
+                {dateStr ? (
+                  <>
+                    <span className="text-slate-300" aria-hidden>
+                      ·
+                    </span>
+                    <time>{dateStr}</time>
+                  </>
+                ) : null}
+              </div>
+
+              <p className="text-xs leading-relaxed text-slate-500">
+                짧은 영상으로 학습 팁·후기·포트폴리오 노하우를 빠르게 전합니다. 긴 글보다 핵심만 담았다고 생각하고
+                봐 주세요.
+              </p>
+
+              {tagLine ? (
+                <p className="rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 text-xs font-semibold text-slate-700">
+                  {tagLine}
+                </p>
+              ) : null}
+
+              <section aria-labelledby="sf-intro-heading">
+                <h2 id="sf-intro-heading" className="text-xs font-extrabold uppercase tracking-wide text-slate-400">
+                  소개
+                </h2>
+                {bodyOrTeaser ? (
+                  <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-slate-100 bg-white/90 p-3 text-sm leading-relaxed text-slate-700 shadow-sm">
+                    <p className="whitespace-pre-wrap">{bodyOrTeaser}</p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">등록된 소개 문구가 없습니다.</p>
+                )}
+              </section>
+
+              <ShortformExploreStrip />
+            </div>
+          </div>
+        </article>
+      ) : props.row ? (
         <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <header className="border-b border-slate-100 bg-white px-6 pb-5 pt-6">
             <div className="flex flex-wrap items-center gap-2">
@@ -133,64 +258,22 @@ export function CommunityPostDetail(props: {
             </div>
           </header>
 
-          {props.variant === "shortform" ? (
-            <div className="grid gap-8 px-6 py-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
-              <div className="mx-auto w-full max-w-[320px] lg:mx-0 lg:sticky lg:top-24">
-                <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border-2 border-slate-200 bg-gradient-to-b from-slate-200 via-slate-100 to-slate-200 shadow-inner">
-                  {thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- 외부 썸네일 URL 동적 표시
-                    <img src={thumb} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center px-6 text-center">
-                      <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">숏폼 영상</p>
-                      <p className="mt-2 text-sm font-bold text-slate-700">영상 준비 중</p>
-                      <p className="mt-2 text-xs leading-relaxed text-slate-600">세로(9:16) 영상이 연결되면 이 영역에 표시됩니다.</p>
-                    </div>
-                  )}
-                  <div
-                    className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20"
-                    aria-hidden
-                  >
-                    <span className="rounded-full bg-black/45 p-3 ring-2 ring-white/30">
-                      <PlayGlyph />
-                    </span>
-                  </div>
-                </div>
-                <p className="mt-3 text-center text-xs leading-relaxed text-slate-500">
-                  재생은 준비 중입니다. 오른쪽 설명·본문으로 내용을 먼저 확인해 주세요.
-                </p>
-              </div>
-              <div className="min-w-0 space-y-5">
-                <section aria-labelledby="sf-body-heading">
-                  <h2 id="sf-body-heading" className="text-sm font-extrabold text-slate-900">
-                    설명 · 본문
-                  </h2>
-                  {bodyOrTeaser ? (
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-800">{bodyOrTeaser}</p>
-                  ) : (
-                    <p className="mt-2 text-sm text-slate-500">등록된 본문이 없습니다.</p>
-                  )}
-                </section>
-              </div>
-            </div>
-          ) : (
-            <div className="px-6 py-6">
-              <section aria-labelledby="bd-body-heading">
-                <h2 id="bd-body-heading" className="text-sm font-extrabold text-slate-900">
-                  본문
-                </h2>
-                {bodyOrTeaser ? (
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">{bodyOrTeaser}</p>
-                ) : (
-                  <p className="mt-3 text-sm text-slate-500">등록된 본문이 없습니다.</p>
-                )}
-              </section>
-            </div>
-          )}
+          <div className="px-6 py-6">
+            <section aria-labelledby="bd-body-heading">
+              <h2 id="bd-body-heading" className="text-sm font-extrabold text-slate-900">
+                본문
+              </h2>
+              {bodyOrTeaser ? (
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">{bodyOrTeaser}</p>
+              ) : (
+                <p className="mt-3 text-sm text-slate-500">등록된 본문이 없습니다.</p>
+              )}
+            </section>
+          </div>
         </article>
       ) : null}
 
-      {props.row ? (
+      {props.row && props.variant === "board" ? (
         <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm">
           <h2 className="text-base font-extrabold text-slate-900">관련 콘텐츠</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
