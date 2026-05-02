@@ -19,7 +19,7 @@ export function CustomRequestPostListTable(props: { list: CustomListResult; max?
   const { list, max = 5 } = props;
   if (list.error && !list.rows.length) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm text-slate-700 sm:px-5 sm:py-5">
+      <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm text-slate-700 sm:px-5 sm:py-5">
         <p className="font-bold text-slate-800">맞춤의뢰를 불러오지 못했어요</p>
         <p className="mt-1.5 text-slate-600">{mapDataErrorMessage(String(list.error))}</p>
       </div>
@@ -27,7 +27,7 @@ export function CustomRequestPostListTable(props: { list: CustomListResult; max?
   }
   if (!list.rows.length) {
     return (
-      <p className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-5 text-center text-sm font-bold text-slate-700 sm:px-6">
+      <p className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-5 text-center text-sm font-bold text-slate-700 sm:px-6">
         모집 중인 맞춤의뢰가 아직 없습니다
       </p>
     );
@@ -41,7 +41,7 @@ export function CustomRequestPostListTable(props: { list: CustomListResult; max?
         return (
           <li
             key={(id ?? "row") + String(i)}
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm transition-shadow hover:shadow sm:p-4"
+            className="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm"
           >
             <div className="flex flex-col gap-2.5 min-[480px]:flex-row min-[480px]:items-start min-[480px]:justify-between">
               <div className="min-w-0 flex-1">

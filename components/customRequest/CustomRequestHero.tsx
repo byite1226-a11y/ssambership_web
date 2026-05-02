@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function CustomRequestHero() {
   return (
-    <section className="overflow-hidden rounded-2xl border border-indigo-100/80 bg-gradient-to-br from-indigo-50/90 via-white to-slate-50/50 shadow-sm">
+    <section className="overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-slate-50/40">
       <div className="grid gap-6 p-5 sm:grid-cols-2 sm:gap-8 sm:p-7 lg:p-8">
         <div className="flex min-w-0 flex-col justify-center">
           <h2 className="text-balance break-words text-2xl font-black leading-tight tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
@@ -20,7 +20,7 @@ export function CustomRequestHero() {
             </Link>
             <Link
               href="/custom-request/orders"
-              className="inline-flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-center text-sm font-extrabold text-indigo-900 shadow-sm hover:bg-indigo-100 min-[400px]:max-w-xs"
+              className="inline-flex min-h-[48px] min-w-0 flex-1 items-center justify-center rounded-xl border border-indigo-200 bg-white px-4 py-3 text-center text-sm font-extrabold text-indigo-700 hover:bg-indigo-50 min-[400px]:max-w-xs"
             >
               내 진행 의뢰 보기
             </Link>
@@ -33,7 +33,7 @@ export function CustomRequestHero() {
           </div>
         </div>
         <div className="flex min-h-[10rem] items-stretch sm:min-h-0">
-          <div className="flex w-full flex-col justify-between rounded-2xl border border-indigo-100/60 bg-gradient-to-b from-indigo-100/40 to-white p-5 shadow-inner sm:p-6">
+          <div className="flex w-full flex-col justify-between rounded-xl border border-indigo-100/60 bg-gradient-to-b from-indigo-50/40 to-white p-5 sm:p-6">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-wider text-indigo-800/80">맞춤 의뢰</p>
               <p className="mt-2 break-words text-sm font-bold leading-relaxed text-slate-800">
