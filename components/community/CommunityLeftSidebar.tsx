@@ -38,15 +38,6 @@ export function CommunityLeftSidebar(props: { active: CommunityNavActive }) {
       <NavLink href="/community/me" label="스크랩" active={false} />
       <NavLink href="/community/me" label="팔로우" active={false} />
       <div className="my-2 border-t border-slate-100" />
-      <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-        <p className="font-extrabold text-slate-800">내 포인트</p>
-        <p className="mt-1 tabular-nums text-slate-500">—</p>
-      </div>
-      <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-        <p className="font-extrabold text-slate-800">내 배지</p>
-        <p className="mt-1 text-slate-500">—</p>
-      </div>
-      <div className="my-2 border-t border-slate-100" />
       <p className="px-2 pb-1 text-xs font-extrabold uppercase tracking-wide text-slate-400">인기 해시태그</p>
       <ul className="space-y-1">
         {HASHTAGS.map((tag) => (

@@ -16,7 +16,7 @@ function isMentor(role: AppRole | null | undefined): boolean {
 }
 
 /**
- * 커뮤니티 히어로 CTA — 질문방(/question-room) 링크는 넣지 않음.
+ * 커뮤니티 히어로 CTA — 질문방 도메인으로의 링크는 넣지 않음.
  * - 멘토: 화면별 게시글 작성 / 숏폼 업로드·탐색
  * - 학생·관리자·기타 로그인: 도메인 내부 탐색만
  * - 비로그인: 로그인(댓글·스크랩 안내) + 탐색
@@ -109,7 +109,7 @@ export function buildCommunityHeroCtas(params: {
     }
   }
 
-  /* student · admin · 로그인했으나 role 없음: 작성·질문 CTA 없음, 내부 탐색만 */
+  /* student · admin · 로그인했으나 role 없음: 작성 CTA 없음, 내부 탐색만 */
   switch (surface) {
     case "home":
       return [

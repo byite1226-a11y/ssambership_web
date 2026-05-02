@@ -126,12 +126,6 @@ export function CommunityMainHub(props: {
         >
           {props.writeCta.label}
         </Link>
-        <Link
-          href="/mentor/question-room"
-          className="inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-900 shadow-sm hover:bg-emerald-100"
-        >
-          답변 대기 보기(멘토)
-        </Link>
       </div>
     </div>
   );
