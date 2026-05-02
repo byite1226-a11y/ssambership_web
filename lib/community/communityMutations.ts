@@ -78,7 +78,7 @@ export async function insertMentorBoardPost(
   const t = "community_posts";
 
   const payloads: Record<string, unknown>[] = [
-    { title, body, category, author_id: userId, author_role: "mentor" },
+    { title, body, category, source, author_id: userId, author_role: "mentor" },
     { title, body, category, source, author_id: userId, author_role: "mentor", rights_confirmed: true },
     { title, content: body, category, source_url: source, author_id: userId, author_role: "mentor", rights_confirmed: true },
     { title, text: body, category, source, user_id: userId, author_role: "mentor", rights_ack: true },
