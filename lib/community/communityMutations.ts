@@ -15,9 +15,15 @@ async function insertWithCandidates(
   payloads: Record<string, unknown>[]
 ): Promise<{ row: Record<string, unknown> | null; error: string | null }> {
   let lastError = "insert 후보를 모두 실패했습니다.";
-  for (const payload of payloads) {
+  for (let attemptIndex = 0; attemptIndex < payloads.length; attemptIndex++) {
+    const payload = payloads[attemptIndex];
     const { data, error } = await supabase.from(table).insert(payload).select("*").limit(1).maybeSingle();
     if (!error) {
+      console.log("[communityMutations] insertWithCandidates ok", {
+        table,
+        attemptIndex,
+        payloadKeys: Object.keys(payload),
+      });
       return { row: (data as Record<string, unknown> | null) ?? null, error: null };
     }
     lastError = error.message;
@@ -25,6 +31,10 @@ async function insertWithCandidates(
       return { row: null, error: error.message };
     }
   }
+  console.warn("[communityMutations] insertWithCandidates all attempts failed", {
+    table,
+    attempts: payloads.length,
+  });
   return { row: null, error: lastError };
 }
 
