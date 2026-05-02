@@ -3,6 +3,7 @@ import { WalletChargeBody } from "@/components/cash/WalletChargeBody";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { CASH_DATA_MODEL, loadWalletChargePageData, WALLET_CHARGE_DATA_MODEL } from "@/lib/cash/walletRouteData";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type Props = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -41,7 +42,7 @@ export default async function WalletChargePage({ searchParams }: Props) {
         data={data}
         userIdShort={user.id.slice(0, 8)}
         actionOk={actionOk}
-        actionError={actionError}
+        actionError={actionError ? mapDataErrorMessage(actionError) : null}
         allowTestTopup={allowTestTopup}
       />
     </PageScaffold>

@@ -9,6 +9,7 @@ import {
   mentorHasApplicationForPost,
 } from "@/lib/customRequest/customRequestQueries";
 import { isMentorApplicablePostStatus } from "@/lib/customRequest/customRequestPostMappers";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type PageProps = {
   params: Promise<{ postId: string }>;
@@ -47,7 +48,7 @@ export default async function MentorCustomRequestApplyPage(props: PageProps) {
     >
       {err ? (
         <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-bold text-red-900">
-          {err}
+          {mapDataErrorMessage(err)}
         </p>
       ) : null}
       {already ? (

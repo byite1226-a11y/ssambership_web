@@ -20,7 +20,7 @@ export default async function StudentDisputesListPage() {
       ]}
       sections={[
         { title: "목록", body: table ? `테이블: ${table} · ${probe}` : (error ?? "—"), status: table ? "connected" : "skeleton" },
-        { title: "권한", body: "requireRole(student)", status: "connected" },
+        { title: "권한", body: "학생 계정으로 로그인한 경우에만 이용할 수 있어요.", status: "connected" },
         { title: "상세", body: "행의 상세 → /support/disputes/[id] (기존).", status: "connected" },
       ]}
       emptyState="분쟁/신청이 없을 때(또는 RLS) 안내."

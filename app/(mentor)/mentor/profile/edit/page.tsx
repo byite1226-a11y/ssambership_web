@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MENTOR_PROFILE_DATA_MODEL } from "@/lib/mentor/mentorDataModel";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
+import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 type PageProps = { searchParams?: Promise<{ error?: string; ok?: string }> };
 
@@ -59,7 +60,7 @@ export default async function MentorProfileEditPage(props: PageProps) {
         query={{ row, err: re, media: { table: media.table, error: media.error } }}
         accountEmail={userRow?.email ?? user.email ?? null}
         ok={ok}
-        errorMessage={err}
+        errorMessage={err ? mapDataErrorMessage(err) : null}
       />
     </PageScaffold>
   );
