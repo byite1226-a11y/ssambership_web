@@ -19,6 +19,7 @@ export default async function CustomRequestNewPage(props: PageProps) {
         { href: "/home", label: "학생 홈", tone: "slate" },
       ]}
       sections={[]}
+      hideFooterPlaceholderCards
     >
       <CustomRequestNewForm errorMessage={errUi} />
     </PageScaffold>

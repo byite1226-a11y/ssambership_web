@@ -18,7 +18,6 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
         <form
           action={submitCustomRequestNew}
-          encType="multipart/form-data"
           className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:space-y-5 sm:p-5 lg:col-span-7 xl:col-span-8"
         >
           <h2 className="text-lg font-extrabold text-slate-900 sm:text-xl">요청 내용</h2>
