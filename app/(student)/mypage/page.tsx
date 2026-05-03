@@ -1,19 +1,15 @@
 import { redirect } from "next/navigation";
-import { PageScaffold } from "@/components/shell/PageScaffold";
-import { StudentMypageMain } from "@/components/mypage/StudentMypageMain";
-import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
+import Link from "next/link";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
-import { loadStudentMypageBundle, MYPAGE_DATA_MODEL } from "@/lib/mypage/mypageQueries";
-import { USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
+import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
+import { MypageMetricLine } from "@/components/mypage/MypageMetricLine";
+import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
 
 export default async function StudentMyPage() {
   const { user, profile, error: profileLoadError } = await getServerUserWithProfile();
   if (!user) {
     redirect(`/login/student?next=${encodeURIComponent("/mypage")}`);
-  }
-  if (profile && profile.role !== "student") {
-    redirect(getPostLoginPath(profile.role));
   }
 
   const supabase = await createClient();
@@ -23,36 +19,137 @@ export default async function StudentMyPage() {
     profile,
     profileLoadError?.message ?? null
   );
-  if (bundle.profileError) {
-    console.error("[mypage] profileError", bundle.profileError);
-  }
+
+  const { roomCount } = bundle;
+  const roomText = roomCount.error
+    ? "질문방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+    : roomCount.n === 0
+      ? "아직 열린 질문방이 없습니다. 멘토와 맺은 방이 여기에 이어집니다."
+      : `연결된 질문방 ${roomCount.n}개입니다.`;
 
   return (
-    <PageScaffold
-      hideFooterPlaceholderCards
-      eyebrow="마이페이지"
-      title="마이페이지"
-      description="프로필과 구독·질문방·결제·캐시·알림 등 주요 메뉴로 바로 이동할 수 있어요."
-      ctas={[
-        { href: "/home", label: "학생 홈", tone: "slate" },
-        { href: "/question-room", label: "질문방", tone: "blue" },
-        { href: "/custom-request/orders", label: "맞춤의뢰 주문", tone: "slate" },
-        { href: "/notifications", label: "알림", tone: "slate" },
-        { href: "/support/disputes", label: "분쟁·환불 현황", tone: "slate" },
-        { href: "/subscriptions", label: "구독", tone: "slate" },
-        { href: "/wallet/charge", label: "캐시·지갑", tone: "slate" },
-      ]}
-      sections={bundle.scaffoldSummary}
-      emptyState={
-        bundle.profile
-          ? "프로필의 닉네임·학년 등 필수 정보를 채우면 다음 단계로 진행할 수 있어요."
-          : "계정 정보를 준비하는 중일 수 있어요. 잠시 후 다시 확인해 주세요."
-      }
-      loadingState="불러오는 중입니다."
-      errorState={bundle.profileError ? USER_UI_OPS_ISSUE : "—"}
-      dataPoints={[...MYPAGE_DATA_MODEL]}
+    <StudentDashboardShell
+      activeTab="home"
+      user={user}
+      profile={profile}
+      profileLoadError={profileLoadError?.message ?? null}
+      bundle={bundle}
     >
-      <StudentMypageMain bundle={bundle} sessionEmail={user.email ?? null} />
-    </PageScaffold>
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">마이페이지</h1>
+          <p className="mt-1 text-sm text-slate-500">내 프로필, 구독, 질문방, 결제, 알림 현황을 한곳에서 보세요.</p>
+        </header>
+
+        {/* Top Summary Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">내 질문방</p>
+            <h3 className="text-xl font-black text-slate-900">{roomCount.n ?? 0} <span className="text-xs font-normal text-slate-400">개</span></h3>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">구독 중인 멘토</p>
+            <h3 className="text-xl font-black text-slate-900">{bundle.subscriptions.valueText || "0"} <span className="text-xs font-normal text-slate-400">명</span></h3>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">결제 및 주문</p>
+            <h3 className="text-xl font-black text-slate-900">{bundle.payments.valueText || "0"} <span className="text-xs font-normal text-slate-400">건</span></h3>
+          </div>
+        </div>
+
+        {/* Section 1: 최근 질문 및 상담 */}
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[144px]">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">최근 질문 및 상담</h2>
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed font-medium">{roomText}</p>
+            {roomCount.error ? (
+              <p className="mt-1 text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+            ) : null}
+          </div>
+          <div className="mt-3">
+            <Link
+              className="inline-block rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition shadow-sm select-none"
+              href="/question-room"
+            >
+              질문방 바로가기
+            </Link>
+          </div>
+        </section>
+
+        {/* Section 2: Detailed Stats Grid */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">구독 · 멤버십 관리</h2>
+              <div className="mt-2">
+                <MypageMetricLine metric={bundle.subscriptions} />
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2 select-none">
+              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/subscriptions">
+                구독 관리
+              </Link>
+              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/mentors">
+                멘토 찾기·구독
+              </Link>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">결제 · 캐시 정보</h2>
+              <div className="mt-2">
+                <MypageMetricLine metric={bundle.payments} />
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-2 font-medium leading-tight select-none">캐시 충전 및 이용 내역 바로가기</p>
+            <div className="mt-4 flex flex-wrap gap-2 select-none">
+              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/wallet/charge">
+                캐시 충전
+              </Link>
+              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/wallet/ledger">
+                캐시 원장
+              </Link>
+            </div>
+          </section>
+        </div>
+
+        {/* Section 3: 알림 & 고객지원 & 리뷰 */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">알림</h2>
+              <MypageMetricLine metric={bundle.notifications} />
+            </div>
+            <div className="mt-4 select-none">
+              <Link className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1" href="/notifications">
+                알림 센터 &rarr;
+              </Link>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">고객지원</h2>
+              <p className="mt-2 text-xs text-slate-600 leading-relaxed font-medium">맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있어요.</p>
+            </div>
+            <div className="mt-4 select-none">
+              <Link className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1" href="/support/disputes">
+                분쟁·환불 현황 &rarr;
+              </Link>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px] md:col-span-2 lg:col-span-1">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">리뷰 · 신고</h2>
+              <MypageMetricLine metric={bundle.reviews} />
+              <MypageMetricLine metric={bundle.reports} />
+            </div>
+            <p className="text-[10px] text-slate-400 leading-tight mt-2 select-none">작성한 리뷰와 제출한 신고는 운영 정책에 따라 안내됩니다.</p>
+          </section>
+        </div>
+      </div>
+    </StudentDashboardShell>
   );
 }
