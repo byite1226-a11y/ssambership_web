@@ -83,7 +83,7 @@ export function SignupTrustBlock() {
           <div className="min-w-0">
             <h3 className="text-lg font-extrabold text-slate-900 sm:text-xl md:text-2xl">안전한 연동</h3>
             <p className="mt-3 text-base leading-relaxed text-slate-700 sm:mt-4 sm:text-lg md:leading-8">
-              Supabase Auth·DB·(멘토 시) Storage는 팀이 설정한 키·권한·RLS(정책)에 따라 열람·전송·저장돼요. 비밀번호는 서비스가
+              로그인·계정 정보·(멘토 가입 시) 첨부 파일은 팀이 설정한 접근 권한과 보안 정책에 따라 처리돼요. 비밀번호는 서비스가
               권장하는 강도를 지키는 것이 좋아요(이미 6자 이상 검사).
             </p>
           </div>

@@ -76,7 +76,7 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
     <div className="space-y-5 sm:space-y-6 md:space-y-7">
       <p className="rounded-2xl border border-emerald-200/50 bg-gradient-to-r from-emerald-50/90 to-sky-50/30 px-4 py-4 text-sm font-medium leading-relaxed text-slate-800 shadow-sm sm:rounded-3xl sm:px-6 sm:py-5 sm:text-base md:text-lg">
         멘토는 <strong className="text-emerald-900">대학(재) 인증</strong>이 이어집니다. 제출·보관·삭제는
-        쌤버십·약관·정책(및 Supabase/스토리지 보안 설정)에 따릅니다.
+        쌤버십·약관·정책 및 서버·파일 저장소 보안 설정에 따릅니다.
       </p>
 
       <section className={fieldSection} aria-labelledby="m-sec-nick">
