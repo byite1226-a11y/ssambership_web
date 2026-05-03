@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { MentorCheckoutSummary } from "@/components/subscribe/MentorCheckoutSummary";
-import { OrderSummaryCard } from "@/components/subscribe/OrderSummaryCard";
 import { PaymentForm } from "@/components/subscribe/PaymentForm";
 import { PlanComparisonCards } from "@/components/subscribe/PlanComparisonCards";
 import { PromotionNoticeBox } from "@/components/subscribe/PromotionNoticeBox";
 import { requireRole } from "@/lib/auth/routeGuard";
-import { SUBSCRIBE_PAGE_DATA_MODEL } from "@/lib/subscribe/subscribeDataModel";
-import { loadStudentSubscribePage, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import {
+  loadStudentSubscribePage,
+  priceLabelFromPlanRow,
+  weeklyQuestionsLabel,
+  type SubscribePlanTier,
+} from "@/lib/subscribe/subscribePageQueries";
 import { createClient } from "@/lib/supabase/server";
-import { USER_UI_LOAD_FAILED, USER_UI_NOTHING_TO_SHOW, USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
+import { USER_UI_LOAD_FAILED, USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -22,6 +25,75 @@ function one(sp: Record<string, string | string[] | undefined>, k: string): stri
 function parseSelectedPlan(v: string | undefined): SubscribePlanTier {
   if (v === "limited" || v === "standard" || v === "premium") return v;
   return "standard";
+}
+
+function planTierTitle(tier: SubscribePlanTier): string {
+  if (tier === "limited") return "Limited";
+  if (tier === "standard") return "Standard";
+  return "Premium";
+}
+
+function SubscribeSelectionSummary(props: {
+  mentorId: string;
+  mentorName: string;
+  selectedTier: SubscribePlanTier;
+  priceLine: string;
+  weeklyLine: string;
+  canContinue: boolean;
+}) {
+  const { mentorId, mentorName, selectedTier, priceLine, weeklyLine, canContinue } = props;
+  return (
+    <div className="rounded-2xl border border-slate-200/95 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)]">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">선택 요약</p>
+      <h2 className="mt-2 break-keep text-lg font-black leading-tight text-slate-900">{mentorName}</h2>
+      <dl className="mt-4 space-y-3 text-sm">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 pb-3">
+          <dt className="font-bold text-slate-500">플랜</dt>
+          <dd className="text-right font-black text-slate-900">{planTierTitle(selectedTier)}</dd>
+        </div>
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 pb-3">
+          <dt className="font-bold text-slate-500">예상 요금</dt>
+          <dd className="break-keep text-right text-lg font-black text-blue-700">{priceLine}</dd>
+        </div>
+        <div>
+          <dt className="font-bold text-slate-500">질문 한도</dt>
+          <dd className="mt-1 break-keep font-semibold text-slate-800">{weeklyLine}</dd>
+        </div>
+      </dl>
+      <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/80 p-3 text-xs leading-relaxed text-blue-950">
+        <p className="font-extrabold">무료 질문</p>
+        <p className="mt-1">
+          가입 후 제공되는 <strong>무료 15회 질문</strong>을 활용할 수 있어요. 자세한 조건은 아래 안내를 함께 봐 주세요.
+        </p>
+      </div>
+      <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/85 p-3 text-xs leading-relaxed text-amber-950">
+        <p className="font-extrabold">구매 전에 알아두면 좋아요</p>
+        <ul className="mt-1.5 list-inside list-disc space-y-1">
+          <li>환불·해지는 서비스 정책을 따릅니다.</li>
+          <li>결제가 끝나면 질문방으로 이어질 수 있어요.</li>
+        </ul>
+      </div>
+      <p className="mt-4 text-xs leading-relaxed text-slate-500">선택한 플랜은 결제 전에 다시 바꿀 수 있어요.</p>
+      {canContinue ? (
+        <a
+          href="#subscribe-payment"
+          className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-center text-sm font-extrabold text-white shadow-md transition hover:bg-blue-700"
+        >
+          이 플랜으로 계속하기
+        </a>
+      ) : (
+        <span className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-slate-200 px-4 text-center text-sm font-extrabold text-slate-500">
+          이 플랜으로 계속하기
+        </span>
+      )}
+      <Link
+        href={`/mentors/${encodeURIComponent(mentorId)}`}
+        className="mt-3 block text-center text-sm font-bold text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+      >
+        멘토 프로필로 돌아가기
+      </Link>
+    </div>
+  );
 }
 
 export default async function StudentSubscribePage(props: Props) {
@@ -37,20 +109,20 @@ export default async function StudentSubscribePage(props: Props) {
     return (
       <PageScaffold
         hideFooterPlaceholderCards
-        eyebrow="Subscribe"
-        title="멘토를 선택해 주세요"
-        description="멘토를 선택한 뒤 구독 화면으로 들어와 주세요. 멘토 상세 또는 목록에서 구독을 눌러 주세요."
+        eyebrow="구독"
+        title="멘토를 먼저 골라 주세요"
+        description="멘토 상세나 목록에서 구독을 누르면 이 화면으로 연결돼요."
         ctas={[
           { href: "/mentors", label: "멘토 찾기", tone: "blue" },
           { href: "/home", label: "홈", tone: "slate" },
         ]}
         sections={[]}
         emptyState=""
-        dataPoints={[...SUBSCRIBE_PAGE_DATA_MODEL]}
+        dataPoints={[]}
       >
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-sm text-amber-950">
-          <p>멘토 상세나 목록에서 구독을 눌러 이 화면으로 들어와 주세요.</p>
-          <p className="mt-2">로그인된 학생만 이 화면을 사용할 수 있습니다.</p>
+          <p>멘토를 선택한 뒤 다시 들어와 주세요.</p>
+          <p className="mt-2 text-slate-700">학생 계정으로 로그인한 상태에서 이용할 수 있어요.</p>
         </div>
       </PageScaffold>
     );
@@ -62,14 +134,14 @@ export default async function StudentSubscribePage(props: Props) {
       <PageScaffold
         hideFooterPlaceholderCards
         eyebrow="구독"
-        title="멘토를 불러올 수 없습니다"
-        description="멘토 정보를 확인하는 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요."
+        title="멘토 정보를 불러오지 못했어요"
+        description="잠시 후 다시 시도해 주세요."
         ctas={[
           { href: "/mentors", label: "멘토 찾기", tone: "slate" },
         ]}
         sections={[]}
         emptyState=""
-        dataPoints={[...SUBSCRIBE_PAGE_DATA_MODEL]}
+        dataPoints={[]}
       >
         <p className="text-sm text-red-800">{USER_UI_LOAD_FAILED}</p>
       </PageScaffold>
@@ -79,101 +151,121 @@ export default async function StudentSubscribePage(props: Props) {
   const d = data;
   const hasPlanData = d.plans.rows.length > 0;
   const hasPlanForTier = Boolean(d.byTier[planParam]);
+  const selectedRow = d.byTier[planParam];
+  const priceLine = priceLabelFromPlanRow(selectedRow);
+  const weeklyLine = weeklyQuestionsLabel(selectedRow);
+  const canContinue = !d.plans.error && hasPlanData && hasPlanForTier;
+
+  const summaryProps = {
+    mentorId: d.mentorId,
+    mentorName: d.display.displayName,
+    selectedTier: planParam,
+    priceLine,
+    weeklyLine,
+    canContinue,
+  } as const;
 
   return (
     <PageScaffold
       hideFooterPlaceholderCards
       eyebrow="구독"
       title="구독·결제"
-      description="선택한 멘토의 플랜을 비교하고 구독·결제를 진행할 수 있습니다."
+      description="멘토와 연결할 플랜을 골라 보세요. 아래에서 결제를 이어가면 돼요."
       ctas={[
         { href: `/mentors/${d.mentorId}`, label: "멘토 공개 프로필", tone: "slate" },
         { href: "/subscriptions", label: "내 구독", tone: "green" },
       ]}
-      sections={[
-        { title: "멘토", body: d.display.displayName, status: "connected" },
-        {
-          title: "플랜",
-          body: d.plans.error ? USER_UI_LOAD_FAILED : hasPlanData ? "요금제를 불러왔습니다." : USER_UI_NOTHING_TO_SHOW,
-          status: hasPlanData ? "connected" : "skeleton",
-        },
-        {
-          title: "기존 구독",
-          body: d.subscription.row ? "이전 구독 정보가 있습니다." : "표시할 기존 구독이 없습니다.",
-          status: d.subscription.row ? "connected" : "skeleton",
-        },
-        {
-          title: "결제",
-          body: d.payment.row ? "최근 결제 정보를 확인했습니다." : "표시할 결제 샘플이 없습니다.",
-          status: d.payment.row ? "connected" : "skeleton",
-        },
-      ]}
-      emptyState={USER_UI_NOTHING_TO_SHOW}
-      loadingState="불러오는 중입니다."
+      sections={[]}
+      emptyState=""
+      loadingState="화면을 준비하고 있어요."
       errorState={d.plans.error || d.profileError ? USER_UI_OPS_ISSUE : "—"}
-      dataPoints={[...SUBSCRIBE_PAGE_DATA_MODEL]}
+      dataPoints={[]}
     >
-      <div className="space-y-6">
-        {d.plans.error || !hasPlanData
-          ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/95 p-4 text-sm text-amber-950" role="status">
-                <p className="font-bold">구독을 시작하려면 멘토 요금제가 필요합니다.</p>
-                <p className="mt-1">{d.plans.error ? USER_UI_LOAD_FAILED : "이 멘토에 등록된 플랜이 아직 없을 수 있어요. 잠시 후 다시 확인해 주세요."}</p>
-              </div>
-            )
-          : null}
-        {checkoutSuccess
-          ? (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm text-emerald-950">
-                <p className="font-extrabold">구독 결제·완료 처리가 끝났습니다.</p>
-                <p className="mt-1">질문방에서 멘토와 이어갈 수 있습니다. 안내에 따라 질문방으로 이동할 수 있어요.</p>
-                <p className="mt-2 flex flex-wrap gap-2 text-xs">
-                  <Link className="font-bold text-blue-800 underline" href="/question-room">
-                    질문방 목록
-                  </Link>
-                  <Link className="font-bold text-blue-800 underline" href="/subscriptions">
-                    내 구독
-                  </Link>
-                </p>
-              </div>
-            )
-          : null}
-        <MentorCheckoutSummary mentorId={d.mentorId} display={d.display} profileError={d.profileError} />
-        <PlanComparisonCards
-          mentorId={d.mentorId}
-          byTier={d.byTier}
-          selectedTier={planParam}
-          plansError={d.plans.error}
-          plansProbe={d.plans.probe}
-          fillProbe={d.fillProbe}
-        />
-        <PromotionNoticeBox promotions={d.promotions} />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <OrderSummaryCard
-            mentorName={d.display.displayName}
-            selectedTier={planParam}
-            byTier={d.byTier}
-            hasSubRow={Boolean(d.subscription.row)}
-          />
-          <PaymentForm
-            mentorId={d.mentorId}
-            selectedTier={planParam}
-            hasPlanForTier={hasPlanForTier}
-            disabledReason={
-              d.plans.error
-                ? USER_UI_LOAD_FAILED
-                : !hasPlanData
-                  ? "표시할 멘토 요금제가 없습니다."
-                  : !hasPlanForTier
-                    ? "선택한 플랜에 맞는 요금제가 없습니다. 다른 티어를 선택해 주세요."
-                    : undefined
-            }
-          />
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start lg:gap-10">
+        <div className="min-w-0 space-y-6 lg:col-span-8">
+          {d.plans.error || !hasPlanData
+            ? (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/95 p-4 text-sm text-amber-950" role="status">
+                  <p className="font-bold">이 멘토의 요금제가 필요해요</p>
+                  <p className="mt-1">
+                    {d.plans.error
+                      ? USER_UI_LOAD_FAILED
+                      : "등록된 요금제가 아직 없을 수 있어요. 잠시 후 다시 확인해 주세요."}
+                  </p>
+                </div>
+              )
+            : null}
+          {checkoutSuccess
+            ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm text-emerald-950">
+                  <p className="font-extrabold">구독 결제가 완료됐어요</p>
+                  <p className="mt-1">질문방에서 멘토와 이어갈 수 있어요.</p>
+                  <p className="mt-2 flex flex-wrap gap-2 text-xs">
+                    <Link className="font-bold text-blue-800 underline" href="/question-room">
+                      질문방 목록
+                    </Link>
+                    <Link className="font-bold text-blue-800 underline" href="/subscriptions">
+                      내 구독
+                    </Link>
+                  </p>
+                </div>
+              )
+            : null}
+          <MentorCheckoutSummary mentorId={d.mentorId} display={d.display} profileError={d.profileError} />
+          <section className="space-y-4" aria-labelledby="subscribe-plan-heading">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-blue-700">요금제</p>
+              <h2 id="subscribe-plan-heading" className="mt-1 text-xl font-black text-slate-900 sm:text-2xl">
+                플랜 비교
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+                세 가지 티어를 비교한 뒤, 오른쪽 요약에서 결제 단계로 넘어가 주세요. 좁은 화면에서는 요약이 플랜 아래에
+                이어져요.
+              </p>
+            </div>
+            <PlanComparisonCards
+              mentorId={d.mentorId}
+              byTier={d.byTier}
+              selectedTier={planParam}
+              plansError={d.plans.error}
+              plansProbe={d.plans.probe}
+              fillProbe={d.fillProbe}
+              layout="checkout"
+            />
+          </section>
+          <PromotionNoticeBox promotions={d.promotions} />
+          <div className="lg:hidden">
+            <SubscribeSelectionSummary {...summaryProps} />
+          </div>
+          <section id="subscribe-payment" className="scroll-mt-28 space-y-4">
+            <PaymentForm
+              mentorId={d.mentorId}
+              selectedTier={planParam}
+              hasPlanForTier={hasPlanForTier}
+              disabledReason={
+                d.plans.error
+                  ? USER_UI_LOAD_FAILED
+                  : !hasPlanData
+                    ? "이 멘토의 요금제를 찾을 수 없어요. 잠시 후 다시 시도해 주세요."
+                    : !hasPlanForTier
+                      ? "이 티어의 요금 정보가 아직 없어요. 다른 플랜을 골라 주세요."
+                      : undefined
+              }
+            />
+            <p className="text-xs leading-relaxed text-slate-500">
+              결제는 안내에 따라 진행되며, 완료 후 질문방 등 다음 단계가 이어질 수 있어요.
+            </p>
+            <p className="text-xs leading-relaxed text-slate-500">
+              결제 내역은 <Link href="/payments" className="font-bold text-blue-700 underline">결제 목록</Link>에서 볼 수
+              있어요.
+            </p>
+          </section>
         </div>
-        <p className="text-xs text-slate-500">결제는 안내에 따라 진행되며, 완료 후 질문방 등 후속 단계가 이어질 수 있어요.</p>
-        <p className="text-xs text-slate-500">
-          결제 내역은 <Link href="/payments" className="font-bold text-blue-700">결제 목록</Link>에서 확인할 수 있어요.
-        </p>
+        <aside className="hidden min-w-0 lg:col-span-4 lg:block">
+          <div className="lg:sticky lg:top-24">
+            <SubscribeSelectionSummary {...summaryProps} />
+          </div>
+        </aside>
       </div>
     </PageScaffold>
   );
