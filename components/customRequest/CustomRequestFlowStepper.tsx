@@ -15,46 +15,48 @@ type Props = {
 export function CustomRequestFlowStepper(props: Props) {
   const { activeStep, className = "", id } = props;
   return (
-    <ol
-      id={id}
-      className={`grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 ${className}`}
-      aria-label="맞춤의뢰 진행 단계"
-    >
-      {STEPS.map((s) => {
-        const done = s.n < activeStep;
-        const current = s.n === activeStep;
-        return (
-          <li
-            key={s.n}
-            className={`relative flex flex-col rounded-2xl border px-2.5 py-2.5 text-center sm:px-3 sm:py-3 ${
-              current
-                ? "border-indigo-300 bg-indigo-50/90 shadow-sm ring-1 ring-indigo-200"
-                : done
-                  ? "border-slate-200 bg-white"
-                  : "border-slate-100 bg-slate-50/80 text-slate-500"
-            }`}
-          >
-            <span
-              className={`mx-auto flex h-7 w-7 items-center justify-center rounded-full text-xs font-black sm:h-8 sm:w-8 ${
+    <div className={`w-full rounded-2xl border border-slate-200/90 bg-slate-100/50 p-4 shadow-inner sm:p-5 ${className}`}>
+      <ol
+        id={id}
+        className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
+        aria-label="맞춤의뢰 진행 단계"
+      >
+        {STEPS.map((s) => {
+          const done = s.n < activeStep;
+          const current = s.n === activeStep;
+          return (
+            <li
+              key={s.n}
+              className={`flex min-h-[5.75rem] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-2 py-3 text-center sm:min-h-[6.25rem] sm:px-3 sm:py-4 ${
                 current
-                  ? "bg-indigo-600 text-white"
+                  ? "border-transparent bg-gradient-to-br from-blue-600 to-violet-600 text-white shadow-lg ring-2 ring-blue-400/40"
                   : done
-                    ? "bg-emerald-500 text-white"
-                    : "bg-slate-200 text-slate-600"
+                    ? "border-slate-200/90 bg-white text-slate-800 shadow-sm"
+                    : "border-slate-200/70 bg-slate-50 text-slate-500"
               }`}
             >
-              {done ? "✓" : s.n}
-            </span>
-            <span
-              className={`mt-1.5 break-words text-[11px] font-extrabold leading-tight sm:text-xs ${
-                current ? "text-indigo-950" : done ? "text-slate-800" : "text-slate-500"
-              }`}
-            >
-              {s.label}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black sm:h-10 sm:w-10 sm:text-sm ${
+                  current
+                    ? "bg-white/20 text-white ring-2 ring-white/30"
+                    : done
+                      ? "bg-emerald-500 text-white"
+                      : "bg-slate-200 text-slate-600"
+                }`}
+              >
+                {done && !current ? "✓" : s.n}
+              </span>
+              <span
+                className={`max-w-[9rem] text-[11px] font-extrabold leading-tight sm:max-w-none sm:text-xs ${
+                  current ? "text-white" : done ? "text-slate-800" : "text-slate-500"
+                }`}
+              >
+                {s.label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
