@@ -103,7 +103,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
         <StatTile
           label="이번 달 정산(예상)"
           value={monthText}
-          hint={amountErr ? "정보를 불러오지 못함" : "참고 금액"}
+          hint={amountErr ? "정산 내역 없음" : "참고 금액"}
         />
         <StatTile label="최근 맞춤의뢰" value={customCount} hint={customErr ? "불러오지 못함" : "목록에 보이는 건수"} />
       </div>

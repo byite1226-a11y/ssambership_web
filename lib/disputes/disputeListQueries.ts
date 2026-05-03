@@ -294,7 +294,7 @@ export async function loadDisputesListForUser(
   const colPool =
     kind === "student"
       ? (["reporter_id", "user_id", "student_id", "created_by", "applicant_id", "plaintiff_id"] as const)
-      : (["mentor_id", "mentor_user_id", "expert_id", "responder_id", "counterparty_id", "defendant_id"] as const);
+      : (["mentor_id", "mentor_user_id", "expert_id", "responder_id", "counterparty_id", "defendant_id", "assigned_mentor_id"] as const);
 
   for (const col of colPool) {
     const { column } = await pickExistingColumn(supabase, table, [col]);

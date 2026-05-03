@@ -299,7 +299,7 @@ export function canPartyViewDispute(
     }
   }
   if (role === "mentor") {
-    for (const k of ["mentor_id", "mentor_user_id", "defendant_id", "counterparty_id", "expert_id", "responder_id"]) {
+    for (const k of ["mentor_id", "mentor_user_id", "defendant_id", "counterparty_id", "expert_id", "responder_id", "assigned_mentor_id"]) {
       if (k in row && String(row[k]) === userId) {
         return { ok: true, detail: k };
       }
