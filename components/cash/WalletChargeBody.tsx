@@ -26,7 +26,19 @@ function packageCardLine(row: Record<string, unknown>): string {
 
 function paymentCardLine(r: Record<string, unknown>): string {
   const amt = pickFirstString(r, ["amount", "amount_krw", "total", "price"]);
-  const status = pickFirstString(r, ["status", "state"]);
+  let status = pickFirstString(r, ["status", "state"]);
+  if (status) {
+    const s = status.toLowerCase().trim();
+    if (s === "succeeded" || s === "paid" || s === "success") {
+      status = "결제 성공";
+    } else if (s === "refunded" || s === "refund") {
+      status = "환불 완료";
+    } else if (s === "failed") {
+      status = "결제 실패";
+    } else if (s === "pending") {
+      status = "대기 중";
+    }
+  }
   const parts = [amt ? `금액: ${amt}` : null, status ? `상태: ${status}` : null].filter(Boolean) as string[];
   return parts.length ? parts.join(" · ") : "결제 내역";
 }

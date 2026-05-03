@@ -37,13 +37,8 @@ export function DisputePartyPageBody(props: { bundle: DisputeBundle; reasonLabel
       </section>
 
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-        <h3 className="font-extrabold text-slate-800">증빙·첨부(자리)</h3>
-        <p className="mt-1 text-xs">Storage / 업로드 API 연동 전 — 아래는 스켈레톤</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-10 w-28 animate-pulse rounded border border-slate-200 bg-slate-200/50" />
-          ))}
-        </div>
+        <h3 className="font-extrabold text-slate-800">증빙·첨부</h3>
+        <p className="mt-1 text-xs">첨부된 증빙 파일이 없습니다.</p>
       </div>
 
       <div>

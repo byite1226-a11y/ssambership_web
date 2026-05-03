@@ -49,9 +49,6 @@ export function NotificationsHubView(props: {
         </ul>
       </section>
 
-      <p className="text-xs text-slate-500">
-        읽음·실시간·설정: 후속. <code>target_url</code>·엔티티 id가 없을 때는 휴리스틱·역할 기본 링크를 씁니다.
-      </p>
     </div>
   );
 }
