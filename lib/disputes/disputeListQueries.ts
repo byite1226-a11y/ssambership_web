@@ -46,7 +46,7 @@ function isUuidLike(s: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s.trim());
 }
 
-function shortRef(v: unknown): string {
+export function shortDisputeRef(v: unknown): string {
   if (v == null || v === "") return "";
   const s = String(v).trim();
   if (!s) return "";
@@ -56,7 +56,7 @@ function shortRef(v: unknown): string {
 }
 
 /** 학생·멘토 목록용 한글 상태 */
-function partyDisputeStatusKo(raw: string): string {
+export function partyDisputeStatusKo(raw: string): string {
   const s = raw.trim().toLowerCase();
   if (!s || s === "—") return "—";
   const map: Record<string, string> = {
@@ -74,7 +74,7 @@ function partyDisputeStatusKo(raw: string): string {
   return map[s] ?? raw;
 }
 
-function partyDisputeTypeKo(raw: string): string {
+export function partyDisputeTypeKo(raw: string): string {
   const s = raw.trim().toLowerCase();
   if (!s || s === "—") return "—";
   const map: Record<string, string> = {
@@ -95,19 +95,19 @@ function orderLine(r: Row): string {
   const cro =
     r.custom_request_order_id ?? r.custom_order_id ?? r.request_order_id ?? r.mentor_order_id ?? r.custom_request_order;
   if (cro != null && String(cro).trim() !== "") {
-    return `맞춤의뢰 주문 ${shortRef(cro)}`;
+    return `맞춤의뢰 주문 ${shortDisputeRef(cro)}`;
   }
   const oid = r.order_id ?? r.order_id_linked;
   if (oid != null && String(oid).trim() !== "") {
-    return `주문 ${shortRef(oid)}`;
+    return `주문 ${shortDisputeRef(oid)}`;
   }
   const pay = r.payment_id ?? r.subscription_id;
   if (pay != null && String(pay).trim() !== "") {
-    return `결제·구독 ${shortRef(pay)}`;
+    return `결제·구독 ${shortDisputeRef(pay)}`;
   }
   const rf = r.refund_id;
   if (rf != null && String(rf).trim() !== "") {
-    return `환불 ${shortRef(rf)}`;
+    return `환불 ${shortDisputeRef(rf)}`;
   }
   return "—";
 }

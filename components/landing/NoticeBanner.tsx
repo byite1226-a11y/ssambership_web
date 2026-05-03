@@ -5,15 +5,14 @@ export function NoticeBanner(props: { data: NoticeBannerLoad }) {
   if (d.error) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
-        공지 조회: {d.error}
-        <span className="mt-1 block text-xs font-normal text-amber-800">{d.probe}</span>
+        공지를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
       </div>
     );
   }
   if (!d.rows.length) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-        등록된 공지 없음 · {d.probe}
+        등록된 공지가 없습니다.
       </div>
     );
   }
@@ -30,7 +29,6 @@ export function NoticeBanner(props: { data: NoticeBannerLoad }) {
           );
         })}
       </ul>
-      <p className="mt-2 text-xs text-blue-900/80">{d.table ? `${d.table} · ` : ""}{d.probe}</p>
     </div>
   );
 }

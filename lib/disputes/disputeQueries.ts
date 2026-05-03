@@ -233,6 +233,32 @@ export function statusBadgeText(row: Row | null, keys: string[]): string {
   return "—";
 }
 
+const MOD_LOG_TEXT_KEYS = [
+  "message",
+  "body",
+  "detail",
+  "note",
+  "summary",
+  "description",
+  "event_type",
+  "type",
+  "action",
+] as const;
+
+/** 처리 로그 row를 사용자 화면용 한 줄로(원문 JSON 노출 방지) */
+export function formatModLogLine(row: Record<string, unknown>): string {
+  for (const k of MOD_LOG_TEXT_KEYS) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim()) return v.trim().slice(0, 240);
+  }
+  const at = row.created_at ?? row.timestamp ?? row.inserted_at;
+  if (at != null) {
+    const s = String(at);
+    return s.length > 22 ? `처리 시각 ${s.slice(0, 19)}…` : `처리 시각 ${s}`;
+  }
+  return "처리 기록(상세 비공개)";
+}
+
 /**
  * W22 목록·상세: refunds / payments / 구독 / 맞춤주문 연계 1줄(스키마·RLS에 따라 empty 가능)
  */

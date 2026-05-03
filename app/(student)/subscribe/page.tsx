@@ -49,7 +49,7 @@ export default async function StudentSubscribePage(props: Props) {
         dataPoints={[...SUBSCRIBE_PAGE_DATA_MODEL]}
       >
         <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-sm text-amber-950">
-          <p>예: <code className="font-mono">/subscribe?mentorId=…</code></p>
+          <p>멘토 상세나 목록에서 구독을 눌러 이 화면으로 들어와 주세요.</p>
           <p className="mt-2">로그인된 학생만 이 화면을 사용할 수 있습니다.</p>
         </div>
       </PageScaffold>
@@ -126,7 +126,7 @@ export default async function StudentSubscribePage(props: Props) {
           ? (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm text-emerald-950">
                 <p className="font-extrabold">구독 결제·완료 처리가 끝났습니다.</p>
-                <p className="mt-1">질문방에서 멘토와 이어갈 수 있습니다. (room ID가 있으면 intent 완료 직후 질문방으로 이동합니다.)</p>
+                <p className="mt-1">질문방에서 멘토와 이어갈 수 있습니다. 안내에 따라 질문방으로 이동할 수 있어요.</p>
                 <p className="mt-2 flex flex-wrap gap-2 text-xs">
                   <Link className="font-bold text-blue-800 underline" href="/question-room">
                     질문방 목록

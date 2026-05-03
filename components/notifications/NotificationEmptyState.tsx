@@ -9,8 +9,8 @@ export function NotificationEmptyState(props: {
   if (unreadFilterBlocked) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-        <p className="font-extrabold">읽지 않음 탭을 쓰려면 스키마에 read_at / is_read 등이 필요합니다</p>
-        <p className="mt-1">지금은 컬럼이 없어 목록을 비웁니다. [전체]로 확인하세요.</p>
+        <p className="font-extrabold">읽지 않음 필터를 아직 쓸 수 없어요</p>
+        <p className="mt-1">앱이 준비되면 읽음 표시에 맞춰 이 탭이 열립니다. 지금은 [전체]에서 확인해 주세요.</p>
       </div>
     );
   }
@@ -18,7 +18,7 @@ export function NotificationEmptyState(props: {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         <p className="font-extrabold">알림을 불러오지 못했습니다</p>
-        <p className="mt-1">notifications 테이블·RLS·권한을 확인하세요. (이번 턴은 구조/연결만)</p>
+        <p className="mt-1">잠시 후 다시 시도해 주세요. 문제가 계속되면 고객센터로 알려 주세요.</p>
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function NotificationEmptyState(props: {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
       <p className="font-extrabold">알림이 아직 없습니다</p>
-      <p className="mt-1">Supabase `notifications`에 수신자 기준 row가 있으면 목록이 표시됩니다. 더미 없음.</p>
+      <p className="mt-1">새 소식이 생기면 이 목록에 표시됩니다.</p>
     </div>
   );
 }

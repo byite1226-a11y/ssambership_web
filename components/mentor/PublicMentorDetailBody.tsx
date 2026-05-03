@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PlanComparisonCards } from "@/components/subscribe/PlanComparisonCards";
-import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
+import { mentorVerificationKo, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import type { PublicMentorLoadResult } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { getStringField } from "@/lib/qna/safeSelect";
@@ -11,6 +11,15 @@ import {
   USER_UI_MENTOR_REVIEWS_LOAD_FAILED,
   USER_UI_MENTOR_USER_LOAD_FAILED,
 } from "@/lib/constants/userFacingMessages";
+
+function mentorAccountStatusKo(raw: string | null | undefined): string {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (!s) return "—";
+  if (s === "active") return "이용 중";
+  if (s === "inactive" || s === "disabled" || s === "suspended") return "이용 제한";
+  if (s === "pending" || s === "invited") return "확인 중";
+  return "회원";
+}
 
 function Field(props: { label: string; value: string; mono?: boolean }) {
   return (
@@ -54,9 +63,7 @@ export function PublicMentorDetailBody(props: {
                     ? `${display.university} · ${display.department}`
                     : display.university || display.department || "학교·학과 정보가 아직 없어요"}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  멘토 · 계정 상태: {userRow.status === "active" ? "이용 중" : userRow.status ?? "—"}
-                </p>
+                <p className="mt-1 text-xs text-slate-500">멘토 · 계정 상태: {mentorAccountStatusKo(userRow.status)}</p>
                 {bundle.userError ? (
                   <p className="mt-2 text-xs font-bold text-amber-800">{USER_UI_MENTOR_USER_LOAD_FAILED}</p>
                 ) : null}
@@ -71,7 +78,7 @@ export function PublicMentorDetailBody(props: {
             </p>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              <Field label="인증" value={display.verification} />
+              <Field label="인증" value={mentorVerificationKo(display.verification)} />
               <Field label="과목·지도" value={display.subjects} />
               <Field label="대표 태그" value={display.tags} />
               <Field label="구독 수락" value={display.subOpen ? "가능" : "준비·비공개"} />

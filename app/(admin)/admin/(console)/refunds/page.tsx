@@ -12,7 +12,10 @@ const ID_PREVIEW_LEN = 10;
 
 function cell(v: unknown): string {
   if (v === null || v === undefined) return "—";
-  if (typeof v === "object") return JSON.stringify(v);
+  if (typeof v === "object") {
+    if (Array.isArray(v)) return v.length ? `${v.length}개 항목` : "—";
+    return "[상세]";
+  }
   return String(v);
 }
 

@@ -16,7 +16,7 @@ export function RecommendedMentorsSection(props: { list: PublicMentorsListResult
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-extrabold text-slate-900">추천 멘토</h2>
-          <p className="mt-1 text-xs text-slate-500">users + mentor_profiles · 최대 6명</p>
+          <p className="mt-1 text-xs text-slate-500">최대 6명까지 안내해요</p>
         </div>
         <Link href="/mentors" className="text-sm font-extrabold text-blue-700 underline">
           전체 멘토 보기 →
@@ -30,13 +30,6 @@ export function RecommendedMentorsSection(props: { list: PublicMentorsListResult
           <MentorMini key={c.mentorId} card={c} />
         ))}
       </div>
-      {list.probes.length ? (
-        <ul className="mt-3 list-disc space-y-0.5 pl-5 text-xs text-slate-500">
-          {list.probes.slice(0, 4).map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-      ) : null}
     </section>
   );
 }

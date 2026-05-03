@@ -1,5 +1,6 @@
 import type { DisputeBundle } from "@/lib/disputes/disputeQueries";
-import { pickText, statusBadgeText } from "@/lib/disputes/disputeQueries";
+import { formatModLogLine, pickText, statusBadgeText } from "@/lib/disputes/disputeQueries";
+import { partyDisputeStatusKo } from "@/lib/disputes/disputeListQueries";
 import { DisputeKeyValueList } from "@/components/disputes/DisputeKeyValueList";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
@@ -14,7 +15,7 @@ export function DisputeMentorPageBody(props: { bundle: DisputeBundle }) {
     console.error("[DisputeMentorPageBody] modLogs.error", bundle.modLogs.error);
   }
   const d = bundle.dispute.row;
-  const state = statusBadgeText(d, ["status", "state", "phase", "progress", "resolution"]);
+  const state = partyDisputeStatusKo(statusBadgeText(d, ["status", "state", "phase", "progress", "resolution"]));
   const title = pickText(d, ["title", "summary", "id"]);
   return (
     <div className="space-y-3">
@@ -49,9 +50,12 @@ export function DisputeMentorPageBody(props: { bundle: DisputeBundle }) {
           <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
             {bundle.modLogs.rows.map((r, i) => {
               const row = r as Row;
+              const when = row.created_at != null ? String(row.created_at).slice(0, 19) : null;
+              const line = formatModLogLine(row);
               return (
                 <li key={i}>
-                  {String(row.created_at ?? row.id ?? i)}: {String(row.message ?? row.event_type ?? row.type ?? JSON.stringify(r).slice(0, 160))}
+                  {when ? `${when} · ` : ""}
+                  {line}
                 </li>
               );
             })}

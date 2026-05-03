@@ -1,5 +1,6 @@
 import type { DisputeBundle } from "@/lib/disputes/disputeQueries";
-import { pickText, statusBadgeText, w22EntityLine } from "@/lib/disputes/disputeQueries";
+import { formatModLogLine, pickText, statusBadgeText, w22EntityLine } from "@/lib/disputes/disputeQueries";
+import { partyDisputeStatusKo, partyDisputeTypeKo, shortDisputeRef } from "@/lib/disputes/disputeListQueries";
 import { DisputeKeyValueList } from "@/components/disputes/DisputeKeyValueList";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
@@ -11,8 +12,12 @@ export function DisputePartyPageBody(props: { bundle: DisputeBundle; reasonLabel
     console.error("[DisputePartyPageBody] modLogs.error", bundle.modLogs.error);
   }
   const d = bundle.dispute.row;
-  const state = statusBadgeText(d, ["status", "state", "phase", "progress", "resolution"]);
+  const state = partyDisputeStatusKo(statusBadgeText(d, ["status", "state", "phase", "progress", "resolution"]));
   const reason = pickText(d, ["reason", "description", "message", "body", "summary", "title"]);
+  const typeRaw = pickText(d, ["type", "kind", "category", "dispute_type", "reason_code"]);
+  const typeLabel = partyDisputeTypeKo(typeRaw === "—" ? "" : typeRaw);
+  const idPick = pickText(d, ["id", "uuid"]);
+  const receiptRef = shortDisputeRef(idPick === "—" ? "" : idPick);
   return (
     <div className="space-y-3">
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -20,7 +25,7 @@ export function DisputePartyPageBody(props: { bundle: DisputeBundle; reasonLabel
           <h2 className="text-lg font-extrabold text-slate-900">현재 처리 상태</h2>
           <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-extrabold text-amber-950">{state}</span>
         </div>
-        <p className="mt-1 text-xs text-slate-500">접수 번호: {pickText(d, ["id", "uuid"])}</p>
+        <p className="mt-1 text-xs text-slate-500">접수 번호: {receiptRef || "—"}</p>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -28,7 +33,7 @@ export function DisputePartyPageBody(props: { bundle: DisputeBundle; reasonLabel
         <p className="mt-2 text-sm text-slate-800">
           <span className="text-slate-500">{reasonLabel}</span> {reason}
         </p>
-        <p className="mt-1 text-xs text-slate-500">유형: {pickText(d, ["type", "kind", "category", "dispute_type", "reason_code"])}</p>
+        <p className="mt-1 text-xs text-slate-500">유형: {typeLabel}</p>
       </section>
 
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
@@ -49,15 +54,14 @@ export function DisputePartyPageBody(props: { bundle: DisputeBundle; reasonLabel
         {bundle.modLogs.table && bundle.modLogs.rows.length ? (
           <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
             {bundle.modLogs.rows.map((r, i) => (
-              <li key={i}>{JSON.stringify(r).slice(0, 220)}</li>
+              <li key={i}>{formatModLogLine(r as Row)}</li>
             ))}
           </ul>
         ) : (
           <div className="mt-1 space-y-1 text-sm text-slate-600">
             <p>{bundle.modLogs.error ? USER_UI_LOAD_FAILED : "표시할 이벤트 로그가 없습니다."}</p>
             <p className="text-xs text-slate-500">
-              fallback(분쟁 본문 타임스탬프): created_at {String((d as Row).created_at ?? "—")} · updated_at{" "}
-              {String((d as Row).updated_at ?? "—")}
+              접수·갱신 시각은 운영 확인 후 안내될 수 있어요. 급한 경우 고객센터로 문의해 주세요.
             </p>
           </div>
         )}
