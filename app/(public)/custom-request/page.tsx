@@ -29,26 +29,28 @@ export default async function CustomRequestPublicPage() {
       dataPoints={[]}
       emptyState=""
     >
-      <div className="space-y-8 sm:space-y-10">
+      <div className="max-w-5xl mx-auto space-y-8 sm:space-y-12 py-2">
         <CustomRequestHero />
         <CustomRequestCategoryGrid fromTable={cats} />
         <CustomRequestSteps />
-        <section className="space-y-3">
-          <h2 className="text-base font-extrabold text-slate-900 sm:text-lg">최근 요청</h2>
-          <p className="text-sm text-slate-600">공개 범위에서 보이는 요청이에요.</p>
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900 sm:text-xl">최근 등록된 맞춤의뢰</h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">다른 학생들이 등록한 맞춤의뢰 목록입니다.</p>
+          </div>
           <CustomRequestPostListTable list={recent} max={6} />
         </section>
         <CustomRequestTrustBanner />
-        <p className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 sm:flex-row sm:flex-wrap sm:gap-4">
+        <p className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 sm:flex-row sm:flex-wrap sm:gap-4 select-none">
           <Link
             href="/custom-request/orders"
-            className="inline-flex min-h-[44px] items-center justify-center font-extrabold text-indigo-800 underline decoration-indigo-300 underline-offset-2"
+            className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-800 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 transition"
           >
             진행 중인 주문 보기
           </Link>
           <Link
             href="/custom-request/new"
-            className="inline-flex min-h-[44px] items-center justify-center font-extrabold text-indigo-700 underline"
+            className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-700 underline hover:text-indigo-900 transition"
           >
             의뢰 요청 등록으로 이동
           </Link>

@@ -1,15 +1,38 @@
+import Link from "next/link";
+
 export function CustomRequestTrustBanner() {
   return (
     <section
-      className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50 to-indigo-50/30 p-4 shadow-sm sm:p-5"
+      className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/30 to-indigo-50/20 p-6 flex flex-col md:flex-row items-center justify-between gap-6 transition hover:shadow-sm select-none"
       aria-label="거래 안내"
     >
-      <h2 className="text-sm font-extrabold text-slate-900 sm:text-base">안전한 거래를 위해</h2>
-      <ul className="mt-2 list-inside list-disc space-y-1.5 text-sm break-words text-slate-700 sm:mt-3">
-        <li>시험 부정·대필·표절을 요구하는 일은 정책에 따라 제재될 수 있어요.</li>
-        <li>결제·정산·분쟁은 플랫폼 안내대로만 진행해 주세요.</li>
-        <li>개인 연락처를 밖에서 주고받는 행위는 제한될 수 있어요.</li>
-      </ul>
+      <div className="flex flex-col sm:flex-row items-start gap-4 flex-1">
+        <span className="text-4xl bg-white p-3 rounded-2xl border border-blue-50 shadow-sm">🛡️</span>
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+            안전하고 올바른 학습 문화를 함께 만들어요!
+          </h2>
+          <ul className="mt-2.5 space-y-1 text-xs sm:text-sm break-words text-slate-600 font-medium leading-relaxed">
+            <li className="flex items-center gap-1.5">
+              <span className="text-blue-500 font-bold select-none">✓</span> 제출용 과제, 보고서, 세목 등의 작성 대행은 제공하지 않아요.
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="text-blue-500 font-bold select-none">✓</span> 부정행위, 표절, 복사/붙여넣기 제출을 유도하는 요청은 허용하지 않아요.
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="text-blue-500 font-bold select-none">✓</span> 모든 상담과 거래는 플랫폼 내에서 안전하게 이루어집니다.
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div className="shrink-0 flex items-center justify-center w-full md:w-auto">
+        <Link
+          href="/custom-request/new"
+          className="inline-flex min-h-[48px] w-full md:w-auto items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 transition"
+        >
+          의뢰 요청 등록하기 &rarr;
+        </Link>
+      </div>
     </section>
   );
 }

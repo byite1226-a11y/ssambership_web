@@ -217,60 +217,60 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
 
   if (view === "student") {
     return (
-      <header className="border-b border-slate-100 bg-white px-5 py-3 sm:px-6">
+      <header className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 mb-5 shadow-sm transition">
         {detail.hasActiveDispute ? (
           <div
             role="status"
-            className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
+            className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
           >
             분쟁이 접수되어 운영 검토 중입니다. 납품 수락·수정 요청·추가 분쟁 신청은 일시적으로 사용할 수 없으며, 우측 작업
             관리에서도 동일하게 제한됩니다.
           </div>
         ) : null}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 mb-3">
           <Link
             href={backHref}
-            className="shrink-0 text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+            className="shrink-0 text-sm font-bold text-slate-500 underline-offset-2 hover:text-slate-900 transition hover:underline"
           >
-            ← 맞춤의뢰
+            ← 맞춤의뢰 목록으로
           </Link>
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
             {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
             <PaymentStatusBadge paymentRaw={payRaw} />
             <Link
               href="#order-room-order-info"
-              className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50/90 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
             >
               요청 상세
             </Link>
           </div>
         </div>
-        <h1 className="mt-2 line-clamp-1 text-pretty text-base font-bold text-slate-950 sm:text-lg">
+        <h1 className="line-clamp-1 text-pretty text-base font-extrabold text-slate-950 sm:text-xl">
           {h.requestTitle}
         </h1>
-        {detailLine && detailLine !== "—" ? <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{detailLine}</p> : null}
-        <p className="mt-1 line-clamp-1 text-xs font-normal text-slate-600">{oneLineContext}</p>
+        {detailLine && detailLine !== "—" ? <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">{detailLine}</p> : null}
+        <p className="mt-1.5 line-clamp-1 text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">{oneLineContext}</p>
       </header>
     );
   }
 
   return (
-    <header className="border-b border-slate-100 bg-white px-5 py-3 sm:px-6">
+    <header className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 mb-5 shadow-sm transition">
       {detail.hasActiveDispute ? (
         <div
           role="status"
-          className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
+          className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
         >
           분쟁이 접수되어 운영 검토 중입니다. 납품 등록·작업 진행·수정 요청 내역 확인 등은 우측 패널 정책에 따라 제한될 수
           있습니다.
         </div>
       ) : null}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 mb-3">
         <Link
           href={backHref}
-          className="shrink-0 text-sm font-medium text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+          className="shrink-0 text-sm font-bold text-slate-500 underline-offset-2 hover:text-slate-900 transition hover:underline"
         >
-          ← 맞춤의뢰
+          ← 목록으로 돌아가기
         </Link>
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
           {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
@@ -280,17 +280,17 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
           </span>
           <Link
             href="#order-room-order-info"
-            className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50/90 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
           >
             주문 정보
           </Link>
         </div>
       </div>
-      <h1 className="mt-2 line-clamp-1 text-pretty text-base font-bold text-slate-950 sm:text-lg">
+      <h1 className="line-clamp-1 text-pretty text-base font-extrabold text-slate-950 sm:text-xl">
         {h.requestTitle}
       </h1>
-      {detailLine && detailLine !== "—" ? <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{detailLine}</p> : null}
-      <p className="mt-1 line-clamp-1 text-xs font-normal text-slate-600">{oneLineContext}</p>
+      {detailLine && detailLine !== "—" ? <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">{detailLine}</p> : null}
+      <p className="mt-1.5 line-clamp-1 text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">{oneLineContext}</p>
     </header>
   );
 }
