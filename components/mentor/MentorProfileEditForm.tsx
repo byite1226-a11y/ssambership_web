@@ -18,83 +18,151 @@ export function MentorProfileEditForm(props: {
   const { initial, query, ok, errorMessage, accountEmail } = props;
 
   return (
-    <form action={submitMentorProfileEdit} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
-      {ok ? <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-900">저장되었습니다.</p> : null}
-      {errorMessage ? <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-900">{errorMessage}</p> : null}
-      {accountEmail ? <p className="text-xs text-slate-500">로그인 계정: {accountEmail}</p> : null}
-      {query.err && !query.row ? <p className="text-sm font-bold text-amber-900">{USER_UI_LOAD_FAILED}</p> : null}
-      {query.row ? (
-        <p className="text-xs text-slate-500">
-          멘토 인증: <span className="font-bold text-slate-800">{mentorVerificationKo(initial.verification)}</span>
-          {" · "}
-          학생증 인증 자료:{" "}
-          {initial.photoUrl ? (
-            <a className="font-bold text-blue-700 hover:underline" href={initial.photoUrl} target="_blank" rel="noreferrer">
-              등록됨 (보기)
-            </a>
-          ) : (
-            <span className="font-bold text-slate-800">없음</span>
-          )}
+    <form action={submitMentorProfileEdit} className="max-w-4xl mx-auto space-y-6 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm pb-12">
+      {/* Alert states */}
+      {ok ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 animate-pulse">
+          성공적으로 저장되었습니다.
+        </p>
+      ) : null}
+      {errorMessage ? (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-900">
+          {errorMessage}
         </p>
       ) : null}
 
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-        대표 프로필 이미지는 추후 업로드로 연결될 예정입니다. 현재:{" "}
-        {initial.photoUrl ? (
-          <a className="font-bold text-blue-700 hover:underline" href={initial.photoUrl} target="_blank" rel="noreferrer">
-            등록됨
-          </a>
-        ) : (
-          "없음"
-        )}
-        <input type="file" disabled className="mt-1 block w-full text-xs" />
+      {/* Account Info Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+        {accountEmail ? (
+          <p className="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+            로그인 계정: {accountEmail}
+          </p>
+        ) : <div />}
+        {query.row ? (
+          <p className="text-xs font-semibold text-slate-500 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100">
+            멘토 인증: <span className="font-bold text-blue-700">{mentorVerificationKo(initial.verification)}</span>
+            {" · "}
+            학생증 자료:{" "}
+            {initial.photoUrl ? (
+              <a className="font-bold text-blue-600 hover:underline" href={initial.photoUrl} target="_blank" rel="noreferrer">
+                등록됨 (보기)
+              </a>
+            ) : (
+              <span className="font-bold text-slate-400">없음</span>
+            )}
+          </p>
+        ) : null}
       </div>
 
-      <label className="block text-sm font-extrabold text-slate-800">
-        소개
-        <textarea name="intro" rows={3} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" defaultValue={initial.intro} />
-      </label>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="text-sm font-extrabold text-slate-800">
-          대학교
-          <input name="university" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" defaultValue={initial.university} />
-        </label>
-        <label className="text-sm font-extrabold text-slate-800">
-          과(학과)
-          <input name="department" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" defaultValue={initial.department} />
-        </label>
-      </div>
-      <label className="block text-sm font-extrabold text-slate-800">
-        과목(콤마로 구분)
-        <input name="subjects" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" defaultValue={initial.subjects} />
-      </label>
-      <label className="block text-sm font-extrabold text-slate-800">
-        출신 고등학교
-        <input name="highSchool" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" defaultValue={initial.highSchool} />
-      </label>
-      <label className="block text-sm font-extrabold text-slate-800">
-        대표 태그(콤마 구분)
-        <input name="tags" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5" defaultValue={initial.tags} />
-      </label>
+      {query.err && !query.row ? <p className="text-sm font-bold text-amber-900 bg-amber-50 p-3 rounded-xl border border-amber-200">{USER_UI_LOAD_FAILED}</p> : null}
 
-      <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-3">
-        <p className="text-sm font-extrabold text-slate-800">대표 콘텐츠 연결</p>
-        <p className="text-xs text-slate-500">
-          숏폼·게시판에서 등록한 대표 콘텐츠가 연결되면 채널 화면에 표시됩니다. 등록된 대표 콘텐츠가 없으면 목록이 비어 있을 수 있어요.
+      {/* Intro */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-bold text-slate-800">
+          자기소개
+        </label>
+        <textarea
+          name="intro"
+          rows={4}
+          placeholder="학생들에게 전할 간단한 인사를 입력해 주세요."
+          className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+          defaultValue={initial.intro}
+        />
+      </div>
+
+      {/* Education info in 2 columns */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800">
+            대학교
+          </label>
+          <input
+            name="university"
+            placeholder="예: 서울대학교"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+            defaultValue={initial.university}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800">
+            과(학과)
+          </label>
+          <input
+            name="department"
+            placeholder="예: 경영학과"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+            defaultValue={initial.department}
+          />
+        </div>
+      </div>
+
+      {/* Additional Profile Info */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800">
+            과목 (쉼표로 구분)
+          </label>
+          <input
+            name="subjects"
+            placeholder="예: 수학, 영어, 과학"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+            defaultValue={initial.subjects}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="block text-sm font-bold text-slate-800">
+            출신 고등학교
+          </label>
+          <input
+            name="highSchool"
+            placeholder="예: 강남고등학교"
+            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+            defaultValue={initial.highSchool}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="block text-sm font-bold text-slate-800">
+          대표 태그 (쉼표로 구분)
+        </label>
+        <input
+          name="tags"
+          placeholder="예: 족집게, 수시전문, 고3전담"
+          className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+          defaultValue={initial.tags}
+        />
+      </div>
+
+      {/* Guide Cards */}
+      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-2">
+        <p className="text-sm font-extrabold text-slate-800">대표 콘텐츠 연결 및 채널</p>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          숏폼·게시판 등에서 등록한 대표 콘텐츠가 연결되면 채널 화면에 정렬되어 표시됩니다. 등록된 대표 콘텐츠가 없으면 목록이 비어 있을 수 있으니 저장 후 채널 메뉴에서 확인해 주세요.
         </p>
-        <p className="text-xs text-slate-500">저장 후 채널 메뉴에서 목록을 확인해 주세요.</p>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-800">
-        <input type="checkbox" name="subscribeOpen" value="on" defaultChecked={initial.subOpen} />
-        멤버십 구독을 받을 수 있게 공개합니다
-      </label>
+      <div className="flex flex-col gap-3 pt-2">
+        <label className="flex items-center gap-3 select-none text-sm font-bold text-slate-800">
+          <input
+            type="checkbox"
+            name="subscribeOpen"
+            value="on"
+            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
+            defaultChecked={initial.subOpen}
+          />
+          멤버십 구독을 받을 수 있게 공개합니다
+        </label>
+      </div>
 
-      <FormSubmitButton
-        idleLabel="저장"
-        pendingLabel="저장 중…"
-        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white enabled:hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-      />
+      {/* Actions */}
+      <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+        <FormSubmitButton
+          idleLabel="프로필 저장하기"
+          pendingLabel="저장 중…"
+          className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white enabled:hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-slate-300 transition-colors shadow-sm"
+        />
+      </div>
     </form>
   );
 }
