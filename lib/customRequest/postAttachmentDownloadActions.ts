@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { isAuthorOfPost, loadCustomPostForPublicDetail } from "@/lib/customRequest/customRequestQueries";
 import {
   POST_ATTACHMENT_STORAGE_BUCKET,
   validatePostAttachmentStoragePath,
@@ -19,7 +20,8 @@ function postDetailPath(postId: string) {
 
 /**
  * 의뢰 등록 첨부 다운로드(private bucket) — signed URL 리다이렉트.
- * RLS로 행·스토리지 접근이 이미 제한됨. 서버에서 로그인·역할 최소 확인.
+ * postId·attachmentId만 받고, 경로는 DB 행의 storage_path만 사용.
+ * 권한: 관리자 / 의뢰 작성 학생 / 공개 의뢰를 볼 수 있는 멘토(상세 페이지와 동일).
  */
 export async function downloadCustomRequestPostAttachmentAction(formData: FormData): Promise<void> {
   const postId = String(formData.get("postId") ?? "").trim();
@@ -38,6 +40,14 @@ export async function downloadCustomRequestPostAttachmentAction(formData: FormDa
   }
 
   const supabase = await createClient();
+
+  const post = await loadCustomPostForPublicDetail(supabase, postId);
+  if (!post.row) {
+    redirect(postDetailPath(postId) + "?error=" + encodeURIComponent("의뢰를 찾을 수 없거나 권한이 없습니다."));
+  }
+  if (role === "student" && !isAuthorOfPost(user.id, post.row).ok) {
+    redirect(postDetailPath(postId) + "?error=" + encodeURIComponent("첨부를 다운로드할 권한이 없습니다."));
+  }
 
   const { data: att, error: ae } = await supabase
     .from("custom_request_post_attachments")

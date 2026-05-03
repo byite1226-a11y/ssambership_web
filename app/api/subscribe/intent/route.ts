@@ -49,8 +49,6 @@ export async function POST(request: Request) {
     ok: true,
     paymentId: r.paymentId,
     intentKey: r.intentKey,
-    paymentTable: r.paymentTable,
-    planProbe: r.planProbe,
     message: r.message,
     allowImmediateComplete,
   });
