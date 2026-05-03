@@ -77,41 +77,51 @@ export function AdminReviewsTable(props: {
   if (list.error && !list.rows.length) {
     const { title, description } = adminListFetchFailedCopy("reviews");
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-950">
-        <p className="font-semibold">{title}</p>
-        <p className="mt-1 text-xs text-amber-900/90">{description}</p>
+      <div className="rounded-2xl border border-red-200 bg-red-50/60 p-5 text-sm text-red-950">
+        <p className="font-bold">{title}</p>
+        <p className="mt-1 text-xs text-red-900/90">{description}</p>
       </div>
     );
   }
 
   if (!list.rows.length) {
-    return <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">표시할 리뷰가 없습니다.</p>;
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-8 text-center text-sm text-slate-500 font-semibold">
+        표시할 리뷰가 없습니다.
+      </div>
+    );
   }
 
   const { plan } = meta;
   const hasAnyAction = Boolean(plan.hide || plan.blind || plan.reviewDone);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3.5 flex items-center justify-between">
+        <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">리뷰 데이터</h2>
+        <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded">
+          {list.rows.length}건
+        </span>
+      </div>
       <table className="w-full min-w-[960px] text-left text-sm">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50/80">
-            <th className="px-3 py-2 font-extrabold text-slate-800">리뷰 ID</th>
-            <th className="px-3 py-2 font-extrabold text-slate-800">작성자</th>
-            <th className="px-3 py-2 font-extrabold text-slate-800">대상 멘토</th>
-            <th className="px-3 py-2 font-extrabold text-slate-800">평점</th>
-            <th className="px-3 py-2 font-extrabold text-slate-800">내용</th>
+          <tr className="border-b border-slate-200/60 bg-slate-50/40">
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">리뷰 ID</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">작성자</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">대상 멘토</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">평점</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">내용</th>
             <th
-              className="px-3 py-2 font-extrabold text-slate-800"
+              className="px-5 py-3 text-xs font-bold text-slate-600"
               title="표시 우선순위: 블라인드 > 숨김 > 검토 완료 > 공개. 숨김·블라인드는 공개 화면에서 비노출은 같고 운영 의미가 다릅니다."
             >
               노출·상태
             </th>
-            <th className="px-3 py-2 font-extrabold text-slate-800">작성일</th>
-            <th className="min-w-[260px] px-3 py-2 font-extrabold text-slate-800">처리</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">작성일</th>
+            <th className="min-w-[260px] px-5 py-3 text-xs font-bold text-slate-600">처리</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-100">
           {(list.rows as Row[]).map((row, i) => {
             const idPrev = previewId(row.id);
             const authorId =
@@ -133,30 +143,30 @@ export function AdminReviewsTable(props: {
             const showReview = Boolean(plan.reviewDone && !reviewed);
 
             return (
-              <tr key={idPrev.title ?? String(i)} className="border-b border-slate-100 last:border-0">
-                <td className="max-w-[120px] truncate px-3 py-2 font-mono text-xs text-slate-800" title={idPrev.title}>
+              <tr key={idPrev.title ?? String(i)} className="hover:bg-slate-50/30 transition-colors">
+                <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-800" title={idPrev.title}>
                   {idPrev.display}
                 </td>
-                <td className="max-w-[120px] truncate px-3 py-2 text-slate-800" title={authorCell.title}>
+                <td className="max-w-[120px] truncate px-5 py-4 text-xs font-medium text-slate-600" title={authorCell.title}>
                   {authorCell.display}
                 </td>
-                <td className="max-w-[120px] truncate px-3 py-2 text-slate-800" title={mentorCell.title}>
+                <td className="max-w-[120px] truncate px-5 py-4 text-xs font-medium text-slate-600" title={mentorCell.title}>
                   {mentorCell.display}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-slate-800">{rating}</td>
-                <td className="max-w-[220px] truncate px-3 py-2 text-slate-700" title={body.title}>
+                <td className="whitespace-nowrap px-5 py-4 text-xs font-bold text-slate-900 tabular-nums">{rating}</td>
+                <td className="max-w-[220px] truncate px-5 py-4 text-xs font-medium text-slate-600 leading-relaxed" title={body.title}>
                   {body.display}
                 </td>
                 <td
-                  className="whitespace-nowrap px-3 py-2 text-slate-800"
+                  className="whitespace-nowrap px-5 py-4 text-xs font-bold text-slate-600"
                   title="숨김·블라인드는 공개 화면에서 비노출은 같고, 집계·기록 의미가 다릅니다."
                 >
                   {exposure}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{formatTs(row.created_at)}</td>
-                <td className="px-3 py-2 align-top">
+                <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-slate-500">{formatTs(row.created_at)}</td>
+                <td className="px-5 py-4 align-top">
                   {!hasAnyAction ? (
-                    <span className="text-xs text-slate-500">—</span>
+                    <span className="text-xs font-medium text-slate-400">—</span>
                   ) : showHide || showBlind || showRestore || showReview ? (
                     <form className="flex flex-wrap gap-2" action={moderateAdminReviewAction}>
                       <input type="hidden" name="reviewId" value={String(row.id ?? "")} />
@@ -166,8 +176,8 @@ export function AdminReviewsTable(props: {
                           name="action"
                           value="hide"
                           title="리뷰를 공개 화면과 공개 집계에서 제외합니다. 스팸, 테스트, 중복, 무관한 리뷰 등 노출하지 않을 리뷰에 사용합니다."
-                          aria-label="숨김. 리뷰를 공개 화면과 공개 집계에서 제외합니다. 스팸, 테스트, 중복, 무관한 리뷰 등 노출하지 않을 리뷰에 사용합니다."
-                          className="rounded-lg bg-slate-700 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
+                          aria-label="숨김"
+                          className="rounded-xl bg-slate-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-sm"
                         >
                           숨김
                         </button>
@@ -177,9 +187,9 @@ export function AdminReviewsTable(props: {
                           type="submit"
                           name="action"
                           value="blind"
-                          title="민감하거나 위반 가능성이 있는 리뷰를 공개 화면에서 제외하고 블라인드 상태로 기록합니다. 개인정보, 욕설, 외부 연락처, 정책 위반 가능 리뷰. 현재 버전에서는 블라인드도 공개 화면에서 비노출됩니다."
-                          aria-label="블라인드. 민감하거나 위반 가능성이 있는 리뷰를 공개 화면에서 제외하고 블라인드 상태로 기록합니다. 개인정보, 욕설, 외부 연락처, 정책 위반 가능 리뷰. 현재 버전에서는 블라인드도 공개 화면에서 비노출됩니다."
-                          className="rounded-lg bg-amber-700 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-amber-800"
+                          title="민감하거나 위반 가능성이 있는 리뷰를 공개 화면에서 제외하고 블라인드 상태로 기록합니다."
+                          aria-label="블라인드"
+                          className="rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-red-500 transition-colors shadow-sm"
                         >
                           블라인드
                         </button>
@@ -190,8 +200,8 @@ export function AdminReviewsTable(props: {
                           name="action"
                           value="restore"
                           title="숨김·블라인드를 해제하고 공개·집계에 다시 포함할 수 있는 상태로 되돌립니다."
-                          aria-label="복원: 숨김·블라인드를 해제하고 공개·집계에 다시 포함할 수 있는 상태로 되돌립니다."
-                          className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700"
+                          aria-label="복원"
+                          className="rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-500 transition-colors shadow-sm"
                         >
                           복원
                         </button>
@@ -202,15 +212,15 @@ export function AdminReviewsTable(props: {
                           name="action"
                           value="review"
                           title="현재 노출 상태를 유지한 채 검토 완료로 표시합니다."
-                          aria-label="검토 완료. 현재 노출 상태를 유지한 채 검토 완료로 표시합니다."
-                          className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-indigo-700"
+                          aria-label="검토 완료"
+                          className="rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-500 transition-colors shadow-sm"
                         >
                           검토 완료
                         </button>
                       ) : null}
                     </form>
                   ) : (
-                    <span className="text-xs text-slate-500">—</span>
+                    <span className="text-xs font-medium text-slate-400">—</span>
                   )}
                 </td>
               </tr>

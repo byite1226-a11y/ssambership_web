@@ -34,48 +34,65 @@ function formatDateKo(iso: string | null): string {
   return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(d);
 }
 
+const statusBadgeClass = (s: string) => {
+  const u = s.toLowerCase();
+  if (/pending|on_hold|hold/i.test(u)) return "bg-amber-50 text-amber-700 border-amber-100";
+  if (/paid|success|done/i.test(u)) return "bg-emerald-50 text-emerald-700 border-emerald-100";
+  return "bg-slate-50 text-slate-600 border-slate-100";
+};
+
 function SettlementTable({ rows }: { rows: AdminSettlementListItem[] }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3.5 flex items-center justify-between">
+        <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">정산 내역 상세</h2>
+        <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded">
+          {rows.length}건
+        </span>
+      </div>
       <table className="w-full min-w-[1040px] text-left text-sm">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50/90">
-            <th className="px-2 py-2 font-extrabold text-slate-800">정산 ID</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">주문 ID</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">멘토</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">학생</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">총 결제금액</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">플랫폼 수수료</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">멘토 정산금</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">상태</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">지급일</th>
-            <th className="px-2 py-2 font-extrabold text-slate-800">생성일</th>
+          <tr className="border-b border-slate-200/60 bg-slate-50/40">
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">정산 ID</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">주문 ID</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">멘토</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">학생</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">총 결제금액</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">플랫폼 수수료</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">멘토 정산금</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">상태</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">지급일</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">생성일</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-100">
           {rows.map((r) => (
-            <tr key={r.id} className="border-b border-slate-100 last:border-0">
-              <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={r.id}>
+            <tr key={r.id} className="hover:bg-slate-50/30 transition-colors">
+              <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-800" title={r.id}>
                 {shortUuid(r.id)}
               </td>
               <td
-                className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800"
+                className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-800"
                 title={r.orderMetaLine ? `${r.customRequestOrderId}\n${r.orderMetaLine}` : r.customRequestOrderId}
               >
                 {shortUuid(r.customRequestOrderId)}
               </td>
-              <td className="max-w-[100px] truncate px-2 py-1.5 font-mono text-xs text-slate-700" title={r.mentorId}>
+              <td className="max-w-[100px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={r.mentorId}>
                 {shortUuid(r.mentorId)}
               </td>
-              <td className="max-w-[100px] truncate px-2 py-1.5 font-mono text-xs text-slate-700" title={r.studentId ?? ""}>
+              <td className="max-w-[100px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={r.studentId ?? ""}>
                 {r.studentId ? shortUuid(r.studentId) : "—"}
               </td>
-              <td className="whitespace-nowrap px-2 py-1.5 text-slate-800">{formatWon(r.grossAmount)}</td>
-              <td className="whitespace-nowrap px-2 py-1.5 text-slate-800">{formatWon(r.platformFeeAmount)}</td>
-              <td className="whitespace-nowrap px-2 py-1.5 font-semibold text-slate-900">{formatWon(r.mentorAmount)}</td>
-              <td className="whitespace-nowrap px-2 py-1.5 text-slate-800">{adminSettlementStatusLabel(r.status)}</td>
-              <td className="whitespace-nowrap px-2 py-1.5 text-xs text-slate-700">{formatDateKo(r.paidAt)}</td>
-              <td className="whitespace-nowrap px-2 py-1.5 text-xs text-slate-700">{formatDateKo(r.createdAt)}</td>
+              <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-slate-600 tabular-nums">{formatWon(r.grossAmount)}</td>
+              <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-slate-600 tabular-nums">{formatWon(r.platformFeeAmount)}</td>
+              <td className="whitespace-nowrap px-5 py-4 text-xs font-black text-slate-900 tabular-nums">{formatWon(r.mentorAmount)}</td>
+              <td className="px-5 py-4 whitespace-nowrap">
+                <span className={`inline-block border rounded-lg px-2.5 py-1 text-xs font-bold ${statusBadgeClass(r.status)}`}>
+                  {adminSettlementStatusLabel(r.status)}
+                </span>
+              </td>
+              <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">{formatDateKo(r.paidAt)}</td>
+              <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-slate-500 whitespace-nowrap">{formatDateKo(r.createdAt)}</td>
             </tr>
           ))}
         </tbody>
@@ -123,29 +140,32 @@ export default async function AdminSettlementsPage() {
         "각 운영 메뉴는 왼쪽 사이드바에서 이동할 수 있습니다. 금전·정산·주문은 관련 상세 메뉴에서 확인 후 처리하세요.",
       ]}
     >
-      <div className="space-y-4">
+      <div className="max-w-6xl mx-auto space-y-6 pb-12">
         {!queryOk ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-950">
-            <p className="font-semibold">목록을 불러오지 못했습니다.</p>
-            <p className="mt-1 text-xs text-amber-900/95">{adminListErrorDescription("settlements")}</p>
+          <div className="rounded-xl border border-red-200 bg-red-50/60 p-5 text-sm text-red-950">
+            <p className="font-bold">목록을 불러오지 못했습니다.</p>
+            <p className="mt-1 text-xs text-red-900/95">{adminListErrorDescription("settlements")}</p>
           </div>
         ) : null}
 
         {queryOk ? (
-          <>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-extrabold text-slate-800">지급 예정 및 지급 내역</span>
-              <AdminStatusBadge result={SETTLEMENTS_BADGE_RESULT} hint="최근 정산부터 최대 50건" />
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-slate-800">지급 예정 및 지급 내역</span>
+                <AdminStatusBadge result={SETTLEMENTS_BADGE_RESULT} hint="최근 정산부터 최대 50건" />
+              </div>
+              <p className="text-xs font-medium text-slate-400">정산 대상 내역을 확인해 주세요.</p>
             </div>
             {rows.length === 0 ? (
-              <p className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-5 text-sm text-slate-600">
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-8 text-center text-sm text-slate-500 font-semibold">
                 정산 대상 내역이 없습니다.
               </p>
             ) : (
               <SettlementTable rows={rows} />
             )}
             <AdminDetailPanelSlot />
-          </>
+          </div>
         ) : null}
       </div>
     </PageScaffold>

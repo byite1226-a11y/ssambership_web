@@ -53,6 +53,19 @@ function refundStatusLabel(s: string): string {
   }
 }
 
+const statusBadgeClass = (s: string) => {
+  switch (s) {
+    case "pending":
+      return "bg-amber-50 text-amber-700 border-amber-100";
+    case "succeeded":
+      return "bg-emerald-50 text-emerald-700 border-emerald-100";
+    case "rejected":
+      return "bg-red-50 text-red-700 border-red-100";
+    default:
+      return "bg-slate-50 text-slate-600 border-slate-100";
+  }
+};
+
 function isPendingRefund(row: Row): boolean {
   return pickStatus(row) === "pending";
 }
@@ -127,65 +140,72 @@ export default async function AdminRefundsPage(props: PageProps) {
       dataPoints={[]}
       hideFooterPlaceholderCards
     >
-      <div className="space-y-4">
+      <div className="max-w-6xl mx-auto space-y-6 pb-12">
         {flashOk ? (
-          <p className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 text-sm font-semibold text-emerald-950">
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 animate-pulse">
             {flashOk}
           </p>
         ) : null}
         {flashErr ? (
-          <p className="rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm font-semibold text-red-950">
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-900">
             {toAdminDisplayError(flashErr, "default") ?? "처리에 실패했습니다. 잠시 후 다시 시도해 주세요."}
           </p>
         ) : null}
 
         {focusRefundId ? (
-          <p className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-3 text-sm text-indigo-950">
-            연결된 환불 ID <code className="font-mono text-indigo-900">{focusRefundId}</code>와 아래 목록의 환불 ID가 같은지 확인해 주세요.
+          <p className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-sm text-blue-900 font-medium">
+            연결된 환불 ID <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-900">{focusRefundId}</code>와 아래 목록의 환불 ID가 같은지 확인해 주세요.
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-extrabold text-slate-800">환불 요청 목록</span>
-          <AdminStatusBadge result={list} hint="최근 요청부터 최대 50건" />
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-bold text-slate-800">환불 요청 목록</h2>
+            <AdminStatusBadge result={list} hint="최근 요청부터 최대 50건" />
+          </div>
+          <p className="text-xs font-medium text-slate-400">환불 요청의 결제 정보와 처리 상태를 확인할 수 있습니다.</p>
         </div>
 
-        <p className="text-sm text-slate-600">환불 요청의 결제 정보와 처리 상태를 확인할 수 있습니다.</p>
-
         {list.error && !rows.length ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-950">
-            <p className="font-semibold">목록을 불러오지 못했습니다.</p>
-            <p className="mt-1 text-xs text-amber-900/90">
+          <div className="rounded-2xl border border-red-200 bg-red-50/60 p-5 text-sm text-red-950">
+            <p className="font-bold">목록을 불러오지 못했습니다.</p>
+            <p className="mt-1 text-xs text-red-900/90">
               {toAdminDisplayError(list.error, "default") ?? "잠시 후 다시 시도하거나 담당자에게 문의해 주세요."}
             </p>
           </div>
         ) : null}
 
         {!list.table ? (
-          <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          <p className="rounded-2xl border border-slate-200 bg-slate-50/60 p-6 text-sm text-slate-500 text-center font-semibold">
             환불 목록을 불러올 수 없습니다. 연결과 권한을 확인해 주세요.
           </p>
         ) : !rows.length ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            <p className="font-semibold text-slate-800">현재 대기 중인 환불 요청이 없습니다.</p>
-            <p className="mt-2">환불 요청이 생성되면 이곳에서 승인 또는 거절할 수 있습니다.</p>
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/40 p-8 text-center text-sm text-slate-500">
+            <p className="font-bold text-slate-700">현재 대기 중인 환불 요청이 없습니다.</p>
+            <p className="mt-1 text-xs text-slate-500">환불 요청이 생성되면 이곳에서 승인 또는 거절할 수 있습니다.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3 flex items-center justify-between">
+              <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">환불 데이터</h2>
+              <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded">
+                {rows.length}건
+              </span>
+            </div>
             <table className="w-full min-w-[960px] text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/80">
-                  <th className="px-2 py-2 font-extrabold text-slate-800">환불 ID</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">사용자</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">환불 금액</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">상태</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">결제 ID</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">맞춤의뢰 ID</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">요청일</th>
-                  <th className="px-2 py-2 font-extrabold text-slate-800">처리</th>
+                <tr className="border-b border-slate-200 bg-slate-50/40">
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">환불 ID</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">사용자</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">환불 금액</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">상태</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">결제 ID</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">맞춤의뢰 ID</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">요청일</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">처리</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {rows.map((row, i) => {
                   const refundIdValue =
                     typeof row.id === "string" ? row.id : row.id != null ? String(row.id) : "";
@@ -198,23 +218,31 @@ export default async function AdminRefundsPage(props: PageProps) {
                   const payPv = previewId(pickFirst(row, ["payment_id"]));
                   const orderPv = previewId(pickFirst(row, ["custom_request_order_id"]));
                   return (
-                    <tr key={rowKey} className="border-b border-slate-100 last:border-0">
-                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={idPv.title}>
+                    <tr key={rowKey} className="hover:bg-slate-50/30 transition-colors">
+                      <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-800" title={idPv.title}>
                         {idPv.display}
                       </td>
-                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={userPv.title}>
+                      <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={userPv.title}>
                         {userPv.display}
                       </td>
-                      <td className="px-2 py-1.5 text-slate-800">{formatWonAmount(pickFirst(row, ["amount_cents", "amount"]))}</td>
-                      <td className="px-2 py-1.5 text-slate-800">{refundStatusLabel(st)}</td>
-                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={payPv.title}>
+                      <td className="px-5 py-4 text-xs font-black text-slate-900 tabular-nums">
+                        {formatWonAmount(pickFirst(row, ["amount_cents", "amount"]))}
+                      </td>
+                      <td className="px-5 py-4 whitespace-nowrap">
+                        <span className={`inline-block border rounded-lg px-2.5 py-1 text-xs font-bold ${statusBadgeClass(st)}`}>
+                          {refundStatusLabel(st)}
+                        </span>
+                      </td>
+                      <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={payPv.title}>
                         {payPv.display}
                       </td>
-                      <td className="max-w-[120px] truncate px-2 py-1.5 font-mono text-xs text-slate-800" title={orderPv.title}>
+                      <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={orderPv.title}>
                         {orderPv.display}
                       </td>
-                      <td className="whitespace-nowrap px-2 py-1.5 text-slate-800">{formatRequestedAt(pickFirst(row, ["created_at"]))}</td>
-                      <td className="px-2 py-2 align-top">
+                      <td className="whitespace-nowrap px-5 py-4 text-xs font-medium text-slate-500 leading-relaxed">
+                        {formatRequestedAt(pickFirst(row, ["created_at"]))}
+                      </td>
+                      <td className="px-5 py-4 align-top">
                         {pending && refundIdValue ? (
                           <form className="flex min-w-[280px] flex-col gap-2">
                             <input type="hidden" name="refundId" value={refundIdValue} />
@@ -222,33 +250,33 @@ export default async function AdminRefundsPage(props: PageProps) {
                               type="text"
                               name="adminNote"
                               placeholder="메모(선택)"
-                              className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-800"
+                              className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
                               autoComplete="off"
                             />
                             <div className="flex flex-wrap gap-2">
                               <button
                                 type="submit"
                                 formAction={approveAdminRefundAction}
-                                className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700"
+                                className="flex-1 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-500 transition-colors shadow-sm whitespace-nowrap"
                               >
                                 환불 승인
                               </button>
                               <button
                                 type="submit"
                                 formAction={rejectAdminRefundAction}
-                                className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
+                                className="flex-1 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-red-500 transition-colors shadow-sm whitespace-nowrap"
                               >
                                 환불 거절
                               </button>
                             </div>
                           </form>
                         ) : (
-                          <span className="text-xs font-medium text-slate-500">—</span>
+                          <span className="text-xs font-medium text-slate-400">—</span>
                         )}
                         {disputeHref ? (
-                          <p className="mt-1 text-xs">
+                          <p className="mt-2 text-xs leading-relaxed">
                             <Link
-                              className="font-bold text-indigo-800 underline"
+                              className="font-bold text-blue-600 hover:underline"
                               href={`/admin/disputes/${encodeURIComponent(disputeHref)}`}
                               prefetch={false}
                             >
