@@ -41,10 +41,10 @@ export function MentorAppliedListSection(props: { items: MentorApplicationWithPo
                 <p className="mt-1 text-xs text-slate-500 sm:text-sm">지원 상태: {stLabel}</p>
               </div>
               <Link
-                className="inline-flex min-h-[40px] shrink-0 items-center justify-center self-start rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 hover:bg-slate-100 min-[400px]:self-center"
+                className="inline-flex min-h-[42px] shrink-0 items-center justify-center self-start rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50 min-[400px]:self-center"
                 href={it.href}
               >
-                열기
+                상세 보기
               </Link>
             </div>
           </li>

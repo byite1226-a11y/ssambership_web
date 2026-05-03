@@ -148,8 +148,8 @@ export function OrderProgressSection({
           <p className="mt-0.5 text-xs text-slate-500">이 주문에 한해 주고받은 대화</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-2">
-          <div className="flex min-h-[11rem] flex-col gap-3 rounded-2xl border border-slate-200/60 bg-slate-50/40 p-3 text-xs text-slate-600">
-            <p className="shrink-0 text-sm font-semibold text-slate-800">의뢰(학생)</p>
+          <div className="flex min-h-[11rem] flex-col gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/50 p-4 text-xs text-slate-600">
+            <p className="shrink-0 text-sm font-bold text-slate-900">의뢰(학생)</p>
             {showStudentComposer ? (
               <form action={submitCustomOrderRoomMessageAction} className="shrink-0 space-y-2">
                 <input type="hidden" name="orderId" value={orderId} />
@@ -159,7 +159,7 @@ export function OrderProgressSection({
                 <textarea
                   id="student-order-msg"
                   name="messageBody"
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm"
+                  className="min-h-[88px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm"
                   rows={3}
                   placeholder="멘토에게 전달할 메시지"
                   maxLength={4000}
@@ -167,7 +167,7 @@ export function OrderProgressSection({
                 />
                 <button
                   type="submit"
-                  className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+                  className="min-h-[44px] w-full rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
                 >
                   보내기
                 </button>
@@ -178,12 +178,16 @@ export function OrderProgressSection({
                 {studentMsgs.map((m, i) => (
                   <li
                     key={String(m.id ?? i)}
-                    className="rounded-lg border border-white/60 bg-white px-2.5 py-2 text-slate-800 shadow-sm"
+                    className="max-w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-slate-800 shadow-sm"
                   >
-                    <p className="text-[11px] text-slate-400">
-                      {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
-                    </p>
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{messageText(m)}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+                        {messageText(m)}
+                      </p>
+                      <time className="shrink-0 pt-0.5 text-[10px] font-medium tabular-nums text-slate-400">
+                        {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
+                      </time>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -193,8 +197,8 @@ export function OrderProgressSection({
               <p className="text-sm text-slate-500">메시지를 불러올 수 없습니다.</p>
             ) : null}
           </div>
-          <div className="flex min-h-[11rem] flex-col gap-3 rounded-2xl border border-slate-200/60 bg-slate-50/40 p-3 text-xs text-slate-600">
-            <p className="shrink-0 text-sm font-semibold text-slate-800">멘토</p>
+          <div className="flex min-h-[11rem] flex-col gap-3 rounded-2xl border border-blue-100/70 bg-blue-50/30 p-4 text-xs text-slate-600">
+            <p className="shrink-0 text-sm font-bold text-slate-900">멘토</p>
             {showMentorComposer ? (
               <form action={submitCustomOrderRoomMessageAction} className="shrink-0 space-y-2">
                 <input type="hidden" name="orderId" value={orderId} />
@@ -204,7 +208,7 @@ export function OrderProgressSection({
                 <textarea
                   id="mentor-order-msg"
                   name="messageBody"
-                  className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm"
+                  className="min-h-[88px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm"
                   rows={3}
                   placeholder="학생에게 전달할 메시지"
                   maxLength={4000}
@@ -212,7 +216,7 @@ export function OrderProgressSection({
                 />
                 <button
                   type="submit"
-                  className="w-full rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                  className="min-h-[44px] w-full rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
                 >
                   보내기
                 </button>
@@ -223,12 +227,16 @@ export function OrderProgressSection({
                 {mentorMsgs.map((m, i) => (
                   <li
                     key={String(m.id ?? i)}
-                    className="rounded-lg border border-slate-200/80 bg-white px-2.5 py-2 text-slate-800 shadow-sm"
+                    className="max-w-full rounded-xl border border-blue-100/80 bg-white px-3 py-2.5 text-slate-800 shadow-sm"
                   >
-                    <p className="text-[11px] text-slate-400">
-                      {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
-                    </p>
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{messageText(m)}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+                        {messageText(m)}
+                      </p>
+                      <time className="shrink-0 pt-0.5 text-[10px] font-medium tabular-nums text-slate-400">
+                        {m.created_at != null ? formatOrderRoomDateTime(m.created_at) : "—"}
+                      </time>
+                    </div>
                   </li>
                 ))}
               </ul>

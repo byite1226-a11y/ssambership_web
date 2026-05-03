@@ -17,6 +17,8 @@ type Props = {
   orderTerminal?: boolean;
   /** 3열 레이아웃 우측: 히스토리 접기 */
   workspaceCompact?: boolean;
+  /** 멘토 작업방: 수정 요청 블록 톤(reference 보라 계열) */
+  revisionAccent?: "default" | "violet";
 };
 
 function revisionBody(r: Row) {
@@ -31,16 +33,20 @@ export function OrderRevisionsPanel({
   studentRevisionRequestDisabledReason,
   orderTerminal = false,
   workspaceCompact = false,
+  revisionAccent = "default",
 }: Props) {
   const rev = detail.revisions;
   const rows = (rev.rows ?? []) as Row[];
   const hasTable = Boolean(rev.table) && !rev.error;
   const canShowComposer = actorRole === "student" && hasOrderPartyAccess && Boolean(String(orderId).trim());
 
+  const accentSection =
+    revisionAccent === "violet" ? "bg-gradient-to-br from-violet-50/40 via-white to-white ring-2 ring-violet-200/60" : "";
+
   return (
     <section
       id="order-revisions"
-      className={`${ORDER_ROOM_CARD_CLASS} text-sm text-slate-800`}
+      className={`${ORDER_ROOM_CARD_CLASS} text-sm text-slate-800 ${accentSection}`.trim()}
     >
       <h3 className="text-sm font-bold text-slate-900">수정 요청</h3>
       <p className="mt-1 text-xs text-slate-500">
@@ -72,7 +78,14 @@ export function OrderRevisionsPanel({
           </button>
         </form>
       ) : !orderTerminal && actorRole === "student" && canShowComposer && studentRevisionRequestDisabledReason ? (
-        <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600" role="status">
+        <p
+          className={`mt-3 rounded-xl border px-3 py-2.5 text-sm leading-relaxed ${
+            revisionAccent === "violet"
+              ? "border-violet-200 bg-violet-50/80 text-violet-950"
+              : "border-slate-200 bg-slate-50 text-slate-600"
+          }`}
+          role="status"
+        >
           {studentRevisionRequestDisabledReason}
         </p>
       ) : null}
@@ -105,7 +118,14 @@ export function OrderRevisionsPanel({
             {rows.map((r, i) => {
               const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
               return (
-                <li key={String(r.id ?? i)} className="rounded-lg border border-blue-100/50 bg-blue-50/20 px-3 py-2.5">
+                <li
+                  key={String(r.id ?? i)}
+                  className={`rounded-xl border px-3 py-2.5 ${
+                    revisionAccent === "violet"
+                      ? "border-violet-100 bg-violet-50/40"
+                      : "border-blue-100/50 bg-blue-50/20"
+                  }`}
+                >
                   <p className="text-[11px] text-slate-400">{at}</p>
                   <p className="mt-1.5 whitespace-pre-wrap text-slate-800">{revisionBody(r)}</p>
                 </li>

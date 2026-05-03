@@ -180,8 +180,10 @@ export function OrderRoomView(props: {
   actorRole: AppRole;
   accessDenied: boolean;
   accessDetail?: string;
+  /** 멘토: 맞춤의뢰 주문 목록 등 허브로 돌아가는 경로(OrderRoomPageHeader breadcrumb) */
+  mentorOrderHubHref?: string;
 }) {
-  const { bundle, detail, orderId, view, actorRole, accessDenied } = props;
+  const { bundle, detail, orderId, view, actorRole, accessDenied, mentorOrderHubHref } = props;
   const o = bundle.order.row;
 
   if (accessDenied) {
@@ -242,9 +244,13 @@ export function OrderRoomView(props: {
       <div
         className={`${ORDER_ROOM_CONTENT_MAX} !max-w-[min(100%,90rem)] px-3 pb-4 pt-2 sm:px-4 sm:pb-5 sm:pt-3 lg:px-6 lg:pb-6 lg:pt-4`}
       >
-        <OrderRoomPageHeader detail={detail} view={view} />
+        <OrderRoomPageHeader
+          detail={detail}
+          view={view}
+          backHref={view === "mentor" ? (mentorOrderHubHref ?? "/mentor/custom-request/orders") : "/custom-request"}
+        />
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-6">
-          <aside className="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-3 lg:sticky lg:top-4 lg:self-start">
+          <aside className="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-3 lg:sticky lg:top-24 lg:self-start">
             <OrderLeftContextPanel
               detail={detail}
               view={view}
@@ -262,7 +268,7 @@ export function OrderRoomView(props: {
               orderTerminal={isTerminalOrder}
             />
           </div>
-          <aside className="order-3 min-w-0 space-y-5 lg:order-3 lg:col-span-3">
+          <aside className="order-3 min-w-0 space-y-4 lg:order-3 lg:col-span-3 lg:sticky lg:top-24 lg:self-start">
             <OrderDeliverablesPanel
               detail={detail}
               orderId={oid}
@@ -307,6 +313,7 @@ export function OrderRoomView(props: {
                 studentRevisionRequestDisabledReason={revBlock}
                 orderTerminal={isTerminalOrder}
                 workspaceCompact
+                revisionAccent={view === "mentor" ? "violet" : "default"}
               />
               <OrderDisputesPanel
                 detail={detail}

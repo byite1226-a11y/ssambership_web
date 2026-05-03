@@ -227,29 +227,29 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
             관리에서도 동일하게 제한됩니다.
           </div>
         ) : null}
-        <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 mb-3">
+        <div className="mb-3 flex min-h-[44px] flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <Link
             href={backHref}
-            className="shrink-0 text-sm font-bold text-slate-500 underline-offset-2 hover:text-slate-900 transition hover:underline"
+            className="shrink-0 text-sm font-bold text-slate-600 underline-offset-2 transition hover:text-blue-800 hover:underline"
           >
             ← 맞춤의뢰 목록으로
           </Link>
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
             {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
             <PaymentStatusBadge paymentRaw={payRaw} />
             <Link
               href="#order-room-order-info"
-              className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
             >
               요청 상세
             </Link>
           </div>
         </div>
-        <h1 className="line-clamp-1 text-pretty text-base font-extrabold text-slate-950 sm:text-xl">
+        <h1 className="line-clamp-2 text-pretty text-lg font-extrabold leading-snug text-slate-950 sm:text-xl">
           {h.requestTitle}
         </h1>
-        {detailLine && detailLine !== "—" ? <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">{detailLine}</p> : null}
-        <p className="mt-1.5 line-clamp-1 text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">{oneLineContext}</p>
+        {detailLine && detailLine !== "—" ? <p className="mt-1.5 line-clamp-2 text-xs font-medium text-slate-500">{detailLine}</p> : null}
+        <p className="mt-2 line-clamp-2 text-sm font-medium leading-relaxed text-slate-600">{oneLineContext}</p>
       </header>
     );
   }
@@ -265,32 +265,32 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
           있습니다.
         </div>
       ) : null}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 mb-3">
+      <div className="mb-3 flex min-h-[44px] flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <Link
           href={backHref}
-          className="shrink-0 text-sm font-bold text-slate-500 underline-offset-2 hover:text-slate-900 transition hover:underline"
+          className="shrink-0 text-sm font-bold text-slate-600 underline-offset-2 transition hover:text-blue-800 hover:underline"
         >
-          ← 목록으로 돌아가기
+          ← 맞춤의뢰 주문 목록
         </Link>
-        <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
           {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
           <PaymentStatusBadge paymentRaw={payRaw} />
-          <span className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          <span className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-600">
             멘토
           </span>
           <Link
             href="#order-room-order-info"
-            className="shrink-0 rounded-full border border-slate-200/80 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
           >
             주문 정보
           </Link>
         </div>
       </div>
-      <h1 className="line-clamp-1 text-pretty text-base font-extrabold text-slate-950 sm:text-xl">
+      <h1 className="line-clamp-2 text-pretty text-lg font-extrabold leading-snug text-slate-950 sm:text-xl">
         {h.requestTitle}
       </h1>
-      {detailLine && detailLine !== "—" ? <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">{detailLine}</p> : null}
-      <p className="mt-1.5 line-clamp-1 text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">{oneLineContext}</p>
+      {detailLine && detailLine !== "—" ? <p className="mt-1.5 line-clamp-2 text-xs font-medium text-slate-500">{detailLine}</p> : null}
+      <p className="mt-2 line-clamp-2 text-sm font-medium leading-relaxed text-slate-600">{oneLineContext}</p>
     </header>
   );
 }
@@ -303,35 +303,47 @@ type LeftContextProps = {
 };
 
 function OrderStepStrip({ currentIndex }: { currentIndex: number }) {
+  const n = ORDER_WORKSPACE_STEP_LABELS.length;
   return (
-    <ol className="space-y-2.5" aria-label="주문 단계">
+    <ol className="relative" aria-label="주문 단계">
       {ORDER_WORKSPACE_STEP_LABELS.map((label, i) => {
         const isDone = i < currentIndex;
         const isCurrent = i === currentIndex;
+        const isLast = i === n - 1;
         return (
-          <li key={String(label)} className="flex min-h-[1.5rem] items-center gap-2.5">
-            <span
-              className={
-                isCurrent
-                  ? "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-extrabold text-white"
-                  : isDone
-                    ? "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-extrabold text-emerald-800"
-                    : "inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-extrabold text-slate-500"
-              }
-            >
-              {i + 1}
-            </span>
-            <span
-              className={
-                isCurrent
-                  ? "text-sm font-semibold text-slate-900"
-                  : isDone
-                    ? "text-sm text-slate-700"
-                    : "text-sm text-slate-500"
-              }
-            >
-              {label}
-            </span>
+          <li key={String(label)} className="flex gap-3">
+            <div className="flex w-7 shrink-0 flex-col items-center">
+              <span
+                className={
+                  isCurrent
+                    ? "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-extrabold text-white shadow-sm"
+                    : isDone
+                      ? "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-xs font-extrabold text-emerald-900"
+                      : "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-500"
+                }
+              >
+                {i + 1}
+              </span>
+              {!isLast ? (
+                <span
+                  className={`my-1 block w-0.5 flex-1 min-h-[10px] rounded-full ${isDone ? "bg-emerald-200" : "bg-slate-200"}`}
+                  aria-hidden
+                />
+              ) : null}
+            </div>
+            <div className={`min-w-0 ${!isLast ? "pb-3" : ""}`}>
+              <span
+                className={
+                  isCurrent
+                    ? "text-sm font-bold text-slate-900"
+                    : isDone
+                      ? "text-sm font-medium text-slate-800"
+                      : "text-sm font-medium text-slate-500"
+                }
+              >
+                {label}
+              </span>
+            </div>
           </li>
         );
       })}
@@ -359,8 +371,8 @@ export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDi
   const shortId = shortOrderIdForDisplay(String(orderIdDisplay).trim());
 
   return (
-    <div className="space-y-3">
-      <div id="order-room-order-info" className={ORDER_ROOM_CARD_CLASS + " space-y-3 scroll-mt-4"}>
+    <div className="space-y-4">
+      <div id="order-room-order-info" className={ORDER_ROOM_CARD_CLASS + " space-y-3 scroll-mt-24"}>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">주문 정보</p>
         {detail.hasActiveDispute ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-2 text-xs font-semibold text-amber-950">
@@ -420,9 +432,9 @@ export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDi
 
       <div className={ORDER_ROOM_CARD_CLASS + " text-sm text-slate-700"}>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">안내</p>
-        <ul className="mt-2 list-inside list-disc space-y-1.5 text-xs">
-          <li>납품이 등록되면 수락·수정 요청은 우측「작업 관리」에서 진행합니다.</li>
-          <li>이견이 있을 때는 우측에서 정식 분쟁을 신청할 수 있습니다(진행 중 분쟁이 있으면 액션이 잠깁니다).</li>
+        <ul className="mt-2 list-disc space-y-2 pl-4 text-xs leading-relaxed text-slate-600 marker:text-slate-400">
+          <li className="pl-0.5">납품이 등록되면 수락·수정 요청은 우측「작업 관리」에서 진행합니다.</li>
+          <li className="pl-0.5">이견이 있을 때는 우측에서 정식 분쟁을 신청할 수 있습니다(진행 중 분쟁이 있으면 액션이 잠깁니다).</li>
         </ul>
       </div>
     </div>

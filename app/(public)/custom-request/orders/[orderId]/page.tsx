@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
+import { MentorCustomRequestWorkspaceLayout } from "@/components/customRequest/MentorCustomRequestWorkspaceLayout";
 import { OrderRoomView } from "@/components/customRequest/OrderRoomView";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
@@ -38,20 +39,10 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   const canEnrich = !!bundle.order.row && access.ok;
   const detail = canEnrich ? await loadOrderDetailPageData(supabase, orderId, bundle) : null;
   const view: "student" | "mentor" = role === "mentor" ? "mentor" : "student";
+  const isMentor = role === "mentor";
 
-  return (
-    <PageScaffold
-      compactHero
-      eyebrow="주문방"
-      title="주문·납품"
-      description="진행·납품·메시지를 한곳에서 확인합니다. 주문번호는 하단을 참고해 주세요."
-      ctas={[
-        { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
-        { href: role === "mentor" ? "/mentor/dashboard" : "/home", label: "대시/홈", tone: "blue" },
-      ]}
-      sections={[]}
-      hideFooterPlaceholderCards
-    >
+  const alerts = (
+    <>
       {sp.error ? (
         <p className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-900" role="alert">
           {mapDataErrorMessage(sp.error)}
@@ -62,16 +53,59 @@ export default async function CustomRequestOrderPage(props: PageProps) {
           {sp.ok}
         </p>
       ) : null}
-      <div className="w-full min-w-0">
-        <OrderRoomView
-          bundle={bundle}
-          detail={detail}
-          orderId={orderId}
-          view={view}
-          actorRole={role}
-          accessDenied={accessDenied}
-        />
-      </div>
+    </>
+  );
+
+  const room = (
+    <div className="w-full min-w-0">
+      <OrderRoomView
+        bundle={bundle}
+        detail={detail}
+        orderId={orderId}
+        view={view}
+        actorRole={role}
+        accessDenied={accessDenied}
+        mentorOrderHubHref={isMentor ? "/mentor/custom-request/orders" : undefined}
+      />
+    </div>
+  );
+
+  return (
+    <PageScaffold
+      compactHero
+      eyebrow={isMentor ? "멘토 · 맞춤의뢰" : "주문방"}
+      title={isMentor ? "주문·작업방" : "주문·납품"}
+      description={
+        isMentor
+          ? "의뢰 요약, 진행 단계, 작업 메시지, 납품·수정 요청을 한 화면에서 다룹니다. 주문 식별은 하단 참고 값을 이용해 주세요."
+          : "진행·납품·메시지를 한곳에서 확인합니다. 주문번호는 하단을 참고해 주세요."
+      }
+      ctas={
+        isMentor
+          ? [
+              { href: "/mentor/custom-request/orders", label: "주문 목록", tone: "slate" },
+              { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰 대시보드", tone: "green" },
+              { href: "/mentor/dashboard", label: "멘토 대시보드", tone: "blue" },
+            ]
+          : [
+              { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
+              { href: "/home", label: "대시/홈", tone: "blue" },
+            ]
+      }
+      sections={[]}
+      hideFooterPlaceholderCards
+    >
+      {isMentor ? (
+        <MentorCustomRequestWorkspaceLayout active="orders">
+          {alerts}
+          {room}
+        </MentorCustomRequestWorkspaceLayout>
+      ) : (
+        <>
+          {alerts}
+          {room}
+        </>
+      )}
     </PageScaffold>
   );
 }

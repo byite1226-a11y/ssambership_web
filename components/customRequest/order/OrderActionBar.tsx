@@ -15,7 +15,8 @@ const greenCard =
   `${cardBase} border-green-200 bg-green-50 text-green-700 hover:bg-green-100`;
 const orangeCard =
   `${cardBase} border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100`;
-const redCard = `${cardBase} border-red-200 bg-red-50 text-red-600 hover:bg-red-100`;
+/** 분쟁 신청: 한 화면에서 주 액션과 겹치지 않게 윤곽 위주 */
+const disputeOutlineCard = `${cardBase} border-2 border-red-300 bg-white text-red-800 hover:bg-red-50`;
 const blueCard = `${cardBase} border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100`;
 const neutralCard = `${cardBase} border-slate-200 bg-white text-slate-800 hover:bg-slate-50`;
 const disabledCard = `${cardBase} border-slate-200 bg-slate-100 text-slate-500`;
@@ -227,7 +228,7 @@ export function OrderActionBar(props: Props) {
             <Chevr />
           </a>
         ) : canDisputeJump ? (
-          <a href="#order-disputes" className={redCard}>
+          <a href="#order-disputes" className={disputeOutlineCard}>
             <div className="flex min-w-0 items-start gap-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <div>

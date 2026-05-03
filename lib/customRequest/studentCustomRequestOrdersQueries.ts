@@ -10,7 +10,7 @@ import {
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { pickMentorIdFromOrderRow } from "@/lib/customRequest/orderDetailQueries";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
-import { mentorCustomOrderWorkroomHref } from "@/lib/home/mentorDashboardQueries";
+import { mentorCustomOrderWorkroomHref } from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
 import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type Row = Record<string, unknown>;

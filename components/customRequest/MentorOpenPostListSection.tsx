@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
 import { formatDateYMDOrDash } from "@/lib/customRequest/mentorCustomRequestDisplay";
+import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import { MentorPostStatusBadge } from "@/components/customRequest/MentorPostStatusBadge";
 
 type Row = Record<string, unknown>;
+
+function chipClass(tone: "slate" | "violet") {
+  return tone === "violet"
+    ? "rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-violet-900"
+    : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-700";
+}
 
 export function MentorOpenPostListSection(props: {
   rows: Row[];
@@ -31,33 +38,65 @@ export function MentorOpenPostListSection(props: {
       {props.rows.map((r, i) => {
         const d = mapPostRowToPublicDetail(r);
         const id = String(r.id ?? i);
+        const gradeRaw = pickDisplayField(r, ["grade", "학년", "school_level", "target_grade", "level"]);
+        const periodRaw = pickDisplayField(r, ["expected_duration", "duration_weeks", "timeline", "period"]);
+        const showGrade = gradeRaw !== "—" && gradeRaw.trim().length > 0;
+        const showPeriod = periodRaw !== "—" && periodRaw.trim().length > 0;
+        const detailHref = `/mentor/custom-request/posts/${id}`;
+        const applyHref = `/mentor/custom-request/posts/${id}/apply`;
         return (
-          <li key={id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-4">
-            <div className="flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between">
+          <li
+            key={id}
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-5">
               <div className="min-w-0 flex-1">
-                <Link
-                  href={`/mentor/custom-request/posts/${id}`}
-                  className="text-base font-extrabold text-slate-900 hover:text-blue-700"
-                >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={chipClass("slate")}>{d.category !== "—" ? d.category : "분야 미정"}</span>
+                  {showGrade ? <span className={chipClass("violet")}>{gradeRaw}</span> : null}
+                  <MentorPostStatusBadge row={r} />
+                </div>
+                <Link href={detailHref} className="mt-2 block text-lg font-extrabold leading-snug text-slate-900 hover:text-blue-700">
                   {d.title}
                 </Link>
-                <p className="mt-1 line-clamp-2 text-sm text-slate-600">
-                  {d.category} · {d.subject}
+                <p className="mt-1.5 text-sm text-slate-600">
+                  <span className="font-extrabold text-slate-700">희망 전공·분야</span> {d.subject}
                 </p>
-                <p className="mt-1.5 text-xs text-slate-600 sm:text-sm">
-                  <span className="font-extrabold text-slate-500">예산</span> {d.budgetLine} ·{" "}
-                  <span className="font-extrabold text-slate-500">마감</span> {d.deadline}
-                </p>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 sm:text-sm">
+                  <span>
+                    <span className="font-extrabold text-slate-500">예상 금액</span> {d.budgetLine}
+                  </span>
+                  {showPeriod ? (
+                    <span>
+                      <span className="font-extrabold text-slate-500">예상 기간</span> {periodRaw}
+                    </span>
+                  ) : null}
+                  <span>
+                    <span className="font-extrabold text-slate-500">마감</span> {d.deadline}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs tabular-nums text-slate-400">등록 {formatDateYMDOrDash(r.created_at)}</p>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-slate-100 pt-2.5 min-[420px]:flex-col min-[420px]:items-end min-[420px]:border-0 min-[420px]:pt-0">
-                <MentorPostStatusBadge row={r} />
-                <span className="text-xs tabular-nums text-slate-500">등록 {formatDateYMDOrDash(r.created_at)}</span>
-                <Link
-                  className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 hover:bg-slate-100"
-                  href={`/mentor/custom-request/posts/${id}`}
-                >
-                  열기
-                </Link>
+              <div className="flex w-full shrink-0 flex-col gap-3 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-52 lg:border-l lg:border-slate-100 lg:pl-5">
+                <div className="flex justify-end sm:justify-start lg:justify-end">
+                  <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-900">
+                    NEW
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:flex-col">
+                  <Link
+                    className="inline-flex min-h-[42px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50"
+                    href={detailHref}
+                  >
+                    상세 보기
+                  </Link>
+                  <Link
+                    className="inline-flex min-h-[42px] flex-1 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
+                    href={applyHref}
+                  >
+                    제안하기
+                  </Link>
+                </div>
               </div>
             </div>
           </li>
