@@ -144,16 +144,28 @@ export async function loadMentorDashboardData(
   };
 }
 
+/** 목록·카드: open/under_review 분쟁을 최우선, 다음 결제 미확인 시 결제 대기. */
+export function mentorCustomOrderStatusHeadline(row: Row, activeDisputeOrderIds?: ReadonlySet<string> | null): string {
+  const id = typeof row.id === "string" && row.id.trim() ? row.id.trim() : "";
+  if (activeDisputeOrderIds && id && activeDisputeOrderIds.has(id)) {
+    return "분쟁 접수 · 운영 검토 중";
+  }
+  if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
+    return "결제 대기 · 진행 대기";
+  }
+  const norm = normalizedPrimaryOrderStatus(row);
+  if (!norm) {
+    return "진행 중";
+  }
+  return orderStatusLabelForUi(norm);
+}
+
 export function customOrderLine(r: Row, activeDisputeOrderIds?: ReadonlySet<string> | null) {
-  const id = typeof r.id === "string" && r.id.trim() ? r.id.trim() : "";
   const title = pickDisplayField(r, ["title", "subject", "label", "name"]);
   const titleLine = title !== "—" ? title : "맞춤의뢰";
   const when = pickDisplayField(r, ["updated_at", "created_at"]);
   const whenShort = when !== "—" && when.length > 10 ? when.slice(0, 10) : when;
-  if (activeDisputeOrderIds && id && activeDisputeOrderIds.has(id)) {
-    return `분쟁 접수 · 운영 검토 중 · ${titleLine} · ${whenShort}`;
-  }
-  return `${pickDisplayField(r, ["status", "state", "order_status"])} · ${titleLine} · ${whenShort}`;
+  return `${mentorCustomOrderStatusHeadline(r, activeDisputeOrderIds)} · ${titleLine} · ${whenShort}`;
 }
 
 const CUSTOM_REQUEST_ORDERS_TABLE = "custom_request_orders" as const;
@@ -202,22 +214,6 @@ export async function fetchMentorCustomRequestOrdersFromPrimaryTable(
 
 export function mentorCustomOrderWorkroomHref(orderId: string): string {
   return `/custom-request/orders/${encodeURIComponent(orderId)}`;
-}
-
-/** 목록·카드: open/under_review 분쟁을 최우선, 다음 결제 미확인 시 결제 대기. */
-export function mentorCustomOrderStatusHeadline(row: Row, activeDisputeOrderIds?: ReadonlySet<string> | null): string {
-  const id = typeof row.id === "string" && row.id.trim() ? row.id.trim() : "";
-  if (activeDisputeOrderIds && id && activeDisputeOrderIds.has(id)) {
-    return "분쟁 접수 · 운영 검토 중";
-  }
-  if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
-    return "결제 대기 · 진행 대기";
-  }
-  const norm = normalizedPrimaryOrderStatus(row);
-  if (!norm) {
-    return "진행 중";
-  }
-  return orderStatusLabelForUi(norm);
 }
 
 export function mentorCustomOrderPaymentLine(row: Row): string {

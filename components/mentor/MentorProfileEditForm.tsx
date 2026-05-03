@@ -21,7 +21,7 @@ export function MentorProfileEditForm(props: {
     <form action={submitMentorProfileEdit} className="max-w-4xl mx-auto space-y-6 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm pb-12">
       {/* Alert states */}
       {ok ? (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 animate-pulse">
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
           성공적으로 저장되었습니다.
         </p>
       ) : null}
@@ -32,14 +32,16 @@ export function MentorProfileEditForm(props: {
       ) : null}
 
       {/* Account Info Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
         {accountEmail ? (
-          <p className="text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+          <p className="min-w-0 max-w-full break-all text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 sm:max-w-[50%]">
             로그인 계정: {accountEmail}
           </p>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
         {query.row ? (
-          <p className="text-xs font-semibold text-slate-500 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100">
+          <p className="min-w-0 max-w-full flex-1 text-xs font-semibold text-slate-500 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100 sm:text-right sm:max-w-[50%]">
             멘토 인증: <span className="font-bold text-blue-700">{mentorVerificationKo(initial.verification)}</span>
             {" · "}
             학생증 자료:{" "}

@@ -14,7 +14,7 @@ export default async function MentorDashboardPage() {
       hideFooterPlaceholderCards
       eyebrow="홈"
       title="멘토 대시보드"
-      description="답변·질문방·맞춤의뢰·정산·분쟁으로 바로 갈 수 있어요. 숫자는 권한과 연결 상태에 따라 달라질 수 있어요."
+      description="상단 요약은 개요용이에요. 아래 카드에서 숫자·목록·바로가기를 확인하세요."
       ctas={[
         { href: "/mentor/question-room", label: "질문방 관리", tone: "green" },
         { href: "/mentor/custom-request/orders", label: "맞춤의뢰 주문", tone: "blue" },

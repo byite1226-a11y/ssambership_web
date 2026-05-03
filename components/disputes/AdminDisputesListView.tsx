@@ -52,8 +52,8 @@ export function AdminDisputesListView(props: Props) {
   }
 
   return (
-    <div className="space-y-2 text-sm">
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+    <div className="max-w-full space-y-2 text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full min-w-[980px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80">
@@ -83,8 +83,13 @@ export function AdminDisputesListView(props: Props) {
                     <td className="max-w-[220px] truncate px-3 py-2 text-xs text-slate-700" title={it.actorSummary}>
                       {it.actorSummary}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-extrabold ${badge(it.statusRaw || it.statusLabel)}`}>{st}</span>
+                    <td className="px-3 py-2 align-middle">
+                      <span
+                        className={`inline-flex max-w-[10rem] shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-extrabold ${badge(it.statusRaw || it.statusLabel)}`}
+                        title={st}
+                      >
+                        {st}
+                      </span>
                     </td>
                     <td className="max-w-[260px] truncate px-3 py-2 text-xs text-slate-700" title={it.summaryReason !== "—" ? it.summaryReason : undefined}>
                       {it.summaryReason}

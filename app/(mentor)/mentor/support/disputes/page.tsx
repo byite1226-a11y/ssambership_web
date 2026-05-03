@@ -29,7 +29,7 @@ export default async function MentorDisputesListPage() {
       sections={[
         {
           title: "안내",
-          body: "목록에서 상세를 누르면 해당 건의 진행 내용을 확인할 수 있어요.",
+          body: "목록에서 상세 보기를 누르면 해당 건의 진행 상태를 확인할 수 있어요.",
           status: hasRows ? "connected" : listFailed ? "skeleton" : "connected",
         },
       ]}

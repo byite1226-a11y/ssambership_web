@@ -26,7 +26,7 @@ function StatTile(props: { label: string; value: string; hint?: string; variant?
       }`}
     >
       <p className="text-xs font-bold tracking-wide text-slate-500">{props.label}</p>
-      <p className="mt-1 text-2xl font-black tabular-nums text-slate-900">{props.value}</p>
+      <p className="mt-1 min-w-0 break-words text-2xl font-black tabular-nums text-slate-900">{props.value}</p>
       {props.hint ? <p className="mt-1 text-xs text-slate-400">{props.hint}</p> : null}
     </div>
   );
@@ -61,11 +61,11 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
     <div className="max-w-6xl mx-auto space-y-6 text-sm text-slate-800 pb-12">
       {/* Dashboard Top Banner */}
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-extrabold uppercase tracking-wide text-blue-600">MENTOR WORKSPACE</p>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-blue-600">멘토 홈</p>
         <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">오늘 처리할 일을 정리했어요</h1>
         <p className="mt-2 max-w-2xl text-slate-600 sm:text-base leading-relaxed">
-          질문·맞춤의뢰·정산으로 바로 갈 수 있어요. 숫자가 <span className="font-bold">—</span>이면 집계가 제한됐거나 데이터가
-          아직 없을 수 있어요.
+          아래 숫자와 카드에서 요약을 확인하고, 버튼으로 각 메뉴로 이동할 수 있어요. 숫자가{" "}
+          <span className="font-bold">—</span>이면 아직 데이터가 없거나 집계가 제한됐을 수 있어요.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <CtaButton href="/mentor/question-room" tone="blue">
@@ -112,9 +112,8 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:col-span-2 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
               <h2 className="text-base font-extrabold text-slate-900">답변·처리 요약</h2>
-              <span className="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-600 rounded-md">활성화</span>
             </div>
             {roomErr ? stateBanner("질문방 목록을 불러오는 데 문제가 있을 수 있어요.", "err") : null}
             {threadStats.error ? stateBanner("질문·스레드 집계에 제한이 있을 수 있어요.", "err") : null}
@@ -168,7 +167,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
             <p className="mt-4 text-2xl font-black text-blue-600 sm:text-3xl">
               {amountErr ? "—" : `${payouts.monthExpectedCents.toLocaleString("ko-KR")}원`}
             </p>
-            <p className="mt-2 text-xs font-medium text-slate-400 bg-slate-50 p-3 rounded-xl">
+            <p className="mt-2 break-words text-xs font-medium text-slate-400 bg-slate-50 p-3 rounded-xl max-w-full">
               {payouts.tableHint}
             </p>
             <p className="mt-2 text-xs leading-relaxed text-slate-500">
@@ -194,9 +193,12 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
                   const oid = typeof row.id === "string" && row.id.trim() ? row.id.trim() : null;
                   const line = customOrderLine(row, customRecent.activeDisputeOrderIds);
                   return (
-                    <li key={oid ?? i} className="text-sm">
+                    <li key={oid ?? i} className="text-sm break-words">
                       {oid ? (
-                        <Link className="font-semibold text-blue-700 hover:text-blue-800 hover:underline" href={mentorCustomOrderWorkroomHref(oid)}>
+                        <Link
+                          className="font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                          href={mentorCustomOrderWorkroomHref(oid)}
+                        >
                           {line}
                         </Link>
                       ) : (
@@ -271,8 +273,9 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
       {/* Notifications */}
       <section className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 sm:p-6">
         <h2 className="text-base font-extrabold text-slate-900 border-b border-slate-200/60 pb-3 mb-3">알림 센터</h2>
-        <p className="text-sm font-semibold text-slate-700 leading-relaxed">
-          {notifyProbe.label}: {notifyProbe.detail} ({notifyStatusKorean(notifyProbe.status)})
+        <p className="min-w-0 text-sm font-semibold text-slate-700 leading-relaxed break-words">
+          <span className="text-slate-500">{notifyProbe.label}</span> · {notifyProbe.detail}{" "}
+          <span className="whitespace-nowrap text-slate-500">({notifyStatusKorean(notifyProbe.status)})</span>
         </p>
         <p className="mt-2 text-xs text-slate-400 bg-white p-3 rounded-xl border border-slate-100">
           시스템 알림 및 학생과의 중요 업데이트 소식을 실시간으로 확인할 수 있는 공간입니다.

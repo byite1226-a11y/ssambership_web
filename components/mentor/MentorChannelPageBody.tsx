@@ -26,9 +26,14 @@ function ListBlock(props: { title: string; items: MentorChannelListItem[] }) {
       <p className="text-sm font-extrabold text-slate-800 border-b border-slate-100 pb-3 mb-3">{title}</p>
       <ul className="space-y-3">
         {items.map((it) => (
-          <li key={it.id} className="flex flex-wrap items-center justify-between gap-2 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <span className="font-bold text-slate-800">{it.title}</span>
-            <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">{it.publicLabel}</span>
+          <li
+            key={it.id}
+            className="flex min-h-[3rem] flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm"
+          >
+            <span className="min-w-0 flex-1 font-bold text-slate-800 break-words">{it.title}</span>
+            <span className="shrink-0 whitespace-nowrap rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
+              {it.publicLabel}
+            </span>
           </li>
         ))}
       </ul>
@@ -47,10 +52,10 @@ export function MentorChannelPageBody(props: {
   if (listError) {
     return (
       <div className="max-w-4xl mx-auto space-y-6 pb-12">
-        <div className="rounded-2xl border border-red-200 bg-red-50/60 p-6">
-          <p className="text-sm font-extrabold text-red-900">채널 자료를 불러오지 못했습니다</p>
-          <p className="mt-2 text-sm text-red-950">
-            등록된 자료가 없거나 아직 연결되지 않았을 수 있습니다. 준비가 되면 이곳에 표시됩니다.
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-6">
+          <p className="text-sm font-extrabold text-amber-950">채널 목록을 잠시 불러오지 못했어요</p>
+          <p className="mt-2 text-sm text-amber-950/90 leading-relaxed">
+            네트워크나 연결 상태에 따라 발생할 수 있어요. 잠시 후 새로고침하거나, 프로필 편집에서 대표 콘텐츠를 확인해 주세요.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -85,7 +90,7 @@ export function MentorChannelPageBody(props: {
             대표 콘텐츠 및 프로필 편집
           </Link>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ListBlock title={BUCKET_LABEL.shortform} items={grouped.shortform} />
           <ListBlock title={BUCKET_LABEL.explanation} items={grouped.explanation} />
           <ListBlock title={BUCKET_LABEL.material} items={grouped.material} />
@@ -107,7 +112,7 @@ export function MentorChannelPageBody(props: {
           </Link>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ListBlock title={BUCKET_LABEL.shortform} items={grouped.shortform} />
         <ListBlock title={BUCKET_LABEL.explanation} items={grouped.explanation} />
         <ListBlock title={BUCKET_LABEL.material} items={grouped.material} />

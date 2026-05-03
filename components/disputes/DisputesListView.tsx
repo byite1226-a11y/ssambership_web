@@ -51,7 +51,7 @@ export function DisputesListView(props: Props) {
     <div className="max-w-5xl mx-auto space-y-6 pb-12 text-sm text-slate-800">
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3 flex items-center justify-between">
-          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">분쟁 및 환불 목록</h2>
+          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">분쟁·환불 현황</h2>
           <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded">
             {items.length}건
           </span>
@@ -61,7 +61,7 @@ export function DisputesListView(props: Props) {
             <tr className="border-b border-slate-200/60 bg-slate-50/30">
               <th className="px-5 py-3 text-xs font-bold text-slate-600">분쟁 유형</th>
               <th className="px-5 py-3 text-xs font-bold text-slate-600">상태</th>
-              <th className="px-5 py-3 text-xs font-bold text-slate-600">관련 주문 및 결제 정보</th>
+              <th className="px-5 py-3 text-xs font-bold text-slate-600">관련 주문·결제</th>
               <th className="px-5 py-3 text-xs font-bold text-slate-600 text-right">상세</th>
             </tr>
           </thead>
@@ -70,14 +70,20 @@ export function DisputesListView(props: Props) {
               .filter((it) => it.id && it.id !== "—")
               .map((it) => (
                 <tr key={it.id} className="hover:bg-slate-50/30 transition-colors">
-                  <td className="max-w-[160px] px-5 py-4 text-slate-800 font-medium">{it.typeLabel}</td>
-                  <td className="px-5 py-4">
-                    <span className={`inline-block border rounded-lg px-2.5 py-1 text-xs font-bold ${badge(it.statusRaw)}`}>
+                  <td className="max-w-[min(11rem,32vw)] min-w-0 px-5 py-4 text-slate-800 font-medium break-words">
+                    {it.typeLabel}
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <span
+                      className={`inline-flex shrink-0 items-center whitespace-nowrap border rounded-lg px-2.5 py-1 text-xs font-bold ${badge(it.statusRaw)}`}
+                    >
                       {it.statusLabel}
                     </span>
                   </td>
-                  <td className="max-w-[280px] truncate px-5 py-4 text-xs text-slate-600 leading-relaxed font-medium" title={it.orderSummary}>
-                    {it.orderSummary}
+                  <td className="min-w-0 max-w-[min(20rem,45vw)] px-5 py-4 text-xs text-slate-600 leading-relaxed font-medium break-words">
+                    <span className="line-clamp-2" title={it.orderSummary}>
+                      {it.orderSummary}
+                    </span>
                   </td>
                   <td className="px-5 py-4 text-right">
                     <Link

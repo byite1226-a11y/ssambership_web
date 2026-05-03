@@ -42,8 +42,8 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
   return (
     <div className="space-y-6 text-slate-800">
       {/* Visual Notice for Pending Filters */}
-      <div className="rounded-xl bg-slate-50 border border-slate-100 p-3.5 text-xs text-slate-500 font-medium select-none text-center">
-        💡 필터는 준비 중이에요. 지금은 최근 내역을 먼저 보여드릴게요.
+      <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-center text-xs font-medium text-slate-500 select-none">
+        필터는 준비 중이에요. 지금은 최근 내역을 먼저 보여 드릴게요.
       </div>
 
       {/* Balance summary as a distinct white card */}
@@ -84,19 +84,23 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
               return (
                 <div
                   key={typeof r.id === "string" ? r.id : `tr-${i}`}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50/60 hover:bg-slate-50 border border-slate-100 rounded-xl transition gap-2"
+                  className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-4 transition hover:bg-slate-50 sm:flex-row sm:items-start sm:justify-between"
                 >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-white border border-slate-100 text-slate-600 whitespace-nowrap select-none">
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="flex flex-wrap items-baseline gap-2 gap-y-1">
+                      <span className="inline-flex shrink-0 select-none rounded border border-slate-100 bg-white px-2 py-0.5 text-xs font-semibold text-slate-600 whitespace-nowrap">
                         {ledgerTypeLabel(r)}
                       </span>
-                      <span className="text-sm font-extrabold text-slate-900 break-words min-w-0">
-                        {reason}
-                      </span>
+                      <span className="min-w-0 text-sm font-extrabold text-slate-900 break-words">{reason}</span>
                     </div>
-                    <p className="text-xs text-slate-400 font-medium break-words min-w-0">
-                      <span className="whitespace-nowrap">{ledgerAt(r)}</span> {ledgerOrderOrPaymentRef(r) !== "—" ? `· ${ledgerOrderOrPaymentRef(r)}` : ""}
+                    <p className="min-w-0 text-xs font-medium text-slate-400 break-words">
+                      <span className="whitespace-nowrap text-slate-500">{ledgerAt(r)}</span>
+                      {ledgerOrderOrPaymentRef(r) !== "—" ? (
+                        <>
+                          <span className="mx-1 text-slate-300">·</span>
+                          <span className="break-all">{ledgerOrderOrPaymentRef(r)}</span>
+                        </>
+                      ) : null}
                     </p>
                   </div>
                   <div className={`text-sm font-black text-right sm:text-base whitespace-nowrap flex-shrink-0 ${isNegative ? "text-red-500" : "text-blue-600"}`}>
