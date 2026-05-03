@@ -34,7 +34,7 @@ export default async function StudentCustomRequestOrdersListPage() {
       dataPoints={[]}
       hideFooterPlaceholderCards
     >
-      <div className="space-y-6 select-none max-w-5xl mx-auto py-2">
+      <div className="space-y-6 select-none max-w-6xl mx-auto py-2">
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-950" role="alert">
             주문 목록을 불러오지 못했습니다. {error}

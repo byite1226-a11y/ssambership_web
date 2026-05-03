@@ -101,10 +101,10 @@ export default async function CustomRequestOrderPage(props: PageProps) {
           {room}
         </MentorCustomRequestWorkspaceLayout>
       ) : (
-        <>
+        <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
           {alerts}
           {room}
-        </>
+        </div>
       )}
     </PageScaffold>
   );

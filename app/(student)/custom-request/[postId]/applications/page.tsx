@@ -49,24 +49,26 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
       emptyState=""
       dataPoints={[]}
     >
-      {hasErrQ ? (
-        <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-bold text-red-900">
-          처리에 문제가 있었어요. 잠시 후 다시 시도해 주세요.
-        </p>
-      ) : null}
-      {!authz.ok ? (
-        <p className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold text-amber-950">
-          이 맞춤의뢰는 작성자(의뢰하신 본인)만 비교·선정 화면을 열 수 있어요.
-        </p>
-      ) : (
-        <ApplicationsCompareView
-          list={list}
-          postId={postId}
-          postRow={post.row != null ? (post.row as Row) : null}
-          enriched={enriched}
-          existingOrderId={orderId}
-        />
-      )}
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
+        {hasErrQ ? (
+          <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-bold text-red-900">
+            처리에 문제가 있었어요. 잠시 후 다시 시도해 주세요.
+          </p>
+        ) : null}
+        {!authz.ok ? (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold text-amber-950">
+            이 맞춤의뢰는 작성자(의뢰하신 본인)만 비교·선정 화면을 열 수 있어요.
+          </p>
+        ) : (
+          <ApplicationsCompareView
+            list={list}
+            postId={postId}
+            postRow={post.row != null ? (post.row as Row) : null}
+            enriched={enriched}
+            existingOrderId={orderId}
+          />
+        )}
+      </div>
     </PageScaffold>
   );
 }

@@ -18,10 +18,11 @@ export default async function CustomRequestPublicPage() {
   return (
     <PageScaffold
       compactHero
+      hideHero
       hideFooterPlaceholderCards
       eyebrow="맞춤의뢰"
       title="맞춤의뢰"
-      description="요청을 올리고 멘토 제안을 비교한 뒤, 이어지는 주문·상담 단계로 진행해요."
+      description="요청을 올리고 멘토 제안을 비교한 뒤, 주문·상담까지 이어가요."
       ctas={[
         { href: `/login/student?next=${encodeURIComponent("/custom-request")}`, label: "학생 로그인", tone: "slate" },
       ]}
@@ -29,7 +30,7 @@ export default async function CustomRequestPublicPage() {
       dataPoints={[]}
       emptyState=""
     >
-      <div className="max-w-5xl mx-auto space-y-8 sm:space-y-12 py-2">
+      <div className="mx-auto w-full max-w-6xl space-y-8 px-3 py-6 sm:space-y-12 sm:px-4 sm:py-8 lg:px-0">
         <CustomRequestHero />
         <CustomRequestCategoryGrid fromTable={cats} />
         <CustomRequestSteps />

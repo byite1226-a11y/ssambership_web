@@ -23,25 +23,27 @@ export function CustomRequestCategoryGrid(props: Props) {
     : null;
 
   return (
-    <section className="space-y-4" id="categories">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">어떤 도움을 받을 수 있나요?</h2>
-          {categoryFallbackNote ? <p className="text-xs text-slate-600 mt-1">{categoryFallbackNote}</p> : null}
-        </div>
+    <section className="space-y-6" id="categories">
+      <div className="border-b border-slate-200/80 pb-4">
+        <h2 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">어떤 도움을 받을 수 있나요?</h2>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+          아래 분야 중 가까운 것을 골라 의뢰에 적어 주세요.
+        </p>
+        {categoryFallbackNote ? <p className="mt-3 text-xs font-semibold text-amber-800">{categoryFallbackNote}</p> : null}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {REFERENCE_CATEGORIES.map((c) => (
-          <div
+          <article
             key={c.label}
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 text-center flex flex-col items-center justify-between min-h-[144px] transition hover:border-slate-300 hover:shadow-sm select-none"
+            tabIndex={0}
+            className="group flex h-full min-h-[176px] flex-col rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.05)] outline-none transition duration-200 hover:-translate-y-0.5 hover:border-sky-300/80 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 select-none"
           >
-            <span className="text-3xl mb-2">{c.icon}</span>
-            <div>
-              <p className="text-xs font-bold text-slate-900 mb-1">{c.label}</p>
-              <p className="text-[10px] text-slate-500 leading-normal break-words">{c.desc}</p>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white text-2xl shadow-sm transition group-hover:border-sky-200">
+              {c.icon}
             </div>
-          </div>
+            <p className="mt-4 text-sm font-extrabold leading-snug text-slate-900">{c.label}</p>
+            <p className="mt-2 flex-1 text-xs font-medium leading-relaxed text-slate-600">{c.desc}</p>
+          </article>
         ))}
       </div>
     </section>

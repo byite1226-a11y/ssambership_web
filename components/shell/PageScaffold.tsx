@@ -30,6 +30,7 @@ type PageScaffoldProps = {
    * 기본 false — 기존 흰 카드 히어로 유지.
    */
   compactHero?: boolean;
+  hideHero?: boolean;
   children?: ReactNode;
 };
 
@@ -51,6 +52,7 @@ export function PageScaffold({
   errorState = "정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
   hideFooterPlaceholderCards = false,
   compactHero = false,
+  hideHero = false,
   children,
 }: PageScaffoldProps) {
   const showEmptyStateCard = emptyState != null && emptyState.length > 0;
@@ -59,66 +61,68 @@ export function PageScaffold({
 
   return (
     <div className={compactHero ? "space-y-0" : "space-y-6"}>
-      <section
-        className={
-          compactHero
-            ? "border-0 border-b border-slate-200/50 bg-[#F3F7FF] px-3 py-3 sm:px-4 sm:py-3.5"
-            : "rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
-        }
-      >
-        <p
+      {!hideHero ? (
+        <section
           className={
             compactHero
-              ? "text-[10px] font-semibold uppercase tracking-wider text-slate-500"
-              : "text-xs font-extrabold uppercase tracking-wider text-slate-500"
+              ? "border-0 border-b border-slate-200/50 bg-[#F3F7FF] px-3 py-3 sm:px-4 sm:py-3.5"
+              : "rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
           }
         >
-          {eyebrow}
-        </p>
-        <h1
-          className={
-            compactHero
-              ? "mt-1 text-lg font-bold leading-tight tracking-tight text-slate-900 sm:text-xl"
-              : "mt-2 text-3xl font-black tracking-tight text-slate-900"
-          }
-        >
-          {title}
-        </h1>
-        <p
-          className={
-            compactHero ? "mt-1 text-xs leading-relaxed text-slate-600" : "mt-2 text-sm leading-6 text-slate-600"
-          }
-        >
-          {description}
-        </p>
-        {ctas.length > 0 ? (
-          compactHero ? (
-            <nav className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="페이지 이동">
-              {ctas.map((cta) => (
-                <Link
-                  key={cta.href + cta.label}
-                  href={cta.href}
-                  className="font-medium text-slate-500 underline-offset-2 transition hover:text-slate-800 hover:underline"
-                >
-                  {cta.label}
-                </Link>
-              ))}
-            </nav>
-          ) : (
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              {ctas.map((cta) => (
-                <Link
-                  key={cta.href + cta.label}
-                  href={cta.href}
-                  className={`rounded-lg px-3.5 py-2 text-sm font-bold ${toneClass[cta.tone ?? "blue"]}`}
-                >
-                  {cta.label}
-                </Link>
-              ))}
-            </div>
-          )
-        ) : null}
-      </section>
+          <p
+            className={
+              compactHero
+                ? "text-[10px] font-semibold uppercase tracking-wider text-slate-500"
+                : "text-xs font-extrabold uppercase tracking-wider text-slate-500"
+            }
+          >
+            {eyebrow}
+          </p>
+          <h1
+            className={
+              compactHero
+                ? "mt-1 text-lg font-bold leading-tight tracking-tight text-slate-900 sm:text-xl"
+                : "mt-2 text-3xl font-black tracking-tight text-slate-900"
+            }
+          >
+            {title}
+          </h1>
+          <p
+            className={
+              compactHero ? "mt-1 text-xs leading-relaxed text-slate-600" : "mt-2 text-sm leading-6 text-slate-600"
+            }
+          >
+            {description}
+          </p>
+          {ctas.length > 0 ? (
+            compactHero ? (
+              <nav className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="페이지 이동">
+                {ctas.map((cta) => (
+                  <Link
+                    key={cta.href + cta.label}
+                    href={cta.href}
+                    className="font-medium text-slate-500 underline-offset-2 transition hover:text-slate-800 hover:underline"
+                  >
+                    {cta.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : (
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                {ctas.map((cta) => (
+                  <Link
+                    key={cta.href + cta.label}
+                    href={cta.href}
+                    className={`rounded-lg px-3.5 py-2 text-sm font-bold ${toneClass[cta.tone ?? "blue"]}`}
+                  >
+                    {cta.label}
+                  </Link>
+                ))}
+              </div>
+            )
+          ) : null}
+        </section>
+      ) : null}
 
       {sections.length > 0 ? (
         <section className="grid gap-4 md:grid-cols-2">

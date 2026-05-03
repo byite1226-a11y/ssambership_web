@@ -11,6 +11,8 @@ export default async function CustomRequestNewPage(props: PageProps) {
 
   return (
     <PageScaffold
+      compactHero
+      hideHero
       eyebrow="의뢰 등록"
       title="의뢰 등록"
       description="요청 내용을 작성하고 필요한 자료를 첨부해 주세요. 멘토 지원을 받은 뒤 주문 확정, 결제 안내, 납품은 단계별로 진행됩니다."
@@ -21,7 +23,9 @@ export default async function CustomRequestNewPage(props: PageProps) {
       sections={[]}
       hideFooterPlaceholderCards
     >
-      <CustomRequestNewForm errorMessage={errUi} />
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
+        <CustomRequestNewForm errorMessage={errUi} />
+      </div>
     </PageScaffold>
   );
 }

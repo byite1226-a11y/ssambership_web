@@ -80,32 +80,34 @@ export default async function CustomRequestPostPublicPage(props: Props) {
       dataPoints={[]}
       emptyState=""
     >
-      {ok ? (
-        <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-emerald-900">
-          지원이 제출되었어요.
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
+        {ok ? (
+          <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-emerald-900">
+            지원이 제출되었어요.
+          </p>
+        ) : null}
+        {err ? (
+          <p className="mb-4 rounded-xl border border-red-100 bg-red-50/90 px-3.5 py-2.5 text-sm font-extrabold text-red-900">
+            {mapDataErrorMessage(err)}
+          </p>
+        ) : null}
+        <CustomRequestPublicPostBody
+          postId={postId}
+          row={post.row}
+          postTable={post.table}
+          userId={user?.id ?? null}
+          profile={profile}
+          applications={applications}
+          canViewAttachments={canViewAttachments}
+          attachments={postAttachments.rows}
+          attachmentLoadError={postAttachments.error}
+        />
+        <p className="mt-8 text-center text-sm font-medium text-slate-500">
+          <Link href="/custom-request" className="font-extrabold text-blue-700 underline decoration-blue-200 underline-offset-2 hover:text-blue-800">
+            맞춤의뢰 허브로
+          </Link>
         </p>
-      ) : null}
-      {err ? (
-        <p className="mb-4 rounded-xl border border-red-100 bg-red-50/90 px-3.5 py-2.5 text-sm font-extrabold text-red-900">
-          {mapDataErrorMessage(err)}
-        </p>
-      ) : null}
-      <CustomRequestPublicPostBody
-        postId={postId}
-        row={post.row}
-        postTable={post.table}
-        userId={user?.id ?? null}
-        profile={profile}
-        applications={applications}
-        canViewAttachments={canViewAttachments}
-        attachments={postAttachments.rows}
-        attachmentLoadError={postAttachments.error}
-      />
-      <p className="mt-8 text-center text-sm text-slate-500">
-        <Link href="/custom-request" className="font-bold text-blue-700 underline">
-          맞춤의뢰로 돌아가기
-        </Link>
-      </p>
+      </div>
     </PageScaffold>
   );
 }
