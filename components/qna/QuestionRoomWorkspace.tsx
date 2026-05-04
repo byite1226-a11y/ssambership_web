@@ -653,7 +653,7 @@ export function QuestionRoomWorkspace(props: {
 
         {/* 중: 대화(스크롤) + 하단 입력 */}
         <div className="flex min-h-0 min-w-0 flex-col gap-0 lg:col-span-6">
-          <div className="flex min-h-[20rem] flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm lg:min-h-[min(72vh,42rem)]">
+          <div className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm lg:min-h-[min(74vh,44rem)]">
             <div className="shrink-0 border-b border-slate-100 px-3 py-2 sm:px-4 sm:py-2.5">
               <h2 className="text-sm font-extrabold text-slate-900">대화</h2>
               {props.variant === "mentor" ? (
@@ -699,7 +699,7 @@ export function QuestionRoomWorkspace(props: {
           <section className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
             {connectionNotesBlock}
           </section>
-          <Panel title={props.variant === "student" ? "빠른 링크" : "빠른 링크"} tone="slate" className="shrink-0 text-sm">
+          <Panel title="빠른 링크" tone="slate" className="shrink-0 text-sm">
             <div className="space-y-1.5">
               {props.variant === "student" ? (
                 <>
@@ -714,7 +714,11 @@ export function QuestionRoomWorkspace(props: {
                 </>
               )}
             </div>
-            <p className="mt-3 text-xs text-slate-500">학생·구독 상세 정보는 이후 이 패널에 연결될 수 있어요. 지금은 안내만 표시됩니다.</p>
+            <p className="mt-3 text-xs leading-relaxed text-slate-500">
+              {props.variant === "student"
+                ? "구독 상태와 학습 안내를 함께 보며 질문을 이어가면 답변 확인이 더 쉬워집니다."
+                : "학생에게 전달할 다음 단계와 참고 링크를 함께 안내하면 질문방 흐름이 안정적으로 유지됩니다."}
+            </p>
           </Panel>
         </div>
       </div>

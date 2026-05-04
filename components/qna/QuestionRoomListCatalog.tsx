@@ -232,7 +232,7 @@ export function QuestionRoomListCatalog(props: {
             ))}
           </div>
 
-          <div className="mt-3 space-y-2.5">
+          <div className="mt-3 space-y-2">
             {props.rooms.loading ? (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-950">
                 질문방을 불러오는 중…
@@ -291,13 +291,13 @@ export function QuestionRoomListCatalog(props: {
                 <article
                   key={id || "room"}
                   className={[
-                    "min-w-0 rounded-3xl border bg-white p-3.5 shadow-sm transition sm:p-4",
+                    "min-w-0 rounded-3xl border bg-white p-3 shadow-sm transition sm:p-3.5",
                     accentMentor ? "border-l-[5px] border-l-blue-500 border-y-slate-200 border-r-slate-200" : "",
                     accentStudentNeed ? "border-l-[5px] border-l-amber-400 border-y-slate-200 border-r-slate-200" : "",
                     !accentMentor && !accentStudentNeed ? "border-slate-200 hover:border-slate-300" : "",
                   ].join(" ")}
                 >
-                  <div className="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <h2 className="min-w-0 truncate text-sm font-extrabold text-slate-900 sm:text-base">{roomTitle(r)}</h2>
@@ -311,7 +311,7 @@ export function QuestionRoomListCatalog(props: {
                         </span>
                       </div>
                       <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{counterpartyLabel(props.variant)}</p>
-                      <p className="mt-1.5 line-clamp-2 text-sm font-medium leading-snug text-slate-700">
+                      <p className="mt-1 line-clamp-2 text-sm font-medium leading-snug text-slate-700">
                         <span className="font-semibold text-slate-400">최근 · </span>
                         {preview || "아직 주고받은 메시지가 없어요."}
                       </p>
@@ -410,6 +410,20 @@ export function QuestionRoomListCatalog(props: {
                 </li>
               </ul>
             )}
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+              <p className="text-[11px] font-extrabold text-slate-900">빠른 이동</p>
+              <div className="mt-2 grid grid-cols-1 gap-1.5 text-xs font-bold">
+                <Link className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-slate-700 hover:bg-slate-50" href={props.roomHrefBase}>
+                  질문방 목록 새로보기
+                </Link>
+                <Link
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-slate-700 hover:bg-slate-50"
+                  href={props.variant === "student" ? "/subscriptions" : "/mentor/dashboard"}
+                >
+                  {props.variant === "student" ? "구독·멤버십 이동" : "멘토 대시보드 이동"}
+                </Link>
+              </div>
+            </div>
           </section>
         </aside>
       </div>
