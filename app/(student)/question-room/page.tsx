@@ -11,30 +11,31 @@ export default async function StudentQuestionRoomListPage() {
 
   return (
     <PageScaffold
+      hideHero
       eyebrow="질문방"
-      title="나의 질문방"
-      description="멘토와 연결되면 이곳에 질문방이 열립니다. 방을 열고 질문과 답변을 이어가요."
-      ctas={[
-        { href: "/mentors", label: "질문하기", tone: "blue" },
-        { href: "/notes", label: "연결 노트", tone: "slate" },
-        { href: "/subscriptions", label: "구독", tone: "slate" },
-      ]}
+      title=""
+      description=""
+      ctas={[]}
       sections={[]}
       dataPoints={[]}
       hideFooterPlaceholderCards
     >
-      <QuestionRoomWorkspace
-        variant="student"
-        surface="list"
-        title="질문방 목록"
-        subtitle="멘토와의 대화는 방마다 이어집니다. 아래에서 방을 고른 뒤, 상세 화면에서 질문을 이어가세요."
-        rooms={bundle.rooms}
-        threads={bundle.threads}
-        messages={bundle.messages}
-        notes={bundle.notes}
-        buildRoomHref={(roomId) => `/question-room/${roomId}`}
-        buildThreadHref={(roomId, threadId) => `/question-room/${roomId}?thread=${encodeURIComponent(threadId)}`}
-      />
+      <div className="rounded-2xl bg-slate-50/50 p-3 sm:p-4">
+        <QuestionRoomWorkspace
+          variant="student"
+          surface="list"
+          title="나의 질문방"
+          subtitle="멘토와 연결되면 방이 열립니다. 답변이 오면 확인이 필요한지, 아직 기다리는지 카드에서 바로 볼 수 있어요."
+          rooms={bundle.rooms}
+          threads={bundle.threads}
+          messages={bundle.messages}
+          notes={bundle.notes}
+          listPreviewsByRoomId={bundle.listPreviewsByRoomId}
+          listStartQuestion={{ href: "/mentors", label: "질문 시작하기" }}
+          listSecondaryCta={{ href: "/subscriptions", label: "구독·멤버십" }}
+          roomHrefBase="/question-room"
+        />
+      </div>
     </PageScaffold>
   );
 }

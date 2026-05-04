@@ -1,6 +1,10 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
-import { CONNECTION_NOTES_ROOM_FK_CANDIDATES, QUESTION_THREADS_ROOM_FK_CANDIDATES } from "@/lib/qna/questionThreadRoomRef";
+import {
+  CONNECTION_NOTES_ROOM_FK_CANDIDATES,
+  QUESTION_THREADS_ROOM_FK_CANDIDATES,
+  threadMentorStudentRoomId,
+} from "@/lib/qna/questionThreadRoomRef";
 
 type QnaRole = "student" | "mentor";
 
@@ -42,6 +46,17 @@ export type QuestionRoomBundle = {
   threads: QnaDataState<Record<string, unknown>>;
   messages: QnaDataState<Record<string, unknown>>;
   notes: QnaDataState<Record<string, unknown>>;
+};
+
+/** 목록 카드용 — room당 최신 스레드·해당 스레드의 최신 메시지(실조회, mock 없음) */
+export type QuestionRoomListPreview = {
+  roomId: string;
+  latestThread: Record<string, unknown> | null;
+  lastMessage: Record<string, unknown> | null;
+};
+
+export type QuestionRoomListBundleResult = QuestionRoomBundle & {
+  listPreviewsByRoomId: Record<string, QuestionRoomListPreview>;
 };
 
 function fmt(err: PostgrestError | null): string | null {
@@ -171,6 +186,61 @@ export async function fetchThreadsForRoom(
   );
 }
 
+/** 여러 room에 속한 question_threads 를 한 번에 조회(목록 미리보기용). */
+export async function fetchThreadsForRooms(
+  supabase: SupabaseClient,
+  roomIds: string[]
+): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
+  if (roomIds.length === 0) {
+    return { rows: [], error: null };
+  }
+  const table = "question_threads";
+  const { column } = await pickExistingColumn(supabase, table, [...QUESTION_THREADS_ROOM_FK_CANDIDATES]);
+  if (!column) {
+    return { rows: [], error: "질문 주제를 불러오는 중 문제가 생겼습니다." };
+  }
+  const { data, error } = await supabase.from(table).select("*").in(column, roomIds);
+  if (error) {
+    return { rows: [], error: error.message };
+  }
+  const rows = (data as Record<string, unknown>[]) ?? [];
+  const rank = (r: Record<string, unknown>) => {
+    const u = Date.parse(String(r.updated_at ?? ""));
+    const c = Date.parse(String(r.created_at ?? ""));
+    const tu = Number.isNaN(u) ? 0 : u;
+    const tc = Number.isNaN(c) ? 0 : c;
+    return Math.max(tu, tc);
+  };
+  rows.sort((a, b) => rank(b) - rank(a));
+  return { rows, error: null };
+}
+
+/** 여러 thread의 question_messages 를 한 번에 조회 후, 호출측에서 thread별 최신을 고른다. */
+export async function fetchMessagesForThreads(
+  supabase: SupabaseClient,
+  threadIds: string[]
+): Promise<{ rows: Record<string, unknown>[]; error: string | null }> {
+  if (threadIds.length === 0) {
+    return { rows: [], error: null };
+  }
+  const table = "question_messages";
+  const { column } = await pickExistingColumn(supabase, table, ["thread_id", "question_thread_id"]);
+  if (!column) {
+    return { rows: [], error: "대화를 불러오는 중 문제가 생겼습니다." };
+  }
+  const { data, error } = await supabase.from(table).select("*").in(column, threadIds);
+  if (error) {
+    return { rows: [], error: error.message };
+  }
+  const rows = (data as Record<string, unknown>[]) ?? [];
+  const time = (m: Record<string, unknown>) => {
+    const t = Date.parse(String(m.created_at ?? m.sent_at ?? ""));
+    return Number.isNaN(t) ? 0 : t;
+  };
+  rows.sort((a, b) => time(a) - time(b));
+  return { rows, error: null };
+}
+
 export async function fetchMessagesForThread(
   supabase: SupabaseClient,
   threadId: string
@@ -229,49 +299,149 @@ function emptyBundle(partial: Partial<QuestionRoomBundle>): QuestionRoomBundle {
   return { ...base, ...partial };
 }
 
+function messageThreadIdFromRow(m: Record<string, unknown>): string | null {
+  for (const k of ["thread_id", "question_thread_id"] as const) {
+    const v = m[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+function threadRecencyScore(t: Record<string, unknown>): number {
+  const u = Date.parse(String(t.updated_at ?? ""));
+  const c = Date.parse(String(t.created_at ?? ""));
+  return Math.max(Number.isNaN(u) ? 0 : u, Number.isNaN(c) ? 0 : c);
+}
+
 /**
- * 목록 페이지: rooms는 전체, 중/우/노트는 “첫 room + (가능하면) 첫 thread”까지 미리 채워 탐색 뼈대를 만든다.
+ * 목록 카드용 미리보기 — 읽기 전용 Supabase 호출만 추가(스키마·RLS·SQL 파일 변경 없음).
+ */
+async function buildListPreviewsByRoomId(
+  supabase: SupabaseClient,
+  roomRows: Record<string, unknown>[]
+): Promise<Record<string, QuestionRoomListPreview>> {
+  const out: Record<string, QuestionRoomListPreview> = {};
+  const maxRooms = 48;
+  const capped = roomRows.slice(0, maxRooms);
+  const roomIds = capped.map((r) => (r.id != null ? String(r.id) : "")).filter((id) => id.length > 0);
+  for (const id of roomIds) {
+    out[id] = { roomId: id, latestThread: null, lastMessage: null };
+  }
+  if (roomIds.length === 0) {
+    return out;
+  }
+
+  const threadsPack = await fetchThreadsForRooms(supabase, roomIds);
+  if (threadsPack.error || threadsPack.rows.length === 0) {
+    return out;
+  }
+
+  const threadsByRoom = new Map<string, Record<string, unknown>[]>();
+  for (const t of threadsPack.rows) {
+    const rid = threadMentorStudentRoomId(t);
+    if (!rid) continue;
+    const arr = threadsByRoom.get(rid) ?? [];
+    arr.push(t);
+    threadsByRoom.set(rid, arr);
+  }
+
+  const bestThreadByRoom = new Map<string, Record<string, unknown>>();
+  for (const [rid, arr] of threadsByRoom) {
+    let best = arr[0];
+    for (const t of arr) {
+      if (threadRecencyScore(t) > threadRecencyScore(best)) best = t;
+    }
+    bestThreadByRoom.set(rid, best);
+  }
+
+  const threadIds: string[] = [];
+  for (const id of roomIds) {
+    const th = bestThreadByRoom.get(id);
+    if (th && typeof th.id === "string" && th.id.trim()) threadIds.push(th.id.trim());
+  }
+
+  const msgPack = await fetchMessagesForThreads(supabase, threadIds);
+  const lastMessageByThread = new Map<string, Record<string, unknown>>();
+  if (!msgPack.error) {
+    for (const m of msgPack.rows) {
+      const tid = messageThreadIdFromRow(m);
+      if (tid) lastMessageByThread.set(tid, m);
+    }
+  }
+
+  for (const id of roomIds) {
+    const th = bestThreadByRoom.get(id) ?? null;
+    const tid = th && typeof th.id === "string" ? th.id.trim() : "";
+    const last = tid ? lastMessageByThread.get(tid) ?? null : null;
+    out[id] = { roomId: id, latestThread: th, lastMessage: last };
+  }
+  return out;
+}
+
+function listBundleBase(
+  partial: Partial<QuestionRoomBundle>,
+  listPreviewsByRoomId: Record<string, QuestionRoomListPreview>
+): QuestionRoomListBundleResult {
+  const b = emptyBundle(partial);
+  return { ...b, listPreviewsByRoomId };
+}
+
+/**
+ * 목록 페이지: rooms 전체 + 카드용 스레드·최신 메시지 미리보기(상세 수준의 전 스레드/전 메시지는 로드하지 않음).
  */
 export async function loadQuestionRoomListBundle(
   supabase: SupabaseClient,
   role: QnaRole,
   userId: string
-): Promise<QuestionRoomBundle> {
+): Promise<QuestionRoomListBundleResult> {
   const rooms = await loadMyQuestionRooms(supabase, role, userId);
   if (rooms.error) {
-    return emptyBundle({
-      rooms: { rows: [], error: rooms.error, loading: false },
-      threads: { rows: [], error: null, loading: false },
-      messages: { rows: [], error: null, loading: false },
-      notes: { rows: [], error: null, loading: false },
-    });
+    return listBundleBase(
+      {
+        rooms: { rows: [], error: rooms.error, loading: false },
+        threads: { rows: [], error: null, loading: false },
+        messages: { rows: [], error: null, loading: false },
+        notes: { rows: [], error: null, loading: false },
+      },
+      {}
+    );
   }
   if (rooms.rows.length === 0) {
-    return emptyBundle({
-      rooms: { rows: [], error: null, loading: false },
-      threads: { rows: [], error: null, loading: false },
-      messages: { rows: [], error: null, loading: false },
-      notes: { rows: [], error: null, loading: false },
-    });
+    return listBundleBase(
+      {
+        rooms: { rows: [], error: null, loading: false },
+        threads: { rows: [], error: null, loading: false },
+        messages: { rows: [], error: null, loading: false },
+        notes: { rows: [], error: null, loading: false },
+      },
+      {}
+    );
   }
 
   const firstId = rooms.rows[0]?.id;
   if (firstId == null || String(firstId).length === 0) {
-    return emptyBundle({
-      rooms: { rows: rooms.rows, error: "질문방 정보를 확인할 수 없습니다. 고객센터로 문의해 주세요.", loading: false },
+    return listBundleBase(
+      {
+        rooms: { rows: rooms.rows, error: "질문방 정보를 확인할 수 없습니다. 고객센터로 문의해 주세요.", loading: false },
+        threads: { rows: [], error: null, loading: false },
+        messages: { rows: [], error: null, loading: false },
+        notes: { rows: [], error: null, loading: false },
+      },
+      {}
+    );
+  }
+
+  const listPreviewsByRoomId = await buildListPreviewsByRoomId(supabase, rooms.rows);
+
+  return listBundleBase(
+    {
+      rooms: { rows: rooms.rows, error: null, loading: false },
       threads: { rows: [], error: null, loading: false },
       messages: { rows: [], error: null, loading: false },
       notes: { rows: [], error: null, loading: false },
-    });
-  }
-
-  // 목록 페이지는 “room 큐”만 실조회하고, thread/message/notes는 room 상세(`/[roomId]`)에서 연결한다.
-  return emptyBundle({
-    rooms: { rows: rooms.rows, error: null, loading: false },
-    threads: { rows: [], error: null, loading: false },
-    messages: { rows: [], error: null, loading: false },
-    notes: { rows: [], error: null, loading: false },
-  });
+    },
+    listPreviewsByRoomId
+  );
 }
 
 export type QuestionRoomDetailLoadResult = QuestionRoomBundle & {

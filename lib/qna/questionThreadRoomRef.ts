@@ -20,6 +20,18 @@ export const CONNECTION_NOTES_ROOM_FK_CANDIDATES = [
 /**
  * row에 room FK 값이 `mentorStudentRoomId`와 일치하는지(어느 후보 열이든).
  */
+/** thread 행에서 mentor_student_rooms.id 에 해당하는 FK 값을 한 가지만 꺼낸다. */
+export function threadMentorStudentRoomId(row: Record<string, unknown> | null | undefined): string | null {
+  if (!row) return null;
+  for (const k of QUESTION_THREADS_ROOM_FK_CANDIDATES) {
+    const v = row[k];
+    if (v == null) continue;
+    const s = String(v).trim();
+    if (s) return s;
+  }
+  return null;
+}
+
 export function threadRowBelongsToMentorStudentRoom(
   row: Record<string, unknown> | null | undefined,
   mentorStudentRoomId: string

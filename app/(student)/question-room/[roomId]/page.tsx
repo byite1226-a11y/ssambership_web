@@ -51,25 +51,18 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
   const activeThreadId = resolvedThreadId;
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
-  const roomRow = bundle.rooms.rows.find((r) => r != null && String(r.id) === String(roomId));
-  const pageTitle =
-    (roomRow && typeof roomRow.title === "string" && roomRow.title) ||
-    (roomRow && typeof (roomRow as { topic?: string }).topic === "string" && (roomRow as { topic: string }).topic) ||
-    "질문방";
-
   return (
     <PageScaffold
+      hideHero
       eyebrow="질문방"
-      title={pageTitle}
-      description="멘토와 궁금한 점을 남기고, 답변을 주고받을 수 있어요."
-      ctas={[
-        { href: "/question-room", label: "질문방 목록", tone: "slate" },
-        { href: "/notes", label: "노트", tone: "blue" },
-      ]}
+      title=""
+      description=""
+      ctas={[]}
       sections={[]}
       dataPoints={[]}
       hideFooterPlaceholderCards
     >
+      <div className="rounded-2xl bg-slate-50/50 p-3 sm:p-4">
       <QuestionRoomWorkspace
         variant="student"
         surface="detail"
@@ -83,14 +76,14 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
         notes={bundle.notes}
         roomId={roomId}
         threadId={activeThreadId}
-        buildRoomHref={(id) => `/question-room/${id}`}
-        buildThreadHref={(rid, tid) => `/question-room/${rid}?thread=${encodeURIComponent(tid)}`}
+        roomHrefBase="/question-room"
         initialNoteText={initialNoteText}
         draftThreadTitle={draftThreadTitle}
         draftMessageBody={draftMessageBody}
         draftNoteBody={draftNoteBody}
         formRevision={formRevision}
       />
+      </div>
     </PageScaffold>
   );
 }
