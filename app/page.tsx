@@ -11,7 +11,7 @@ export default async function LandingPage() {
 
   return (
     <LandingLayout user={user} profile={profile}>
-      <HomeLanding data={data} />
+      <HomeLanding data={data} user={user} profile={profile} />
     </LandingLayout>
   );
 }
