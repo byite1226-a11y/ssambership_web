@@ -9,7 +9,7 @@ export function HeroSection(props: { loggedIn?: boolean }) {
       <div className="flex flex-col items-center justify-between gap-8 lg:flex-row lg:items-center lg:gap-12">
         {/* Left Content */}
         <div className="z-10 w-full min-w-0 flex-1 text-left">
-          <h1 className="text-[2.25rem] font-black leading-[1.12] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[56px] lg:leading-[1.1] lg:tracking-[-0.04em]">
+          <h1 className="text-3xl font-black leading-[1.2] tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-[56px] lg:leading-[1.1] lg:tracking-[-0.04em]">
             {props.loggedIn ? (
               <>
                 공부의 해답을,<br />
@@ -30,13 +30,13 @@ export function HeroSection(props: { loggedIn?: boolean }) {
           <div className="mt-8 flex w-full min-w-0 flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-4">
             <Link
               href={props.loggedIn ? "/question-room" : "/mentors"}
-              className="inline-flex w-full items-center justify-center rounded-[12px] bg-[#3b66f5] px-6 py-3.5 text-[16px] font-bold text-white shadow-xl shadow-blue-200 transition-all hover:-translate-y-0.5 hover:bg-[#2d52d1] sm:w-auto sm:px-10 sm:py-4 sm:text-[17px]"
+              className="inline-flex w-full items-center justify-center rounded-[12px] bg-[#3b66f5] px-6 py-3.5 text-[15px] font-bold text-white shadow-xl shadow-blue-200 transition-all hover:-translate-y-0.5 hover:bg-[#2d52d1] sm:w-auto sm:px-10 sm:py-4 sm:text-[17px]"
             >
               {props.loggedIn ? "질문방 바로가기" : "멘토 찾기"}
             </Link>
             <Link
               href={props.loggedIn ? "/mentors" : "/signup"}
-              className="inline-flex w-full items-center justify-center rounded-[12px] border border-[#3b66f5] px-6 py-3.5 text-[16px] font-bold text-[#3b66f5] transition-all hover:bg-blue-50 sm:w-auto sm:px-10 sm:py-4 sm:text-[17px]"
+              className="inline-flex w-full items-center justify-center rounded-[12px] border border-[#3b66f5] px-6 py-3.5 text-[15px] font-bold text-[#3b66f5] transition-all hover:bg-blue-50 sm:w-auto sm:px-10 sm:py-4 sm:text-[17px]"
             >
               {props.loggedIn ? "멘토 찾기" : "무료 체험 시작하기"}
             </Link>
@@ -45,9 +45,9 @@ export function HeroSection(props: { loggedIn?: boolean }) {
 
         {/* Right Illustration/Image with Floating Cards */}
         <div className="relative z-20 flex w-full min-w-0 flex-1 justify-center lg:justify-end">
-          <div className="relative h-[min(72vw,320px)] w-full max-w-[540px] sm:h-[380px] lg:h-[440px]">
+          <div className="relative aspect-[5/4] w-full max-w-[480px] sm:max-w-[540px] lg:aspect-auto lg:h-[440px]">
             {/* Main Hero Visual - High-quality Korean Student Mentoring Image */}
-            <div className="absolute inset-0 overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-2xl sm:rounded-[36px] lg:rounded-[40px]">
+            <div className="absolute inset-0 overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-2xl sm:rounded-[36px] lg:rounded-[40px]">
               <Image 
                 src="/landing/hero-student-mentoring.png" 
                 alt="Korean student studying for mentoring" 

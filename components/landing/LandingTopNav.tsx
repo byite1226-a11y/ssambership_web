@@ -41,18 +41,18 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 md:gap-5">
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 md:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 md:hidden"
             aria-expanded={menuOpen}
             aria-controls="landing-mobile-nav"
             aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
             onClick={() => setMenuOpen((v) => !v)}
           >
-            {menuOpen ? <X className="h-6 w-6" strokeWidth={2} /> : <Menu className="h-6 w-6" strokeWidth={2} />}
+            {menuOpen ? <X className="h-5 w-5" strokeWidth={2} /> : <Menu className="h-5 w-5" strokeWidth={2} />}
           </button>
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600 md:h-auto md:w-auto md:rounded-none md:hover:bg-transparent"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600 md:h-auto md:w-auto md:rounded-none md:hover:bg-transparent"
             aria-label="검색"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-5 w-5">
@@ -110,16 +110,16 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               <Link
                 href="/login"
-                className="rounded-[10px] border border-slate-200 px-3 py-2 text-[13px] font-bold text-slate-600 transition-colors hover:bg-slate-50 sm:px-5 sm:text-[14px]"
+                className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12px] font-bold text-slate-600 transition-colors hover:bg-slate-50 sm:rounded-[10px] sm:px-5 sm:py-2 sm:text-[14px]"
               >
                 로그인
               </Link>
               <Link
                 href="/signup"
-                className="rounded-[10px] bg-[#3b66f5] px-3 py-2 text-[13px] font-bold text-white transition-colors hover:bg-[#2d52d1] hover:shadow-lg sm:px-5 sm:text-[14px]"
+                className="rounded-lg bg-[#3b66f5] px-2.5 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-[#2d52d1] hover:shadow-lg sm:rounded-[10px] sm:px-5 sm:py-2 sm:text-[14px]"
               >
                 회원가입
               </Link>
