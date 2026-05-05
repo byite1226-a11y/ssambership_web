@@ -149,8 +149,8 @@ export function AppShell({ area, children, sessionRole = null }: AppShellProps) 
   const mainNav = getMainNav(sessionRole);
   return (
     <div className="min-h-screen bg-white text-slate-900" data-shell-area={area}>
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-[1480px] px-8">
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-6 lg:px-8">
           <ShellHeaderInner
             items={mainNav}
             sessionRole={sessionRole ?? null}
