@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Bell, MessageCircle, Search, User } from "lucide-react";
 import type { AppRole } from "@/lib/types/user";
+import { ShellHeaderInner } from "@/components/shell/ShellHeaderInner";
 
 type ShellArea = "public" | "student" | "mentor" | "admin";
 
@@ -47,8 +48,6 @@ const adminNav: NavItem[] = [
   { href: "/cash", label: "캐시결제" },
   { href: "/admin", label: "관리" },
 ];
-
-const navLinkClass = "whitespace-nowrap text-sm font-semibold text-slate-600 transition hover:text-slate-900";
 
 const iconActionClass =
   "inline-flex h-9 w-9 shrink-0 items-center justify-center text-slate-500 transition hover:text-slate-800";
@@ -151,26 +150,24 @@ export function AppShell({ area, children, sessionRole = null }: AppShellProps) 
   return (
     <div className="min-h-screen bg-white text-slate-900" data-shell-area={area}>
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-16 w-full max-w-[1480px] items-center justify-between gap-4 px-8">
-          <Link
-            href="/"
-            className="shrink-0 text-lg font-black tracking-tight text-blue-700 sm:text-xl"
-          >
-            쌤버십
-          </Link>
-          <nav
-            className="hidden min-w-0 flex-1 sm:flex sm:items-center sm:justify-center sm:gap-10"
-            aria-label="주요 메뉴"
-          >
-            {mainNav.map((item) => (
-              <Link key={item.href} href={item.href} className={navLinkClass}>
-                {item.label}
+        <div className="mx-auto w-full max-w-[1480px] px-8">
+          <ShellHeaderInner
+            items={mainNav}
+            sessionRole={sessionRole ?? null}
+            logo={
+              <Link
+                href="/"
+                className="shrink-0 text-lg font-black tracking-tight text-blue-700 sm:text-xl"
+              >
+                쌤버십
               </Link>
-            ))}
-          </nav>
-          <div className="flex min-w-0 shrink-0 items-center">
-            <HeaderActions sessionRole={sessionRole ?? null} />
-          </div>
+            }
+            actions={
+              <div className="flex min-w-0 shrink-0 items-center">
+                <HeaderActions sessionRole={sessionRole ?? null} />
+              </div>
+            }
+          />
         </div>
       </header>
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">{children}</main>

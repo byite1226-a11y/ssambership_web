@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { UserRow } from "@/lib/types/user";
 import type { User } from "@supabase/supabase-js";
+import { LandingMainNav } from "@/components/landing/LandingMainNav";
 
 function profileHref(profile: UserRow | null): string {
   if (!profile) return "/login/student";
@@ -8,15 +9,6 @@ function profileHref(profile: UserRow | null): string {
   if (profile.role === "admin") return "/admin";
   return "/mypage";
 }
-
-const MAIN_LINKS = [
-  { href: "/mentors", label: "멘토 찾기" },
-  { href: "/question-room", label: "질문방" },
-  { href: "/community", label: "커뮤니티" },
-  { href: "/custom-request", label: "맞춤의뢰" },
-  { href: "/cash", label: "캐시결제" },
-  { href: "/mypage", label: "마이페이지" },
-] as const;
 
 export function LandingTopNav(props: { user: User | null; profile: UserRow | null }) {
   const logged = Boolean(props.user);
@@ -26,13 +18,7 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
         <Link href="/" className="text-xl font-black tracking-tight text-blue-700">
           쌤버십
         </Link>
-        <nav className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700">
-          {MAIN_LINKS.map((item) => (
-            <Link key={item.href} href={item.href} className="hover:text-slate-900">
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <LandingMainNav />
         <div className="flex items-center gap-2">
           {logged ? (
             <>
