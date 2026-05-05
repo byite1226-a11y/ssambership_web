@@ -1,24 +1,49 @@
 /**
- * 질문방 UI용 날짜·시간 표기 — locale/timeZone 고정으로 SSR/CSR 결과를 맞춘다.
- * (기본 로케일/환경에 따른 AM vs 오전 불일치 방지)
+ * 질문방 UI용 날짜·시간 — SSR/CSR 동일 문자열만 출력 (Intl 12시간대의 AM/오전 불일치 회피).
+ * Asia/Seoul 벽시계를 formatToParts(24h)로 받은 뒤, 오전/오후·표기 숫자는 코드로만 조합한다.
  */
 
-const QUESTION_ROOM_DATETIME = new Intl.DateTimeFormat("ko-KR", {
+const SEOUL_PARTS = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Seoul",
   year: "numeric",
-  month: "numeric",
-  day: "numeric",
-  hour: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
   minute: "2-digit",
-  hour12: true,
+  hour12: false,
 });
 
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+/** 예: `2026. 4. 27. 오전 1:45` — Node·브라우저 동일 */
 export function formatQuestionRoomDateTime(iso: unknown): string | null {
   if (typeof iso !== "string") return null;
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return null;
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return null;
   try {
-    return QUESTION_ROOM_DATETIME.format(new Date(t));
+    const parts = SEOUL_PARTS.formatToParts(new Date(ms));
+    const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value;
+    const y = get("year");
+    const mo = get("month");
+    const d = get("day");
+    const hStr = get("hour");
+    const minStr = get("minute");
+    if (!y || !mo || !d || hStr == null || minStr == null) return null;
+    const h = Number.parseInt(hStr, 10);
+    if (!Number.isFinite(h)) return null;
+    const min = Number.parseInt(minStr, 10);
+    const minute = Number.isFinite(min) ? pad2(min) : String(minStr).padStart(2, "0");
+    const isAm = h < 12;
+    const ap = isAm ? "오전" : "오후";
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    const monthNum = Number.parseInt(mo, 10);
+    const dayNum = Number.parseInt(d, 10);
+    const mLabel = Number.isFinite(monthNum) ? String(monthNum) : mo;
+    const dLabel = Number.isFinite(dayNum) ? String(dayNum) : d;
+    return `${y}. ${mLabel}. ${dLabel}. ${ap} ${h12}:${minute}`;
   } catch {
     return null;
   }

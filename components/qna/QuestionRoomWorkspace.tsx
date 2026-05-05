@@ -556,170 +556,217 @@ export function QuestionRoomWorkspace(props: {
     );
   }
 
+  const activeThreadTitle = threadRowForStatus ? threadLabelForRow(threadRowForStatus) : "주제 없음";
+  const threadCount = props.threads.rows.length;
+  const lastUp = currentRoom ? formatQuestionRoomDateTime(currentRoom.updated_at) : null;
+
   return (
-    <div className="mx-auto w-full max-w-7xl min-w-0 space-y-4">
+    <div className="mx-auto w-full max-w-[88rem] min-w-0 space-y-3">
       {feedbackStrip({
         ok: props.actionFeedback?.ok,
         error: props.actionFeedback?.error,
         variant: props.variant,
       })}
 
-      <header className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
-        <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-          {props.variant === "student" ? "멘토와의 질문방" : "학생 질문방"}
-        </p>
-        <h1 className="mt-1.5 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">{detailContextTitle}</h1>
-        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{detailContextSubtitle}</p>
-        <p className="mt-1 text-xs font-medium text-slate-500">
-          {props.threadId
-            ? props.variant === "student"
-              ? "질문 주제를 선택한 상태입니다. 중앙에서 대화를 이어가세요."
-              : "답할 질문 주제가 열려 있습니다."
-            : props.threads.rows.length
-              ? "질문 주제를 한 가지 이상 골라 주세요."
-              : "먼저 질문 주제를 추가할 수 있어요."}
-        </p>
-        {surface === "detail" && currentRoom && detailRoomChip ? (
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={[
-                  "inline-flex h-7 items-center rounded-full border px-2.5 text-[11px] font-bold",
-                  detailChipToneClass[detailRoomChip.tone],
-                ].join(" ")}
-              >
-                {detailRoomChip.label}
-              </span>
-              {formatQuestionRoomDateTime(currentRoom.updated_at) ? (
-                <span className="text-xs font-medium text-slate-500">
-                  마지막 업데이트 · {formatQuestionRoomDateTime(currentRoom.updated_at)}
-                </span>
-              ) : null}
-              <span className="text-xs font-medium text-slate-500">
-                {props.variant === "student" ? "멘토와 연결된 방" : "학생과 연결된 방"}
-              </span>
-            </div>
-            {threadRowForStatus && readThreadLifecycleStatus(threadRowForStatus) !== "open" ? (
-              <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-3 py-2 text-xs font-semibold text-emerald-950">
-                이 질문 주제는 마무리된 상태입니다. 새로 이야기하려면 왼쪽에서 새 주제를 추가해 주세요.
+      <div className="rounded-3xl border border-slate-200/85 bg-gradient-to-b from-slate-50/90 to-slate-100/40 p-3 shadow-sm sm:p-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-x-4 lg:gap-y-3">
+          {/* 상단: 제목·상태 — 전체 폭 */}
+          <div className="col-span-full flex min-w-0 flex-col gap-3 rounded-2xl border border-white/80 bg-white/95 px-4 py-3 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:px-5 sm:py-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+                {props.variant === "student" ? "멘토와의 질문방" : "학생 질문방"}
               </p>
-            ) : null}
-          </div>
-        ) : null}
-      </header>
-
-      {showStudentAck ? (
-        <div className="rounded-2xl border border-amber-200/90 bg-amber-50/95 px-3.5 py-2.5 text-sm font-semibold text-amber-950">
-          멘토 답변이 도착했습니다. 내용을 확인한 뒤, 필요하면 아래에서 추가 질문을 이어가 주세요.
-        </div>
-      ) : null}
-      {showMentorWait ? (
-        <div className="rounded-2xl border border-blue-200/90 bg-blue-50/95 px-3.5 py-2.5 text-sm font-semibold text-blue-950">
-          답변이 학생에게 전달되었습니다. 학생이 확인하거나 추가 질문을 남길 때까지 기다려 주세요.
-        </div>
-      ) : null}
-      {showStudentAck ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <a
-            href="#qna-message-compose"
-            className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 transition hover:bg-white"
-          >
-            추가 질문하기
-          </a>
-          <p className="text-xs font-medium text-slate-600">
-            답변 확인이 끝났다면, 궁금한 점을 아래 입력창에 이어서 적어 주세요.
-          </p>
-        </div>
-      ) : null}
-
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-12 lg:items-stretch">
-        {/* 좌: room + thread + 새 주제 */}
-        <div className="flex min-h-0 min-w-0 flex-col gap-3 lg:col-span-3">
-          <Panel title="다른 질문방" tone={tone} className="shrink-0">
-            {props.rooms.loading ? <StateBanner kind="loading" message="질문방을 불러오는 중…" /> : null}
-            {!props.rooms.loading && props.rooms.error ? (
-              <StateBanner kind="error" message={publicQnaPanelError("rooms", props.rooms.error)} />
-            ) : null}
-            {!props.rooms.loading && !props.rooms.error && props.rooms.rows.length === 0 ? (
-              <StateBanner kind="empty" message={listEmptyRoomMsg} />
-            ) : null}
-            {roomList}
-          </Panel>
-          <Panel title="질문 주제" tone="slate" className="min-h-0 flex-1">
-            {threadListBlock}
-            {newThreadForm}
-          </Panel>
-        </div>
-
-        {/* 중: 대화(스크롤) + 하단 입력 */}
-        <div className="flex min-h-0 min-w-0 flex-col gap-0 lg:col-span-6">
-          <div className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm lg:min-h-[min(74vh,44rem)]">
-            <div className="shrink-0 border-b border-slate-100 px-3 py-2 sm:px-4 sm:py-2.5">
-              <h2 className="text-sm font-extrabold text-slate-900">대화</h2>
-              {props.variant === "mentor" ? (
-                <p className="mt-1 text-[11px] font-medium leading-relaxed text-slate-500">
-                  답변을 내면 학생에게 전달됩니다. 전달 직후에는{" "}
-                  <span className="font-bold text-slate-700">학생 확인 대기</span> 단계이며, 최종 완료로 보이지
-                  않도록 안내했습니다.
+              <h1 className="mt-1 line-clamp-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                {detailContextTitle}
+              </h1>
+              <p className="mt-1 text-sm font-medium leading-relaxed text-slate-600">{detailContextSubtitle}</p>
+              <p className="mt-1.5 text-xs font-medium text-slate-500">
+                {props.threadId
+                  ? props.variant === "student"
+                    ? "선택한 주제로 대화 중입니다."
+                    : "선택한 주제에 답하고 있습니다."
+                  : props.threads.rows.length
+                    ? "왼쪽에서 주제를 골라 주세요."
+                    : "왼쪽에서 새 주제를 추가해 주세요."}
+              </p>
+            </div>
+            {currentRoom && detailRoomChip ? (
+              <div className="flex min-w-0 shrink-0 flex-col items-start gap-2 sm:items-end">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={[
+                      "inline-flex h-8 items-center rounded-full border px-3 text-[11px] font-extrabold",
+                      detailChipToneClass[detailRoomChip.tone],
+                    ].join(" ")}
+                  >
+                    {detailRoomChip.label}
+                  </span>
+                  {lastUp ? (
+                    <span className="text-xs font-semibold text-slate-500">업데이트 {lastUp}</span>
+                  ) : null}
+                </div>
+                <p className="text-right text-[11px] font-medium text-slate-500">
+                  {props.variant === "student" ? "멘토와 연결된 방" : "학생과 연결된 방"}
                 </p>
-              ) : null}
-            </div>
-            <div className="min-h-0 min-w-0 flex-1 space-y-2 overflow-y-auto px-3 py-3 sm:px-4 sm:py-3.5">
-              {props.messages.loading ? <StateBanner kind="loading" message="대화를 불러오는 중…" /> : null}
-              {!props.messages.loading && props.messages.error ? (
-                <StateBanner kind="error" message={publicQnaPanelError("messages", props.messages.error)} />
-              ) : null}
-              {!props.messages.loading && !props.messages.error && props.messages.rows.length === 0 ? (
-                <StateBanner
-                  kind="empty"
-                  message={
-                    !props.threadId
-                      ? props.threads.rows.length
-                        ? "질문 주제를 먼저 골라 주시면 대화가 이곳에 표시됩니다."
-                        : "질문 주제를 만든 뒤 대화를 시작할 수 있어요."
-                      : "아직 남긴 말이 없습니다. 먼저 이야기를 시작해 주세요."
-                  }
-                />
-              ) : null}
-              {messagesList}
-            </div>
-            {messageFormBlock ? (
-              <div
-                id="qna-message-compose"
-                className="sticky bottom-0 z-10 mt-auto shrink-0 scroll-mt-28 border-t border-slate-100 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] pt-0"
-              >
-                {messageFormBlock}
               </div>
             ) : null}
           </div>
-        </div>
 
-        {/* 우: 연결 메모 + 안내 */}
-        <div className="flex min-h-0 min-w-0 flex-col gap-3 lg:col-span-3">
-          <section className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
-            {connectionNotesBlock}
-          </section>
-          <Panel title="빠른 링크" tone="slate" className="shrink-0 text-sm">
-            <div className="space-y-1.5">
-              {props.variant === "student" ? (
-                <>
-                  {quickLinkItem("/question-room", "질문방 목록")}
-                  {quickLinkItem("/subscriptions", "구독·멤버십")}
-                </>
-              ) : (
-                <>
-                  {quickLinkItem("/mentor/question-room", "답변 대기 목록")}
-                  {quickLinkItem("/mentor/dashboard", "대시보드")}
-                  {quickLinkItem("/mentor/channel", "채널")}
-                </>
-              )}
+          {threadRowForStatus && readThreadLifecycleStatus(threadRowForStatus) !== "open" ? (
+            <div className="col-span-full rounded-2xl border border-emerald-200/90 bg-emerald-50/95 px-3.5 py-2.5 text-sm font-semibold text-emerald-950">
+              이 질문 주제는 마무리된 상태입니다. 새로 이야기하려면 왼쪽에서 새 주제를 추가해 주세요.
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-slate-500">
-              {props.variant === "student"
-                ? "구독 상태와 학습 안내를 함께 보며 질문을 이어가면 답변 확인이 더 쉬워집니다."
-                : "학생에게 전달할 다음 단계와 참고 링크를 함께 안내하면 질문방 흐름이 안정적으로 유지됩니다."}
-            </p>
-          </Panel>
+          ) : null}
+
+          {showStudentAck ? (
+            <div className="col-span-full rounded-2xl border border-amber-200/90 bg-amber-50/95 px-3.5 py-2.5 text-sm font-semibold text-amber-950">
+              멘토 답변이 도착했습니다. 내용을 확인한 뒤, 필요하면 아래에서 추가 질문을 이어가 주세요.
+            </div>
+          ) : null}
+          {showMentorWait ? (
+            <div className="col-span-full rounded-2xl border border-blue-200/90 bg-blue-50/95 px-3.5 py-2.5 text-sm font-semibold text-blue-950">
+              답변이 학생에게 전달되었습니다. 학생이 확인하거나 추가 질문을 남길 때까지 기다려 주세요.
+            </div>
+          ) : null}
+          {showStudentAck ? (
+            <div className="col-span-full flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+              <a
+                href="#qna-message-compose"
+                className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 transition hover:bg-white"
+              >
+                추가 질문하기
+              </a>
+              <p className="text-xs font-medium text-slate-600">
+                답변을 확인하셨다면, 아래 입력창에 이어서 적어 주세요.
+              </p>
+            </div>
+          ) : null}
+
+          {/* 좌 레일: 방 요약 + 목록 + 주제 */}
+          <aside className="order-2 flex min-h-0 min-w-0 flex-col gap-3 lg:order-1 lg:col-span-3 lg:self-start">
+            {currentRoom ? (
+              <div className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-sm">
+                <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">이 방</p>
+                <p className="mt-1 line-clamp-2 text-sm font-black text-slate-900">{detailContextTitle}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {detailRoomChip ? (
+                    <span
+                      className={[
+                        "inline-flex h-7 items-center rounded-full border px-2.5 text-[10px] font-extrabold",
+                        detailChipToneClass[detailRoomChip.tone],
+                      ].join(" ")}
+                    >
+                      {detailRoomChip.label}
+                    </span>
+                  ) : null}
+                  {lastUp ? <span className="text-[11px] font-semibold text-slate-500">{lastUp}</span> : null}
+                </div>
+                <dl className="mt-3 grid gap-2 border-t border-slate-100 pt-3 text-xs">
+                  <div className="flex justify-between gap-2 font-semibold text-slate-600">
+                    <dt className="text-slate-500">선택 주제</dt>
+                    <dd className="min-w-0 truncate text-right text-slate-800">{activeThreadTitle}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2 font-semibold text-slate-600">
+                    <dt className="text-slate-500">열린 주제</dt>
+                    <dd className="tabular-nums text-slate-900">{threadCount}개</dd>
+                  </div>
+                </dl>
+              </div>
+            ) : null}
+
+            <Panel title="다른 질문방" tone={tone} className="shrink-0">
+              {props.rooms.loading ? <StateBanner kind="loading" message="질문방을 불러오는 중…" /> : null}
+              {!props.rooms.loading && props.rooms.error ? (
+                <StateBanner kind="error" message={publicQnaPanelError("rooms", props.rooms.error)} />
+              ) : null}
+              {!props.rooms.loading && !props.rooms.error && props.rooms.rows.length === 0 ? (
+                <StateBanner kind="empty" message={listEmptyRoomMsg} />
+              ) : null}
+              {roomList}
+            </Panel>
+            <Panel title="질문 주제" tone="slate" className="min-h-0 flex-1">
+              {threadListBlock}
+              {newThreadForm}
+            </Panel>
+          </aside>
+
+          {/* 중앙: 대화 — 모바일에서 먼저 */}
+          <div className="order-1 flex min-h-0 min-w-0 flex-col lg:order-2 lg:col-span-6">
+            <div className="flex min-h-[22rem] flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-md lg:min-h-[min(76vh,46rem)]">
+              <div className="shrink-0 border-b border-slate-100 bg-slate-50/50 px-3 py-2.5 sm:px-4">
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                  <h2 className="text-sm font-black text-slate-900">대화</h2>
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">실시간 스레드</span>
+                </div>
+                {props.variant === "mentor" ? (
+                  <p className="mt-1.5 text-[11px] font-medium leading-relaxed text-slate-600">
+                    전달 직후에는 <span className="font-bold text-slate-800">학생 확인 대기</span> 단계입니다.
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-[11px] font-medium text-slate-600">
+                    멘토 답변이 오면 위쪽 안내를 확인한 뒤 이어서 작성해 주세요.
+                  </p>
+                )}
+              </div>
+              <div className="min-h-0 min-w-0 flex-1 space-y-2 overflow-y-auto bg-slate-50/30 px-3 py-3 sm:px-4 sm:py-3.5">
+                {props.messages.loading ? <StateBanner kind="loading" message="대화를 불러오는 중…" /> : null}
+                {!props.messages.loading && props.messages.error ? (
+                  <StateBanner kind="error" message={publicQnaPanelError("messages", props.messages.error)} />
+                ) : null}
+                {!props.messages.loading && !props.messages.error && props.messages.rows.length === 0 ? (
+                  <StateBanner
+                    kind="empty"
+                    message={
+                      !props.threadId
+                        ? props.threads.rows.length
+                          ? "질문 주제를 먼저 골라 주시면 대화가 이곳에 표시됩니다."
+                          : "질문 주제를 만든 뒤 대화를 시작할 수 있어요."
+                        : "아직 남긴 말이 없습니다. 먼저 이야기를 시작해 주세요."
+                    }
+                  />
+                ) : null}
+                {messagesList}
+              </div>
+              {messageFormBlock ? (
+                <div
+                  id="qna-message-compose"
+                  className="sticky bottom-0 z-10 mt-auto shrink-0 scroll-mt-28 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom,0px)] pt-1"
+                >
+                  {messageFormBlock}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* 우 레일: 메모 + 유틸 */}
+          <aside className="order-3 flex min-h-0 min-w-0 flex-col gap-3 lg:col-span-3 lg:self-start">
+            <section className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
+              {connectionNotesBlock}
+            </section>
+            <Panel title="빠른 링크" tone="slate" className="shrink-0 text-sm">
+              <div className="space-y-2">
+                {props.variant === "student" ? (
+                  <>
+                    {quickLinkItem("/question-room", "질문방 목록")}
+                    {quickLinkItem("/subscriptions", "구독·멤버십")}
+                  </>
+                ) : (
+                  <>
+                    {quickLinkItem("/mentor/question-room", "답변 대기 목록")}
+                    {quickLinkItem("/mentor/dashboard", "대시보드")}
+                    {quickLinkItem("/mentor/channel", "채널")}
+                  </>
+                )}
+              </div>
+            </Panel>
+            <Panel title="이번 대화에서" tone="slate" className="text-xs">
+              <p className="font-medium leading-relaxed text-slate-600">
+                {props.variant === "student"
+                  ? "주제마다 대화가 나뉩니다. 급한 안내는 연결 노트와 함께 확인해 주세요."
+                  : "학생이 이해하기 쉬운 문장으로 나누어 적으면 이후 확인이 수월합니다."}
+              </p>
+            </Panel>
+          </aside>
         </div>
       </div>
     </div>
