@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export function HeroSection(props: { loggedIn?: boolean }) {
   return (
-    <section className="relative max-w-full overflow-x-hidden pt-8 pb-12 sm:pt-10 sm:pb-16 lg:pt-12 lg:pb-20">
+    <section className="relative max-w-full pt-8 pb-12 sm:pt-10 sm:pb-16 lg:pt-12 lg:pb-20">
       <div className="flex flex-col items-center justify-between gap-8 lg:flex-row lg:items-center lg:gap-12">
         {/* Left Content */}
         <div className="z-10 w-full min-w-0 flex-1 text-left">
@@ -74,7 +74,7 @@ export function HeroSection(props: { loggedIn?: boolean }) {
             </div>
 
             {/* Floating Card 2 */}
-            <div className="absolute top-[15%] right-2 z-30 hidden w-fit min-w-[150px] animate-float-delayed items-center gap-3 rounded-2xl border border-orange-50 bg-white p-4 shadow-xl sm:flex lg:-right-6">
+            <div className="absolute top-[15%] right-2 z-30 hidden w-fit min-w-[150px] animate-float-delayed items-center gap-3 rounded-2xl border border-orange-50 bg-white p-4 shadow-xl sm:flex lg:right-4">
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
                   <path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" />
@@ -86,7 +86,7 @@ export function HeroSection(props: { loggedIn?: boolean }) {
             </div>
 
             {/* Floating Card 3 */}
-            <div className="absolute bottom-[20%] left-2 z-30 hidden w-fit min-w-[170px] animate-float items-center gap-3 rounded-2xl border border-indigo-50 bg-white p-3 shadow-xl sm:flex lg:-left-8">
+            <div className="absolute bottom-[20%] left-2 z-30 hidden w-fit min-w-[170px] animate-float items-center gap-3 rounded-2xl border border-indigo-50 bg-white p-3 shadow-xl sm:flex lg:left-4">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                   <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875V1.5H5.625z" />
