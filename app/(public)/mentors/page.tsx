@@ -15,8 +15,9 @@ export default async function MentorsPage(props: Props) {
   const list = await loadPublicMentorsList(supabase, filters);
 
   if (list.usersError) {
-    console.error("[mentors] PUBLIC MENTOR LIST ERROR:", list.usersError, "PROBES:", list.probes);
-  } else if (list.profilesError) {
+    console.error("[mentors] PUBLIC MENTOR LIST (USERS) ERROR:", list.usersError, "PROBES:", list.probes);
+  }
+  if (list.profilesError) {
     console.error("[mentors] PUBLIC MENTOR PROFILE ERROR:", list.profilesError, "PROBES:", list.probes);
   }
   return (

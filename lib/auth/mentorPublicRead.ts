@@ -74,6 +74,7 @@ export async function loadMentorDirectoryUserRows(
       code: error.code,
       details: error.details,
       hint: error.hint,
+      supabaseUrlExists: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL),
     });
     return { users: [], error: error.message, usedRpc: true, probe: "mentor_directory_list: " + error.message };
   }
@@ -112,6 +113,12 @@ export async function loadMentorProfilesForDirectory(
     return { byUser, error: null, probe: "mentor_profiles(table) fallback" };
   }
   if (error) {
+    console.error("[mentors] mentor_profiles_for_directory RPC failed", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      supabaseUrlExists: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL),
+    });
     return { byUser, error: error.message, probe: "mentor_profiles_for_directory: " + error.message };
   }
   for (const row of (data as unknown as ProfileRow[] | null) ?? []) {

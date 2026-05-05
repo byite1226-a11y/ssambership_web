@@ -237,6 +237,11 @@ export async function loadPublicMentorsList(
   const { data: authData } = await supabase.auth.getUser();
   const authId = authData.user?.id ?? null;
 
+  // Diagnostics
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+  probes.push(`supabase_config: URL=${Boolean(url)}, Key=${Boolean(anonKey)}`);
+
   const dir = await loadMentorDirectoryUserRows(supabase, fetchLimit);
   probes.push(dir.probe);
   if (dir.error) {
@@ -244,6 +249,7 @@ export async function loadPublicMentorsList(
       error: dir.error,
       probe: dir.probe,
       usedRpc: dir.usedRpc,
+      supabaseConfig: { url: Boolean(url), key: Boolean(anonKey) },
       probes,
     });
     return {

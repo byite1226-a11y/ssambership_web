@@ -6,11 +6,10 @@ import type { ReactNode } from "react";
 
 export function LandingLayout(props: { user: User | null; profile: UserRow | null; children: ReactNode }) {
   return (
-    <div className="min-h-screen max-w-full bg-white text-slate-900 scheme-light">
+    <div className="min-h-screen max-w-full overflow-x-clip bg-white text-slate-900 scheme-light">
       <NoticeBanner />
       <LandingTopNav user={props.user} profile={props.profile} />
-      {/* overflow-x only under header so sticky TopNav is not inside an overflow-x clip ancestor */}
-      <main className="mx-auto w-full min-w-0 max-w-[1280px] overflow-x-hidden px-4 sm:px-6">{props.children}</main>
+      <main className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8">{props.children}</main>
     </div>
   );
 }

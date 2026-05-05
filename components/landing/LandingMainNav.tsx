@@ -23,7 +23,7 @@ export function LandingMainNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`text-[15px] font-bold transition-colors ${
+            className={`whitespace-nowrap text-[15px] font-bold transition-colors ${
               active
                 ? "text-blue-600"
                 : "text-slate-700 hover:text-slate-900"
