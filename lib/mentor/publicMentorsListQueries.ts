@@ -240,6 +240,12 @@ export async function loadPublicMentorsList(
   const dir = await loadMentorDirectoryUserRows(supabase, fetchLimit);
   probes.push(dir.probe);
   if (dir.error) {
+    console.error("[mentors] loadPublicMentorsList: directory users failed", {
+      error: dir.error,
+      probe: dir.probe,
+      usedRpc: dir.usedRpc,
+      probes,
+    });
     return {
       cards: [],
       usersError: dir.error,

@@ -4,9 +4,20 @@ import { cookies } from "next/headers";
 export async function createClient() {
   const cookieStore = await cookies();
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  /** Dashboard 'anon' key is often stored as ANON_KEY; publishable is the newer name. */
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url?.trim() || !anonKey?.trim()) {
+    console.error(
+      "[supabase] Missing NEXT_PUBLIC_SUPABASE_URL or anon/publishable key. Set NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+    );
+  }
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    url ?? "",
+    anonKey ?? "",
     {
       cookies: {
         getAll() {

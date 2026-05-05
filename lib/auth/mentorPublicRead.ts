@@ -53,6 +53,12 @@ export async function loadMentorDirectoryUserRows(
       .order("created_at", { ascending: false })
       .limit(pLimit);
     if (fb.error) {
+      console.error("[mentors] users table fallback failed", {
+        message: fb.error.message,
+        code: fb.error.code,
+        details: fb.error.details,
+        hint: fb.error.hint,
+      });
       return { users: [], error: fb.error.message, usedRpc: false, probe: "users(table): " + fb.error.message };
     }
     return {
@@ -63,6 +69,12 @@ export async function loadMentorDirectoryUserRows(
     };
   }
   if (error) {
+    console.error("[mentors] mentor_directory_list RPC failed", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
     return { users: [], error: error.message, usedRpc: true, probe: "mentor_directory_list: " + error.message };
   }
   const rows = (data as unknown as Record<string, unknown>[]) ?? [];
