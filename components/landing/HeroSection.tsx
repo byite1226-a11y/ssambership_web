@@ -45,7 +45,7 @@ export function HeroSection(props: { loggedIn?: boolean }) {
 
         {/* Right Illustration/Image with Floating Cards */}
         <div className="relative z-20 flex w-full min-w-0 flex-1 justify-center lg:justify-end">
-          <div className="relative aspect-[5/4] w-full max-w-[480px] sm:max-w-[540px] lg:aspect-auto lg:h-[440px]">
+          <div className="relative aspect-video w-full max-w-full sm:aspect-[5/4] sm:max-w-[540px] lg:aspect-auto lg:h-[440px]">
             {/* Main Hero Visual - High-quality Korean Student Mentoring Image */}
             <div className="absolute inset-0 overflow-hidden rounded-[24px] border border-slate-100 bg-white shadow-2xl sm:rounded-[36px] lg:rounded-[40px]">
               <Image 
@@ -54,46 +54,46 @@ export function HeroSection(props: { loggedIn?: boolean }) {
                 fill
                 priority
                 className="object-cover object-center"
-                sizes="(max-width: 768px) 100vw, 540px"
+                sizes="(max-width: 1024px) 100vw, 540px"
               />
               {/* Subtle overlay to blend with brand colors */}
               <div className="absolute inset-0 bg-gradient-to-tr from-[#3b66f5]/5 to-transparent pointer-events-none" />
             </div>
 
-            {/* Floating Card 1: Mentor Badge — hidden on small screens to avoid horizontal overflow */}
-            <div className="absolute -top-6 left-[10%] z-30 hidden w-fit min-w-[160px] animate-bounce-slow items-center gap-3 rounded-2xl border border-blue-50 bg-white p-3 shadow-xl sm:flex">
-              <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border-2 border-white shadow-sm bg-blue-100 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6 text-blue-500">
+            {/* Floating Card 1: Mentor Badge — hidden on small screens (< 768px) to avoid horizontal overflow */}
+            <div className="absolute -top-4 left-[5%] z-30 hidden w-fit min-w-[140px] animate-bounce-slow items-center gap-2 rounded-xl border border-blue-50 bg-white p-2.5 shadow-lg md:flex sm:left-[10%] sm:p-3">
+              <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border-2 border-white shadow-sm bg-blue-100 flex items-center justify-center sm:h-10 sm:w-10">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-blue-500 sm:h-6 sm:w-6">
                   <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
                 </svg>
               </div>
               <div className="whitespace-nowrap overflow-hidden">
-                <p className="text-[12px] font-bold text-slate-800">대학생 멘토</p>
-                <p className="text-[11px] font-medium text-slate-500">질문 답변 완료</p>
+                <p className="text-[11px] font-bold text-slate-800 sm:text-[12px]">대학생 멘토</p>
+                <p className="text-[10px] font-medium text-slate-500 sm:text-[11px]">질문 답변 완료</p>
               </div>
             </div>
 
-            {/* Floating Card 2 */}
-            <div className="absolute top-[15%] right-2 z-30 hidden w-fit min-w-[150px] animate-float-delayed items-center gap-3 rounded-2xl border border-orange-50 bg-white p-4 shadow-xl sm:flex lg:right-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6">
+            {/* Floating Card 2 — hidden on small screens (< 1024px) to avoid horizontal overflow */}
+            <div className="absolute top-[10%] -right-4 z-30 hidden w-fit min-w-[140px] animate-float-delayed items-center gap-2 rounded-xl border border-orange-50 bg-white p-3 shadow-lg lg:flex">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                   <path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" />
                 </svg>
               </div>
-              <div className="whitespace-nowrap overflow-hidden pr-2">
-                <p className="text-[13px] font-bold text-slate-800">새 답변 도착</p>
+              <div className="whitespace-nowrap overflow-hidden pr-1">
+                <p className="text-[12px] font-bold text-slate-800">새 답변 도착</p>
               </div>
             </div>
 
-            {/* Floating Card 3 */}
-            <div className="absolute bottom-[20%] left-2 z-30 hidden w-fit min-w-[170px] animate-float items-center gap-3 rounded-2xl border border-indigo-50 bg-white p-3 shadow-xl sm:flex lg:left-4">
+            {/* Floating Card 3 — hidden on small screens (< 1024px) to avoid horizontal overflow */}
+            <div className="absolute bottom-[15%] -left-4 z-30 hidden w-fit min-w-[160px] animate-float items-center gap-2 rounded-xl border border-indigo-50 bg-white p-2.5 shadow-lg lg:flex">
               <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
                   <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0016.5 9h-1.875V1.5H5.625z" />
                 </svg>
               </div>
-              <div className="whitespace-nowrap overflow-hidden pr-2">
-                <p className="text-[12px] font-bold text-slate-800">학습 노트 업데이트</p>
+              <div className="whitespace-nowrap overflow-hidden pr-1">
+                <p className="text-[11px] font-bold text-slate-800">학습 노트 업데이트</p>
               </div>
             </div>
           </div>
