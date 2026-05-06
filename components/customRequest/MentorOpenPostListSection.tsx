@@ -77,26 +77,16 @@ export function MentorOpenPostListSection(props: {
                 </div>
                 <p className="mt-1.5 text-xs tabular-nums text-slate-400">등록 {formatDateYMDOrDash(r.created_at)}</p>
               </div>
-              <div className="flex w-full shrink-0 flex-col gap-3 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-52 lg:border-l lg:border-slate-100 lg:pl-5">
-                <div className="flex justify-end sm:justify-start lg:justify-end">
-                  <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-900">
-                    NEW
-                  </span>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:flex-col">
-                  <Link
-                    className="inline-flex min-h-[42px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50"
-                    href={detailHref}
-                  >
-                    상세 보기
-                  </Link>
-                  <Link
-                    className="inline-flex min-h-[42px] flex-1 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
-                    href={applyHref}
-                  >
-                    제안하기
-                  </Link>
-                </div>
+              <div className="flex w-full shrink-0 flex-col justify-start gap-3 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-44 lg:border-l lg:border-slate-100 lg:pl-5">
+                <Link
+                  href={applyHref}
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
+                >
+                  제안하기
+                </Link>
+                <Link href={detailHref} className="text-center text-xs font-semibold text-slate-600 underline-offset-2 hover:text-blue-800 hover:underline lg:text-right">
+                  내용 확인하기
+                </Link>
               </div>
             </div>
           </li>

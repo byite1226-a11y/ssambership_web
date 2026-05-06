@@ -3,7 +3,7 @@ import { CommunityMeTabNav } from "@/components/community/CommunityMeTabNav";
 import { CommunityMeTabPanels, type CommunityMeActivityPayload } from "@/components/community/CommunityMeTabPanels";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
+import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 import {
   buildCommunityMePostsList,
   countMyCommunityBoardPosts,
@@ -17,12 +17,12 @@ import type { AppRole } from "@/lib/types/user";
 
 function meDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
   if (role === "mentor") {
-    return "게시글·숏폼 작성과 목록 탐색, 내 활동을 한곳에서 이어가 보세요.";
+    return "작성한 글·숏폼과 활동 요약을 탭으로 나눠 확인해 보세요.";
   }
   if (!loggedIn) {
-    return "스크랩, 댓글, 팔로우 등 내 커뮤니티 활동은 로그인 후 이용할 수 있어요.";
+    return "내 커뮤니티 활동은 로그인 후 이어갈 수 있어요.";
   }
-  return "스크랩, 댓글, 팔로우 등 내 커뮤니티 활동을 확인하세요.";
+  return "참여한 활동과 내 글을 탭에서 확인하세요.";
 }
 
 type PageProps = {
@@ -63,13 +63,12 @@ export default async function CommunityMePage(props: PageProps) {
   return (
     <CommunityLayoutShell
       activeNav="me"
-      meTab={tab}
       hero={
         <CommunityPageHero
           eyebrow="커뮤니티"
-          title="내 공간"
+          title="내 활동"
           description={meDescription(role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
+          primaryAction={buildCommunityHeroPrimaryAction({
             surface: "me",
             role,
             loggedIn,
@@ -83,8 +82,8 @@ export default async function CommunityMePage(props: PageProps) {
           <p className="font-extrabold text-slate-900">내 활동 안내</p>
           <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
             {loggedIn
-              ? "내 게시글·숏폼은 「내 게시글」 탭과 아래 요약에서 확인할 수 있어요. 스크랩·팔로우 목록은 데이터가 연결되면 각 탭에 표시됩니다."
-              : "탭으로 영역을 나눠 두었어요. 실제 스크랩·팔로우 목록은 데이터가 연결되면 각 탭에 표시됩니다."}
+              ? "「내 게시글」에서 작성한 항목을 모아 볼 수 있어요. 스크랩·팔로우는 데이터 연결 전까지 짧은 안내만 보일 수 있어요."
+              : "탭으로 영역을 나눠 두었어요. 로그인 후 내 글과 참여 내역을 이어 확인할 수 있어요."}
           </p>
         </div>
 

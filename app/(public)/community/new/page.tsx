@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
+import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 
 export default async function CommunityNewPage() {
   const { user, profile } = await getServerUserWithProfile();
@@ -14,7 +14,7 @@ export default async function CommunityNewPage() {
     redirect("/community");
   }
 
-  const ctas = buildCommunityHeroCtas({
+  const primaryAction = buildCommunityHeroPrimaryAction({
     surface: "compose_gate",
     role: null,
     loggedIn: false,
@@ -29,7 +29,7 @@ export default async function CommunityNewPage() {
           eyebrow="커뮤니티"
           title="새 글 작성"
           description="커뮤니티 게시글·숏폼 영상 등록은 멘토 로그인 후 멘토 메뉴에서만 가능합니다. 댓글·스크랩·신고는 커뮤니티에서 로그인 후 이용해 주세요."
-          ctas={ctas}
+          primaryAction={primaryAction}
         />
       }
     >

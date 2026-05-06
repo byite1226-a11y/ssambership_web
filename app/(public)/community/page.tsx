@@ -3,14 +3,14 @@ import { CommunityHomeIntroStrip } from "@/components/community/CommunityHomeInt
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
+import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
 import { listBoardPosts, listShortformPosts } from "@/lib/community/communityQueries";
 
 function communityHomeDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
   if (role === "mentor") {
-    return "멘토의 짧은 영상(숏폼)과 게시판을 한곳에서 관리·탐색할 수 있어요. 아래에서 새 게시글과 숏폼을 등록해 보세요.";
+    return "멘토의 짧은 영상(숏폼)과 게시판을 한곳에서 탐색할 수 있어요. 작성은 멘토 메뉴의 커뮤니티 작성에서 이어가면 됩니다.";
   }
   if (!loggedIn) {
     return "멘토의 짧은 영상(숏폼)과 게시글을 둘러볼 수 있어요. 댓글·스크랩은 로그인 후 이용할 수 있습니다.";
@@ -36,7 +36,7 @@ export default async function CommunityLandingPage() {
           eyebrow="커뮤니티"
           title="함께하는 학습 공간"
           description={communityHomeDescription(role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
+          primaryAction={buildCommunityHeroPrimaryAction({
             surface: "home",
             role,
             loggedIn,

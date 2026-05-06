@@ -82,11 +82,7 @@ export default async function CustomRequestOrderPage(props: PageProps) {
       }
       ctas={
         isMentor
-          ? [
-              { href: "/mentor/custom-request/orders", label: "주문 목록", tone: "slate" },
-              { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰 대시보드", tone: "green" },
-              { href: "/mentor/dashboard", label: "멘토 대시보드", tone: "blue" },
-            ]
+          ? [{ href: "/mentor/custom-request/orders", label: "맞춤의뢰 주문 목록", tone: "slate" }]
           : [
               { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
               { href: "/home", label: "대시/홈", tone: "blue" },

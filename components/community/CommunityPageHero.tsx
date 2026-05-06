@@ -9,29 +9,32 @@ const toneClass: Record<NonNullable<CommunityHeroCta["tone"]>, string> = {
 };
 
 type Props = {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
-  ctas: CommunityHeroCta[];
+  /** 좌측 네비와 중복되지 않도록 화면별로 0~1개만 전달 */
+  primaryAction?: CommunityHeroCta | null;
 };
 
 export function CommunityPageHero(props: Props) {
+  const cta = props.primaryAction;
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{props.eyebrow}</p>
-      <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">{props.title}</h1>
+      {props.eyebrow ? (
+        <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{props.eyebrow}</p>
+      ) : null}
+      <h1 className={`text-3xl font-black tracking-tight text-slate-900 ${props.eyebrow ? "mt-2" : ""}`}>
+        {props.title}
+      </h1>
       <p className="mt-2 text-sm leading-6 text-slate-600">{props.description}</p>
-      {props.ctas.length > 0 ? (
-        <div className="mt-4 flex flex-wrap gap-2.5">
-          {props.ctas.map((cta) => (
-            <Link
-              key={cta.href + cta.label}
-              href={cta.href}
-              className={`rounded-lg px-3.5 py-2 text-sm font-bold shadow-sm transition ${toneClass[cta.tone ?? "blue"]}`}
-            >
-              {cta.label}
-            </Link>
-          ))}
+      {cta ? (
+        <div className="mt-4">
+          <Link
+            href={cta.href}
+            className={`inline-flex rounded-lg px-3.5 py-2 text-sm font-bold shadow-sm transition ${toneClass[cta.tone ?? "blue"]}`}
+          >
+            {cta.label}
+          </Link>
         </div>
       ) : null}
     </section>

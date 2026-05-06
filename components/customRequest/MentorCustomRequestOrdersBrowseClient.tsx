@@ -2,61 +2,26 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import {
-  isOrderRowPaymentConfirmedForMentorWork,
-  isOrderRowTerminalForActions,
-  normalizedPrimaryOrderStatus,
-  orderStatusUiToneForNorm,
-} from "@/lib/customRequest/orderLifecycleConstants";
+import { normalizedPrimaryOrderStatus, orderStatusUiToneForNorm } from "@/lib/customRequest/orderLifecycleConstants";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import {
   mentorCustomOrderPaymentLine,
   mentorCustomOrderStatusHeadline,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
+import { classifyMentorOrderBrowseTab, type MentorOrderBrowseTabId } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
 
 type Row = Record<string, unknown>;
 
-type TabId = "all" | "dispute" | "billing" | "work" | "delivery" | "revision" | "done";
-
-const TABS: { id: TabId; label: string }[] = [
+const TABS: { id: MentorOrderBrowseTabId; label: string }[] = [
   { id: "all", label: "전체" },
-  { id: "dispute", label: "분쟁·검토" },
-  { id: "billing", label: "수락·결제 대기" },
+  { id: "dispute", label: "분쟁" },
+  { id: "billing", label: "결제 대기" },
   { id: "work", label: "작업 중" },
-  { id: "delivery", label: "납품·검토 대기" },
-  { id: "revision", label: "수정 요청" },
-  { id: "done", label: "완료·종료" },
+  { id: "delivery", label: "납품·검토" },
+  { id: "revision", label: "수정" },
+  { id: "done", label: "완료" },
 ];
-
-function classifyTab(row: Row, disputeIds: ReadonlySet<string>): TabId {
-  const id = typeof row.id === "string" ? row.id.trim() : "";
-  if (id && disputeIds.has(id)) {
-    return "dispute";
-  }
-  if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
-    return "billing";
-  }
-  if (isOrderRowTerminalForActions(row)) {
-    return "done";
-  }
-  const norm = normalizedPrimaryOrderStatus(row);
-  if (norm === "revision_requested") {
-    return "revision";
-  }
-  if (
-    norm === "delivered" ||
-    norm === "delivered_pending_review" ||
-    norm === "waiting_review" ||
-    norm === "pending_review" ||
-    norm === "in_review" ||
-    norm === "delivery_submitted" ||
-    norm === "redelivered"
-  ) {
-    return "delivery";
-  }
-  return "work";
-}
 
 const TONE_RING: Record<string, string> = {
   gray: "border-slate-200 bg-slate-50 text-slate-800",
@@ -71,7 +36,8 @@ function statusChipClass(row: Row, disputeIds: ReadonlySet<string>): string {
   if (typeof row.id === "string" && row.id.trim() && disputeIds.has(row.id.trim())) {
     return TONE_RING.red;
   }
-  if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
+  const tab = classifyMentorOrderBrowseTab(row, disputeIds);
+  if (tab === "billing") {
     return TONE_RING.amber;
   }
   const norm = normalizedPrimaryOrderStatus(row);
@@ -110,13 +76,13 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
   activeDisputeOrderIds: string[];
 }) {
   const disputeSet = useMemo(() => new Set(props.activeDisputeOrderIds), [props.activeDisputeOrderIds]);
-  const [tab, setTab] = useState<TabId>("all");
+  const [tab, setTab] = useState<MentorOrderBrowseTabId>("all");
 
   const filtered = useMemo(() => {
     if (tab === "all") {
       return props.rows;
     }
-    return props.rows.filter((r) => classifyTab(r as Row, disputeSet) === tab);
+    return props.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === tab);
   }, [props.rows, tab, disputeSet]);
 
   return (
@@ -164,6 +130,8 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
             const deadline = pickDisplayField(r, ["deadline", "due_at", "due_date", "close_at"]);
             const postHref = postInfoHref(r);
             const chipClass = statusChipClass(r, disputeSet);
+            const lifecycleTab = classifyMentorOrderBrowseTab(r, disputeSet);
+            const isTerminalCard = lifecycleTab === "done";
 
             return (
               <li key={id}>
@@ -190,28 +158,30 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
                         ) : null}
                       </div>
                     </div>
-                    <div className="flex w-full shrink-0 flex-col gap-2 border-t border-slate-100 pt-3 sm:w-auto sm:border-0 sm:pt-0 sm:pl-4 md:min-w-[11rem]">
-                      <Link
-                        href={href}
-                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
-                      >
-                        작업방 입장
-                      </Link>
-                      {postHref ? (
+                    <div className="flex w-full shrink-0 flex-col items-stretch gap-2 border-t border-slate-100 pt-3 sm:w-auto sm:max-w-[11rem] sm:border-0 sm:pt-0 sm:pl-4 sm:items-end">
+                      {isTerminalCard ? (
                         <Link
-                          href={postHref}
-                          className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 hover:bg-slate-50"
+                          href={href}
+                          className="text-center text-sm font-semibold text-slate-600 underline-offset-2 hover:text-blue-800 hover:underline sm:text-right"
                         >
-                          의뢰 글 보기
+                          작업방 보기
                         </Link>
                       ) : (
                         <Link
                           href={href}
-                          className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 hover:bg-slate-50"
+                          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
                         >
-                          상세 보기
+                          작업방 입장
                         </Link>
                       )}
+                      {postHref ? (
+                        <Link
+                          href={postHref}
+                          className="text-center text-xs font-semibold text-slate-600 underline-offset-2 hover:text-blue-800 hover:underline sm:text-right"
+                        >
+                          의뢰 글 보기
+                        </Link>
+                      ) : null}
                     </div>
                   </div>
                 </div>

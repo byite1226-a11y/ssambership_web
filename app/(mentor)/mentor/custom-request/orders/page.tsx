@@ -27,11 +27,7 @@ export default async function MentorCustomRequestOrdersListPage() {
       eyebrow="멘토 · 맞춤의뢰"
       title="맞춤의뢰 주문"
       description="수락된 의뢰가 주문으로 이어진 뒤, 결제·작업·납품·완료까지 한곳에서 이어가요. 상태를 골라 목록을 좁힐 수 있어요."
-      ctas={[
-        { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰 대시보드", tone: "slate" },
-        { href: "/mentor/custom-request/posts", label: "새 의뢰 목록", tone: "green" },
-        { href: "/mentor/dashboard", label: "멘토 대시보드", tone: "blue" },
-      ]}
+      ctas={[]}
       sections={[]}
       dataPoints={[]}
       emptyState=""
@@ -58,43 +54,18 @@ export default async function MentorCustomRequestOrdersListPage() {
           </div>
 
           <aside className="mt-8 min-w-0 lg:col-span-4 lg:mt-0">
-            <div className="space-y-4 lg:sticky lg:top-24">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-extrabold text-slate-900">빠른 메뉴</h3>
-                <ul className="mt-3 space-y-2 text-sm font-bold text-slate-700">
-                  <li>
-                    <Link className="hover:text-blue-700 hover:underline" href="/mentor/custom-request/dashboard">
-                      맞춤의뢰 대시보드
-                    </Link>
-                  </li>
-                  <li>
-                    <Link className="hover:text-blue-700 hover:underline" href="/mentor/custom-request/posts">
-                      새 의뢰 목록
-                    </Link>
-                  </li>
-                  <li>
-                    <Link className="hover:text-blue-700 hover:underline" href="/mentor/question-room">
-                      질문방
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-extrabold text-slate-900">안내</h3>
-                <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                  작업방에서는 납품·수정 요청·분쟁 안내가 단계별로 표시됩니다. 위험한 취소·환불은 신중히 진행해 주세요.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/90 to-white p-5 shadow-sm">
-                <h3 className="text-sm font-extrabold text-slate-900">알림</h3>
-                <p className="mt-2 text-xs text-slate-600">주문·납품 알림은 알림 센터와 함께 확인하세요.</p>
-                <Link
-                  href="/notifications"
-                  className="mt-3 inline-flex text-sm font-bold text-blue-700 underline-offset-2 hover:underline"
-                >
-                  알림 설정 →
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+              <h3 className="text-sm font-extrabold text-slate-900">안내</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                작업방 카드 하나로 납품·수정 요청·분쟁 흐름을 이어가요. 대시보드·새 의뢰 목록 이동은 왼쪽 맞춤의뢰 메뉴를 이용해 주세요.
+              </p>
+              <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                주문·납품 알림은{" "}
+                <Link href="/notifications" className="font-semibold text-blue-800 underline-offset-2 hover:underline">
+                  알림 센터
                 </Link>
-              </div>
+                에서도 확인할 수 있어요.
+              </p>
             </div>
           </aside>
         </div>

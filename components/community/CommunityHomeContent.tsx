@@ -25,7 +25,6 @@ export function CommunityHomeContent(props: Props) {
       <CommunitySectionCard
         title="추천 숏폼"
         subtitle="멘토가 올린 짧은 세로형 학습 영상을 한눈에 모았어요."
-        action={{ href: "/community/shortform", label: "숏폼 보기" }}
       >
         {shortFetchFailed ? (
           <p className="text-sm text-slate-600">숏폼 영상을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
@@ -50,7 +49,6 @@ export function CommunityHomeContent(props: Props) {
       <CommunitySectionCard
         title="인기 게시글"
         subtitle="공부법·해설·후기·학습 팁 중심의 글을 빠르게 살펴보세요."
-        action={{ href: "/community/board", label: "게시판 보기" }}
       >
         {boardFetchFailed ? (
           <p className="text-sm text-slate-600">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
@@ -69,8 +67,7 @@ export function CommunityHomeContent(props: Props) {
 
       <CommunitySectionCard
         title="이번 주 게시판"
-        subtitle="최근 올라온 글을 모아 두었어요. 더 많은 글은 게시판에서 이어서 볼 수 있어요."
-        action={{ href: "/community/board", label: "게시판 보기" }}
+        subtitle="최근 올라온 글을 모아 두었어요. 전체 목록은 왼쪽 메뉴의 게시판에서 이어서 볼 수 있어요."
       >
         {boardFetchFailed ? (
           <p className="text-sm text-slate-600">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
@@ -93,7 +90,7 @@ export function CommunityHomeContent(props: Props) {
       <div className="rounded-2xl border border-blue-100 bg-blue-50/40 px-5 py-4 text-sm text-slate-700">
         <p className="font-extrabold text-slate-900">함께 지키는 커뮤니티</p>
         <p className="mt-2 leading-relaxed text-slate-600">
-          숏폼·게시판은 왼쪽 메뉴와 위 링크로 이동할 수 있어요. 좋은 글은 스크랩하고, 문제가 있으면 신고로 알려 주세요.
+          탐색은 왼쪽 메뉴에서 이어가면 돼요. 댓글로 소통하고, 문제가 있으면 신고로 알려 주세요.
         </p>
       </div>
     </div>

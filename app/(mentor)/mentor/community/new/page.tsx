@@ -33,12 +33,7 @@ export default async function MentorCommunityNewPage(props: PageProps) {
         <CommunityPageHero
           eyebrow="멘토 · 커뮤니티 · 새 글"
           title="커뮤니티 작성"
-          description="멘토 전용입니다. 게시판 글 또는 숏폼 영상 항목을 선택해 등록합니다. 저장 후 목록·상세로 이동하며, 출처 표기와 권리 확인에 동의해야 제출할 수 있습니다."
-          ctas={[
-            { href: "/community/board", label: "게시판 보기", tone: "slate" },
-            { href: "/community/shortform", label: "숏폼 보기", tone: "slate" },
-            { href: "/community", label: "커뮤니티 홈", tone: "slate" },
-          ]}
+          description="멘토 전용입니다. 게시판 글 또는 숏폼 영상 항목을 선택해 등록합니다. 저장 후 목록·상세로 이동하며, 출처 표기와 권리 확인에 동의해야 제출할 수 있습니다. 탐색은 공개 커뮤니티 좌측 메뉴에서 이어가면 됩니다."
         />
       }
     >

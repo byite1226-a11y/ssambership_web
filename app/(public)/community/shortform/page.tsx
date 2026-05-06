@@ -4,7 +4,7 @@ import { CommunityShortformTabs, parseShortformTab } from "@/components/communit
 import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
 import { CommunityShortformEmptyPanel } from "@/components/community/CommunityShortformEmptyPanel";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
+import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
 import { listShortformPosts } from "@/lib/community/communityQueries";
@@ -45,7 +45,7 @@ export default async function CommunityShortformPage(props: Props) {
           eyebrow="숏폼"
           title="숏폼"
           description={shortformListDescription(role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
+          primaryAction={buildCommunityHeroPrimaryAction({
             surface: "shortform_list",
             role,
             loggedIn,

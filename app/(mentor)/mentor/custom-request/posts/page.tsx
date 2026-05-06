@@ -26,11 +26,7 @@ export default async function MentorCustomRequestPostsPage() {
       eyebrow="멘토 · 맞춤의뢰"
       title="새 의뢰 목록"
       description="모집 중인 요청을 살펴보고 제안을 보내거나, 이미 보낸 지원의 상태를 확인하세요."
-      ctas={[
-        { href: "/mentor/custom-request/orders", tone: "blue", label: "맞춤의뢰 주문" },
-        { href: "/mentor/custom-request/dashboard", tone: "slate", label: "맞춤의뢰 대시보드" },
-        { href: "/mentor/dashboard", tone: "slate", label: "멘토 대시보드" },
-      ]}
+      ctas={[]}
       sections={[]}
       dataPoints={[]}
       emptyState=""
@@ -55,10 +51,14 @@ export default async function MentorCustomRequestPostsPage() {
               <MentorAppliedListSection items={applied.items} listFailed={applied.listFailed} />
             </section>
 
-            <p className="mt-6 text-center text-sm text-slate-500">
-              <Link href="/custom-request" className="min-h-[44px] font-extrabold text-blue-700 underline">
+            <p className="mt-6 text-center text-xs text-slate-500">
+              <Link href="/custom-request" className="font-semibold text-blue-800 underline-offset-2 hover:underline">
                 맞춤의뢰 소개
               </Link>
+              <span className="mx-2 text-slate-300" aria-hidden>
+                ·
+              </span>
+              목록·주문 이동은 왼쪽 메뉴에서 이어갈 수 있어요.
             </p>
           </div>
 

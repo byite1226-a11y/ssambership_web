@@ -2,7 +2,7 @@ import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShel
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { CommunityPostDetail } from "@/components/community/CommunityPostDetail";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
+import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 import { createClient } from "@/lib/supabase/server";
 import { getBoardPost, isCommunityPostUuid, loadCommunityComments, pickTitle } from "@/lib/community/communityQueries";
 import type { AppRole } from "@/lib/types/user";
@@ -70,7 +70,7 @@ export default async function CommunityBoardDetailPage(props: Props) {
           eyebrow="커뮤니티 · 게시판"
           title="게시글"
           description={boardDetailDescription(profile?.role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
+          primaryAction={buildCommunityHeroPrimaryAction({
             surface: "board_detail",
             role: profile?.role,
             loggedIn,

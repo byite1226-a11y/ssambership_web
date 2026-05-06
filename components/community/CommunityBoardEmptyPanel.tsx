@@ -12,22 +12,12 @@ export function CommunityBoardEmptyPanel(props: { role: AppRole | null | undefin
     <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 text-center">
       <p className="text-base font-extrabold text-slate-900">{title}</p>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">{desc}</p>
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        {isMentor ? (
-          <Link
-            href="/mentor/community/new"
-            className="inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
-          >
-            게시글 작성
-          </Link>
-        ) : null}
-        <Link
-          href="/community"
-          className="inline-flex rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-800 shadow-sm hover:border-slate-300"
-        >
-          커뮤니티 홈
-        </Link>
-      </div>
+      {isMentor ? (
+        <p className="mx-auto mt-5 max-w-md text-xs leading-relaxed text-slate-600">
+          첫 게시글은 게시판 상단의 <span className="font-semibold text-slate-800">게시글 작성</span> 버튼 또는 멘토 메뉴의 커뮤니티 작성에서
+          이어가면 돼요.
+        </p>
+      ) : null}
       {!props.loggedIn ? (
         <p className="mt-4 text-xs text-slate-500">
           <Link href={`/login?next=${encodeURIComponent("/community/board")}`} className="font-bold text-blue-800 underline">

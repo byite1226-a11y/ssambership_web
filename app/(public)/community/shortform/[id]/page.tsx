@@ -2,7 +2,7 @@ import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShel
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { CommunityPostDetail } from "@/components/community/CommunityPostDetail";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
+import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 import { createClient } from "@/lib/supabase/server";
 import { getShortformPost, isCommunityPostUuid, loadCommunityComments, pickTitle } from "@/lib/community/communityQueries";
 import type { AppRole } from "@/lib/types/user";
@@ -69,7 +69,7 @@ export default async function CommunityShortformDetailPage(props: Props) {
           eyebrow="커뮤니티 · 숏폼"
           title="숏폼"
           description={shortformDetailDescription(profile?.role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
+          primaryAction={buildCommunityHeroPrimaryAction({
             surface: "shortform_detail",
             role: profile?.role,
             loggedIn,

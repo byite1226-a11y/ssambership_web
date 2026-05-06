@@ -3,7 +3,7 @@ import { CommunityBoardPostRow } from "@/components/community/CommunityBoardPost
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
+import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
 import { listBoardPosts } from "@/lib/community/communityQueries";
@@ -39,7 +39,7 @@ export default async function CommunityBoardPage() {
           eyebrow="게시판"
           title="게시글 목록"
           description={boardListDescription(role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
+          primaryAction={buildCommunityHeroPrimaryAction({
             surface: "board_list",
             role,
             loggedIn,
