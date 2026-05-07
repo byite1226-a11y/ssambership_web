@@ -6,8 +6,6 @@ import {
   isOrderStatusTerminal,
   ORDER_ROOM_CARD_CLASS,
   ORDER_ROOM_TERMINAL_MENTOR_NOTICE,
-  ORDER_ROOM_TERMINAL_STUDENT_NOTICE,
-  ORDER_WORKSPACE_STEP_LABELS,
   formatOrderRoomDateTime,
   normalizedPrimaryOrderStatus,
   orderWorkspaceCurrentStepIndex,
@@ -177,121 +175,147 @@ export function OrderRoomPageHeader({ detail, view, backHref = "/custom-request"
 
   if (o.error && !o.row) {
     return (
-      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 p-3 text-sm text-amber-950 sm:p-4">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 shadow-sm">
         <h2 className="font-extrabold">주문 요약</h2>
-        <p className="mt-2">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <p className="mt-2 text-xs font-semibold">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       </div>
     );
   }
 
   if (!o.row) {
     return (
-      <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-3 text-sm text-slate-700 sm:p-4">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 shadow-sm">
         <h2 className="font-extrabold">주문 요약</h2>
-        <p className="mt-2">해당 주문을 찾을 수 없습니다.</p>
+        <p className="mt-2 text-xs font-semibold">해당 주문을 찾을 수 없습니다.</p>
       </div>
     );
   }
 
   const orderRow = o.row as Record<string, unknown>;
   const orderNorm = normalizedPrimaryOrderStatus(orderRow);
-  const payRaw = (() => {
-    for (const k of ["payment_status", "payment_state"] as const) {
-      const v = orderRow[k];
-      if (typeof v === "string" && v.trim()) return v.trim();
-    }
-    return "";
-  })();
 
-  const oneLineContext = (() => {
-    const m = h.mentorName && h.mentorName !== "—" ? h.mentorName : "—";
-    const p = h.priceLine && h.priceLine !== "—" ? h.priceLine : "—";
-    const scope = h.subjects && h.subjects !== "—" ? h.subjects : null;
-    const due = h.dueLine && h.dueLine !== "—" ? h.dueLine : "—";
-    const base = `멘토 ${m} · ${p} · 마감 ${due}`;
-    return scope != null && scope ? `${base} · 범위 ${scope}` : base;
-  })();
+  const mName = h.mentorName && h.mentorName !== "—" ? h.mentorName : "매칭 멘토";
+  const pLine = h.priceLine && h.priceLine !== "—" ? h.priceLine : "협의 중";
+  const due = h.dueLine && h.dueLine !== "—" ? h.dueLine : "—";
 
-  const detailLine =
-    h.category && h.category !== "—" ? `${h.category} · ${h.subjectLine !== "—" ? h.subjectLine : "—"}` : h.subjectLine;
+  const isCompleted = orderNorm === "completed" || orderNorm === "settled" || isOrderStatusTerminal(orderNorm || "");
+  const hasDeliverables = (detail.bundle.deliverables.rows ?? []).length > 0;
+  const isReview = orderNorm === "delivered" || orderNorm === "under_review" || (orderNorm !== "completed" && hasDeliverables);
 
-  if (view === "student") {
-    return (
-      <header className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 mb-5 shadow-sm transition">
-        {detail.hasActiveDispute ? (
-          <div
-            role="status"
-            className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
-          >
-            분쟁이 접수되어 운영 검토 중입니다. 납품 수락·수정 요청·추가 분쟁 신청은 일시적으로 사용할 수 없으며, 우측 작업
-            관리에서도 동일하게 제한됩니다.
-          </div>
-        ) : null}
-        <div className="mb-3 flex min-h-[44px] flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <Link
-            href={backHref}
-            className="shrink-0 text-sm font-bold text-slate-600 underline-offset-2 transition hover:text-blue-800 hover:underline"
-          >
-            ← 맞춤의뢰 목록으로
-          </Link>
-          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-            {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
-            <PaymentStatusBadge paymentRaw={payRaw} />
-            <Link
-              href="#order-room-order-info"
-              className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-            >
-              요청 상세
-            </Link>
-          </div>
-        </div>
-        <h1 className="line-clamp-2 text-pretty text-lg font-extrabold leading-snug text-slate-950 sm:text-xl">
-          {h.requestTitle}
-        </h1>
-        {detailLine && detailLine !== "—" ? <p className="mt-1.5 line-clamp-2 text-xs font-medium text-slate-500">{detailLine}</p> : null}
-        <p className="mt-2 line-clamp-2 text-sm font-medium leading-relaxed text-slate-600">{oneLineContext}</p>
-      </header>
-    );
+  let pageTitle = "주문방 / 납품";
+  let pageDescription = "선택한 멘토와 대화하며 과제를 진행할 수 있어요. 납품 파일을 확인하고 수락하거나, 수정 요청을 할 수 있어요.";
+  let statusCardTitle = "멘토 선택 완료";
+  let statusCardDesc = "주문방이 생성되어 진행 중이에요.";
+  let statusCardButtonLabel = "요청 상세 보기";
+
+  if (isCompleted) {
+    pageTitle = "5. 주문 완료 🎉";
+    pageDescription = "주문이 성공적으로 완료되었습니다. 멘토님과 함께 좋은 결과물을 만들어주셔서 감사합니다!";
+    statusCardTitle = "수락 완료 (주문 완료)";
+    statusCardDesc = "주문이 완료되었습니다.";
+    statusCardButtonLabel = "이용 후기 작성하기";
+  } else if (isReview) {
+    pageTitle = "4. 납품 확인 / 검토";
+    pageDescription = "멘토가 최종 파일을 납품했어요. 내용을 확인하고 수락하거나 수정 요청을 할 수 있어요.";
+    statusCardTitle = `납품 완료 (v${detail.bundle.deliverables.rows?.length ?? 2})`;
+    statusCardDesc = "최종 납품을 확인하고 수락하거나 수정 요청을 보내세요.";
+    statusCardButtonLabel = "요청 상세 보기";
   }
 
+  const backLabel = view === "mentor" ? "맞춤의뢰 주문 목록으로 돌아가기" : "맞춤의뢰 목록으로 돌아가기";
+
   return (
-    <header className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 mb-5 shadow-sm transition">
-      {detail.hasActiveDispute ? (
-        <div
-          role="status"
-          className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold leading-snug text-amber-950"
-        >
-          분쟁이 접수되어 운영 검토 중입니다. 납품 등록·작업 진행·수정 요청 내역 확인 등은 우측 패널 정책에 따라 제한될 수
-          있습니다.
-        </div>
-      ) : null}
-      <div className="mb-3 flex min-h-[44px] flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-        <Link
-          href={backHref}
-          className="shrink-0 text-sm font-bold text-slate-600 underline-offset-2 transition hover:text-blue-800 hover:underline"
-        >
-          ← 맞춤의뢰 주문 목록
-        </Link>
-        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-          {detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}
-          <PaymentStatusBadge paymentRaw={payRaw} />
-          <span className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 text-xs font-semibold text-slate-600">
-            멘토
-          </span>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
           <Link
-            href="#order-room-order-info"
-            className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            href={backHref}
+            className="group inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-600 transition mb-1"
           >
-            주문 정보
+            <span className="transition-transform group-hover:-translate-x-0.5">←</span>
+            <span>{backLabel}</span>
+          </Link>
+          <h1 className="text-xl font-black text-slate-900 tracking-tight sm:text-2xl">
+            {pageTitle}
+          </h1>
+          <p className="text-xs font-bold text-slate-400 max-w-xl leading-relaxed">
+            {pageDescription}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 border border-emerald-200 bg-emerald-50/40 p-4 rounded-xl shadow-sm max-w-md shrink-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="space-y-0.5 min-w-0 pr-2">
+            <p className="text-xs font-black text-slate-800">{statusCardTitle}</p>
+            <p className="text-[10px] font-bold text-slate-500 leading-normal truncate">{statusCardDesc}</p>
+          </div>
+          <Link
+            href="#"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3.5 py-2 text-xs font-black text-blue-600 hover:bg-blue-50 transition shadow-sm shrink-0"
+          >
+            <span>{statusCardButtonLabel}</span>
+            <span>&gt;</span>
           </Link>
         </div>
       </div>
-      <h1 className="line-clamp-2 text-pretty text-lg font-extrabold leading-snug text-slate-950 sm:text-xl">
-        {h.requestTitle}
-      </h1>
-      {detailLine && detailLine !== "—" ? <p className="mt-1.5 line-clamp-2 text-xs font-medium text-slate-500">{detailLine}</p> : null}
-      <p className="mt-2 line-clamp-2 text-sm font-medium leading-relaxed text-slate-600">{oneLineContext}</p>
-    </header>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-100 transition duration-300">
+        <div className="grid grid-cols-2 gap-4 divide-y divide-slate-100 md:grid-cols-5 md:divide-x md:divide-y-0">
+          <div className="col-span-2 md:col-span-1 pr-2">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">요청 제목</p>
+            <p className="mt-1.5 text-xs font-black text-slate-900 line-clamp-1" title={h.requestTitle || "수행평가 발표 구성 피드백 요청"}>
+              {h.requestTitle || "수행평가 발표 구성 피드백 요청"}
+            </p>
+            <p className="mt-0.5 text-[10px] font-bold text-slate-400">
+              {h.category && h.category !== "—" ? h.category : "일반 분야"}
+            </p>
+          </div>
+
+          <div className="pt-2.5 md:pt-0 md:pl-4 flex items-center gap-2.5">
+            <div className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"
+                className="h-full w-full object-cover"
+                alt="Avatar"
+              />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">선택된 멘토</p>
+              <p className="text-xs font-black text-slate-900">{view === "mentor" ? "의뢰 학생" : `${mName} 멘토`}</p>
+              <span className="inline-flex items-center rounded bg-blue-50 px-1 py-0.5 text-[8px] font-black text-blue-600">프리미엄 멘토</span>
+            </div>
+          </div>
+
+          <div className="pt-2.5 md:pt-0 md:pl-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">제안 금액</p>
+            <p className="mt-1.5 text-xs font-black text-blue-600">
+              {pLine}
+            </p>
+            <span className="inline-flex items-center rounded bg-blue-50 px-1 py-0.5 text-[8px] font-black text-blue-600">확정 제안가</span>
+          </div>
+
+          <div className="pt-2.5 md:pt-0 md:pl-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">예상 소요 기간</p>
+            <p className="mt-1.5 text-xs font-black text-slate-800">
+              2일
+            </p>
+            <p className="mt-0.5 text-[10px] font-bold text-slate-400">작업 착수 기준</p>
+          </div>
+
+          <div className="pt-2.5 md:pt-0 md:pl-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">최종 마감일 (납기)</p>
+            <p className="mt-1.5 text-sm font-extrabold text-emerald-600">
+              {due}
+            </p>
+            <p className="mt-0.5 text-[10px] font-bold text-slate-400">기한 엄수 필수</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -303,46 +327,56 @@ type LeftContextProps = {
 };
 
 function OrderStepStrip({ currentIndex }: { currentIndex: number }) {
-  const n = ORDER_WORKSPACE_STEP_LABELS.length;
+  const steps = [
+    { title: "주문 생성", desc: "주문방이 생성되었어요." },
+    { title: "진행 중", desc: "멘토가 과제를 진행 중이에요." },
+    { title: "납품 완료", desc: "멘토가 파일을 제출했어요." },
+    { title: "검토 중", desc: "파일을 확인하고 있어요." },
+    { title: "주문 완료", desc: "수락 시 주문이 완료됩니다." },
+  ];
+
   return (
-    <ol className="relative" aria-label="주문 단계">
-      {ORDER_WORKSPACE_STEP_LABELS.map((label, i) => {
+    <ol className="relative space-y-4" aria-label="주문 단계">
+      {steps.map((s, i) => {
         const isDone = i < currentIndex;
         const isCurrent = i === currentIndex;
-        const isLast = i === n - 1;
+        const isLast = i === steps.length - 1;
+
         return (
-          <li key={String(label)} className="flex gap-3">
-            <div className="flex w-7 shrink-0 flex-col items-center">
-              <span
-                className={
-                  isCurrent
-                    ? "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-extrabold text-white shadow-sm"
-                    : isDone
-                      ? "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-xs font-extrabold text-emerald-900"
-                      : "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-500"
-                }
-              >
-                {i + 1}
-              </span>
+          <li key={i} className="flex gap-3">
+            <div className="flex w-6 shrink-0 flex-col items-center">
+              {isDone ? (
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm">
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+              ) : isCurrent ? (
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white shadow-sm ring-4 ring-blue-50">
+                  {i + 1}
+                </span>
+              ) : (
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-xs font-bold text-slate-400">
+                  {i + 1}
+                </span>
+              )}
               {!isLast ? (
                 <span
-                  className={`my-1 block w-0.5 flex-1 min-h-[10px] rounded-full ${isDone ? "bg-emerald-200" : "bg-slate-200"}`}
+                  className={`my-1 block w-0.5 flex-1 min-h-[16px] ${isDone ? "bg-blue-600" : "bg-slate-100"}`}
                   aria-hidden
                 />
               ) : null}
             </div>
-            <div className={`min-w-0 ${!isLast ? "pb-3" : ""}`}>
-              <span
-                className={
-                  isCurrent
-                    ? "text-sm font-bold text-slate-900"
-                    : isDone
-                      ? "text-sm font-medium text-slate-800"
-                      : "text-sm font-medium text-slate-500"
-                }
-              >
-                {label}
-              </span>
+            <div className={`min-w-0 ${!isLast ? "pb-1" : ""} flex-1`}>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-xs font-black tracking-tight ${isCurrent ? "text-blue-600" : isDone ? "text-slate-800" : "text-slate-400"}`}>
+                  {s.title}
+                </span>
+                {isCurrent && (
+                  <span className="rounded bg-blue-50 px-1 py-0.5 text-[8px] font-black text-blue-600">현재 단계</span>
+                )}
+              </div>
+              <p className="mt-0.5 text-[10px] font-semibold text-slate-400 leading-normal">{s.desc}</p>
             </div>
           </li>
         );
@@ -351,16 +385,13 @@ function OrderStepStrip({ currentIndex }: { currentIndex: number }) {
   );
 }
 
-/**
- * 왼쪽 열: 주문 정보, 단계(표시), 안내
- */
-export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDisplay }: LeftContextProps) {
+export function OrderLeftContextPanel({ detail, view: _view, isTerminalOrder, orderIdDisplay }: LeftContextProps) {
+  void _view;
   const o = detail.bundle.order;
   const h = detail.header;
   if (!o.row) return null;
   const orderRow = o.row as Record<string, unknown>;
   const orderNorm = normalizedPrimaryOrderStatus(orderRow);
-  const payRaw = pickPaymentStatusRaw(orderRow);
   const hasDel = (detail.bundle.deliverables.rows ?? []).length > 0;
   const terminal = isOrderRowTerminalForActions(orderRow) || isTerminalOrder;
   const stepIndex = orderWorkspaceCurrentStepIndex(orderNorm, Boolean(terminal), hasDel);
@@ -370,72 +401,80 @@ export function OrderLeftContextPanel({ detail, view, isTerminalOrder, orderIdDi
       : "—";
   const shortId = shortOrderIdForDisplay(String(orderIdDisplay).trim());
 
+  const cardClass = "rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm hover:border-blue-100 hover:shadow-md transition-all duration-300";
+
   return (
     <div className="space-y-4">
-      <div id="order-room-order-info" className={ORDER_ROOM_CARD_CLASS + " space-y-3 scroll-mt-24"}>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">주문 정보</p>
-        {detail.hasActiveDispute ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-2 text-xs font-semibold text-amber-950">
-            분쟁 접수 · 운영 검토 중입니다. 표시되는 주문 단계와 별도로, 납품·수락·수정 요청·분쟁 재신청은 제한됩니다.
+      <div id="order-room-order-info" className={`${cardClass} space-y-3.5 scroll-mt-24`}>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-400">주문 정보</p>
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+        </div>
+        <dl className="space-y-2.5 text-xs">
+          <div className="flex justify-between gap-2 border-b border-slate-50 pb-1.5">
+            <dt className="font-bold text-slate-400">주문 번호</dt>
+            <dd className="font-mono font-black text-slate-800">{shortId}</dd>
           </div>
-        ) : null}
-        <dl className="space-y-2 text-sm">
-          <div className="flex flex-wrap justify-between gap-2">
-            <dt className="text-slate-500">주문번호</dt>
-            <dd className="font-mono text-xs text-slate-800">{shortId}</dd>
+          <div className="flex justify-between gap-2 border-b border-slate-50 pb-1.5">
+            <dt className="font-bold text-slate-400">카테고리</dt>
+            <dd className="font-extrabold text-slate-800 truncate max-w-[130px]">{h.category && h.category !== "—" ? h.category : "—"}</dd>
           </div>
-          <div className="flex flex-wrap justify-between gap-2">
-            <dt className="text-slate-500">분야</dt>
-            <dd className="text-right text-slate-900">{h.category && h.category !== "—" ? h.category : "—"}</dd>
+          <div className="flex justify-between gap-2 border-b border-slate-50 pb-1.5">
+            <dt className="font-bold text-slate-400">제안 금액</dt>
+            <dd className="font-black text-blue-600">{h.priceLine}</dd>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <dt className="text-slate-500">금액(제안·확정)</dt>
-            <dd className="text-right font-semibold text-slate-900">{h.priceLine}</dd>
+          <div className="flex justify-between gap-2 border-b border-slate-50 pb-1.5">
+            <dt className="font-bold text-slate-400">결제 금액</dt>
+            <dd className="font-black text-blue-600">{h.priceLine}</dd>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <dt className="text-slate-500">결제</dt>
-            <dd>
-              <PaymentStatusBadge paymentRaw={payRaw} />
-            </dd>
+          <div className="flex justify-between gap-2 border-b border-slate-50 pb-1.5">
+            <dt className="font-bold text-slate-400">주문 일시</dt>
+            <dd className="font-semibold text-slate-500 truncate max-w-[150px]">{orderCreated}</dd>
           </div>
-          <div className="flex flex-wrap justify-between gap-2">
-            <dt className="text-slate-500">주문일시</dt>
-            <dd className="text-slate-800">{orderCreated}</dd>
+          <div className="flex justify-between gap-2 border-b border-slate-50 pb-1.5">
+            <dt className="font-bold text-slate-400">마감일 (납기)</dt>
+            <dd className="font-black text-emerald-600">{h.dueLine !== "—" && h.dueLine ? h.dueLine : "—"}</dd>
           </div>
-          <div className="flex flex-wrap justify-between gap-2">
-            <dt className="text-slate-500">마감(납기)</dt>
-            <dd className="text-slate-800">{h.dueLine !== "—" && h.dueLine ? h.dueLine : "—"}</dd>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100/90 pt-2">
-            <dt className="text-slate-500">주문 상태</dt>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <dt className="font-bold text-slate-400">상태</dt>
             <dd>{detail.hasActiveDispute ? <ActiveDisputeOrderStatusBadge /> : <OrderStatusBadge norm={orderNorm} />}</dd>
           </div>
         </dl>
-        <p className="text-xs text-slate-500">
-          멘토: <span className="text-slate-800">{h.mentorName}</span>
-        </p>
-        <p className="text-[11px] text-slate-400">보기 기준: {view === "mentor" ? "멘토" : "의뢰자"}</p>
       </div>
 
-      <div className={ORDER_ROOM_CARD_CLASS}>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">주문 단계</p>
-        <p className="mt-0.5 text-xs text-slate-500">현재 흐름(참고)</p>
-        <div className="mt-3">
-          <OrderStepStrip currentIndex={stepIndex} />
+      <div className={cardClass}>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3.5">
+          <p className="text-xs font-black uppercase tracking-wider text-slate-400">주문 단계</p>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[8px] font-black text-slate-500">실시간 흐름</span>
         </div>
-        {terminal ? (
-          <p className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/90 px-3 py-2 text-xs font-medium text-emerald-950">
-            {view === "student" ? ORDER_ROOM_TERMINAL_STUDENT_NOTICE : ORDER_ROOM_TERMINAL_MENTOR_NOTICE}
-          </p>
-        ) : null}
+        <OrderStepStrip currentIndex={stepIndex} />
       </div>
 
-      <div className={ORDER_ROOM_CARD_CLASS + " text-sm text-slate-700"}>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">안내</p>
-        <ul className="mt-2 list-disc space-y-2 pl-4 text-xs leading-relaxed text-slate-600 marker:text-slate-400">
-          <li className="pl-0.5">납품이 등록되면 수락·수정 요청은 우측「작업 관리」에서 진행합니다.</li>
-          <li className="pl-0.5">이견이 있을 때는 우측에서 정식 분쟁을 신청할 수 있습니다(진행 중 분쟁이 있으면 액션이 잠깁니다).</li>
+      <div className={`${cardClass} space-y-3`}>
+        <p className="text-xs font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2">안내 사항</p>
+        <ul className="space-y-2.5 text-[11px] font-bold text-slate-500 leading-relaxed pl-1">
+          <li className="flex gap-2">
+            <span className="text-emerald-500 shrink-0">✓</span>
+            <span>파일 수정 요청은 최대 2회까지 가능해요.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-emerald-500 shrink-0">✓</span>
+            <span>수락 후에는 추가 수정 요청이 불가능해요.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-emerald-500 shrink-0">✓</span>
+            <span>문제가 발생하면 고객센터 혹은 문제 해결을 신청해 주세요.</span>
+          </li>
         </ul>
+        <div className="pt-2 border-t border-slate-100">
+          <Link
+            href="/guide"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-black text-slate-600 hover:bg-slate-50 transition"
+          >
+            <span>이용 가이드 보기</span>
+            <span>&gt;</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

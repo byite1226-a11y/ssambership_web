@@ -8,12 +8,21 @@ import { CustomRequestTrustBanner } from "@/components/customRequest/CustomReque
 import { createClient } from "@/lib/supabase/server";
 import { loadCustomRequestCategories, loadRecentCustomRequestPosts } from "@/lib/customRequest/customRequestQueries";
 
+import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function CustomRequestPublicPage() {
   const supabase = await createClient();
-  const [recent, cats] = await Promise.all([loadRecentCustomRequestPosts(supabase, 8), loadCustomRequestCategories(supabase)]);
+  const { profile } = await getServerUserWithProfile();
+  const role = profile?.role ?? null;
+  const isMentor = role === "mentor";
+
+  const [recent, cats] = await Promise.all([
+    loadRecentCustomRequestPosts(supabase, 8),
+    loadCustomRequestCategories(supabase),
+  ]);
 
   return (
     <PageScaffold
@@ -31,7 +40,7 @@ export default async function CustomRequestPublicPage() {
       emptyState=""
     >
       <div className="mx-auto w-full max-w-6xl space-y-8 px-3 py-6 sm:space-y-12 sm:px-4 sm:py-8 lg:px-0">
-        <CustomRequestHero />
+        <CustomRequestHero role={role} />
         <CustomRequestCategoryGrid fromTable={cats} />
         <CustomRequestSteps />
         <section className="space-y-4">
@@ -43,18 +52,37 @@ export default async function CustomRequestPublicPage() {
         </section>
         <CustomRequestTrustBanner />
         <p className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 sm:flex-row sm:flex-wrap sm:gap-4 select-none">
-          <Link
-            href="/custom-request/orders"
-            className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-800 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 transition"
-          >
-            진행 중인 주문 보기
-          </Link>
-          <Link
-            href="/custom-request/new"
-            className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-700 underline hover:text-indigo-900 transition"
-          >
-            의뢰 요청 등록으로 이동
-          </Link>
+          {isMentor ? (
+            <>
+              <Link
+                href="/mentor/custom-request/dashboard"
+                className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-800 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 transition"
+              >
+                내 진행 의뢰 대시보드 보기
+              </Link>
+              <Link
+                href="/mentor/custom-request/posts"
+                className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-700 underline hover:text-indigo-900 transition"
+              >
+                새 의뢰 목록 보기
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/custom-request/orders"
+                className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-800 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 transition"
+              >
+                진행 중인 주문 보기
+              </Link>
+              <Link
+                href="/custom-request/new"
+                className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-700 underline hover:text-indigo-900 transition"
+              >
+                의뢰 요청 등록으로 이동
+              </Link>
+            </>
+          )}
         </p>
       </div>
     </PageScaffold>

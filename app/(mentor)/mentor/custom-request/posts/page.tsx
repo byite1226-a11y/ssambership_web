@@ -11,54 +11,82 @@ import { loadMentorRecentApplicationsWithPostHints, loadOpenCustomRequestPostsFo
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function MentorCustomRequestPostsPage() {
+type PageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function MentorCustomRequestPostsPage(props: PageProps) {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
+  const sp = (await props.searchParams) ?? {};
+  const currentTab = typeof sp.tab === "string" ? sp.tab : "open";
+
   const [openList, applied] = await Promise.all([
     loadOpenCustomRequestPostsForMentorBrowse(supabase, 50),
     loadMentorRecentApplicationsWithPostHints(supabase, user.id, 25),
   ]);
+
+  const appliedPostIds = new Set(
+    (applied.items ?? []).map((item) => String(item.postId || "").trim())
+  );
+
+  const filteredOpenRows = (openList.rows ?? []).filter((row) => {
+    const id = String(row.id ?? "").trim();
+    return id && !appliedPostIds.has(id);
+  });
+
+  const openCount = filteredOpenRows.length;
+  const appliedCount = applied.items.length;
+
+  const counts = {
+    open: openCount,
+    applied: appliedCount,
+  };
+
+  const isApplied = currentTab === "applied";
+  const titleText = isApplied ? "제안한 의뢰" : "새 의뢰 목록";
+  const descriptionText = isApplied
+    ? "내가 지원서를 보내고 매칭 결과를 기다리는 의뢰 목록입니다."
+    : "현재 멘토 모집 중인 의뢰 요청들을 확인해 보세요.";
 
   return (
     <PageScaffold
       compactHero
       hideFooterPlaceholderCards
       eyebrow="멘토 · 맞춤의뢰"
-      title="새 의뢰 목록"
-      description="모집 중인 요청을 살펴보고 제안을 보내거나, 이미 보낸 지원의 상태를 확인하세요."
+      title={titleText}
+      description={descriptionText}
       ctas={[]}
       sections={[]}
       dataPoints={[]}
       emptyState=""
+      hideHero={true}
     >
-      <MentorCustomRequestWorkspaceLayout active="posts">
+      <MentorCustomRequestWorkspaceLayout active="posts" tab={isApplied ? "applied" : "open"} counts={counts}>
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
           <div className="min-w-0 lg:col-span-8">
-            <div className="mb-5 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
-              <span className="rounded-lg bg-white px-4 py-2 text-sm font-extrabold text-blue-800 shadow-sm">
-                모집 중
-              </span>
-              <span className="rounded-lg px-4 py-2 text-sm font-bold text-slate-500">내가 지원한 의뢰</span>
+            {/* Simple elegant text header inside main content */}
+            <div className="mb-6 border-b border-slate-100 pb-5">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">{titleText}</h1>
+              <p className="mt-1 text-sm text-slate-500">{descriptionText}</p>
             </div>
 
-            <section className="space-y-3">
-              <h2 className="sr-only">모집 중인 맞춤의뢰</h2>
-              <MentorOpenPostListSection rows={openList.rows} listStatus={openList.status} />
-            </section>
+            {!isApplied ? (
+              <section className="space-y-3">
+                <h2 className="sr-only">모집 중인 맞춤의뢰</h2>
+                <MentorOpenPostListSection rows={filteredOpenRows} listStatus={openList.status} />
+              </section>
+            ) : (
+              <section className="space-y-3">
+                <h2 className="sr-only">내가 지원한 의뢰</h2>
+                <MentorAppliedListSection items={applied.items} listFailed={applied.listFailed} />
+              </section>
+            )}
 
-            <section className="mt-10 space-y-3 border-t border-slate-200 pt-8">
-              <h2 className="text-base font-extrabold text-slate-900 sm:text-lg">내가 지원한 의뢰</h2>
-              <MentorAppliedListSection items={applied.items} listFailed={applied.listFailed} />
-            </section>
-
-            <p className="mt-6 text-center text-xs text-slate-500">
+            <p className="mt-8 text-center text-xs text-slate-400">
               <Link href="/custom-request" className="font-semibold text-blue-800 underline-offset-2 hover:underline">
-                맞춤의뢰 소개
+                맞춤의뢰 소개 보기
               </Link>
-              <span className="mx-2 text-slate-300" aria-hidden>
-                ·
-              </span>
-              목록·주문 이동은 왼쪽 메뉴에서 이어갈 수 있어요.
             </p>
           </div>
 

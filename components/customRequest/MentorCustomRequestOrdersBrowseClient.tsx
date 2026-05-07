@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { normalizedPrimaryOrderStatus, orderStatusUiToneForNorm } from "@/lib/customRequest/orderLifecycleConstants";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import {
@@ -15,7 +15,6 @@ type Row = Record<string, unknown>;
 
 const TABS: { id: MentorOrderBrowseTabId; label: string }[] = [
   { id: "all", label: "전체" },
-  { id: "dispute", label: "분쟁" },
   { id: "billing", label: "결제 대기" },
   { id: "work", label: "작업 중" },
   { id: "delivery", label: "납품·검토" },
@@ -74,9 +73,20 @@ function postInfoHref(row: Row): string | null {
 export function MentorCustomRequestOrdersBrowseClient(props: {
   rows: Row[];
   activeDisputeOrderIds: string[];
+  initialTab?: string;
 }) {
   const disputeSet = useMemo(() => new Set(props.activeDisputeOrderIds), [props.activeDisputeOrderIds]);
-  const [tab, setTab] = useState<MentorOrderBrowseTabId>("all");
+
+  const defaultTab = (props.initialTab === "billing" || props.initialTab === "work" || props.initialTab === "delivery" || props.initialTab === "revision" || props.initialTab === "done" || props.initialTab === "dispute") 
+    ? (props.initialTab as MentorOrderBrowseTabId)
+    : "all";
+
+  const [tab, setTab] = useState<MentorOrderBrowseTabId>(defaultTab);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTab(defaultTab);
+  }, [defaultTab]);
 
   const filtered = useMemo(() => {
     if (tab === "all") {
@@ -88,7 +98,7 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
   return (
     <div>
       <div
-        className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/90 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex lg:hidden gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/90 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="tablist"
         aria-label="주문 상태 필터"
       >
@@ -134,42 +144,49 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
             const isTerminalCard = lifecycleTab === "done";
 
             return (
-              <li key={id}>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <li key={id} className="group">
+                <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:border-blue-200 hover:shadow-[0_4px_12px_rgba(30,58,138,0.03)] transition-all duration-200">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex max-w-full rounded-full border px-2.5 py-0.5 text-xs font-bold ${chipClass}`}>
+                        <span className={`inline-flex max-w-full rounded-full border px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${chipClass}`}>
                           {headline}
                         </span>
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-black tracking-wide text-slate-500">주문 계약</span>
                       </div>
-                      <h3 className="mt-2 text-base font-extrabold leading-snug text-slate-900 sm:text-lg">{titleLine}</h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        <span className="font-extrabold text-slate-700">의뢰자</span> {studentLine(r)}
+                      <Link href={href} className="mt-2.5 block text-[17px] font-black leading-snug text-slate-900 group-hover:text-blue-600 transition-colors">
+                        {titleLine}
+                      </Link>
+                      <p className="mt-2 text-xs text-slate-600">
+                        <span className="font-extrabold text-slate-400 mr-1.5 uppercase tracking-wider">의뢰자</span> 
+                        <span className="font-semibold text-slate-800">{studentLine(r)}</span>
                       </p>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 sm:text-sm">
-                        <span>
-                          <span className="font-extrabold text-slate-500">결제</span> {pay}
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+                        <span className="rounded-md bg-slate-50 border border-slate-100 px-2 py-1">
+                          <span className="font-extrabold text-slate-400 mr-1">결제 금액</span> 
+                          <span className="font-bold text-slate-700">{pay}</span>
                         </span>
                         {deadline !== "—" ? (
-                          <span>
-                            <span className="font-extrabold text-slate-500">일정</span> {deadline}
+                          <span className="rounded-md bg-slate-50 border border-slate-100 px-2 py-1">
+                            <span className="font-extrabold text-slate-400 mr-1">완료 일상</span> 
+                            <span className="font-bold text-slate-700">{deadline}</span>
                           </span>
                         ) : null}
                       </div>
+                      <p className="mt-2.5 text-[10px] font-bold tracking-wide text-slate-400">주문 거래 건</p>
                     </div>
-                    <div className="flex w-full shrink-0 flex-col items-stretch gap-2 border-t border-slate-100 pt-3 sm:w-auto sm:max-w-[11rem] sm:border-0 sm:pt-0 sm:pl-4 sm:items-end">
+                    <div className="flex w-full shrink-0 flex-col justify-center gap-2.5 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-40 lg:border-l lg:border-slate-100 lg:pl-5">
                       {isTerminalCard ? (
                         <Link
                           href={href}
-                          className="text-center text-sm font-semibold text-slate-600 underline-offset-2 hover:text-blue-800 hover:underline sm:text-right"
+                          className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold text-slate-700 hover:bg-slate-100 transition sm:w-auto"
                         >
                           작업방 보기
                         </Link>
                       ) : (
                         <Link
                           href={href}
-                          className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
+                          className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-500 transition sm:w-auto"
                         >
                           작업방 입장
                         </Link>
@@ -177,7 +194,7 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
                       {postHref ? (
                         <Link
                           href={postHref}
-                          className="text-center text-xs font-semibold text-slate-600 underline-offset-2 hover:text-blue-800 hover:underline sm:text-right"
+                          className="text-center text-xs font-bold text-slate-400 underline-offset-2 hover:text-blue-600 hover:underline"
                         >
                           의뢰 글 보기
                         </Link>

@@ -100,8 +100,8 @@ export function OrderActionBar(props: Props) {
             <span className="flex min-w-0 items-start gap-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <span>
-                <span className="block text-sm font-bold">진행 중인 분쟁 보기</span>
-                <span className="mt-0.5 block text-xs font-normal opacity-90">패널에서 상태를 확인합니다.</span>
+                <span className="block text-sm font-bold">해결 요청 상태 보기</span>
+                <span className="mt-0.5 block text-xs font-normal opacity-90">검토 현황을 확인합니다.</span>
               </span>
             </span>
             <Chevr />
@@ -191,7 +191,7 @@ export function OrderActionBar(props: Props) {
           <a href="#order-disputes" className={disputeSubtleHref}>
             <span className="flex min-w-0 items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              분쟁 신청·상세로 이동
+              문제 해결 요청하기
             </span>
             <Chevr />
           </a>
@@ -200,11 +200,11 @@ export function OrderActionBar(props: Props) {
             type="button"
             disabled
             className={mutedLink}
-            title={openDisputeApplicationDisabledReason ?? "분쟁을 신청할 수 없습니다."}
+            title={openDisputeApplicationDisabledReason ?? "지금은 문제 해결 요청을 보낼 수 없습니다."}
           >
             <span className="flex min-w-0 items-center gap-2">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              분쟁 신청
+              문제 해결 요청하기
             </span>
             <Chevr />
           </button>

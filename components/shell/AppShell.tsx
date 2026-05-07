@@ -35,7 +35,7 @@ const mentorNav: NavItem[] = [
   { href: "/mentors", label: "멘토 찾기" },
   { href: "/mentor/question-room", label: "질문방" },
   { href: "/community", label: "커뮤니티" },
-  { href: "/mentor/custom-request", label: "맞춤의뢰" },
+  { href: "/custom-request", label: "맞춤의뢰" },
   { href: "/mentor/payouts", label: "정산" },
   { href: "/mentor/profile", label: "프로필" },
 ];

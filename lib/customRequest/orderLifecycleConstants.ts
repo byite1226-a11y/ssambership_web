@@ -165,7 +165,7 @@ const ORDER_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
   delivery_submitted: "납품 제출됨",
   accepted: "수락 완료",
   revision_requested: "수정 요청됨",
-  disputed: "분쟁 접수됨",
+  disputed: "해결 요청 중",
   refunded: "환불됨",
   done: "처리 완료",
   resolved: "해결됨",
@@ -340,7 +340,7 @@ export function orderEventKindLabelForUi(raw: string): string {
     settlement_item_created: "정산 항목 생성",
     message_created: "메시지 작성",
     revision_requested: "수정 요청",
-    dispute_opened: "분쟁 접수",
+    dispute_opened: "해결 요청",
     payment_confirmed: "결제 확인",
   };
   return map[s] ?? orderStatusLabelForUi(s);

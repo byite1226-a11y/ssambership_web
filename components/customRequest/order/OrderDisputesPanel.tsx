@@ -5,7 +5,6 @@ import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries
 import {
   formatOrderRoomDateTime,
   orderStatusLabelForUi,
-  ORDER_ROOM_CARD_CLASS,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
 
@@ -50,18 +49,21 @@ export function OrderDisputesPanel({
   const canForm = (actorRole === "student" || actorRole === "mentor") && hasOrderPartyAccess && Boolean(String(orderId).trim());
 
   return (
-    <section id="order-disputes" className={`${ORDER_ROOM_CARD_CLASS} text-sm text-slate-800`}>
-      <h3 className="text-sm font-bold text-slate-900">분쟁·환불</h3>
-      <p className="mt-1 text-xs text-slate-600">
+    <section id="order-disputes" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:border-blue-200 hover:shadow-md transition-all duration-300 relative overflow-hidden text-sm text-slate-800">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+        <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">결제·납품 문제 해결</h3>
+        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-600">Dispute</span>
+      </div>
+      <p className="mt-1 text-xs font-semibold text-slate-500 leading-normal">
         {workspaceCompact
-          ? "진행 중인 분쟁이 있으면 납품·수락·수정·작업 등이 제한될 수 있습니다."
+          ? "진행 중인 해결 요청이 있으면 납품·수락·수정·작업 등이 제한될 수 있습니다."
           : actorRole === "mentor"
-            ? "접수된 분쟁은 운영에서 검토합니다. 진행 중이면 일부 작업이 제한될 수 있으며, 새 신청은 정책에 따라 허용됩니다."
-            : "주문 진행 중 문제가 있을 때 의뢰자 또는 멘토가 분쟁을 신청할 수 있어요. 진행 중인 분쟁이 있으면 납품·수락·수정 요청·작업 시작이 제한됩니다."}
+            ? "결제, 납품, 수정 요청, 환불처럼 주문 처리와 관련된 문제가 있을 때 요청해 주세요. 접수된 요청은 운영에서 검토합니다."
+            : "결제, 납품, 수정 요청, 환불처럼 주문 처리와 관련된 문제가 있을 때 의뢰자 혹은 멘토가 문제 해결을 요청할 수 있어요. 진행 중인 해결 요청이 있을 시 작업 단계가 일시 보류됩니다."}
       </p>
 
       {!orderTerminal && canForm && openDisputeApplicationDisabledReason == null ? (
-        <form action={submitCustomOrderDisputeAction} className="mt-4 space-y-2">
+        <form action={submitCustomOrderDisputeAction} className="mt-4 space-y-3">
           <input type="hidden" name="orderId" value={orderId} />
           <label className="sr-only" htmlFor="order-dispute-body">
             신청 내용
@@ -69,7 +71,7 @@ export function OrderDisputesPanel({
           <textarea
             id="order-dispute-body"
             name="disputeBody"
-            className="min-h-[100px] w-full rounded-lg border border-amber-200/90 bg-white px-2.5 py-2 text-slate-900"
+            className="min-h-[100px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
             maxLength={8000}
             placeholder="상황을 구체적으로 적어 주세요."
             required
@@ -77,14 +79,14 @@ export function OrderDisputesPanel({
           />
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+            className="rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-black text-white hover:bg-amber-700 shadow-md shadow-amber-500/10 transition"
           >
-            분쟁 신청하기
+            문제 해결 요청하기
           </button>
         </form>
       ) : !orderTerminal && canForm && openDisputeApplicationDisabledReason ? (
         <div className="mt-3 space-y-2" role="status">
-          <p className="rounded-lg border border-amber-200 bg-white/80 px-3 py-2 text-sm text-slate-600">
+          <p className="rounded-xl border border-amber-100 bg-amber-50/30 p-3 text-xs font-bold text-amber-800">
             {openDisputeApplicationDisabledReason}
           </p>
         </div>
@@ -92,30 +94,30 @@ export function OrderDisputesPanel({
 
       <div className="mt-4">
         {u.error ? (
-          <p className="mt-2 text-sm text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+          <p className="mt-2 text-xs font-bold text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : null}
         {workspaceCompact && hasTable && rows.length > 0 ? (
           <details className="group mt-1">
-            <summary className="cursor-pointer list-none text-xs font-semibold text-slate-600 marker:hidden [&::-webkit-details-marker]:hidden">
-              <span className="inline-flex items-center gap-1">
-                <span className="text-slate-400">▸</span> 분쟁 접수 내역 ({rows.length})
+            <summary className="cursor-pointer list-none text-xs font-extrabold text-slate-500 marker:hidden [&::-webkit-details-marker]:hidden flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-slate-400 group-open:rotate-90 transition-transform">▸</span> 문제 해결 요청 내역 ({rows.length})
               </span>
             </summary>
-            <ul className="mt-2 max-h-60 space-y-2 overflow-y-auto">
+            <ul className="mt-3 max-h-60 space-y-2.5 overflow-y-auto">
               {rows.map((r, i) => {
                 const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
                 return (
                   <li
                     key={String(r.id ?? i)}
-                    className="rounded-lg border border-slate-200/60 bg-slate-50/50 px-2.5 py-2 text-slate-800"
+                    className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 hover:border-amber-100 transition duration-200"
                   >
-                    <p className="text-xs text-slate-500">
+                    <p className="text-[10px] font-bold text-amber-500">
                       {at} · {statusLabel(r)}
                       {hasActiveDisputeForOrderRows([r]) ? (
-                        <span className="ml-1 font-medium text-amber-800">(진행 중)</span>
+                        <span className="ml-1 font-black text-amber-600">(진행 중)</span>
                       ) : null}
                     </p>
-                    <p className="mt-1.5 whitespace-pre-wrap text-slate-800">{disputeBody(r)}</p>
+                    <p className="mt-1.5 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-semibold">{disputeBody(r)}</p>
                   </li>
                 );
               })}
@@ -123,31 +125,31 @@ export function OrderDisputesPanel({
           </details>
         ) : (
           <>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">접수 내역</h4>
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">접수 내역</h4>
             {hasTable && rows.length > 0 ? (
-              <ul className="mt-2 max-h-80 space-y-3 overflow-y-auto">
+              <ul className="mt-2.5 max-h-80 space-y-3 overflow-y-auto">
                 {rows.map((r, i) => {
                   const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
                   return (
                     <li
                       key={String(r.id ?? i)}
-                      className="rounded-lg border border-blue-100/50 bg-blue-50/25 px-3 py-2.5 text-slate-800"
+                      className="rounded-xl border border-amber-100 bg-amber-50/20 px-3 py-3 transition duration-200 hover:shadow-sm hover:border-amber-300"
                     >
-                      <p className="text-xs text-slate-500">
+                      <p className="text-[10px] font-bold text-slate-400">
                         {at} · {statusLabel(r)}
                         {hasActiveDisputeForOrderRows([r]) ? (
-                          <span className="ml-1 font-medium text-amber-800">(진행 중)</span>
+                          <span className="ml-1 font-black text-amber-600">(진행 중)</span>
                         ) : null}
                       </p>
-                      <p className="mt-1.5 whitespace-pre-wrap text-slate-800">{disputeBody(r)}</p>
+                      <p className="mt-2 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-semibold">{disputeBody(r)}</p>
                     </li>
                   );
                 })}
               </ul>
             ) : hasTable && rows.length === 0 ? (
-              <p className="mt-2 text-sm text-slate-600">접수된 분쟁이 없습니다.</p>
+              <p className="mt-2 text-xs font-semibold text-slate-400 text-center py-4 bg-slate-50/30 rounded-xl">접수된 해결 요청이 없습니다.</p>
             ) : !hasTable ? (
-              <p className="mt-2 text-sm text-slate-500">분쟁 내역을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.</p>
+              <p className="mt-2 text-xs font-semibold text-slate-400 text-center py-4 bg-slate-50/30 rounded-xl">해결 요청 내역을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.</p>
             ) : null}
           </>
         )}

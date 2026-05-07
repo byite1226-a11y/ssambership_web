@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
-import { MentorCustomRequestWorkspaceLayout } from "@/components/customRequest/MentorCustomRequestWorkspaceLayout";
 import { OrderRoomView } from "@/components/customRequest/OrderRoomView";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
@@ -73,6 +72,7 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   return (
     <PageScaffold
       compactHero
+      hideHero={true}
       eyebrow={isMentor ? "멘토 · 맞춤의뢰" : "주문방"}
       title={isMentor ? "주문·작업방" : "주문·납품"}
       description={
@@ -91,17 +91,10 @@ export default async function CustomRequestOrderPage(props: PageProps) {
       sections={[]}
       hideFooterPlaceholderCards
     >
-      {isMentor ? (
-        <MentorCustomRequestWorkspaceLayout active="orders">
-          {alerts}
-          {room}
-        </MentorCustomRequestWorkspaceLayout>
-      ) : (
-        <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
-          {alerts}
-          {room}
-        </div>
-      )}
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-0">
+        {alerts}
+        {room}
+      </div>
     </PageScaffold>
   );
 }

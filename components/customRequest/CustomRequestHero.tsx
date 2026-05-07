@@ -19,7 +19,13 @@ const PROCESS_ROWS = [
   },
 ] as const;
 
-export function CustomRequestHero() {
+export type CustomRequestHeroProps = {
+  role?: string | null;
+};
+
+export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
+  const isMentor = role === "mentor";
+
   return (
     <section className="w-full">
       <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-br from-slate-50 via-white to-sky-50/50 shadow-[0_8px_40px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04]">
@@ -36,18 +42,37 @@ export function CustomRequestHero() {
                 학교 공부, 진로 고민, 학습 방법까지 — 요청을 올리고 멘토 제안을 비교한 뒤, 한 분을 골라 이어갈 수 있어요.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <Link
-                  href="/custom-request/new"
-                  className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-6 py-3.5 text-center text-sm font-extrabold text-white shadow-md transition hover:bg-blue-700 sm:flex-none sm:min-w-[11rem]"
-                >
-                  의뢰 요청 등록하기
-                </Link>
-                <Link
-                  href="/custom-request/orders"
-                  className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-2xl border-2 border-slate-300/90 bg-white px-6 py-3.5 text-center text-sm font-extrabold text-slate-900 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 sm:flex-none sm:min-w-[11rem]"
-                >
-                  내 진행 의뢰 보기
-                </Link>
+                {isMentor ? (
+                  <>
+                    <Link
+                      href="/mentor/custom-request/dashboard"
+                      className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-6 py-3.5 text-center text-sm font-extrabold text-white shadow-md transition hover:bg-blue-700 sm:flex-none sm:min-w-[11rem]"
+                    >
+                      내 진행 의뢰 보기
+                    </Link>
+                    <Link
+                      href="/mentor/custom-request/posts"
+                      className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-2xl border-2 border-slate-300/90 bg-white px-6 py-3.5 text-center text-sm font-extrabold text-slate-900 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 sm:flex-none sm:min-w-[11rem]"
+                    >
+                      새 의뢰 목록 보기
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/custom-request/new"
+                      className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-6 py-3.5 text-center text-sm font-extrabold text-white shadow-md transition hover:bg-blue-700 sm:flex-none sm:min-w-[11rem]"
+                    >
+                      의뢰 요청 등록하기
+                    </Link>
+                    <Link
+                      href="/custom-request/orders"
+                      className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-2xl border-2 border-slate-300/90 bg-white px-6 py-3.5 text-center text-sm font-extrabold text-slate-900 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 sm:flex-none sm:min-w-[11rem]"
+                    >
+                      내 진행 의뢰 보기
+                    </Link>
+                  </>
+                )}
                 <a
                   href="#categories"
                   className="inline-flex min-h-[52px] flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white/80 px-6 py-3.5 text-center text-sm font-extrabold text-slate-800 transition hover:border-blue-300 hover:bg-blue-50/40 sm:flex-none sm:min-w-[11rem]"

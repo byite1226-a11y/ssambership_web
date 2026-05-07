@@ -38,9 +38,13 @@ export function isMainNavItemActive(pathname: string, itemHref: string, audience
     case "/community":
       return p === "/community" || p.startsWith("/community/");
     case "/custom-request":
-      return p === "/custom-request" || p.startsWith("/custom-request/");
     case "/mentor/custom-request":
-      return p === "/mentor/custom-request" || p.startsWith("/mentor/custom-request/");
+      return (
+        p === "/custom-request" ||
+        p.startsWith("/custom-request/") ||
+        p === "/mentor/custom-request" ||
+        p.startsWith("/mentor/custom-request/")
+      );
     case "/cash":
       return (
         p === "/cash" ||

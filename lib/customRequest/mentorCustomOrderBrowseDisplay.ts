@@ -16,7 +16,7 @@ type Row = Record<string, unknown>;
 export function mentorCustomOrderStatusHeadline(row: Row, activeDisputeOrderIds?: ReadonlySet<string> | null): string {
   const id = typeof row.id === "string" && row.id.trim() ? row.id.trim() : "";
   if (activeDisputeOrderIds && id && activeDisputeOrderIds.has(id)) {
-    return "분쟁 접수 · 운영 검토 중";
+    return "해결 요청 검토 중";
   }
   if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
     return "결제 대기 · 진행 대기";

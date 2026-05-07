@@ -34,7 +34,7 @@ export function MentorOpenPostListSection(props: {
     );
   }
   return (
-    <ul className="space-y-3 text-sm text-slate-800">
+    <ul className="space-y-3.5 text-sm text-slate-800">
       {props.rows.map((r, i) => {
         const d = mapPostRowToPublicDetail(r);
         const id = String(r.id ?? i);
@@ -47,44 +47,48 @@ export function MentorOpenPostListSection(props: {
         return (
           <li
             key={id}
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+            className="group overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:border-blue-200 hover:shadow-[0_4px_12px_rgba(30,58,138,0.03)] transition-all duration-200"
           >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={chipClass("slate")}>{d.category !== "—" ? d.category : "분야 미정"}</span>
                   {showGrade ? <span className={chipClass("violet")}>{gradeRaw}</span> : null}
                   <MentorPostStatusBadge row={r} />
                 </div>
-                <Link href={detailHref} className="mt-2 block text-lg font-extrabold leading-snug text-slate-900 hover:text-blue-700">
+                <Link href={detailHref} className="mt-2.5 block text-[17px] font-black leading-snug text-slate-900 group-hover:text-blue-600 transition-colors">
                   {d.title}
                 </Link>
-                <p className="mt-1.5 text-sm text-slate-600">
-                  <span className="font-extrabold text-slate-700">희망 전공·분야</span> {d.subject}
+                <p className="mt-2 text-xs text-slate-600">
+                  <span className="font-extrabold text-slate-400 mr-1.5 uppercase tracking-wider">희망 전공·분야</span> 
+                  <span className="font-semibold text-slate-800">{d.subject}</span>
                 </p>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 sm:text-sm">
-                  <span>
-                    <span className="font-extrabold text-slate-500">예상 금액</span> {d.budgetLine}
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+                  <span className="rounded-md bg-slate-50 border border-slate-100 px-2 py-1">
+                    <span className="font-extrabold text-slate-400 mr-1">예상 금액</span> 
+                    <span className="font-bold text-slate-700">{d.budgetLine}</span>
                   </span>
                   {showPeriod ? (
-                    <span>
-                      <span className="font-extrabold text-slate-500">예상 기간</span> {periodRaw}
+                    <span className="rounded-md bg-slate-50 border border-slate-100 px-2 py-1">
+                      <span className="font-extrabold text-slate-400 mr-1">예상 기간</span> 
+                      <span className="font-bold text-slate-700">{periodRaw}</span>
                     </span>
                   ) : null}
-                  <span>
-                    <span className="font-extrabold text-slate-500">마감</span> {d.deadline}
+                  <span className="rounded-md bg-red-50/50 border border-red-100 px-2 py-1">
+                    <span className="font-extrabold text-red-400 mr-1">마감</span> 
+                    <span className="font-bold text-red-700">{d.deadline}</span>
                   </span>
                 </div>
-                <p className="mt-1.5 text-xs tabular-nums text-slate-400">등록 {formatDateYMDOrDash(r.created_at)}</p>
+                <p className="mt-2.5 text-[10px] font-bold tracking-wide text-slate-400">등록 {formatDateYMDOrDash(r.created_at)}</p>
               </div>
-              <div className="flex w-full shrink-0 flex-col justify-start gap-3 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-44 lg:border-l lg:border-slate-100 lg:pl-5">
+              <div className="flex w-full shrink-0 flex-col justify-center gap-2.5 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-40 lg:border-l lg:border-slate-100 lg:pl-5">
                 <Link
                   href={applyHref}
-                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
+                  className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-500 transition sm:w-auto"
                 >
                   제안하기
                 </Link>
-                <Link href={detailHref} className="text-center text-xs font-semibold text-slate-600 underline-offset-2 hover:text-blue-800 hover:underline lg:text-right">
+                <Link href={detailHref} className="text-center text-xs font-bold text-slate-400 underline-offset-2 hover:text-blue-600 hover:underline">
                   내용 확인하기
                 </Link>
               </div>
