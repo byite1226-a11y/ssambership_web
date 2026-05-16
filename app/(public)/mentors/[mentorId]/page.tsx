@@ -3,6 +3,7 @@ import { PublicMentorDetailBody, PublicMentorNotFoundBody } from "@/components/m
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { loadPublicMentorBundle } from "@/lib/mentor/publicMentorBundle";
 import { createClient } from "@/lib/supabase/server";
+import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 type Props = {
   params: Promise<{ mentorId: string }>;
 };
@@ -11,6 +12,12 @@ export default async function MentorDetailByIdPage(props: Props) {
   const { mentorId } = await props.params;
   const supabase = await createClient();
   const bundle = await loadPublicMentorBundle(supabase, mentorId);
+
+  const { user, profile } = await getServerUserWithProfile();
+  const viewer =
+    user && profile?.role
+      ? { userId: user.id, role: profile.role as "student" | "mentor" | "admin" }
+      : null;
 
   if (bundle.kind === "not_found") {
     return (
@@ -63,7 +70,7 @@ export default async function MentorDetailByIdPage(props: Props) {
       loadingState=""
       errorState=""
     >
-      <PublicMentorDetailBody mentorId={mentorId} userRow={bundle.userRow} display={display} bundle={bundle} />
+      <PublicMentorDetailBody mentorId={mentorId} userRow={bundle.userRow} display={display} bundle={bundle} viewer={viewer} />
     </PageScaffold>
   );
 }

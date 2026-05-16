@@ -92,6 +92,12 @@ export default async function StudentMyPage() {
               <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/mentors">
                 멘토 찾기·구독
               </Link>
+              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/subscribe/success">
+                결제 완료 안내
+              </Link>
+              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/subscribe/failed">
+                결제 실패 안내
+              </Link>
             </div>
           </section>
 
@@ -133,9 +139,15 @@ export default async function StudentMyPage() {
               <h2 className="text-base font-bold text-slate-900">고객지원</h2>
               <p className="mt-2 text-xs text-slate-600 leading-relaxed font-medium">맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있어요.</p>
             </div>
-            <div className="mt-4 select-none">
+            <div className="mt-4 flex flex-col gap-2 select-none">
               <Link className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1" href="/support/disputes">
                 분쟁·환불 현황 &rarr;
+              </Link>
+              <Link className="text-xs font-bold text-blue-600 hover:underline" href="/support/reports">
+                내 신고 내역
+              </Link>
+              <Link className="text-xs font-bold text-blue-600 hover:underline" href="/support/refunds">
+                환불 요청 안내
               </Link>
             </div>
           </section>
@@ -147,6 +159,14 @@ export default async function StudentMyPage() {
               <MypageMetricLine metric={bundle.reports} />
             </div>
             <p className="text-[10px] text-slate-400 leading-tight mt-2 select-none">작성한 리뷰와 제출한 신고는 운영 정책에 따라 안내됩니다.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link href="/legal/terms" className="text-xs font-bold text-slate-600 underline">
+                약관 안내
+              </Link>
+              <Link href="/custom-request" className="text-xs font-bold text-slate-600 underline">
+                맞춤의뢰
+              </Link>
+            </div>
           </section>
         </div>
       </div>

@@ -50,7 +50,6 @@ export function OrderRevisionsPanel({
     >
       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
         <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">수정 요청 내역</h3>
-        <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[9px] font-black text-violet-600">Revisions</span>
       </div>
       <p className="mt-1 text-xs font-semibold text-slate-500 leading-normal">
         {workspaceCompact

@@ -10,10 +10,10 @@ type Section = {
 };
 
 type PageScaffoldProps = {
-  eyebrow: string;
-  title: string;
-  description: string;
-  ctas: Cta[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  ctas?: Cta[];
   /** 기본 []. 항목이 없으면 요약 그리드 블록을 생략합니다. */
   sections?: Section[];
   /** 없거나 빈 문자열이면 ‘빈 상태’ 카드를 렌더링하지 않습니다. */
@@ -44,7 +44,7 @@ export function PageScaffold({
   eyebrow,
   title,
   description,
-  ctas,
+  ctas = [],
   sections = [],
   emptyState,
   dataPoints = [],

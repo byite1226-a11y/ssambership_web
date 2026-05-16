@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { HelpCircle, Bell } from "lucide-react";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { MentorCustomRequestOrdersBrowseClient } from "@/components/customRequest/MentorCustomRequestOrdersBrowseClient";
 import { MentorCustomRequestWorkspaceLayout } from "@/components/customRequest/MentorCustomRequestWorkspaceLayout";
@@ -8,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 import { fetchMentorCustomRequestOrdersFromPrimaryTable } from "@/lib/home/mentorDashboardQueries";
 import { classifyMentorOrderBrowseTab } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
+import { fetchMentorWorkspaceCounts } from "@/lib/customRequest/mentorCounts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,61 +22,45 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
   const sp = (await props.searchParams) ?? {};
   const currentTab = typeof sp.tab === "string" ? sp.tab : "all";
 
-  const { rows, error } = await fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80);
+  const [ordersResp, orderCounts] = await Promise.all([
+    fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 80),
+    fetchMentorWorkspaceCounts(supabase, user.id),
+  ]);
+  const { rows, error } = ordersResp;
+
   const orderIds = rows
     .map((r) => (typeof (r as { id?: unknown }).id === "string" ? String((r as { id: string }).id) : ""))
     .filter(Boolean);
   const activeDisputeOrderIds = error ? new Set<string>() : await fetchActiveOpenDisputeOrderIdSet(supabase, orderIds);
   const disputeIdList = [...activeDisputeOrderIds];
 
-  const billingCount = error ? 0 : rows.filter((r) => classifyMentorOrderBrowseTab(r as Record<string, unknown>, activeDisputeOrderIds) === "billing").length;
-  const workCount = error ? 0 : rows.filter((r) => classifyMentorOrderBrowseTab(r as Record<string, unknown>, activeDisputeOrderIds) === "work").length;
-  const deliveryPendingCount = error ? 0 : rows.filter((r) => classifyMentorOrderBrowseTab(r as Record<string, unknown>, activeDisputeOrderIds) === "delivery").length;
-  const revisionCount = error ? 0 : rows.filter((r) => classifyMentorOrderBrowseTab(r as Record<string, unknown>, activeDisputeOrderIds) === "revision").length;
-  const doneCount = error ? 0 : rows.filter((r) => classifyMentorOrderBrowseTab(r as Record<string, unknown>, activeDisputeOrderIds) === "done").length;
+  const activeTabKey = ["billing", "work", "delivery", "revision", "done"].includes(currentTab) ? currentTab : undefined;
 
-  const orderCounts = {
-    billing: billingCount,
-    work: workCount,
-    delivery: deliveryPendingCount,
-    revision: revisionCount,
-    done: doneCount,
-  };
+  // Compute counts per tab from actual data
+  const tabCountMap: Record<string, number> = { all: rows.length };
+  for (const row of rows) {
+    const tab = classifyMentorOrderBrowseTab(row, activeDisputeOrderIds);
+    tabCountMap[tab] = (tabCountMap[tab] ?? 0) + 1;
+  }
 
-  const navKeyMap: Record<string, string> = {
-    billing: "orders-billing",
-    work: "orders-work",
-    delivery: "orders-delivery",
-    revision: "orders-revision",
-    done: "orders-done",
-  };
-  const activeTabKey = navKeyMap[currentTab] ? currentTab : undefined;
+  // Summary stats for right sidebar (req_15)
+  const totalAccepted = rows.length;
+  const beforeStart = tabCountMap.billing ?? 0;
+  const inProgress = tabCountMap.work ?? 0;
+  const settlingCount = tabCountMap.delivery ?? 0;
+  const completedCount = tabCountMap.done ?? 0;
 
-  const titleMap: Record<string, string> = {
-    billing: "수락된 의뢰",
-    work: "진행 중",
-    delivery: "납품 대기",
-    revision: "수정 요청",
-    done: "종료된 의뢰",
-  };
-  const descMap: Record<string, string> = {
-    billing: "학생 결제가 완료되면 곧바로 작업을 시작할 수 있는 의뢰 목록입니다.",
-    work: "현재 활발히 진행 및 소통 중인 맞춤의뢰 작업 목록입니다.",
-    delivery: "작업을 완수하여 학생에게 납품한 뒤 검토 승인을 기다리는 목록입니다.",
-    revision: "학생이 제출물에 수정을 요청하여 보완 작업 중인 목록입니다.",
-    done: "모든 작업이 승인되어 최종 정산 및 종료된 맞춤의뢰 목록입니다.",
-  };
-
-  const titleText = titleMap[currentTab] ?? "맞춤의뢰 주문";
-  const descText = descMap[currentTab] ?? "수락된 의뢰가 주문으로 이어진 뒤, 결제·작업·납품·완료까지 한곳에서 관리합니다.";
+  // Estimate total accepted amount (캐시)
+  // We can't compute actual amounts from ordering data without more fields, so show a placeholder
+  const totalAmountPlaceholder = "—";
 
   return (
     <PageScaffold
       compactHero
       hideFooterPlaceholderCards
       eyebrow="멘토 · 맞춤의뢰"
-      title={titleText}
-      description={descText}
+      title="수락된 의뢰"
+      description="의뢰자가 제안을 수락한 의뢰 목록입니다."
       ctas={[]}
       sections={[]}
       dataPoints={[]}
@@ -84,60 +68,118 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
       hideHero={true}
     >
       <MentorCustomRequestWorkspaceLayout active="orders" tab={activeTabKey} counts={orderCounts}>
-        <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
+        {/* Page header */}
+        <div className="mb-5">
+          <h1 className="text-[24px] font-black tracking-tight text-slate-900">수락된 의뢰</h1>
+          <p className="mt-1 text-[14px] text-slate-500">의뢰자가 제안을 수락한 의뢰 목록입니다.</p>
+        </div>
+
+        <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+          {/* Main: orders list */}
           <div className="min-w-0 lg:col-span-8">
-            {/* Simple elegant text header inside main content */}
-            <div className="mb-6 border-b border-slate-100 pb-5">
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">{titleText}</h1>
-              <p className="mt-1 text-sm text-slate-500">{descText}</p>
-            </div>
             {error ? (
               <p
-                className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-950"
+                className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] font-semibold text-amber-900"
                 role="alert"
               >
                 주문 목록을 불러오지 못했습니다. {error}
               </p>
-            ) : null}
-            {!error && rows.length === 0 ? (
-              <p className="rounded-2xl border border-slate-200 bg-slate-50/90 p-6 text-sm text-slate-700">
-                아직 표시할 맞춤의뢰 주문이 없습니다. 학생이 지원서를 선택하면 여기에 나타납니다.
-              </p>
-            ) : null}
-            {!error && rows.length > 0 ? (
-              <MentorCustomRequestOrdersBrowseClient rows={rows} activeDisputeOrderIds={disputeIdList} initialTab={currentTab} />
-            ) : null}
+            ) : !error && rows.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+                <p className="text-[14px] font-bold text-slate-700 mb-2">수락된 의뢰가 없습니다</p>
+                <p className="text-[13px] text-slate-500">학생이 제안서를 수락하면 여기에 나타납니다.</p>
+                <Link
+                  href="/mentor/custom-request/posts"
+                  className="mt-5 inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-[13px] font-bold text-white hover:bg-blue-700 transition"
+                >
+                  새 의뢰 목록 보기
+                </Link>
+              </div>
+            ) : (
+              <MentorCustomRequestOrdersBrowseClient
+                rows={rows}
+                activeDisputeOrderIds={disputeIdList}
+                initialTab={currentTab}
+                counts={tabCountMap}
+              />
+            )}
           </div>
 
-          <aside className="mt-8 min-w-0 lg:col-span-4 lg:mt-0">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
-              <h3 className="flex items-center gap-1.5 text-sm font-black text-slate-900">
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-50 text-blue-600">
-                  <HelpCircle className="h-3 w-3" />
-                </span>
-                업무 안내
-              </h3>
-              <ul className="mt-4 space-y-3">
-                <li className="flex items-start gap-2 text-xs leading-relaxed text-slate-600">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-blue-500" />
-                  <span>
-                    작업방 카드에서 **납품, 수정 요청, 문제 해결** 흐름을 원스톱으로 처리할 수 있습니다.
-                  </span>
-                </li>
-                <li className="flex items-start gap-2 text-xs leading-relaxed text-slate-600">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-blue-500" />
-                  <span>
-                    대시보드나 새 의뢰 이동은 **왼쪽 통합 사이드 네비게이션**을 적극 활용해 보세요.
-                  </span>
-                </li>
-              </ul>
-              <div className="mt-4 border-t border-slate-100 pt-3.5">
+          {/* Right sidebar matching req_15 */}
+          <aside className="mt-6 min-w-0 lg:col-span-4 lg:mt-0">
+            <div className="lg:sticky lg:top-24 space-y-4">
+              {/* 수락된 의뢰 요약 */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 className="text-[14px] font-black text-slate-900 mb-3">수락된 의뢰 요약</h3>
+                <ul className="space-y-2">
+                  {[
+                    { label: "전체 수락", value: `${totalAccepted}건`, cls: "text-slate-900" },
+                    { label: "진행 전", value: `${beforeStart}건`, cls: "text-slate-700" },
+                    { label: "진행 중", value: `${inProgress}건`, cls: "text-slate-700" },
+                    { label: "정산 대기", value: `${settlingCount}건`, cls: "text-slate-700" },
+                    { label: "완료", value: `${completedCount}건`, cls: "text-slate-700" },
+                  ].map(({ label, value, cls }) => (
+                    <li key={label} className="flex items-center justify-between text-[13px]">
+                      <span className="text-slate-500">{label}</span>
+                      <span className={`font-bold ${cls}`}>{value}</span>
+                    </li>
+                  ))}
+                  <li className="border-t border-slate-100 pt-2 flex items-center justify-between text-[13px]">
+                    <span className="text-slate-500">총 수락 금액</span>
+                    <span className="font-bold text-slate-900">{totalAmountPlaceholder}캐시</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* 빠른 메뉴 */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 className="text-[14px] font-black text-slate-900 mb-3">빠른 메뉴</h3>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: "작업방 입장", href: "#", emoji: "🖥️" },
+                    { label: "납품 업로드", href: "#", emoji: "📤" },
+                    { label: "정산 내역", href: "/mentor/payouts", emoji: "💰" },
+                    { label: "메시지", href: "#", emoji: "💬" },
+                  ].map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="flex flex-col items-center gap-1 rounded-lg p-2.5 hover:bg-slate-50 transition text-center"
+                    >
+                      <span className="text-[20px]">{item.emoji}</span>
+                      <span className="text-[10px] font-semibold text-slate-600 leading-tight">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* 안내 사항 */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 className="text-[14px] font-black text-slate-900 mb-3">안내 사항</h3>
+                <ul className="space-y-2 text-[12px] leading-relaxed text-slate-600">
+                  {[
+                    "작업 시작 전 학생과 충분히 소통해주세요.",
+                    "납품은 마감일 전까지 완료해주세요.",
+                    "학생 확인 후 3일 내에 정산이 진행됩니다.",
+                    "문제 발생 시 고객센터로 문의해주세요.",
+                  ].map((text, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
+                      <span>{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* 문의 및 지원 */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h3 className="text-[13px] font-black text-slate-900 mb-2">문의 및 지원</h3>
+                <p className="text-[12px] text-slate-500 mb-3">맞춤의뢰 진행 중 문제가 발생하였나요?</p>
                 <Link
-                  href="/notifications"
-                  className="inline-flex items-center gap-1 text-[11px] font-black text-blue-600 hover:text-blue-700 hover:underline"
+                  href="#"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition"
                 >
-                  <Bell className="h-3 w-3" />
-                  알림 센터에서 실시간 상태 보기
+                  고객센터 문의하기
                 </Link>
               </div>
             </div>

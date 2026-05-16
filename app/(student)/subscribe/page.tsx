@@ -76,7 +76,7 @@ function SubscribeSelectionSummary(props: {
       <p className="mt-4 text-xs leading-relaxed text-slate-500">선택한 플랜은 결제 전에 다시 바꿀 수 있어요.</p>
       {canContinue ? (
         <a
-          href="#subscribe-payment"
+          href="/subscribe#subscribe-payment"
           className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-center text-sm font-extrabold text-white shadow-md transition hover:bg-blue-700"
         >
           이 플랜으로 계속하기

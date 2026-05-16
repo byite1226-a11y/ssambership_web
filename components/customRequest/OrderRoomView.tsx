@@ -1,7 +1,10 @@
-import { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
+"use client";
+
+import { useState } from "react";
+import type { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
-import { getMentorStartDisabledByMissingOrderDdl } from "@/lib/customRequest/orderSchemaGate";
+
 import {
   ORDER_INSERT_STATUS_PENDING,
   ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS,
@@ -27,8 +30,12 @@ import {
   OrderPaymentSettlementBlock,
   OrderRoomPageHeader,
   OrderSettlementLineCard,
+  OrderRightSidebarMentor,
 } from "@/components/customRequest/order/OrderSummaryHeader";
 import { ORDER_ROOM_APP_SURFACE_CLASS, ORDER_ROOM_CONTENT_MAX } from "@/lib/customRequest/orderLifecycleConstants";
+import { CustomRequestPolicyNotice } from "@/components/customRequest/CustomRequestPolicyNotice";
+import { ContactMaskingNotice } from "@/components/customRequest/ContactMaskingNotice";
+import { CustomRequestStatusBanner } from "@/components/customRequest/CustomRequestStatusBanner";
 
 type Bundle = Awaited<ReturnType<typeof loadOrderBundle>>;
 type Row = Record<string, unknown>;
@@ -75,7 +82,8 @@ function mentorStartDisabledReason(
   actorRole: AppRole,
   view: "student" | "mentor",
   order: Row,
-  detail: OrderDetailPageData
+  detail: OrderDetailPageData,
+  byDdl: string | null
 ): string | null {
   const byDispute = disputeLifecycleBlockReason(detail);
   if (byDispute) {
@@ -84,7 +92,6 @@ function mentorStartDisabledReason(
   if (view === "mentor" && actorRole === "mentor" && !isOrderRowPaymentConfirmedForMentorWork(order)) {
     return "학생 측 결제가 완료된 뒤에만 작업을 시작할 수 있습니다.";
   }
-  const byDdl = getMentorStartDisabledByMissingOrderDdl();
   if (byDdl) {
     return byDdl;
   }
@@ -182,8 +189,21 @@ export function OrderRoomView(props: {
   accessDetail?: string;
   /** 멘토: 맞춤의뢰 주문 목록 등 허브로 돌아가는 경로(OrderRoomPageHeader breadcrumb) */
   mentorOrderHubHref?: string;
+  mentorStartDdlDisabledReason: string | null;
 }) {
-  const { bundle, detail, orderId, view, actorRole, accessDenied, mentorOrderHubHref } = props;
+  if (props.view === "mentor") {
+    return <OrderRoomViewMentor {...props} />;
+  }
+  const {
+    bundle,
+    detail,
+    orderId,
+    view,
+    actorRole,
+    accessDenied,
+    mentorOrderHubHref,
+    mentorStartDdlDisabledReason,
+  } = props;
   const o = bundle.order.row;
 
   if (accessDenied) {
@@ -210,7 +230,7 @@ export function OrderRoomView(props: {
   const orderNorm = normalizedPrimaryOrderStatus(o as Row);
   const isTerminalOrder = isOrderRowTerminalForActions(o as Row);
   const mentorDeliverableBlockReason = (() => {
-    if (view !== "mentor" || actorRole !== "mentor") {
+    if (actorRole !== "mentor") {
       return "멘토만 납품을 등록할 수 있습니다.";
     }
     if (!isOrderRowPaymentConfirmedForMentorWork(o as Row)) {
@@ -247,8 +267,13 @@ export function OrderRoomView(props: {
         <OrderRoomPageHeader
           detail={detail}
           view={view}
-          backHref={view === "mentor" ? (mentorOrderHubHref ?? "/mentor/custom-request/orders") : "/custom-request"}
+          backHref={"/custom-request"}
         />
+        <div className="mt-4 space-y-3">
+          <CustomRequestPolicyNotice />
+          <ContactMaskingNotice />
+          <CustomRequestStatusBanner order={o as Row} disputeRows={detail.bundle.disputes.rows ?? []} />
+        </div>
         <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-6">
           <aside className="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-3 lg:sticky lg:top-24 lg:self-start">
             <OrderLeftContextPanel
@@ -297,11 +322,17 @@ export function OrderRoomView(props: {
               orderId={oid}
               orderTerminal={isTerminalOrder}
               studentAcceptDisabledReason={studentAcceptDisabledReason(actorRole, view, o as Row, detail)}
-              mentorStartDisabledReason={mentorStartDisabledReason(actorRole, view, o as Row, detail)}
+              mentorStartDisabledReason={mentorStartDisabledReason(
+                actorRole,
+                view,
+                o as Row,
+                detail,
+                mentorStartDdlDisabledReason
+              )}
               studentRevisionRequestDisabledReason={revBlock}
               openDisputeApplicationDisabledReason={disputeFormBlock}
               hasActiveDispute={hasActiveDispute}
-              mentorRevisionJumpDisabledReason={view === "mentor" ? activeDisputeActionBlock : null}
+              mentorRevisionJumpDisabledReason={null}
             />
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">기록</p>
@@ -313,7 +344,7 @@ export function OrderRoomView(props: {
                 studentRevisionRequestDisabledReason={revBlock}
                 orderTerminal={isTerminalOrder}
                 workspaceCompact
-                revisionAccent={view === "mentor" ? "violet" : "default"}
+                revisionAccent={"default"}
               />
               <OrderDisputesPanel
                 detail={detail}
@@ -329,6 +360,247 @@ export function OrderRoomView(props: {
           </aside>
         </div>
         <p className="mt-6 text-center text-xs text-slate-400">참고 주문 식별: {shortOrderIdForDisplay(idForDisplay)}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ========================================================
+ * MENTOR ONLY VISUAL UPGRADES (SAFETY ENCAPSULATED)
+ * ========================================================
+ */
+
+function OrderRoomViewMentor(props: {
+  bundle: Bundle;
+  detail: OrderDetailPageData | null;
+  orderId: string;
+  view: "student" | "mentor";
+  actorRole: AppRole;
+  accessDenied: boolean;
+  accessDetail?: string;
+  mentorOrderHubHref?: string;
+  mentorStartDdlDisabledReason: string | null;
+}) {
+  const {
+    bundle,
+    detail,
+    orderId,
+    view,
+    actorRole,
+    accessDenied,
+    mentorOrderHubHref,
+    mentorStartDdlDisabledReason,
+  } = props;
+  
+  type TabKey = "채팅" | "작업 파일" | "요청사항" | "진행 관리";
+  const [activeTab, setActiveTab] = useState<TabKey>("채팅");
+
+  const o = bundle.order.row;
+
+  if (accessDenied) {
+    return (
+      <div className="p-8 text-center">
+        <p className="inline-flex rounded-xl border border-amber-200 bg-amber-50 px-6 py-3 text-sm font-medium text-amber-900">
+          이 주문에 접근할 권한이 없습니다.
+        </p>
+      </div>
+    );
+  }
+
+  if (!o) {
+    const errMsg = bundle.order.error ? mapDataErrorMessage(String(bundle.order.error)) : "주문을 찾을 수 없습니다.";
+    return (
+      <div className="p-8 text-center text-slate-600 font-medium">
+        <p>{errMsg}</p>
+      </div>
+    );
+  }
+
+  if (!detail) return null;
+
+  const orderNorm = normalizedPrimaryOrderStatus(o as Row);
+  const isTerminalOrder = isOrderRowTerminalForActions(o as Row);
+  const mentorDeliverableBlockReason = (() => {
+    if (view !== "mentor" || actorRole !== "mentor") return "멘토 전용입니다.";
+    if (!isOrderRowPaymentConfirmedForMentorWork(o as Row)) {
+      return "결제가 완료된 뒤에만 납품을 등록할 수 있습니다.";
+    }
+    const d = disputeLifecycleBlockReason(detail);
+    if (d) return d;
+    if (isOrderRowTerminalForActions(o as Row)) {
+      return "완료된 주문에서는 납품을 추가할 수 없습니다.";
+    }
+    if (orderNorm === ORDER_INSERT_STATUS_PENDING) {
+      return "멘토가 작업을 시작한 뒤에 납품할 수 있습니다.";
+    }
+    if (orderNorm !== ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS && orderNorm !== "delivered") {
+      return `현재 단계에서는 납품 등록이 불가합니다.`;
+    }
+    return null;
+  })();
+
+  const revBlock = studentRevisionRequestDisabledReason(actorRole, view, o as Row, detail);
+  const disputeFormBlock = openDisputeApplicationDisabledReason(actorRole, o as Row, detail);
+  const hasActiveDispute = Boolean(detail.hasActiveDispute);
+  const activeDisputeActionBlock = hasActiveDispute ? "문제 해결 진행 중에는 제한됩니다." : null;
+  const oid = String((o as Row).id ?? "");
+  const idForDisplay = String(oid || orderId).trim();
+
+  const tabs: TabKey[] = ["채팅", "작업 파일", "요청사항", "진행 관리"];
+
+  return (
+    <div className="min-h-screen w-full bg-[#F8FAFC] py-6">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+        {/* TOP: Shared Mentor Header (Restructured) */}
+        <OrderRoomPageHeader
+          detail={detail}
+          view={view}
+          backHref={mentorOrderHubHref ?? "/mentor/custom-request/orders"}
+        />
+
+        <div className="mt-4 space-y-3">
+          <CustomRequestPolicyNotice />
+          <ContactMaskingNotice />
+          <CustomRequestStatusBanner order={o as Row} disputeRows={detail.bundle.disputes.rows ?? []} />
+        </div>
+
+        {/* MAIN: 2-Column Workspace Layout */}
+        <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* LEFT CONTENT: Tabs + Content area */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            {/* The Flat White Tab Bar */}
+            <div className="flex items-center border-b border-slate-200 bg-white px-2 rounded-t-xl">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`relative px-5 py-4 text-[15px] font-bold transition-colors ${
+                    activeTab === tab ? "text-blue-600" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {tab}
+                  {activeTab === tab && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-blue-600" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* ACTIVE TAB CONTENT AREA */}
+            <div className="rounded-b-xl bg-white border-x border-b border-slate-200 p-0 shadow-[0_2px_10px_rgba(0,0,0,0.02)] overflow-hidden">
+              {activeTab === "채팅" && (
+                <OrderProgressSection
+                  detail={detail}
+                  orderId={idForDisplay}
+                  view={view}
+                  actorRole={actorRole}
+                  hasOrderPartyAccess={!accessDenied}
+                  orderTerminal={isTerminalOrder}
+                />
+              )}
+
+              {activeTab === "작업 파일" && (
+                <div className="p-6 space-y-6">
+                  <OrderDeliverablesPanel
+                    detail={detail}
+                    orderId={oid}
+                    view={view}
+                    actorRole={actorRole}
+                    mentorDeliverableBlockReason={mentorDeliverableBlockReason}
+                    orderTerminal={isTerminalOrder}
+                  />
+                </div>
+              )}
+
+              {activeTab === "요청사항" && (
+                <div className="p-6 space-y-5">
+                  <h3 className="text-base font-bold text-slate-900">수정 요청 및 문제 해결 기록</h3>
+                  <OrderRevisionsPanel
+                    detail={detail}
+                    orderId={oid}
+                    actorRole={actorRole}
+                    hasOrderPartyAccess={!accessDenied}
+                    studentRevisionRequestDisabledReason={revBlock}
+                    orderTerminal={isTerminalOrder}
+                    revisionAccent="violet"
+                  />
+                  <OrderDisputesPanel
+                    detail={detail}
+                    orderId={oid}
+                    actorRole={actorRole}
+                    hasOrderPartyAccess={!accessDenied}
+                    openDisputeApplicationDisabledReason={disputeFormBlock}
+                    orderTerminal={isTerminalOrder}
+                  />
+                </div>
+              )}
+
+              {activeTab === "진행 관리" && (
+                <div className="p-6 space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-base font-bold text-slate-900">작업 제어 및 시스템 상태</h3>
+                    <p className="text-sm text-slate-500">주문의 현재 단계를 변경하거나 중요 이벤트를 추적합니다.</p>
+                  </div>
+                  <OrderActionBar
+                    view={view}
+                    actorRole={actorRole}
+                    orderId={oid}
+                    orderTerminal={isTerminalOrder}
+                    studentAcceptDisabledReason={null}
+                    mentorStartDisabledReason={mentorStartDisabledReason(
+                      actorRole,
+                      view,
+                      o as Row,
+                      detail,
+                      mentorStartDdlDisabledReason
+                    )}
+                    studentRevisionRequestDisabledReason={null}
+                    openDisputeApplicationDisabledReason={disputeFormBlock}
+                    hasActiveDispute={hasActiveDispute}
+                    mentorRevisionJumpDisabledReason={activeDisputeActionBlock}
+                  />
+                  
+                  {hasRightSettlementBlockContent(detail, o as Row, actorRole) && (
+                    <div className="space-y-4 border-t border-slate-100 pt-5">
+                      <h4 className="font-bold text-slate-800">정산 내역</h4>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <OrderPaymentSettlementBlock
+                          detail={detail}
+                          orderRow={o as Row}
+                          orderId={oid}
+                          actorRole={actorRole}
+                        />
+                        <OrderSettlementLineCard detail={detail} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t border-slate-100 pt-5">
+                    <h4 className="font-bold text-slate-800 mb-3">시스템 이벤트 로그</h4>
+                    <OrderEventsLogPanel detail={detail} />
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 flex justify-center">
+              <p className="text-[12px] font-medium text-slate-400">
+                주문 식별 번호: {shortOrderIdForDisplay(idForDisplay)}
+              </p>
+            </div>
+          </div>
+
+          {/* RIGHT SIDEBAR: Info & Guidelines */}
+          <aside className="w-full lg:w-[320px] shrink-0">
+            <OrderRightSidebarMentor
+              detail={detail}
+              view={view}
+              isTerminalOrder={isTerminalOrder}
+              orderIdDisplay={idForDisplay}
+            />
+          </aside>
+        </div>
       </div>
     </div>
   );

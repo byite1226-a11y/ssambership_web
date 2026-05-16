@@ -152,6 +152,22 @@ export async function createQuestionThreadAction(formData: FormData) {
     redirect(listPathForActor(actor) + "?error=" + encodeURIComponent("room 정보가 없습니다."));
   }
 
+  if (actor === "mentor") {
+    const supabaseEarly = await createClient();
+    const roomErrEarly = await assertMentorStudentRoomParty(supabaseEarly, roomId, user.id, actor);
+    if (roomErrEarly) {
+      redirect(listPathForActor(actor) + "?error=" + encodeURIComponent(roomErrEarly));
+    }
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: contextThreadId,
+        kind: "thread",
+        error: "질문 주제(스레드)는 학생만 새로 만들 수 있습니다. 학생이 주제를 만든 뒤 해당 스레드에 답변해 주세요.",
+        draftThread: readThreadTitleFromForm(formData),
+      })
+    );
+  }
+
   const supabase = await createClient();
   const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
   if (roomErr) {

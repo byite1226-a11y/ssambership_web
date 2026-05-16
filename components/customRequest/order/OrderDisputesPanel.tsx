@@ -52,7 +52,6 @@ export function OrderDisputesPanel({
     <section id="order-disputes" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:border-blue-200 hover:shadow-md transition-all duration-300 relative overflow-hidden text-sm text-slate-800">
       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
         <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">결제·납품 문제 해결</h3>
-        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-600">Dispute</span>
       </div>
       <p className="mt-1 text-xs font-semibold text-slate-500 leading-normal">
         {workspaceCompact

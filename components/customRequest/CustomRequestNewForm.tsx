@@ -5,6 +5,8 @@ import { useState } from "react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitCustomRequestNew } from "@/lib/customRequest/customRequestComposeActions";
 import { CustomRequestFlowStepper } from "@/components/customRequest/CustomRequestFlowStepper";
+import { CustomRequestPolicyNotice } from "@/components/customRequest/CustomRequestPolicyNotice";
+import { ContactMaskingNotice } from "@/components/customRequest/ContactMaskingNotice";
 
 const EXAMPLES = [
   { t: "생기부 주제 선정 및 방향성 피드백", d: "희망 전공과 관심 분야에 맞춰 어떤 주제가 적합할지 추천해 주세요." },
@@ -66,6 +68,11 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
               {props.errorMessage ? (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-950">{props.errorMessage}</div>
               ) : null}
+
+              <div className="space-y-3">
+                <CustomRequestPolicyNotice />
+                <ContactMaskingNotice />
+              </div>
 
               <FormSection step="1" title="어떤 도움이 필요하신가요?" hint="타일을 눌러 고르거나, 아래 입력란에 직접 적어 주세요.">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -772,6 +772,12 @@ function termsBlock(
         {!termsUrl && !privacyUrl && (
           <p className="text-sm text-slate-500">문서 URL은 `NEXT_PUBLIC_LEGAL_TERMS_URL` · `NEXT_PUBLIC_LEGAL_PRIVACY_URL`로 연결할 수 있어요.</p>
         )}
+        <p className="text-xs leading-relaxed text-slate-600">
+          만 14세 미만은 보호자 동의 절차가 필요할 수 있어요.{" "}
+          <Link href="/legal/minor-consent" className={`font-bold underline underline-offset-2 ${link}`}>
+            보호자 동의 안내(초안)
+          </Link>
+        </p>
       </div>
     </section>
   );

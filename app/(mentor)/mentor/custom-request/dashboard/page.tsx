@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Sparkles, Send, CheckCircle2, Eye, TrendingUp } from "lucide-react";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { MentorCustomRequestWorkspaceLayout } from "@/components/customRequest/MentorCustomRequestWorkspaceLayout";
 import { requireRole } from "@/lib/auth/routeGuard";
@@ -13,63 +12,109 @@ import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDispu
 import { classifyMentorOrderBrowseTab } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
 import {
   fetchMentorCustomRequestOrdersFromPrimaryTable,
-  mentorCustomOrderPaymentLine,
-  mentorCustomOrderStatusHeadline,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/home/mentorDashboardQueries";
+import { fetchMentorWorkspaceCounts } from "@/lib/customRequest/mentorCounts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type Row = Record<string, unknown>;
 
+function getDeadlineDisplay(row: Row): { dday: string; dateStr: string } {
+  const deadline = pickDisplayField(row, ["deadline", "due_at", "due_date", "close_at"]);
+  if (deadline === "—") return { dday: "—", dateStr: "" };
+  // Try to compute D-day
+  try {
+    const d = new Date(deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    d.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const dday = diff === 0 ? "D-Day" : diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
+    const dateStr = deadline.substring(0, 10).replace(/-/g, ".");
+    return { dday, dateStr };
+  } catch {
+    return { dday: "—", dateStr: "" };
+  }
+}
+
+function getStudentName(row: Row): string {
+  const name = pickDisplayField(row, ["student_name", "buyer_name", "client_name", "requester_name"]);
+  if (name !== "—") return name;
+  return "학생";
+}
+
+function getStatusBadge(row: Row, disputeSet: Set<string>): { label: string; cls: string } {
+  const id = typeof row.id === "string" ? row.id.trim() : "";
+  if (id && disputeSet.has(id)) return { label: "분쟁", cls: "bg-red-50 text-red-600" };
+  const tab = classifyMentorOrderBrowseTab(row, disputeSet);
+  if (tab === "billing") return { label: "진행 전", cls: "bg-amber-50 text-amber-600" };
+  if (tab === "revision") return { label: "수정 요청", cls: "bg-orange-50 text-orange-600" };
+  if (tab === "done") return { label: "완료", cls: "bg-slate-50 text-slate-500" };
+  return { label: "작업 중", cls: "bg-blue-50 text-blue-600" };
+}
+
+function getRecentActivity(row: Row): string {
+  const updated = pickDisplayField(row, ["updated_at", "last_message_at", "last_activity_at"]);
+  if (updated === "—") return "최근 활동 없음";
+  try {
+    const d = new Date(updated);
+    const now = new Date();
+    const diff = Math.round((now.getTime() - d.getTime()) / (1000 * 60));
+    if (diff < 60) return `${diff}분 전`;
+    if (diff < 60 * 24) return `${Math.round(diff / 60)}시간 전`;
+    return `${Math.round(diff / (60 * 24))}일 전`;
+  } catch {
+    return updated.substring(0, 10);
+  }
+}
+
 export default async function MentorCustomRequestDashboardPage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
-  const [{ items: recentApplied }, orders, openList] = await Promise.all([
+  const [{ items: recentApplied }, orders, openList, dashboardCounts] = await Promise.all([
     loadMentorRecentApplicationsWithPostHints(supabase, user.id, 5),
     fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 12),
     loadOpenCustomRequestPostsForMentorBrowse(supabase, 100),
+    fetchMentorWorkspaceCounts(supabase, user.id),
   ]);
+
   const dashOrderIds = orders.rows
     .map((r) => (typeof (r as { id?: unknown }).id === "string" ? String((r as { id: string }).id) : ""))
     .filter(Boolean);
   const activeDisputeOrderIds = orders.error
     ? new Set<string>()
     : await fetchActiveOpenDisputeOrderIdSet(supabase, dashOrderIds);
-  const disputeSet = activeDisputeOrderIds;
 
   const orderCount = orders.error ? 0 : orders.rows.length;
   const appliedCount = recentApplied.length;
+  const appliedPostIds = new Set(
+    (recentApplied ?? []).map((item) => String(item.postId || "").trim())
+  );
+  const filteredOpenRows = (openList.rows ?? []).filter((row) => {
+    const id = String(row.id ?? "").trim();
+    return id && !appliedPostIds.has(id);
+  });
+
   const openPoolCount =
-    openList.status === "ok" ? openList.rows.length : openList.status === "empty" ? 0 : null;
-  const deliveryPendingCount = orders.error
-    ? 0
-    : orders.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === "delivery").length;
+    openList.status === "ok" ? filteredOpenRows.length : openList.status === "empty" ? 0 : null;
+  const deliveryPendingCount = dashboardCounts.delivery ?? 0;
+  const doneCount = dashboardCounts.done ?? 0;
 
-  const billingCount = orders.error ? 0 : orders.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === "billing").length;
-  const workCount = orders.error ? 0 : orders.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === "work").length;
-  const revisionCount = orders.error ? 0 : orders.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === "revision").length;
-  const doneCount = orders.error ? 0 : orders.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === "done").length;
-
-  const dashboardCounts = {
-    open: openPoolCount ?? 0,
-    applied: appliedCount,
-    billing: billingCount,
-    work: workCount,
-    delivery: deliveryPendingCount,
-    revision: revisionCount,
-    done: doneCount,
-  };
-
-  const primaryHref = orderCount > 0 ? "/mentor/custom-request/orders" : "/mentor/custom-request/posts";
-  const primaryLabel = orderCount > 0 ? "진행 중 주문 보기" : "모집 중 의뢰 보기";
+  // For the 진행 중 table, get active orders (not done/billing)
+  const activeOrders = orders.error
+    ? []
+    : orders.rows.filter((r) => {
+        const tab = classifyMentorOrderBrowseTab(r, activeDisputeOrderIds);
+        return tab !== "done";
+      });
 
   return (
     <PageScaffold
       eyebrow="멘토 · 맞춤의뢰"
       title="맞춤의뢰 대시보드"
-      description="오늘 확인할 새 의뢰·진행 주문 요약입니다. 목록 이동은 왼쪽 메뉴에서도 할 수 있어요."
+      description="멘토님의 맞춤의뢰 활동 현황을 한눈에 확인하세요."
       ctas={[]}
       sections={[]}
       emptyState=""
@@ -77,137 +122,196 @@ export default async function MentorCustomRequestDashboardPage() {
       hideHero={true}
     >
       <MentorCustomRequestWorkspaceLayout active="dashboard" counts={dashboardCounts}>
-        {/* Modern High-Fidelity Product Header */}
-        <div className="mb-8 border-b border-slate-100 pb-6">
-          <div className="space-y-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700 tracking-wide">
-              멘토 · 맞춤의뢰
-            </span>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 pt-1">맞춤의뢰 대시보드</h1>
-            <p className="text-sm text-slate-500 font-medium">새 요청, 제안 현황, 진행 주문과 수익을 한눈에 확인하세요.</p>
-          </div>
+        {/* Page header */}
+        <div className="mb-6">
+          <h1 className="text-[26px] font-black tracking-tight text-slate-900">맞춤의뢰 대시보드</h1>
+          <p className="mt-1 text-[14px] text-slate-500">멘토님의 맞춤의뢰 활동 현황을 한눈에 확인하세요.</p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {/* Card 1: 모집 중 의뢰 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50/20 to-white p-5 shadow-sm hover:shadow-[0_4px_12px_rgba(16,185,129,0.03)] transition duration-200">
+        {/* 5 Stats Cards — matching req_11 */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          {/* Card 1: 새 의뢰 */}
+          <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                  <Sparkles className="h-4 w-4" />
-                </span>
-                <p className="text-xs font-black uppercase tracking-wider text-emerald-800">새 요청</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50">
+                  <svg className="h-4.5 w-4.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <span className="text-[12px] font-semibold text-slate-500">새 의뢰</span>
               </div>
-              <p className="mt-3.5 whitespace-nowrap text-3xl font-black tracking-tight text-slate-900">
+              <p className="text-[28px] font-black tracking-tight text-slate-900">
                 {openPoolCount === null ? "—" : openPoolCount}
+                <span className="text-[15px] font-bold text-slate-600 ml-0.5">건</span>
               </p>
             </div>
-            <p className="mt-2 text-xs font-bold text-emerald-700/90 truncate" title="오늘 확인 필요">오늘 확인 필요</p>
+            <p className="mt-2 text-[12px] font-semibold text-blue-600">
+              오늘 +{openPoolCount === null ? "0" : openPoolCount}건
+            </p>
           </div>
 
           {/* Card 2: 제안한 의뢰 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-[0_4px_12px_rgba(0,0,0,0.02)] transition duration-200">
+          <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
-                  <Send className="h-4 w-4" />
-                </span>
-                <p className="text-xs font-black uppercase tracking-wider text-slate-500">제출한 제안</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50">
+                  <svg className="h-4.5 w-4.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </div>
+                <span className="text-[12px] font-semibold text-slate-500">제안한 의뢰</span>
               </div>
-              <p className="mt-3.5 whitespace-nowrap text-3xl font-black tracking-tight text-slate-900">{appliedCount}</p>
+              <p className="text-[28px] font-black tracking-tight text-slate-900">
+                {appliedCount}
+                <span className="text-[15px] font-bold text-slate-600 ml-0.5">건</span>
+              </p>
             </div>
-            <p className="mt-2 text-xs font-bold text-slate-400 truncate" title="제안서 제출 완료">제안서 제출 완료</p>
+            <p className="mt-2 text-[12px] font-semibold text-orange-500">
+              응답 대기 {appliedCount}건
+            </p>
           </div>
 
           {/* Card 3: 수락된 의뢰 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-[0_4px_12px_rgba(0,0,0,0.02)] transition duration-200">
+          <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-                  <TrendingUp className="h-4 w-4" />
-                </span>
-                <p className="text-xs font-black uppercase tracking-wider text-slate-500">진행 주문</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50">
+                  <svg className="h-4.5 w-4.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-[12px] font-semibold text-slate-500">수락된 의뢰</span>
               </div>
-              <p className="mt-3.5 whitespace-nowrap text-3xl font-black tracking-tight text-slate-900">{orderCount}</p>
+              <p className="text-[28px] font-black tracking-tight text-slate-900">
+                {orderCount}
+                <span className="text-[15px] font-bold text-slate-600 ml-0.5">건</span>
+              </p>
             </div>
-            <p className="mt-2 text-xs font-bold text-slate-400 truncate" title="실시간 작업 중">실시간 작업 중</p>
+            <p className="mt-2 text-[12px] font-semibold text-emerald-600">
+              진행 중 {orderCount}건
+            </p>
           </div>
 
           {/* Card 4: 납품 완료 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-[0_4px_12px_rgba(0,0,0,0.02)] transition duration-200">
+          <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-                  <CheckCircle2 className="h-4 w-4" />
-                </span>
-                <p className="text-xs font-black uppercase tracking-wider text-slate-500">검토 대기</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50">
+                  <svg className="h-4.5 w-4.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <span className="text-[12px] font-semibold text-slate-500">납품 완료</span>
               </div>
-              <p className="mt-3.5 whitespace-nowrap text-3xl font-black tracking-tight text-slate-900">
-                {orders.error ? "—" : deliveryPendingCount}
+              <p className="text-[28px] font-black tracking-tight text-slate-900">
+                {doneCount}
+                <span className="text-[15px] font-bold text-slate-600 ml-0.5">건</span>
               </p>
             </div>
-            <p className="mt-2 text-xs font-bold text-slate-400 truncate" title="학생 검토 진행">학생 검토 진행</p>
+            <p className="mt-2 text-[12px] font-semibold text-slate-500">
+              정산 대기 {deliveryPendingCount}건
+            </p>
           </div>
 
-          {/* Card 5: 예상 수익 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-blue-200 bg-gradient-to-b from-blue-50/20 to-white p-5 shadow-sm hover:shadow-[0_4px_12px_rgba(37,99,235,0.03)] transition duration-200">
+          {/* Card 5: 이번 달 수익 */}
+          <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-                  <Eye className="h-4 w-4" />
-                </span>
-                <p className="text-xs font-black uppercase tracking-wider text-blue-800">예상 수익</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
+                  <span className="text-[13px] font-black text-slate-600">₩</span>
+                </div>
+                <span className="text-[12px] font-semibold text-slate-500">이번 달 수익</span>
               </div>
-              <p className="mt-3.5 whitespace-nowrap text-[26px] font-black tracking-tight text-slate-950">
-                80,000<span className="text-sm font-extrabold text-slate-500 ml-0.5">캐시</span>
+              <p className="text-[22px] font-black tracking-tight text-slate-900">
+                —
+                <span className="text-[13px] font-bold text-slate-500 ml-0.5">캐시</span>
               </p>
             </div>
-            <p className="mt-2 text-xs font-bold text-blue-600 truncate" title="전월 대비 60% ▲">전월 대비 60% ▲</p>
+            <p className="mt-2 text-[12px] font-medium text-slate-400">정산 내역에서 확인</p>
           </div>
         </div>
 
-        <p className="mt-4 text-xs text-slate-500">
-          최근 지원 <span className="font-semibold text-slate-900">{appliedCount}</span>건을 미리 불러두었습니다. 목록 이동 및 세부 관리는 왼쪽 네비게이션을 이용해 주세요.
-        </p>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-12 lg:items-start">
-          <div className="space-y-4 lg:col-span-8">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6">
-              <div className="border-b border-slate-200/80 pb-4">
-                <h2 className="text-lg font-extrabold text-slate-900">진행 중인 맞춤의뢰 주문</h2>
-                <p className="mt-0.5 text-xs text-slate-500">작업방으로 들어가 납품·메시지를 이어가세요.</p>
+        {/* Main content area - 2-col: 진행 중 의뢰 + 오늘의 일정 / 수익 현황 */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-12 lg:items-start">
+          {/* Left col: 진행 중 의뢰 + 새 의뢰 현황 */}
+          <div className="space-y-6 lg:col-span-8">
+            {/* 진행 중 의뢰 table */}
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <h2 className="text-[15px] font-black text-slate-900">진행 중 의뢰</h2>
+                <Link
+                  href="/mentor/custom-request/orders"
+                  className="flex items-center gap-0.5 text-[12px] font-bold text-blue-600 hover:underline"
+                >
+                  전체 보기
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
               </div>
+
+              {/* Table header */}
+              <div className="grid grid-cols-12 gap-2 bg-slate-50/70 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+                <div className="col-span-5">의뢰 제목</div>
+                <div className="col-span-2">학생</div>
+                <div className="col-span-2">마감일</div>
+                <div className="col-span-2 text-center">진행 단계</div>
+                <div className="col-span-1 text-right">최근 활동</div>
+              </div>
+
               {orders.error ? (
-                <p className="mt-4 text-sm text-amber-900">{orders.error}</p>
-              ) : orders.rows.length === 0 ? (
-                <p className="mt-4 text-sm text-slate-600">
-                  표시할 주문이 없습니다. 학생이 지원서를 선택하면 여기에 표시됩니다.
-                </p>
+                <div className="py-8 text-center text-[13px] text-slate-500">
+                  데이터를 불러올 수 없습니다.
+                </div>
+              ) : activeOrders.length === 0 ? (
+                <div className="py-12 text-center text-[13px] font-medium text-slate-400">
+                  진행 중인 의뢰가 아직 없습니다.
+                </div>
               ) : (
-                <ul className="mt-4 space-y-2">
-                  {orders.rows.map((raw) => {
+                <ul className="divide-y divide-slate-100">
+                  {activeOrders.slice(0, 5).map((raw) => {
                     const r = raw as Row;
                     const id = typeof r.id === "string" && r.id.trim() ? r.id.trim() : null;
                     if (!id) return null;
                     const title = pickDisplayField(r, ["title", "subject", "label", "name"]);
                     const titleLine = title !== "—" ? title : "맞춤의뢰 주문";
                     const href = mentorCustomOrderWorkroomHref(id);
-                    const statusLine = mentorCustomOrderStatusHeadline(r, activeDisputeOrderIds);
-                    const payLine = mentorCustomOrderPaymentLine(r);
+                    const { dday, dateStr } = getDeadlineDisplay(r);
+                    const studentName = getStudentName(r);
+                    const badge = getStatusBadge(r, activeDisputeOrderIds);
+                    const recentActivity = getRecentActivity(r);
+                    const isDdayRed = dday.startsWith("D-") && parseInt(dday.slice(2)) <= 3;
+
                     return (
                       <li key={id}>
                         <Link
                           href={href}
-                          className="group flex min-h-[52px] items-center justify-between gap-3 rounded-xl border border-white bg-white px-4 py-3 shadow-sm transition hover:border-blue-200 hover:shadow"
+                          className="group grid grid-cols-12 gap-2 px-5 py-3.5 items-center transition hover:bg-slate-50/60"
                         >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-bold text-slate-900">{titleLine}</p>
-                            <p className="mt-0.5 truncate text-xs text-slate-500">{payLine}</p>
+                          <div className="col-span-5 min-w-0">
+                            <p className="text-[13px] font-bold text-slate-900 truncate group-hover:text-blue-600">
+                              {titleLine}
+                            </p>
                           </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <span className="hidden max-w-[10rem] truncate rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 sm:inline-block">
-                              {statusLine}
+                          <div className="col-span-2 min-w-0">
+                            <p className="text-[12px] text-slate-600 truncate">{studentName}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <p className={`text-[12px] font-bold ${isDdayRed ? "text-red-500" : "text-slate-600"}`}>
+                              {dday}
+                            </p>
+                            {dateStr && (
+                              <p className="text-[10px] text-slate-400">{dateStr}</p>
+                            )}
+                          </div>
+                          <div className="col-span-2 flex justify-center">
+                            <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${badge.cls}`}>
+                              {badge.label}
                             </span>
+                          </div>
+                          <div className="col-span-1 text-right">
+                            <p className="text-[11px] text-slate-400">{recentActivity}</p>
                           </div>
                         </Link>
                       </li>
@@ -216,33 +320,130 @@ export default async function MentorCustomRequestDashboardPage() {
                 </ul>
               )}
             </div>
+
+            {/* Bottom row: 새 의뢰 현황 + 인기 키워드 */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* 새 의뢰 현황 donut */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[14px] font-black text-slate-900">새 의뢰 현황</h3>
+                  <Link href="/mentor/custom-request/posts" className="text-[12px] font-bold text-blue-600 hover:underline">
+                    전체 보기 &gt;
+                  </Link>
+                </div>
+                {openPoolCount === null || openPoolCount === 0 ? (
+                  <p className="py-6 text-center text-[13px] text-slate-400">새 의뢰가 없습니다</p>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    {/* Donut placeholder */}
+                    <div className="relative flex h-24 w-24 items-center justify-center shrink-0">
+                      <svg viewBox="0 0 100 100" className="h-24 w-24 -rotate-90">
+                        <circle cx="50" cy="50" r="35" fill="none" stroke="#e2e8f0" strokeWidth="12" />
+                        <circle cx="50" cy="50" r="35" fill="none" stroke="#3b82f6" strokeWidth="12" strokeDasharray="219.9" strokeDashoffset="77" />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-[18px] font-black text-slate-900">{openPoolCount}</span>
+                        <span className="text-[10px] text-slate-500">전체</span>
+                      </div>
+                    </div>
+                    {/* Categories */}
+                    <ul className="space-y-1.5 text-[12px] flex-1">
+                      <li className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                        <span className="text-slate-600">공부/과제</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-purple-400 shrink-0" />
+                        <span className="text-slate-600">진로/입시</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="text-slate-600">자기소개서</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                        <span className="text-slate-600">기타</span>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* 인기 키워드 */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[14px] font-black text-slate-900">의뢰 분야별 인기 키워드</h3>
+                  <Link href="/mentor/custom-request/posts" className="text-[12px] font-bold text-blue-600 hover:underline">
+                    전체 보기 &gt;
+                  </Link>
+                </div>
+                <p className="py-4 text-center text-[12px] text-slate-400">키워드 데이터가 준비 중입니다</p>
+              </div>
+            </div>
           </div>
 
-          <aside className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-extrabold text-slate-900">안내·바로가기</h3>
-              <ul className="mt-3 space-y-3 text-xs leading-relaxed text-slate-600">
-                <li>
-                  정산과 지급은{" "}
-                  <Link href="/mentor/payouts" className="font-bold text-blue-800 underline underline-offset-2 hover:no-underline">
-                    정산
-                  </Link>{" "}
-                  메뉴에서 확인합니다.
-                </li>
-                <li>
-                  맞춤의뢰 소개 페이지는 학생에게 공유하기 좋은 요약예요 ·{" "}
-                  <Link href="/custom-request" className="font-bold text-blue-800 underline underline-offset-2 hover:no-underline">
-                    소개 페이지
-                  </Link>
-                </li>
-              </ul>
-              <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                캘린더·별도 일정 기능은 순차 제공 예정이에요. 알림 관련해서는{" "}
-                <Link href="/notifications" className="font-bold text-blue-800 underline underline-offset-2 hover:no-underline">
-                  알림 설정
+          {/* Right col: 오늘의 일정 + 수익 현황 + 나의 평활 + 빠른 메뉴 */}
+          <aside className="space-y-4 lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
+            {/* 오늘의 일정 */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[14px] font-black text-slate-900">오늘의 일정</h3>
+                <Link href="/mentor/custom-request/orders" className="text-[12px] font-bold text-blue-600 hover:underline">
+                  전체 보기 &gt;
                 </Link>
-                을 확인해 주세요.
-              </p>
+              </div>
+              {activeOrders.length === 0 ? (
+                <p className="py-3 text-[12px] text-slate-400">오늘 확인할 일정이 없습니다.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {activeOrders.slice(0, 3).map((raw) => {
+                    const r = raw as Row;
+                    const id = typeof r.id === "string" ? r.id.trim() : "";
+                    if (!id) return null;
+                    const { dday } = getDeadlineDisplay(r);
+                    const badge = getStatusBadge(r, activeDisputeOrderIds);
+                    const href = mentorCustomOrderWorkroomHref(id);
+                    const title = pickDisplayField(r, ["title", "subject", "label", "name"]);
+                    const titleLine = title !== "—" ? title : "맞춤의뢰 주문";
+                    const isDdayRed = dday.startsWith("D-") && parseInt(dday.slice(2)) <= 3;
+                    return (
+                      <li key={id} className="flex items-center justify-between gap-2">
+                        <Link href={href} className="flex items-center gap-2 min-w-0 flex-1 hover:underline">
+                          <span className={`text-[11px] font-bold ${badge.cls} rounded px-1.5 py-0.5 shrink-0`}>
+                            {badge.label}
+                          </span>
+                          <span className="text-[12px] text-slate-700 truncate">{titleLine}</span>
+                        </Link>
+                        <span className={`shrink-0 text-[12px] font-bold ${isDdayRed ? "text-red-500" : "text-slate-600"}`}>
+                          {dday}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {/* 빠른 메뉴 */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="text-[14px] font-black text-slate-900 mb-3">빠른 메뉴</h3>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: "의뢰 가이드", href: "#", emoji: "📋" },
+                  { label: "프로필 관리", href: "/mentor/profile/edit", emoji: "👤" },
+                  { label: "정산 관리", href: "/mentor/payouts", emoji: "💳" },
+                  { label: "알림 설정", href: "/notifications", emoji: "🔔" },
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="flex flex-col items-center gap-1.5 rounded-lg p-2 hover:bg-slate-50 transition text-center"
+                  >
+                    <span className="text-[20px]">{item.emoji}</span>
+                    <span className="text-[10px] font-semibold text-slate-600 leading-tight">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           </aside>
         </div>

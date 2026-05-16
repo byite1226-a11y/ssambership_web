@@ -229,10 +229,10 @@ export function RoleLoginForm({ role, emailId, passwordId, submitLabel, initialN
           className={inputByRole[role] + " mt-2 block"}
           disabled={loading}
         />
-        <p className="mt-1.5 text-right text-sm text-slate-400">
-          <span className="cursor-not-allowed border-b border-dotted border-slate-300" title="준비 중">
-            비밀번호를 잊으셨나요? (준비 중)
-          </span>
+        <p className="mt-1.5 text-right text-sm text-slate-500">
+          <Link href="/forgot-password" className="font-semibold text-blue-600 underline decoration-blue-200 underline-offset-4 hover:text-blue-800">
+            비밀번호를 잊으셨나요?
+          </Link>
         </p>
       </div>
 

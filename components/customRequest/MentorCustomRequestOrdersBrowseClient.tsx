@@ -2,130 +2,179 @@
 
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-import { normalizedPrimaryOrderStatus, orderStatusUiToneForNorm } from "@/lib/customRequest/orderLifecycleConstants";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import {
   mentorCustomOrderPaymentLine,
-  mentorCustomOrderStatusHeadline,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
 import { classifyMentorOrderBrowseTab, type MentorOrderBrowseTabId } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
 
 type Row = Record<string, unknown>;
 
-const TABS: { id: MentorOrderBrowseTabId; label: string }[] = [
-  { id: "all", label: "전체" },
-  { id: "billing", label: "결제 대기" },
-  { id: "work", label: "작업 중" },
-  { id: "delivery", label: "납품·검토" },
-  { id: "revision", label: "수정" },
-  { id: "done", label: "완료" },
+// Tab labels matching reference image (req_15): 전체 | 진행 전 | 진행 중 | 정산 대기 | 완료
+const TABS: { id: MentorOrderBrowseTabId; label: string; countKey: string }[] = [
+  { id: "all", label: "전체", countKey: "all" },
+  { id: "billing", label: "진행 전", countKey: "billing" },
+  { id: "work", label: "진행 중", countKey: "work" },
+  { id: "delivery", label: "정산 대기", countKey: "delivery" },
+  { id: "done", label: "완료", countKey: "done" },
 ];
 
-const TONE_RING: Record<string, string> = {
-  gray: "border-slate-200 bg-slate-50 text-slate-800",
-  blue: "border-sky-200 bg-sky-50 text-sky-950",
-  amber: "border-amber-200 bg-amber-50 text-amber-950",
-  green: "border-emerald-200 bg-emerald-50 text-emerald-950",
-  orange: "border-orange-200 bg-orange-50 text-orange-950",
-  red: "border-red-200 bg-red-50 text-red-950",
-};
+// Step labels matching reference image (req_15 card stepper)
+const STEP_LABELS = ["제안 수락", "작업 진행 중", "납품 대기", "학생 확인", "완료 및 정산"];
 
-function statusChipClass(row: Row, disputeIds: ReadonlySet<string>): string {
-  if (typeof row.id === "string" && row.id.trim() && disputeIds.has(row.id.trim())) {
-    return TONE_RING.red;
+function getStepIndex(row: Row, disputeSet: ReadonlySet<string>): number {
+  const tab = classifyMentorOrderBrowseTab(row, disputeSet);
+  if (tab === "billing") return 0;
+  if (tab === "work") return 1;
+  if (tab === "delivery") return 2;
+  if (tab === "revision") return 2;
+  if (tab === "done") return 4;
+  return 0;
+}
+
+function getStatusBadge(row: Row, disputeSet: ReadonlySet<string>): { label: string; cls: string } {
+  const id = typeof row.id === "string" ? row.id.trim() : "";
+  if (id && disputeSet.has(id)) {
+    return { label: "문제 해결", cls: "bg-red-50 text-red-600 border-red-200" };
   }
-  const tab = classifyMentorOrderBrowseTab(row, disputeIds);
-  if (tab === "billing") {
-    return TONE_RING.amber;
-  }
-  const norm = normalizedPrimaryOrderStatus(row);
-  const tone = orderStatusUiToneForNorm(norm);
-  return TONE_RING[tone] ?? TONE_RING.gray;
+  const tab = classifyMentorOrderBrowseTab(row, disputeSet);
+  if (tab === "billing") return { label: "진행 전", cls: "bg-amber-50 text-amber-700 border-amber-200" };
+  if (tab === "work") return { label: "진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
+  if (tab === "delivery") return { label: "납품 대기", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  if (tab === "revision") return { label: "수정 요청", cls: "bg-orange-50 text-orange-700 border-orange-200" };
+  if (tab === "done") return { label: "완료", cls: "bg-slate-50 text-slate-600 border-slate-200" };
+  return { label: "진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
 }
 
 function studentLine(row: Row): string {
   const name = pickDisplayField(row, ["student_name", "buyer_name", "client_name", "requester_name"]);
-  if (name !== "—") {
-    return name;
-  }
+  if (name !== "—") return name;
   const sid = pickDisplayField(row, ["student_id", "buyer_id", "user_id", "client_id", "requester_id"]);
-  if (sid !== "—" && sid.length > 10) {
-    return `의뢰자 ····${sid.slice(-6)}`;
-  }
+  if (sid !== "—" && sid.length > 10) return `의뢰자 ····${sid.slice(-6)}`;
   return sid !== "—" ? `의뢰자 ${sid}` : "의뢰자 정보 준비 중";
 }
 
-function postInfoHref(row: Row): string | null {
-  const pid = pickDisplayField(row, [
-    "custom_request_post_id",
-    "post_id",
-    "request_post_id",
-    "custom_request_id",
-  ]);
-  const t = pid !== "—" ? pid.trim() : "";
-  if (t.length >= 8) {
-    return `/mentor/custom-request/posts/${encodeURIComponent(t)}`;
-  }
-  return null;
+function getAcceptDate(row: Row): string {
+  const raw = pickDisplayField(row, ["accepted_at", "created_at", "started_at"]);
+  if (raw === "—") return "";
+  const match = raw.match(/\d{4}-\d{2}-\d{2}/);
+  if (match) return match[0].replace(/-/g, ".");
+  return "";
+}
+
+function getStartDate(row: Row): string {
+  const raw = pickDisplayField(row, ["expected_start_at", "start_at", "accepted_at"]);
+  if (raw === "—") return "";
+  const match = raw.match(/\d{4}-\d{2}-\d{2}/);
+  if (match) return match[0].replace(/-/g, ".");
+  return "";
 }
 
 export function MentorCustomRequestOrdersBrowseClient(props: {
   rows: Row[];
   activeDisputeOrderIds: string[];
   initialTab?: string;
+  counts?: Record<string, number>;
 }) {
   const disputeSet = useMemo(() => new Set(props.activeDisputeOrderIds), [props.activeDisputeOrderIds]);
+  const { counts = {} } = props;
 
-  const defaultTab = (props.initialTab === "billing" || props.initialTab === "work" || props.initialTab === "delivery" || props.initialTab === "revision" || props.initialTab === "done" || props.initialTab === "dispute") 
-    ? (props.initialTab as MentorOrderBrowseTabId)
-    : "all";
+  // Map 'revision' URL param to 'work' tab (they show together in req_15)
+  const resolveDefaultTab = (t: string | undefined): MentorOrderBrowseTabId => {
+    if (t === "billing") return "billing";
+    if (t === "work" || t === "revision") return "work";
+    if (t === "delivery") return "delivery";
+    if (t === "done") return "done";
+    return "all";
+  };
+  const defaultTab = resolveDefaultTab(props.initialTab);
 
   const [tab, setTab] = useState<MentorOrderBrowseTabId>(defaultTab);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTab(defaultTab);
-  }, [defaultTab]);
+    setTab(resolveDefaultTab(props.initialTab));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.initialTab]);
+
+  // Compute per-tab counts from actual rows
+  // 'work' tab includes both work and revision rows (matching req_15 UI)
+  const tabCounts = useMemo(() => {
+    const c: Record<string, number> = { all: props.rows.length };
+    for (const r of props.rows) {
+      const t = classifyMentorOrderBrowseTab(r, disputeSet);
+      // Merge revision into work for display
+      const displayTab = t === "revision" ? "work" : t;
+      c[displayTab] = (c[displayTab] ?? 0) + 1;
+    }
+    return c;
+  }, [props.rows, disputeSet]);
 
   const filtered = useMemo(() => {
-    if (tab === "all") {
-      return props.rows;
+    if (tab === "all") return props.rows;
+    // work tab includes revision rows
+    if (tab === "work") {
+      return props.rows.filter((r) => {
+        const t = classifyMentorOrderBrowseTab(r as Row, disputeSet);
+        return t === "work" || t === "revision";
+      });
     }
     return props.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === tab);
   }, [props.rows, tab, disputeSet]);
 
   return (
     <div>
+      {/* Tab Bar - matching reference req_15 style */}
       <div
-        className="flex lg:hidden gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/90 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex items-center gap-1 border-b border-slate-200 mb-6 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="tablist"
-        aria-label="주문 상태 필터"
+        aria-label="수락된 의뢰 필터"
       >
         {TABS.map((t) => {
-          const active = tab === t.id;
+          const isActive = tab === t.id;
+          const count = t.id === "all" ? tabCounts.all : tabCounts[t.id] ?? 0;
           return (
             <button
               key={t.id}
               type="button"
               role="tab"
-              aria-selected={active}
+              aria-selected={isActive}
               onClick={() => setTab(t.id)}
               className={[
-                "shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm",
-                active ? "bg-white text-blue-900 shadow-sm ring-1 ring-slate-200/80" : "text-slate-600 hover:bg-white/70",
+                "shrink-0 flex items-center gap-1.5 border-b-2 px-4 pb-3 pt-1 text-[14px] font-semibold transition-colors whitespace-nowrap",
+                isActive
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-800",
               ].join(" ")}
             >
               {t.label}
+              <span
+                className={[
+                  "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black",
+                  isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500",
+                ].join(" ")}
+              >
+                {count}
+              </span>
             </button>
           );
         })}
+
+        {/* Sort dropdown right-aligned */}
+        <div className="ml-auto shrink-0 pb-3">
+          <select className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[13px] font-medium text-slate-600 shadow-sm hover:border-slate-300 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+            <option>최신 순</option>
+            <option>마감일 순</option>
+          </select>
+        </div>
       </div>
 
-      <ul className="mt-5 space-y-3">
+      {/* Order Cards */}
+      <ul className="space-y-4">
         {filtered.length === 0 ? (
-          <li className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-            이 조건에 해당하는 주문이 없습니다.
+          <li className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-12 text-center text-sm font-semibold text-slate-500">
+            이 조건에 해당하는 의뢰가 없습니다.
           </li>
         ) : (
           filtered.map((raw) => {
@@ -135,70 +184,168 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
             const title = pickDisplayField(r, ["title", "subject", "label", "name"]);
             const titleLine = title !== "—" ? title : "맞춤의뢰 주문";
             const href = mentorCustomOrderWorkroomHref(id);
-            const headline = mentorCustomOrderStatusHeadline(r, disputeSet);
             const pay = mentorCustomOrderPaymentLine(r);
             const deadline = pickDisplayField(r, ["deadline", "due_at", "due_date", "close_at"]);
-            const postHref = postInfoHref(r);
-            const chipClass = statusChipClass(r, disputeSet);
+            const acceptDate = getAcceptDate(r);
+            const startDate = getStartDate(r);
+            const badge = getStatusBadge(r, disputeSet);
+            const stepIndex = getStepIndex(r, disputeSet);
             const lifecycleTab = classifyMentorOrderBrowseTab(r, disputeSet);
             const isTerminalCard = lifecycleTab === "done";
 
+            // Get category-like tags from row
+            const category = pickDisplayField(r, ["category_label", "category", "category_name", "subject_area"]);
+            const gradeRaw = pickDisplayField(r, ["grade", "school_level", "target_grade"]);
+            const showCategory = category !== "—";
+            const showGrade = gradeRaw !== "—" && gradeRaw.trim().length > 0;
+
+            // Get post fields
+            const budgetRaw = pickDisplayField(r, ["expected_budget", "budget", "price", "amount_krw"]);
+            const durationRaw = pickDisplayField(r, ["expected_duration", "duration_weeks", "timeline"]);
+
+            const orderNo = typeof r.id === "string" ? `OD${r.id.substring(0, 8).toUpperCase()}` : "";
+            const postDate = pickDisplayField(r, ["post_created_at", "created_at"]);
+            const postDateShort = postDate !== "—" ? postDate.substring(0, 10).replace(/-/g, ".") : "";
+            const acceptDateDisplay = acceptDate || postDateShort;
+
             return (
               <li key={id} className="group">
-                <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm hover:border-blue-200 hover:shadow-[0_4px_12px_rgba(30,58,138,0.03)] transition-all duration-200">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex max-w-full rounded-full border px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide ${chipClass}`}>
-                          {headline}
-                        </span>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-black tracking-wide text-slate-500">주문 계약</span>
+                <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm hover:border-blue-200 hover:shadow-md transition-all duration-200">
+                  {/* Card header */}
+                  <div className="p-5 sm:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Left: icon placeholder + content */}
+                      <div className="flex items-start gap-4 min-w-0 flex-1">
+                        {/* Category icon block */}
+                        <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                          <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+
+                        {/* Content */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            {showCategory && (
+                              <span className="rounded bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">{category}</span>
+                            )}
+                            {showGrade && (
+                              <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{gradeRaw}</span>
+                            )}
+                            <span className={`ml-auto rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${badge.cls}`}>
+                              {badge.label}
+                            </span>
+                          </div>
+                          <Link href={href} className="block text-[16px] font-black leading-snug text-slate-900 hover:text-blue-600 transition-colors">
+                            {titleLine}
+                          </Link>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-slate-500">
+                            {orderNo && <span>의뢰번호 <span className="font-medium text-slate-700">{orderNo}</span></span>}
+                            {postDateShort && <span>의뢰일 <span className="font-medium text-slate-700">{postDateShort}</span></span>}
+                            {acceptDate && <span>수락일 <span className="font-medium text-slate-700">{acceptDate}</span></span>}
+                          </div>
+                          {/* Budget/duration/major row - matching req_15 */}
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
+                            {(() => {
+                              const majorF = pickDisplayField(r, ["desired_major", "major", "희망전공", "target_major", "post_major"]);
+                              const interestF = pickDisplayField(r, ["interests", "interest_area", "subject", "관심분야"]);
+                              const showM = majorF !== "—" && majorF.trim().length > 0;
+                              const showI = interestF !== "—" && interestF.trim().length > 0;
+                              return (
+                                <>
+                                  {showM && (
+                                    <span className="text-slate-500">
+                                      희망 전공 <span className="font-semibold text-slate-700">{majorF}</span>
+                                    </span>
+                                  )}
+                                  {showI && (
+                                    <span className="text-slate-500">
+                                      관심 분야 <span className="font-semibold text-slate-700">{interestF}</span>
+                                    </span>
+                                  )}
+                                  {pay !== "—" && (
+                                    <span className="text-slate-500">
+                                      수락 금액 <span className="font-semibold text-slate-700">{pay}</span>
+                                    </span>
+                                  )}
+                                  {durationRaw !== "—" && (
+                                    <span className="text-slate-500">
+                                      예상 기간 <span className="font-semibold text-slate-700">{durationRaw}</span>
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
                       </div>
-                      <Link href={href} className="mt-2.5 block text-[17px] font-black leading-snug text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {titleLine}
-                      </Link>
-                      <p className="mt-2 text-xs text-slate-600">
-                        <span className="font-extrabold text-slate-400 mr-1.5 uppercase tracking-wider">의뢰자</span> 
-                        <span className="font-semibold text-slate-800">{studentLine(r)}</span>
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
-                        <span className="rounded-md bg-slate-50 border border-slate-100 px-2 py-1">
-                          <span className="font-extrabold text-slate-400 mr-1">결제 금액</span> 
-                          <span className="font-bold text-slate-700">{pay}</span>
-                        </span>
-                        {deadline !== "—" ? (
-                          <span className="rounded-md bg-slate-50 border border-slate-100 px-2 py-1">
-                            <span className="font-extrabold text-slate-400 mr-1">완료 일상</span> 
-                            <span className="font-bold text-slate-700">{deadline}</span>
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2.5 text-[10px] font-bold tracking-wide text-slate-400">주문 거래 건</p>
                     </div>
-                    <div className="flex w-full shrink-0 flex-col justify-center gap-2.5 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-40 lg:border-l lg:border-slate-100 lg:pl-5">
-                      {isTerminalCard ? (
-                        <Link
-                          href={href}
-                          className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold text-slate-700 hover:bg-slate-100 transition sm:w-auto"
-                        >
-                          작업방 보기
-                        </Link>
-                      ) : (
-                        <Link
-                          href={href}
-                          className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-blue-500 transition sm:w-auto"
-                        >
-                          작업방 입장
-                        </Link>
-                      )}
-                      {postHref ? (
-                        <Link
-                          href={postHref}
-                          className="text-center text-xs font-bold text-slate-400 underline-offset-2 hover:text-blue-600 hover:underline"
-                        >
-                          의뢰 글 보기
-                        </Link>
-                      ) : null}
+
+                    {/* Progress Stepper */}
+                    <div className="mt-5 pt-4 border-t border-slate-100">
+                      <div className="flex items-center gap-0">
+                        {STEP_LABELS.map((stepLabel, i) => {
+                          const isDone = i < stepIndex;
+                          const isCurrent = i === stepIndex;
+                          return (
+                            <div key={stepLabel} className="flex flex-1 items-center min-w-0">
+                              {/* Step node */}
+                              <div className="flex flex-col items-center shrink-0">
+                                <div
+                                  className={[
+                                    "flex h-7 w-7 items-center justify-center rounded-full border-2 text-[11px] font-black transition-all",
+                                    isDone
+                                      ? "border-blue-500 bg-blue-500 text-white"
+                                      : isCurrent
+                                      ? "border-blue-500 bg-white text-blue-600 ring-4 ring-blue-50"
+                                      : "border-slate-200 bg-white text-slate-400",
+                                  ].join(" ")}
+                                >
+                                  {isDone ? (
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  ) : (
+                                    i + 1
+                                  )}
+                                </div>
+                                <span
+                                  className={[
+                                    "mt-1.5 max-w-[60px] text-center text-[10px] font-semibold leading-tight",
+                                    isDone ? "text-blue-600" : isCurrent ? "text-blue-700 font-bold" : "text-slate-400",
+                                  ].join(" ")}
+                                >
+                                  {stepLabel}
+                                </span>
+                              </div>
+                              {/* Connector */}
+                              {i < STEP_LABELS.length - 1 && (
+                                <div
+                                  className={[
+                                    "flex-1 mx-1 h-0.5 self-start mt-3.5 rounded-full transition-colors",
+                                    i < stepIndex ? "bg-blue-400" : "bg-slate-200",
+                                  ].join(" ")}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Action button */}
+                    <div className="mt-4 flex justify-end">
+                      <Link
+                        href={href}
+                        className={[
+                          "inline-flex h-9 items-center justify-center rounded-lg px-5 text-[13px] font-bold transition shadow-sm hover:shadow",
+                          isTerminalCard
+                            ? "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            : "bg-blue-600 text-white hover:bg-blue-700",
+                        ].join(" ")}
+                      >
+                        {isTerminalCard ? "작업방 보기" : "작업방 입장 →"}
+                      </Link>
                     </div>
                   </div>
                 </div>

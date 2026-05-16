@@ -5,7 +5,10 @@ import { mentorVerificationKo, type MentorProfileDisplay } from "@/lib/mentor/me
 import type { PublicMentorLoadResult } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { getStringField } from "@/lib/qna/safeSelect";
-import type { UserRow } from "@/lib/types/user";
+import type { AppRole, UserRow } from "@/lib/types/user";
+import { ReviewEligibilityBanner } from "@/components/reviews/ReviewEligibilityBanner";
+import { ReviewWritePanel } from "@/components/reviews/ReviewWritePanel";
+import { ReviewReportButton } from "@/components/reviews/ReviewReportButton";
 import {
   USER_UI_MENTOR_MEDIA_LOAD_FAILED,
   USER_UI_MENTOR_PROFILE_LOAD_FAILED,
@@ -59,8 +62,9 @@ export function PublicMentorDetailBody(props: {
   userRow: UserRow;
   display: MentorProfileDisplay;
   bundle: Extract<PublicMentorLoadResult, { kind: "ok" }>;
+  viewer?: { userId: string; role: AppRole } | null;
 }) {
-  const { mentorId, userRow, display, bundle } = props;
+  const { mentorId, userRow, display, bundle, viewer } = props;
   const mediaRows = bundle.media.rows;
   const { byTier, fillProbe } = assignPlansByTier(bundle.plans.rows as Record<string, unknown>[]);
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
@@ -190,6 +194,16 @@ export function PublicMentorDetailBody(props: {
               </div>
               {bundle.reviews.count == null && !bundle.reviews.error ? (
                 <p className="mt-3 text-sm text-slate-600">아직 공개된 리뷰가 없거나 집계 전이에요.</p>
+              ) : null}
+              {viewer?.role === "student" ? (
+                <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+                  <ReviewEligibilityBanner eligibilityKnown={false} eligible={false} />
+                  <ReviewWritePanel
+                    disabled
+                    disabledReason="리뷰 자격·저장 API가 연결되면 활성화됩니다. 동일 멘토 2회 연속 결제 성공 전에는 작성할 수 없어요."
+                  />
+                  <ReviewReportButton disabledReason="리뷰 신고 접수 API는 별도 연동이 필요합니다. 커뮤니티 신고는 해당 게시 화면을 이용해 주세요." />
+                </div>
               ) : null}
             </SectionShell>
 

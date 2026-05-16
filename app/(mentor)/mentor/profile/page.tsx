@@ -43,6 +43,7 @@ export default async function MentorProfilePage() {
       description="공개 상태·인증·요약 정보를 한 화면에서 확인하고, 학생에게 보이는 화면으로 이동하세요."
       ctas={[
         { href: "/mentor/profile/edit", label: "프로필 편집", tone: "blue" },
+        { href: "/mentor/verification", label: "인증·검수", tone: "slate" },
         { href: `/mentors/${user.id}`, label: "공개 프로필 보기", tone: "slate" },
         { href: "/mentor/dashboard", label: "멘토 홈", tone: "green" },
       ]}

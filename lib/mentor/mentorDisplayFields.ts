@@ -18,6 +18,7 @@ export type MentorProfileDisplay = {
   subOpen: boolean;
   photoUrl: string;
   verification: string;
+  grade: string;
 };
 
 export function mentorDisplayNameFromUser(user: UserRow | null): string {
@@ -51,6 +52,7 @@ export function buildMentorProfileDisplay(
       "portrait_url",
     ]),
     verification: getProfileFieldString(profileRow, ["verification_status", "kyc_status"]),
+    grade: getProfileFieldString(profileRow, ["grade", "grade_level", "academic_year"]),
   };
 }
 
