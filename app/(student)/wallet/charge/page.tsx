@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
-import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
+import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
 import { loadWalletChargePageData } from "@/lib/cash/walletRouteData";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
@@ -12,16 +12,11 @@ type Props = {
 };
 
 export default async function WalletChargePage({ searchParams }: Props) {
-  const { user, profile, error: profileLoadError } = await getServerUserWithProfile();
-  if (profile?.role === "mentor") {
-    redirect("/mentor/dashboard");
-  }
-  if (!user) {
-    redirect(`/login/student?next=${encodeURIComponent("/wallet/charge")}`);
-  }
+  const { user, profile } = await requireRole("student");
 
   const supabase = await createClient();
   const data = await loadWalletChargePageData(supabase, user.id);
+  const currentBalance = parseWalletBalanceKrw(data.balance.row);
   const sp = (await searchParams) ?? {};
   const actionOk = typeof sp.ok === "string" && sp.ok.length > 0 ? sp.ok : null;
   const actionError = typeof sp.error === "string" && sp.error.length > 0 ? sp.error : null;
@@ -31,7 +26,7 @@ export default async function WalletChargePage({ searchParams }: Props) {
     supabase,
     user.id,
     profile,
-    profileLoadError?.message ?? null
+    null
   );
 
   return (
@@ -39,7 +34,7 @@ export default async function WalletChargePage({ searchParams }: Props) {
       activeTab="wallet"
       user={user}
       profile={profile}
-      profileLoadError={profileLoadError?.message ?? null}
+      profileLoadError={null}
       bundle={bundle}
     >
       <div className="space-y-6">
@@ -50,6 +45,8 @@ export default async function WalletChargePage({ searchParams }: Props) {
 
         <WalletChargeBody
           data={data}
+          userId={user.id}
+          currentBalance={currentBalance}
           actionOk={actionOk}
           actionError={actionError ? mapDataErrorMessage(actionError) : null}
           allowTestTopup={allowTestTopup}

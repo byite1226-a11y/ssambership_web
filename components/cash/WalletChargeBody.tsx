@@ -2,12 +2,13 @@ import Link from "next/link";
 import { formatWalletRowDisplay } from "@/lib/cash/cashQueries";
 import type { WalletChargePageData } from "@/lib/cash/walletRouteData";
 import { ledgerTypeLabel } from "@/lib/cash/ledgerRowDisplay";
+import { CashChargeWidget } from "@/components/cash/CashChargeWidget";
 import { WalletTopupTestForm } from "@/components/cash/WalletTopupTestForm";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 const FAQ = [
   "캐시는 멤버십 및 맞춤의뢰 이용 시 사용할 수 있으며, 충전 및 사용 내역이 시간 순으로 기록됩니다.",
-  "정식 충전 기능은 현재 준비 중이며, 출시 이후 안내에 따라 진행하실 수 있습니다.",
+  "카드 결제로 캐시를 충전할 수 있으며, 충전·사용 내역은 원장에서 확인할 수 있습니다.",
   "캐시 잔액과 이용 내역은 상시 마이페이지 및 캐시 원장 메뉴에서 확인 가능합니다.",
 ] as const;
 
@@ -55,11 +56,13 @@ function Banner({ kind, message }: { kind: "error" | "empty" | "info"; message: 
 
 export function WalletChargeBody(props: {
   data: WalletChargePageData;
+  userId: string;
+  currentBalance: number;
   actionOk?: string | null;
   actionError?: string | null;
   allowTestTopup?: boolean;
 }) {
-  const { data, actionOk, actionError, allowTestTopup = false } = props;
+  const { data, userId, currentBalance, actionOk, actionError, allowTestTopup = false } = props;
   const { balance, packages, ledgerPreview, payments } = data;
 
   const balanceText = balance.error
@@ -88,15 +91,13 @@ export function WalletChargeBody(props: {
           )}
         </div>
 
-        <div id="test-topup" className="mt-4">
+        <div id="cash-charge" className="mt-4">
+          <CashChargeWidget userId={userId} currentBalance={currentBalance} />
           {allowTestTopup ? (
-            <WalletTopupTestForm />
-          ) : (
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs text-slate-600 font-medium">
-              <p className="font-bold text-slate-800 mb-0.5">캐시 충전</p>
-              <p>정식 충전 기능은 현재 준비 중입니다.</p>
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <WalletTopupTestForm />
             </div>
-          )}
+          ) : null}
         </div>
       </section>
 
