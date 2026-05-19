@@ -13,6 +13,9 @@ type Props = {
 
 export default async function WalletChargePage({ searchParams }: Props) {
   const { user, profile, error: profileLoadError } = await getServerUserWithProfile();
+  if (profile?.role === "mentor") {
+    redirect("/mentor/dashboard");
+  }
   if (!user) {
     redirect(`/login/student?next=${encodeURIComponent("/wallet/charge")}`);
   }

@@ -7,8 +7,10 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import type { UserRow } from "@/lib/types/user";
 import type { User } from "@supabase/supabase-js";
-import { LandingMainNav, LANDING_NAV_ITEMS } from "@/components/landing/LandingMainNav";
-import { isMainNavItemActive } from "@/lib/shell/mainNavActive";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { LandingMainNav } from "@/components/landing/LandingMainNav";
+import { getLandingNavForProfile } from "@/lib/shell/mainNavItems";
+import { isMainNavItemActive, mainNavAudience } from "@/lib/shell/mainNavActive";
 
 function profileHref(profile: UserRow | null): string {
   if (!profile) return "/login/student";
@@ -21,6 +23,9 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
   const logged = Boolean(props.user);
   const pathname = usePathname() || "";
   const [menuOpen, setMenuOpen] = useState(false);
+  const role = props.profile?.role ?? null;
+  const isMentor = role === "mentor";
+  const landingNavItems = getLandingNavForProfile(role);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -48,25 +53,12 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
       <div className="mx-auto flex h-16 max-w-[1480px] items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* 로고 영역 */}
         <div className="flex shrink-0 items-center">
-          <Link
-            href="/"
-            className="flex min-w-fit shrink-0 items-center gap-2 whitespace-nowrap"
-            onClick={closeMenu}
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#142d61] text-white">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-                <path d="M3 10 12 4l9 6-9 6-9-6Zm2.5 2.8L12 17l6.5-4.2V16L12 20l-6.5-4v-3.2Z" />
-              </svg>
-            </div>
-            <span className="text-[18px] font-black tracking-tight text-[#142d61] sm:text-[20px]">
-              쌤버십
-            </span>
-          </Link>
+          <BrandLogo onClick={closeMenu} />
         </div>
 
         {/* 데스크톱 네비게이션 (중앙) */}
         <div className="hidden flex-1 justify-center lg:flex">
-          <LandingMainNav />
+          <LandingMainNav role={role} />
         </div>
 
         {/* 액션 버튼 영역 (우측) */}
@@ -150,12 +142,13 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
           aria-label="모바일 메뉴"
         >
           <ul className="grid grid-cols-1 gap-1">
-            {LANDING_NAV_ITEMS.map((item) => {
-              const active = isMainNavItemActive(pathname, item.href, "student");
+            {landingNavItems.map((item) => {
+              const href = isMentor && item.href === "/question-room" ? "/mentor/question-room" : item.href;
+              const active = isMainNavItemActive(pathname, href, mainNavAudience(role));
               return (
                 <li key={item.href}>
                   <Link
-                    href={item.href}
+                    href={href}
                     className={`flex h-12 items-center rounded-xl px-4 text-[16px] font-bold transition-colors ${
                       active
                         ? "bg-blue-50 text-blue-600"

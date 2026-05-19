@@ -34,8 +34,8 @@ function isItemActive(itemKey: string, active: MentorCustomRequestNavKey, tab?: 
   if (itemKey === "dashboard") return active === "dashboard";
   if (itemKey === "posts-open") return active === "posts" && (!tab || tab === "open");
   if (itemKey === "posts-applied") return active === "posts" && tab === "applied";
-  // '수락된 의뢰' is active when on orders page (any tab or no tab)
-  if (itemKey === "orders-all") return active === "orders";
+  if (itemKey === "orders-all") return active === "orders" && (!tab || tab === "all");
+  if (itemKey === "orders-billing") return active === "orders" && tab === "billing";
   if (itemKey === "orders-work") return active === "orders" && (tab === "work" || tab === "revision");
   if (itemKey === "orders-delivery") return active === "orders" && tab === "delivery";
   if (itemKey === "orders-done") return active === "orders" && tab === "done";
@@ -67,30 +67,36 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
       badgeKey: "applied",
     },
     {
-      // links to orders page - shows total accepted (non-done) orders count
       href: "/mentor/custom-request/orders",
-      label: "수락된 의뢰",
+      label: "수락된 의뢰 (전체)",
       key: "orders-all",
       Icon: CheckCircle,
       badgeKey: "ordersTotal",
     },
     {
+      href: "/mentor/custom-request/orders?tab=billing",
+      label: "작업 대기",
+      key: "orders-billing",
+      Icon: PlayCircle,
+      badgeKey: "billing",
+    },
+    {
       href: "/mentor/custom-request/orders?tab=work",
-      label: "진행 중",
+      label: "작업 진행 중",
       key: "orders-work",
       Icon: PlayCircle,
       badgeKey: "work",
     },
     {
       href: "/mentor/custom-request/orders?tab=delivery",
-      label: "납품 완료",
+      label: "납품 대기",
       key: "orders-delivery",
       Icon: Package,
       badgeKey: "delivery",
     },
     {
       href: "/mentor/custom-request/orders?tab=done",
-      label: "종료된 의뢰",
+      label: "종료됨",
       key: "orders-done",
       Icon: XCircle,
       badgeKey: "done",
@@ -111,7 +117,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
       Icon: Star,
     },
     {
-      href: "#",
+      href: "/legal/no-offplatform-contact",
       label: "의뢰 가이드",
       key: "guide",
       Icon: BookOpen,
@@ -146,7 +152,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
                   className={[
                     "flex min-h-[38px] items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all duration-150",
                     isActive
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-[#142d61] text-white shadow-sm"
                       : "text-slate-700 hover:bg-slate-100 hover:text-slate-900",
                   ].join(" ")}
                 >
@@ -160,7 +166,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black",
                         isActive
                           ? "bg-white/20 text-white"
-                          : "bg-blue-100 text-blue-700",
+                          : "bg-slate-100 text-[#142d61]",
                       ].join(" ")}
                     >
                       {count}
@@ -183,7 +189,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
                   className={[
                     "flex min-h-[38px] items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all duration-150",
                     isActive
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-[#142d61] text-white shadow-sm"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
                   ].join(" ")}
                 >
@@ -199,7 +205,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
       {/* Mentor Guide Card */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
-          <BookOpen className="h-4 w-4 text-blue-600" />
+          <BookOpen className="h-4 w-4 text-[#142d61]" />
           <h3 className="text-[13px] font-black text-slate-900">멘토 가이드</h3>
         </div>
         <p className="text-[12px] leading-relaxed text-slate-500 mb-3">

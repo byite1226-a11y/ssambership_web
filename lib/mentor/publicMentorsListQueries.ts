@@ -3,7 +3,8 @@ import { loadMentorDirectoryUserRows, loadMentorProfilesForDirectory } from "@/l
 import { buildMentorProfileDisplay, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import type { MentorsListFilters, MentorsListSort } from "@/lib/mentor/mentorsListSearchParams";
 import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
-import { getStringField, pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { assignPlansByTier, type PlansByTier } from "@/lib/subscribe/subscribePageQueries";
 type Row = Record<string, unknown>;
 
 export const PUBLIC_MENTORS_RLS_HINT =
@@ -18,6 +19,7 @@ export type MentorPublicListCard = {
   avgRating: number | null;
   reviewsProbe: string;
   priceLabel: string | null;
+  byTier: PlansByTier | null;
   plansProbe: string;
 };
 
@@ -126,10 +128,12 @@ async function batchReviewStats(
   return { map: empty, probe: "reviews_summary / reviews 계열 미가용 또는 RLS" };
 }
 
+type MentorPlanBatch = { label: string; byTier: PlansByTier; probe: string };
+
 async function batchPlanLabels(
   supabase: SupabaseClient,
   mentorIds: string[]
-): Promise<{ byMentor: Map<string, { label: string; probe: string }>; probe: string }> {
+): Promise<{ byMentor: Map<string, MentorPlanBatch>; probe: string }> {
   let lastProbe = "plans 테이블 없음 또는 RLS";
 
   for (const table of PLAN_TABLES) {
@@ -149,28 +153,34 @@ async function batchPlanLabels(
       continue;
     }
     const rows = (data as unknown as Row[]) ?? [];
-    const byMentor = new Map<string, { min: number; standard: number | null }>();
+    const rowsByMentor = new Map<string, Row[]>();
     for (const row of rows) {
       const mid = String(row[fk]);
       if (!mentorIds.includes(mid)) continue;
-      const price = parsePriceNumber(row);
-      if (price == null) continue;
-      const title = getStringField(row, ["title", "name", "label", "plan_name", "tier_name"]) ?? "";
-      const isStd = /standard|스탠다드|basic/i.test(title);
-      const cur = byMentor.get(mid) ?? { min: price, standard: null as number | null };
-      cur.min = Math.min(cur.min, price);
-      if (isStd) {
-        cur.standard = cur.standard == null ? price : Math.min(cur.standard, price);
-      }
-      byMentor.set(mid, cur);
+      const list = rowsByMentor.get(mid) ?? [];
+      list.push(row);
+      rowsByMentor.set(mid, list);
     }
-    const out = new Map<string, { label: string; probe: string }>();
-    for (const [mid, v] of byMentor) {
+    const out = new Map<string, MentorPlanBatch>();
+    for (const [mid, mentorRows] of rowsByMentor) {
+      const { byTier } = assignPlansByTier(mentorRows);
+      const standardPrice = byTier.standard ? parsePriceNumber(byTier.standard) : null;
+      let minPrice: number | null = null;
+      for (const tier of ["limited", "standard", "premium"] as const) {
+        const p = byTier[tier] ? parsePriceNumber(byTier[tier]!) : null;
+        if (p != null) minPrice = minPrice == null ? p : Math.min(minPrice, p);
+      }
       const label =
-        v.standard != null
-          ? `Standard ${formatMoney(v.standard)}`
-          : `대표 ${formatMoney(v.min)}~`;
-      out.set(mid, { label, probe: `${table}.${fk}` });
+        standardPrice != null
+          ? `Standard ${formatMoney(standardPrice)}`
+          : minPrice != null
+            ? `대표 ${formatMoney(minPrice)}~`
+            : null;
+      out.set(mid, {
+        label: label ?? "",
+        byTier,
+        probe: `${table}.${fk}`,
+      });
     }
     return { byMentor: out, probe: `${table}.${fk} · 행 ${rows.length}` };
   }
@@ -302,7 +312,8 @@ export async function loadPublicMentorsList(
       reviewCount: rev.count,
       avgRating: rev.avg,
       reviewsProbe: revBatch.probe,
-      priceLabel: plan?.label ?? null,
+      priceLabel: plan?.label ? plan.label : null,
+      byTier: plan?.byTier ?? null,
       plansProbe: plan?.probe ?? planBatch.probe,
     };
     if (cardMatchesFilters(filters, display)) {

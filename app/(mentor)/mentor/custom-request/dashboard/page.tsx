@@ -5,7 +5,6 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import {
   loadMentorRecentApplicationsWithPostHints,
-  loadOpenCustomRequestPostsForMentorBrowse,
   pickDisplayField,
 } from "@/lib/customRequest/customRequestQueries";
 import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
@@ -14,7 +13,11 @@ import {
   fetchMentorCustomRequestOrdersFromPrimaryTable,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/home/mentorDashboardQueries";
-import { fetchMentorWorkspaceCounts } from "@/lib/customRequest/mentorCounts";
+import { fetchMentorWorkspaceCounts, mentorWorkspaceSidebarCounts } from "@/lib/customRequest/mentorCounts";
+import {
+  MENTOR_OPEN_POST_CATEGORY_COLORS,
+  MENTOR_OPEN_POST_CATEGORY_LABELS,
+} from "@/lib/customRequest/mentorOpenPostCategory";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -49,7 +52,7 @@ function getStatusBadge(row: Row, disputeSet: Set<string>): { label: string; cls
   const id = typeof row.id === "string" ? row.id.trim() : "";
   if (id && disputeSet.has(id)) return { label: "분쟁", cls: "bg-red-50 text-red-600" };
   const tab = classifyMentorOrderBrowseTab(row, disputeSet);
-  if (tab === "billing") return { label: "진행 전", cls: "bg-amber-50 text-amber-600" };
+  if (tab === "billing") return { label: "작업 대기", cls: "bg-amber-50 text-amber-800" };
   if (tab === "revision") return { label: "수정 요청", cls: "bg-orange-50 text-orange-600" };
   if (tab === "done") return { label: "완료", cls: "bg-slate-50 text-slate-500" };
   return { label: "작업 중", cls: "bg-blue-50 text-blue-600" };
@@ -73,10 +76,9 @@ function getRecentActivity(row: Row): string {
 export default async function MentorCustomRequestDashboardPage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
-  const [{ items: recentApplied }, orders, openList, dashboardCounts] = await Promise.all([
+  const [{ items: recentApplied }, orders, dashboardCounts] = await Promise.all([
     loadMentorRecentApplicationsWithPostHints(supabase, user.id, 5),
     fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 12),
-    loadOpenCustomRequestPostsForMentorBrowse(supabase, 100),
     fetchMentorWorkspaceCounts(supabase, user.id),
   ]);
 
@@ -88,19 +90,25 @@ export default async function MentorCustomRequestDashboardPage() {
     : await fetchActiveOpenDisputeOrderIdSet(supabase, dashOrderIds);
 
   const orderCount = orders.error ? 0 : orders.rows.length;
-  const appliedCount = recentApplied.length;
-  const appliedPostIds = new Set(
-    (recentApplied ?? []).map((item) => String(item.postId || "").trim())
-  );
-  const filteredOpenRows = (openList.rows ?? []).filter((row) => {
-    const id = String(row.id ?? "").trim();
-    return id && !appliedPostIds.has(id);
-  });
-
-  const openPoolCount =
-    openList.status === "ok" ? filteredOpenRows.length : openList.status === "empty" ? 0 : null;
+  const appliedCount = dashboardCounts.applied;
+  const sidebarCounts = mentorWorkspaceSidebarCounts(dashboardCounts);
+  const openByCategory = dashboardCounts.openByCategory;
+  const openPoolCount = sidebarCounts.open;
   const deliveryPendingCount = dashboardCounts.delivery ?? 0;
   const doneCount = dashboardCounts.done ?? 0;
+
+  const categorySlices = (["study", "career", "essay", "other"] as const)
+    .filter((id) => openByCategory[id] > 0)
+    .map((id) => ({ id, count: openByCategory[id], label: MENTOR_OPEN_POST_CATEGORY_LABELS[id], color: MENTOR_OPEN_POST_CATEGORY_COLORS[id] }));
+
+  const donutCircumference = 2 * Math.PI * 35;
+  let donutOffset = 0;
+  const donutSegments = categorySlices.map((slice) => {
+    const length = openPoolCount > 0 ? (slice.count / openPoolCount) * donutCircumference : 0;
+    const segment = { ...slice, length, offset: donutOffset };
+    donutOffset += length;
+    return segment;
+  });
 
   // For the 진행 중 table, get active orders (not done/billing)
   const activeOrders = orders.error
@@ -121,7 +129,7 @@ export default async function MentorCustomRequestDashboardPage() {
       hideFooterPlaceholderCards
       hideHero={true}
     >
-      <MentorCustomRequestWorkspaceLayout active="dashboard" counts={dashboardCounts}>
+      <MentorCustomRequestWorkspaceLayout active="dashboard" counts={sidebarCounts}>
         {/* Page header */}
         <div className="mb-6">
           <h1 className="text-[26px] font-black tracking-tight text-slate-900">맞춤의뢰 대시보드</h1>
@@ -142,13 +150,11 @@ export default async function MentorCustomRequestDashboardPage() {
                 <span className="text-[12px] font-semibold text-slate-500">새 의뢰</span>
               </div>
               <p className="text-[28px] font-black tracking-tight text-slate-900">
-                {openPoolCount === null ? "—" : openPoolCount}
+                {openPoolCount}
                 <span className="text-[15px] font-bold text-slate-600 ml-0.5">건</span>
               </p>
             </div>
-            <p className="mt-2 text-[12px] font-semibold text-blue-600">
-              오늘 +{openPoolCount === null ? "0" : openPoolCount}건
-            </p>
+            <p className="mt-2 text-[12px] font-semibold text-blue-600">미제안 {openPoolCount}건</p>
           </div>
 
           {/* Card 2: 제안한 의뢰 */}
@@ -331,7 +337,7 @@ export default async function MentorCustomRequestDashboardPage() {
                     전체 보기 &gt;
                   </Link>
                 </div>
-                {openPoolCount === null || openPoolCount === 0 ? (
+                {openPoolCount === 0 ? (
                   <p className="py-6 text-center text-[13px] text-slate-400">새 의뢰가 없습니다</p>
                 ) : (
                   <div className="flex items-center gap-4">
@@ -339,31 +345,38 @@ export default async function MentorCustomRequestDashboardPage() {
                     <div className="relative flex h-24 w-24 items-center justify-center shrink-0">
                       <svg viewBox="0 0 100 100" className="h-24 w-24 -rotate-90">
                         <circle cx="50" cy="50" r="35" fill="none" stroke="#e2e8f0" strokeWidth="12" />
-                        <circle cx="50" cy="50" r="35" fill="none" stroke="#3b82f6" strokeWidth="12" strokeDasharray="219.9" strokeDashoffset="77" />
+                        {donutSegments.map((seg) => (
+                          <circle
+                            key={seg.id}
+                            cx="50"
+                            cy="50"
+                            r="35"
+                            fill="none"
+                            stroke={seg.color}
+                            strokeWidth="12"
+                            strokeDasharray={`${seg.length} ${donutCircumference - seg.length}`}
+                            strokeDashoffset={-seg.offset}
+                          />
+                        ))}
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <span className="text-[18px] font-black text-slate-900">{openPoolCount}</span>
                         <span className="text-[10px] text-slate-500">전체</span>
                       </div>
                     </div>
-                    {/* Categories */}
-                    <ul className="space-y-1.5 text-[12px] flex-1">
-                      <li className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                        <span className="text-slate-600">공부/과제</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-purple-400 shrink-0" />
-                        <span className="text-slate-600">진로/입시</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
-                        <span className="text-slate-600">자기소개서</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
-                        <span className="text-slate-600">기타</span>
-                      </li>
+                    <ul className="flex-1 space-y-1.5 text-[12px]">
+                      {categorySlices.map((slice) => (
+                        <li key={slice.id} className="flex items-center justify-between gap-2">
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="h-2 w-2 shrink-0 rounded-full"
+                              style={{ backgroundColor: slice.color }}
+                            />
+                            <span className="text-slate-600">{slice.label}</span>
+                          </span>
+                          <span className="shrink-0 font-bold tabular-nums text-slate-800">{slice.count}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}

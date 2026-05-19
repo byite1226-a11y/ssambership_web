@@ -30,10 +30,17 @@ export function MentorsListBody(props: { filters: MentorsListFilters; list: Publ
 
   return (
     <div className="mx-auto w-full max-w-[1600px] min-w-0 px-4 sm:px-5 lg:px-6">
+      <header className="mb-6 border-b border-slate-100 pb-5">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-500">멤버십</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">멘토 찾기</h1>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+          필터와 검색으로 맞는 멘토를 찾고, 프로필에서 구독·질문을 이어가요.
+        </p>
+      </header>
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
         {/* 좌: 검색·필터 */}
         <aside className="order-1 min-w-0 lg:col-span-3 lg:sticky lg:top-6 lg:self-start">
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-[0_4px_24px_rgba(15,23,42,0.06)] sm:p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-blue-700/90">탐색</p>
             <h2 className="mt-1 text-lg font-black text-slate-900">검색·필터</h2>
             <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">키워드와 학교·과목·인증으로 멘토를 좁혀요.</p>
@@ -70,7 +77,7 @@ export function MentorsListBody(props: { filters: MentorsListFilters; list: Publ
 
         {/* 중: 요약 + 정렬 + 리스트 */}
         <div className="order-2 min-w-0 space-y-4 lg:col-span-6 lg:min-w-0">
-          <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-4 shadow-[0_6px_28px_rgba(15,23,42,0.07)] sm:p-5">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <MentorResultsSummaryBar filters={filters} total={list.cards.length} profilesError={Boolean(list.profilesError)} />
             <div className="mt-4">
               <MentorSortBar current={hrefBase} active={filters.sort} />

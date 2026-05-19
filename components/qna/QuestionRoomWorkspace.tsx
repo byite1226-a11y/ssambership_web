@@ -141,8 +141,8 @@ export function QuestionRoomWorkspace(props: {
 
   // Detail View (3-column Workspace)
   return (
-    <div className="relative flex h-[calc(100vh-140px)] w-full bg-white font-sans text-slate-900 overflow-hidden rounded-[32px] border border-slate-100 shadow-sm">
-      <div className="flex w-full h-full overflow-hidden">
+    <div className="relative flex h-[calc(100vh-140px)] min-h-0 w-full flex-col overflow-hidden border-t border-slate-200 bg-white font-sans text-slate-900">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {props.actionFeedback?.ok ? (
           <div className="absolute z-20 mx-auto mt-2 max-w-lg self-start px-4 left-0 right-0">
             <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-950 shadow-sm">
@@ -159,7 +159,7 @@ export function QuestionRoomWorkspace(props: {
         ) : null}
         
         {/* [좌측] 질문 주제 목록 */}
-        <aside className="w-[300px] shrink-0 border-r border-slate-100 flex flex-col h-full bg-[#fcfdfe]">
+        <aside className="flex h-full min-h-0 w-[300px] shrink-0 flex-col border-r border-slate-200 bg-white">
           <div className="p-6 border-b border-slate-50 shrink-0">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[16px] font-black text-slate-900">질문 주제</h2>
@@ -180,11 +180,11 @@ export function QuestionRoomWorkspace(props: {
                     key={id}
                     href={threadInRoomPath(roomBase, props.roomId!, id)}
                     className={`w-full flex flex-col gap-1 px-6 py-5 transition-all text-left border-b border-slate-50 relative ${
-                      isActive ? "bg-white shadow-[inset_4px_0_0_0_#2563eb]" : "hover:bg-slate-50/50"
+                      isActive ? "bg-slate-50 shadow-[inset_3px_0_0_0_#2563eb]" : "hover:bg-slate-50/80"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-[13px] font-black truncate ${isActive ? "text-blue-600" : "text-slate-900"}`}>
+                      <span className={`truncate text-[13px] font-black ${isActive ? "text-slate-900" : "text-slate-700"}`}>
                         {threadLabelForRow(t)}
                       </span>
                       <span className="text-[10px] font-bold text-slate-300">
@@ -193,12 +193,12 @@ export function QuestionRoomWorkspace(props: {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-black ${
-                        status === "open" ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
+                        status === "open" ? "bg-slate-100 text-slate-700" : "bg-slate-100 text-slate-400"
                       }`}>
                         {status === "open" ? "진행 중" : "종료"}
                       </span>
                       <p className="text-[11px] font-medium text-slate-400 line-clamp-1 flex-1">
-                        {pickRowString(t, ["last_message_body", "preview", "snippet"]) ?? "요약 없음"}
+                        {pickRowString(t, ["last_message_body", "preview", "snippet"]) ?? "최근 대화 없음"}
                       </p>
                     </div>
                   </Link>
@@ -223,7 +223,7 @@ export function QuestionRoomWorkspace(props: {
             )}
           </div>
           {props.variant === "student" && props.roomId ? (
-            <div className="shrink-0 border-t border-slate-100 bg-slate-50/80 p-4">
+            <div className="shrink-0 border-t border-slate-100 bg-white p-4">
               <p className="text-[11px] font-extrabold text-slate-600">새 질문 주제</p>
               <p className="mt-1 text-[10px] font-medium leading-relaxed text-slate-500">
                 질문 주제는 학생만 만들 수 있습니다. 활성 구독이 없으면 추가가 차단될 수 있어요.
@@ -248,7 +248,7 @@ export function QuestionRoomWorkspace(props: {
         </aside>
 
         {/* [중앙] 대화 영역 */}
-        <main className="flex-1 flex flex-col h-full bg-white border-r border-slate-100 overflow-hidden">
+        <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border-r border-slate-200 bg-white">
           {/* 중앙 상단: Room Header */}
           <header className="px-8 py-5 border-b border-slate-50 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-4">
@@ -260,12 +260,14 @@ export function QuestionRoomWorkspace(props: {
               </Link>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-[18px] font-black text-slate-900">{studentName}</h1>
+                  <h1 className="text-[18px] font-black text-slate-900">
+                    {props.variant === "mentor" ? `${studentName} 학생의 질문방` : studentName}
+                  </h1>
                   {studentExtra && (
                     <span className="text-[12px] font-bold text-slate-400">· {studentExtra}</span>
                   )}
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-                    threadStatus === "open" ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-400"
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                    threadStatus === "open" ? "border border-slate-200 bg-slate-50 text-slate-700" : "bg-slate-100 text-slate-400"
                   }`}>
                     {threadStatus === "open" ? "대기 중" : "종료됨"}
                   </span>
@@ -282,7 +284,7 @@ export function QuestionRoomWorkspace(props: {
           </header>
 
           {/* 메시지 리스트 */}
-          <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-[#fcfdfe] custom-scrollbar">
+          <div className="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto bg-white p-8">
             {props.messages.loading ? (
               <div className="text-center py-20 text-slate-300 font-bold">대화를 불러오는 중...</div>
             ) : props.messages.rows.length > 0 ? (
@@ -297,8 +299,8 @@ export function QuestionRoomWorkspace(props: {
                       {!mine && <span className="text-[11px] font-bold text-slate-400 mb-1 ml-1">{studentName}</span>}
                       <div className={`relative px-5 py-3 rounded-2xl shadow-sm text-[13px] font-medium leading-relaxed ${
                         mine 
-                          ? "bg-blue-600 text-white rounded-tr-none" 
-                          : "bg-white border border-slate-100 text-slate-700 rounded-tl-none"
+                          ? "rounded-tr-none bg-[#142d61] text-white"
+                          : "rounded-tl-none border border-slate-200 bg-white text-slate-700"
                       }`}>
                         {body}
                       </div>
@@ -351,7 +353,11 @@ export function QuestionRoomWorkspace(props: {
                     idleLabel={props.variant === "student" ? "질문 보내기" : "답변 보내기"}
                     pendingLabel="..."
                     disabled={!props.threadId}
-                    className="h-11 px-4 rounded-full bg-blue-600 text-white text-[13px] font-black shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition active:scale-95 disabled:bg-slate-200 disabled:shadow-none"
+                    className={`h-11 rounded-full px-4 text-[13px] font-black text-white transition active:scale-95 disabled:bg-slate-200 ${
+                      props.variant === "student"
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : "bg-[#142d61] hover:bg-[#0f2349]"
+                    }`}
                   />
                 </div>
               </div>
@@ -360,12 +366,8 @@ export function QuestionRoomWorkspace(props: {
         </main>
 
         {/* [우측] 정보 패널 */}
-        <aside className="w-[300px] shrink-0 flex flex-col h-full bg-white overflow-hidden">
-          <div className="flex flex-col h-full border-l border-slate-100">
-            <section className="border-b border-blue-100 bg-blue-50/50 px-4 py-3 text-[10px] font-medium leading-relaxed text-blue-950">
-              <span className="font-extrabold">연결 메모</span>는 이 질문방(room) 단위입니다. 질문 스레드마다 따로 저장되지 않습니다. 스키마에 따라
-              room당 하나의 노트 행만 있을 수 있어, 학생·멘토 메모가 같은 저장소를 갱신할 수 있습니다.
-            </section>
+        <aside className="flex h-full min-h-0 w-[300px] shrink-0 flex-col border-l border-slate-200 bg-white">
+          <div className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">
 
             {props.variant === "mentor" ? (
               <section className="p-6 border-b border-slate-50">
@@ -390,12 +392,15 @@ export function QuestionRoomWorkspace(props: {
             )}
 
             <section className="p-6 border-b border-slate-50">
-              <div className="flex items-center gap-2 mb-4">
-                <Bookmark className="h-4 w-4 text-blue-500" />
+              <div className="flex items-center gap-2 mb-3">
+                <Bookmark className="h-4 w-4 text-slate-400" />
                 <h2 className="text-[12px] font-black text-slate-400 uppercase tracking-wider">
                   {props.variant === "student" ? "내 메모 (room 단위)" : "멘토 메모 (room 단위)"}
                 </h2>
               </div>
+              <p className="mb-4 text-[10px] text-slate-400 font-bold leading-normal">
+                * 연결 메모는 질문방(room) 단위로 저장·공유됩니다.
+              </p>
 
               <form action={saveConnectionNoteAction} key={`note-form-${rev}`} className="space-y-4">
                 <textarea
@@ -443,9 +448,9 @@ export function QuestionRoomWorkspace(props: {
             </section>
 
             {props.variant === "mentor" ? (
-              <section className="m-6 rounded-2xl border border-blue-50 bg-blue-50/30 p-6">
-                <p className="mb-2 text-[12px] font-black text-blue-900">멘토 가이드</p>
-                <p className="text-[11px] font-medium leading-relaxed text-blue-700">
+              <section className="border-t border-slate-100 p-6">
+                <p className="mb-2 text-[12px] font-black text-slate-900">멘토 가이드</p>
+                <p className="text-[11px] font-medium leading-relaxed text-slate-600">
                   학생의 눈높이에 맞는 단계별 설명을 지향해 주세요. 주제별로 대화를 나누면 이후 복기에 도움이 됩니다.
                 </p>
               </section>

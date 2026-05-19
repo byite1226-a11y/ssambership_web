@@ -3,6 +3,7 @@ import { loadMentorRecentApplicationsWithPostHints, loadOpenCustomRequestPostsFo
 import { fetchMentorCustomRequestOrdersFromPrimaryTable } from "@/lib/home/mentorDashboardQueries";
 import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 import { classifyMentorOrderBrowseTab } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
+import { countOpenPostsByCategory } from "@/lib/customRequest/mentorOpenPostCategory";
 
 export async function fetchMentorWorkspaceCounts(supabase: SupabaseClient, userId: string) {
   const [appliedResp, ordersResp, openResp] = await Promise.all([
@@ -30,6 +31,7 @@ export async function fetchMentorWorkspaceCounts(supabase: SupabaseClient, userI
   });
 
   const openPoolCount = openResp.status === "ok" ? filteredOpenRows.length : 0;
+  const openByCategory = countOpenPostsByCategory(filteredOpenRows as Record<string, unknown>[]);
   
   type Row = Record<string, unknown>;
 
@@ -41,6 +43,7 @@ export async function fetchMentorWorkspaceCounts(supabase: SupabaseClient, userI
 
   return {
     open: openPoolCount,
+    openByCategory,
     applied: appliedCount,
     billing: billingCount,
     work: workCount,
@@ -49,4 +52,12 @@ export async function fetchMentorWorkspaceCounts(supabase: SupabaseClient, userI
     done: doneCount,
     ordersTotal: billingCount + workCount + deliveryPendingCount + revisionCount,
   };
+}
+
+/** 사이드바 배지용 — openByCategory 제외 */
+export function mentorWorkspaceSidebarCounts(
+  counts: Awaited<ReturnType<typeof fetchMentorWorkspaceCounts>>,
+): Record<string, number> {
+  const { openByCategory: _ignored, ...nav } = counts;
+  return nav;
 }

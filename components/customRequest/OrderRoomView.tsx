@@ -450,7 +450,7 @@ function OrderRoomViewMentor(props: {
   const tabs: TabKey[] = ["채팅", "작업 파일", "요청사항", "진행 관리"];
 
   return (
-    <div className="min-h-screen w-full bg-[#F8FAFC] py-6">
+    <div className="min-h-screen w-full bg-white py-6">
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
         {/* TOP: Shared Mentor Header (Restructured) */}
         <OrderRoomPageHeader
@@ -458,12 +458,6 @@ function OrderRoomViewMentor(props: {
           view={view}
           backHref={mentorOrderHubHref ?? "/mentor/custom-request/orders"}
         />
-
-        <div className="mt-4 space-y-3">
-          <CustomRequestPolicyNotice />
-          <ContactMaskingNotice />
-          <CustomRequestStatusBanner order={o as Row} disputeRows={detail.bundle.disputes.rows ?? []} />
-        </div>
 
         {/* MAIN: 2-Column Workspace Layout */}
         <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -476,12 +470,12 @@ function OrderRoomViewMentor(props: {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`relative px-5 py-4 text-[15px] font-bold transition-colors ${
-                    activeTab === tab ? "text-blue-600" : "text-slate-500 hover:text-slate-800"
+                    activeTab === tab ? "text-[#142d61]" : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   {tab}
                   {activeTab === tab && (
-                    <span className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-blue-600" />
+                    <span className="absolute bottom-0 left-0 right-0 h-[3px] rounded-full bg-[#142d61]" />
                   )}
                 </button>
               ))}
@@ -592,13 +586,18 @@ function OrderRoomViewMentor(props: {
           </div>
 
           {/* RIGHT SIDEBAR: Info & Guidelines */}
-          <aside className="w-full lg:w-[320px] shrink-0">
+          <aside className="w-full lg:w-[320px] shrink-0 space-y-4">
             <OrderRightSidebarMentor
               detail={detail}
               view={view}
               isTerminalOrder={isTerminalOrder}
               orderIdDisplay={idForDisplay}
             />
+            <div className="space-y-3 mt-4">
+              <CustomRequestStatusBanner order={o as Row} disputeRows={detail.bundle.disputes.rows ?? []} />
+              <CustomRequestPolicyNotice />
+              <ContactMaskingNotice />
+            </div>
           </aside>
         </div>
       </div>

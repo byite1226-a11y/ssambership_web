@@ -7,7 +7,7 @@ import { MentorCustomRequestWorkspaceLayout } from "@/components/customRequest/M
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { loadMentorRecentApplicationsWithPostHints, loadOpenCustomRequestPostsForMentorBrowse, pickDisplayField } from "@/lib/customRequest/customRequestQueries";
-import { fetchMentorWorkspaceCounts } from "@/lib/customRequest/mentorCounts";
+import { fetchMentorWorkspaceCounts, mentorWorkspaceSidebarCounts } from "@/lib/customRequest/mentorCounts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -88,7 +88,7 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
       emptyState=""
       hideHero={true}
     >
-      <MentorCustomRequestWorkspaceLayout active="posts" tab={isApplied ? "applied" : "open"} counts={counts}>
+      <MentorCustomRequestWorkspaceLayout active="posts" tab={isApplied ? "applied" : "open"} counts={mentorWorkspaceSidebarCounts(counts)}>
         {/* Page header */}
         <div className="mb-5">
           <h1 className="text-[24px] font-black tracking-tight text-slate-900">{titleText}</h1>
@@ -106,6 +106,7 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                     {CATEGORY_TABS.map((catTab) => {
                       const isActive = categoryTab === catTab.id;
                       const count = categoryCounts[catTab.id] ?? 0;
+                      const isAllTab = catTab.id === "all";
                       return (
                         <Link
                           key={catTab.id}
@@ -118,14 +119,18 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                           ].join(" ")}
                         >
                           {catTab.label}
-                          <span
-                            className={[
-                              "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black",
-                              isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500",
-                            ].join(" ")}
-                          >
-                            {count}
-                          </span>
+                          {isAllTab ? (
+                            <span
+                              className={[
+                                "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black tabular-nums",
+                                isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500",
+                              ].join(" ")}
+                            >
+                              {count}
+                            </span>
+                          ) : count > 0 ? (
+                            <span className="text-[11px] font-semibold tabular-nums text-slate-400">{count}</span>
+                          ) : null}
                         </Link>
                       );
                     })}
@@ -141,6 +146,9 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                     의뢰 필터
                   </button>
                 </div>
+                <p className="mb-4 text-[11px] leading-relaxed text-slate-400">
+                  전체는 노출 중인 모든 의뢰 수이고, 카테고리 옆 숫자는 해당 분류에 속한 건수만 표시합니다.
+                </p>
 
                 <section className="space-y-3">
                   <h2 className="sr-only">모집 중인 맞춤의뢰</h2>

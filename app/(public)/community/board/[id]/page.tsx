@@ -64,7 +64,7 @@ export default async function CommunityBoardDetailPage(props: Props) {
   return (
     <CommunityLayoutShell
       activeNav="board"
-      rightAsidePromo="shortform"
+      rightAsidePromo="board"
       hero={
         <CommunityPageHero
           eyebrow="커뮤니티 · 게시판"

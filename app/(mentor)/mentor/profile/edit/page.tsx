@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { MENTOR_PROFILE_DATA_MODEL } from "@/lib/mentor/mentorDataModel";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
+import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
+import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { USER_UI_LOAD_FAILED, USER_UI_OPS_ISSUE } from "@/lib/constants/userFacingMessages";
 
@@ -21,6 +23,8 @@ export default async function MentorProfileEditPage(props: PageProps) {
   const { row, error: re } = await fetchMentorProfileRow(supabase, user.id);
   const { data: userRow } = await getUserProfileById(supabase, user.id);
   const media = await fetchMentorMediaSample(supabase, user.id, 8);
+  const plans = await fetchPlansForMentor(supabase, user.id);
+  const { byTier } = assignPlansByTier(plans.rows);
 
   const display = buildMentorProfileDisplay(row, userRow ?? null);
   const initial = {
@@ -49,7 +53,7 @@ export default async function MentorProfileEditPage(props: PageProps) {
     >
       <MentorProfileEditForm
         initial={initial}
-        query={{ row, err: re, media: { rows: media.rows, table: media.table, error: null } }}
+        query={{ row, err: re, media: { rows: media.rows, table: media.table, error: null }, byTier }}
         accountEmail={userRow?.email ?? user.email ?? null}
         ok={ok}
         errorMessage={err ? mapDataErrorMessage(err) : null}

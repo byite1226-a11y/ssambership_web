@@ -5,30 +5,30 @@ import { useMemo, useState, useEffect } from "react";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import {
   mentorCustomOrderPaymentLine,
+  mentorCustomOrderWorkroomCtaLabel,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
 import { classifyMentorOrderBrowseTab, type MentorOrderBrowseTabId } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
 
 type Row = Record<string, unknown>;
 
-// Tab labels matching reference image (req_15): 전체 | 진행 전 | 진행 중 | 정산 대기 | 완료
 const TABS: { id: MentorOrderBrowseTabId; label: string; countKey: string }[] = [
   { id: "all", label: "전체", countKey: "all" },
-  { id: "billing", label: "진행 전", countKey: "billing" },
-  { id: "work", label: "진행 중", countKey: "work" },
-  { id: "delivery", label: "정산 대기", countKey: "delivery" },
-  { id: "done", label: "완료", countKey: "done" },
+  { id: "billing", label: "작업 대기", countKey: "billing" },
+  { id: "work", label: "작업 진행 중", countKey: "work" },
+  { id: "delivery", label: "납품 대기", countKey: "delivery" },
+  { id: "done", label: "종료됨", countKey: "done" },
 ];
 
 // Step labels matching reference image (req_15 card stepper)
-const STEP_LABELS = ["제안 수락", "작업 진행 중", "납품 대기", "학생 확인", "완료 및 정산"];
+const STEP_LABELS = ["수락됨", "작업 진행 중", "납품 대기", "학생 확인", "완료 및 정산"];
 
 function getStepIndex(row: Row, disputeSet: ReadonlySet<string>): number {
   const tab = classifyMentorOrderBrowseTab(row, disputeSet);
   if (tab === "billing") return 0;
   if (tab === "work") return 1;
   if (tab === "delivery") return 2;
-  if (tab === "revision") return 2;
+  if (tab === "revision") return 3;
   if (tab === "done") return 4;
   return 0;
 }
@@ -39,12 +39,12 @@ function getStatusBadge(row: Row, disputeSet: ReadonlySet<string>): { label: str
     return { label: "문제 해결", cls: "bg-red-50 text-red-600 border-red-200" };
   }
   const tab = classifyMentorOrderBrowseTab(row, disputeSet);
-  if (tab === "billing") return { label: "진행 전", cls: "bg-amber-50 text-amber-700 border-amber-200" };
-  if (tab === "work") return { label: "진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
+  if (tab === "billing") return { label: "작업 대기", cls: "bg-amber-50 text-amber-800 border-amber-200" };
+  if (tab === "work") return { label: "작업 진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
   if (tab === "delivery") return { label: "납품 대기", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
-  if (tab === "revision") return { label: "수정 요청", cls: "bg-orange-50 text-orange-700 border-orange-200" };
-  if (tab === "done") return { label: "완료", cls: "bg-slate-50 text-slate-600 border-slate-200" };
-  return { label: "진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
+  if (tab === "revision") return { label: "학생 확인", cls: "bg-orange-50 text-orange-700 border-orange-200" };
+  if (tab === "done") return { label: "종료됨", cls: "bg-slate-50 text-slate-600 border-slate-200" };
+  return { label: "작업 진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
 }
 
 function studentLine(row: Row): string {
@@ -144,7 +144,7 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
               className={[
                 "shrink-0 flex items-center gap-1.5 border-b-2 px-4 pb-3 pt-1 text-[14px] font-semibold transition-colors whitespace-nowrap",
                 isActive
-                  ? "border-blue-600 text-blue-600"
+                  ? "border-[#142d61] text-[#142d61]"
                   : "border-transparent text-slate-500 hover:text-slate-800",
               ].join(" ")}
             >
@@ -152,7 +152,7 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
               <span
                 className={[
                   "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black",
-                  isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500",
+                  isActive ? "bg-slate-100 text-[#142d61]" : "bg-slate-100 text-slate-500",
                 ].join(" ")}
               >
                 {count}
@@ -295,9 +295,9 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
                                   className={[
                                     "flex h-7 w-7 items-center justify-center rounded-full border-2 text-[11px] font-black transition-all",
                                     isDone
-                                      ? "border-blue-500 bg-blue-500 text-white"
+                                      ? "border-[#142d61] bg-[#142d61] text-white"
                                       : isCurrent
-                                      ? "border-blue-500 bg-white text-blue-600 ring-4 ring-blue-50"
+                                      ? "border-[#142d61] bg-white text-[#142d61] ring-4 ring-slate-100"
                                       : "border-slate-200 bg-white text-slate-400",
                                   ].join(" ")}
                                 >
@@ -312,7 +312,7 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
                                 <span
                                   className={[
                                     "mt-1.5 max-w-[60px] text-center text-[10px] font-semibold leading-tight",
-                                    isDone ? "text-blue-600" : isCurrent ? "text-blue-700 font-bold" : "text-slate-400",
+                                    isDone ? "text-[#142d61]" : isCurrent ? "text-[#142d61] font-bold" : "text-slate-400",
                                   ].join(" ")}
                                 >
                                   {stepLabel}
@@ -323,7 +323,7 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
                                 <div
                                   className={[
                                     "flex-1 mx-1 h-0.5 self-start mt-3.5 rounded-full transition-colors",
-                                    i < stepIndex ? "bg-blue-400" : "bg-slate-200",
+                                    i < stepIndex ? "bg-[#142d61]/70" : "bg-slate-200",
                                   ].join(" ")}
                                 />
                               )}
@@ -341,10 +341,11 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
                           "inline-flex h-9 items-center justify-center rounded-lg px-5 text-[13px] font-bold transition shadow-sm hover:shadow",
                           isTerminalCard
                             ? "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                            : "bg-blue-600 text-white hover:bg-blue-700",
+                            : "bg-[#142d61] text-white hover:bg-[#0f2349]",
                         ].join(" ")}
                       >
-                        {isTerminalCard ? "작업방 보기" : "작업방 입장 →"}
+                        {mentorCustomOrderWorkroomCtaLabel(lifecycleTab, r)}
+                        {!isTerminalCard && lifecycleTab !== "delivery" ? " →" : ""}
                       </Link>
                     </div>
                   </div>

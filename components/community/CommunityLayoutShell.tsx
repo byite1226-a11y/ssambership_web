@@ -7,7 +7,7 @@ type Props = {
   activeNav: CommunityNavActive;
   hero: ReactNode;
   children: ReactNode;
-  /** 기본: 게시판 둘러보기. 게시판 목록·상세에서는 숏폼 보기로 전환 */
+  /** 기본: 게시판. 게시판 목록·상세는 `board`, 숏폼 목록·상세는 `shortform` */
   rightAsidePromo?: CommunityRightAsidePromo;
 };
 

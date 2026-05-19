@@ -9,6 +9,7 @@ import {
   paymentStatusBadgeLabelForRaw,
   paymentStatusLabelForUi,
 } from "@/lib/customRequest/orderLifecycleConstants";
+import type { MentorOrderBrowseTabId } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
 
 type Row = Record<string, unknown>;
 
@@ -30,6 +31,30 @@ export function mentorCustomOrderStatusHeadline(row: Row, activeDisputeOrderIds?
 
 export function mentorCustomOrderWorkroomHref(orderId: string): string {
   return `/custom-request/orders/${encodeURIComponent(orderId)}`;
+}
+
+/** 수락된 의뢰 카드·작업방 CTA 라벨 (상태별) */
+export function mentorCustomOrderWorkroomCtaLabel(
+  tab: MentorOrderBrowseTabId,
+  row?: Row
+): string {
+  if (tab === "done") return "완료 내역 보기";
+  if (tab === "billing") return "작업방 입장";
+  if (tab === "work" || tab === "revision") return "이어서 작업하기";
+  if (tab === "delivery") {
+    const norm = row ? normalizedPrimaryOrderStatus(row) : "";
+    if (
+      norm === "waiting_review" ||
+      norm === "pending_review" ||
+      norm === "in_review" ||
+      norm === "delivery_submitted"
+    ) {
+      return "확인 상태 보기";
+    }
+    return "납품 관리";
+  }
+  if (tab === "dispute") return "작업방 보기";
+  return "작업방 입장";
 }
 
 export function mentorCustomOrderPaymentLine(row: Row): string {

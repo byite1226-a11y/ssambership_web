@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { CashTopUpEntry } from "@/components/cash/CashTopUpEntry";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
@@ -16,6 +17,9 @@ const CASH_PUBLIC_DATA_POINTS = [
 export default async function PublicCashTopUpPage() {
   const supabase = await createClient();
   const { user, profile } = await getServerUserWithProfile();
+  if (profile?.role === "mentor") {
+    redirect("/mentor/dashboard");
+  }
   const pkg = await fetchCashTopupPackages(supabase);
   if (pkg.error) {
     /* 패키지 조회 실패는 상단 안내로 처리 */

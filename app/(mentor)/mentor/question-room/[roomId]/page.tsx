@@ -62,7 +62,6 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
       dataPoints={[]}
       hideFooterPlaceholderCards
     >
-      <div className="rounded-2xl bg-slate-50/50 p-3 sm:p-4">
       <QuestionRoomWorkspace
         variant="mentor"
         surface="detail"
@@ -83,7 +82,6 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
         draftNoteBody={draftNoteBody}
         formRevision={formRevision}
       />
-      </div>
     </PageScaffold>
   );
 }

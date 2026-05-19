@@ -33,7 +33,7 @@ export default async function CommunityBoardPage() {
   return (
     <CommunityLayoutShell
       activeNav="board"
-      rightAsidePromo="shortform"
+      rightAsidePromo="board"
       hero={
         <CommunityPageHero
           eyebrow="게시판"
@@ -45,17 +45,18 @@ export default async function CommunityBoardPage() {
             loggedIn,
             nextPath: "/community/board",
           })}
+          secondaryAction={{ href: "/community", label: "커뮤니티 홈", tone: "slate" }}
         />
       }
     >
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-700 shadow-inner">
-          <p className="font-extrabold text-slate-900">게시판 안내</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
+        <div className="rounded-2xl border border-slate-100 bg-gradient-to-r from-blue-50/40 to-indigo-50/40 px-5 py-4 text-sm text-slate-700 shadow-sm">
+          <p className="font-black text-slate-900">게시판 안내</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:text-sm">
             공부법·해설·후기·학습 팁 중심의 글을 카드 형태로 모았어요. 카테고리·작성자 역할·댓글 수를 함께 확인해 보세요.
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
           {failed ? (
             <p className="p-4 text-sm text-slate-600">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
           ) : empty ? (

@@ -18,15 +18,15 @@ export default async function MentorVerificationPage() {
     <PageScaffold
       hideFooterPlaceholderCards
       eyebrow="멘토"
-      title="인증·검수 상태"
-      description="학생증·운영 검수 상태를 한곳에서 확인합니다. 반려 사유·재제출 마감은 DB 필드·운영 정책 확정 후 이 화면에 확장합니다."
+      title="인증 상태"
+      description="학생증·운영 검토 결과를 확인합니다. 승인·반려·재제출 안내는 운영자 검토 후 이 화면에 반영됩니다."
       ctas={[
         { href: "/mentor/profile/edit", label: "프로필·서류 편집", tone: "blue" },
         { href: "/mentor/profile", label: "프로필 요약", tone: "slate" },
       ]}
       sections={[
         { title: "현재 상태", body: ver, status: row ? "connected" : "skeleton" },
-        { title: "승인 절차", body: "운영자 검토·반려·재제출은 관리자 콘솔과 연동됩니다.", status: "skeleton" },
+        { title: "검토 안내", body: "승인·반려·보완 요청은 운영자가 처리합니다. 멘토는 상태 확인과 서류 수정만 진행하면 됩니다.", status: "skeleton" },
       ]}
       dataPoints={["mentor_profiles + verification 관련 열"]}
     >

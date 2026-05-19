@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 import { fetchMentorCustomRequestOrdersFromPrimaryTable } from "@/lib/home/mentorDashboardQueries";
 import { classifyMentorOrderBrowseTab } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
-import { fetchMentorWorkspaceCounts } from "@/lib/customRequest/mentorCounts";
+import { fetchMentorWorkspaceCounts, mentorWorkspaceSidebarCounts } from "@/lib/customRequest/mentorCounts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -67,7 +67,7 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
       emptyState=""
       hideHero={true}
     >
-      <MentorCustomRequestWorkspaceLayout active="orders" tab={activeTabKey} counts={orderCounts}>
+      <MentorCustomRequestWorkspaceLayout active="orders" tab={activeTabKey} counts={mentorWorkspaceSidebarCounts(orderCounts)}>
         {/* Page header */}
         <div className="mb-5">
           <h1 className="text-[24px] font-black tracking-tight text-slate-900">수락된 의뢰</h1>
@@ -90,7 +90,7 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
                 <p className="text-[13px] text-slate-500">학생이 제안서를 수락하면 여기에 나타납니다.</p>
                 <Link
                   href="/mentor/custom-request/posts"
-                  className="mt-5 inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-[13px] font-bold text-white hover:bg-blue-700 transition"
+                  className="mt-5 inline-flex items-center justify-center rounded-lg bg-[#142d61] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#0f2349] transition"
                 >
                   새 의뢰 목록 보기
                 </Link>
@@ -114,10 +114,10 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
                 <ul className="space-y-2">
                   {[
                     { label: "전체 수락", value: `${totalAccepted}건`, cls: "text-slate-900" },
-                    { label: "진행 전", value: `${beforeStart}건`, cls: "text-slate-700" },
-                    { label: "진행 중", value: `${inProgress}건`, cls: "text-slate-700" },
-                    { label: "정산 대기", value: `${settlingCount}건`, cls: "text-slate-700" },
-                    { label: "완료", value: `${completedCount}건`, cls: "text-slate-700" },
+                    { label: "작업 대기", value: `${beforeStart}건`, cls: "text-slate-700" },
+                    { label: "작업 진행 중", value: `${inProgress}건`, cls: "text-slate-700" },
+                    { label: "납품 대기", value: `${settlingCount}건`, cls: "text-slate-700" },
+                    { label: "종료됨", value: `${completedCount}건`, cls: "text-slate-700" },
                   ].map(({ label, value, cls }) => (
                     <li key={label} className="flex items-center justify-between text-[13px]">
                       <span className="text-slate-500">{label}</span>
@@ -133,23 +133,32 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
 
               {/* 빠른 메뉴 */}
               <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-[14px] font-black text-slate-900 mb-3">빠른 메뉴</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { label: "작업방 입장", href: "#", emoji: "🖥️" },
-                    { label: "납품 업로드", href: "#", emoji: "📤" },
-                    { label: "정산 내역", href: "/mentor/payouts", emoji: "💰" },
-                    { label: "메시지", href: "#", emoji: "💬" },
-                  ].map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="flex flex-col items-center gap-1 rounded-lg p-2.5 hover:bg-slate-50 transition text-center"
-                    >
-                      <span className="text-[20px]">{item.emoji}</span>
-                      <span className="text-[10px] font-semibold text-slate-600 leading-tight">{item.label}</span>
-                    </Link>
-                  ))}
+                <h3 className="mb-3 text-[14px] font-black text-slate-900">빠른 메뉴</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/mentor/custom-request/posts"
+                    className="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 p-2.5 text-center transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <span className="text-[11px] font-bold text-slate-700">새 의뢰 목록</span>
+                  </Link>
+                  <Link
+                    href="/mentor/payouts"
+                    className="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 p-2.5 text-center transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <span className="text-[11px] font-bold text-slate-700">정산 내역</span>
+                  </Link>
+                  <Link
+                    href="/notifications"
+                    className="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 p-2.5 text-center transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <span className="text-[11px] font-bold text-slate-700">알림 센터</span>
+                  </Link>
+                  <Link
+                    href="/legal/no-offplatform-contact"
+                    className="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-lg border border-slate-200 p-2.5 text-center transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <span className="text-[11px] font-bold text-slate-700">운영 정책</span>
+                  </Link>
                 </div>
               </div>
 
@@ -164,7 +173,7 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
                     "문제 발생 시 고객센터로 문의해주세요.",
                   ].map((text, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#142d61]" />
                       <span>{text}</span>
                     </li>
                   ))}
@@ -176,10 +185,10 @@ export default async function MentorCustomRequestOrdersListPage(props: PageProps
                 <h3 className="text-[13px] font-black text-slate-900 mb-2">문의 및 지원</h3>
                 <p className="text-[12px] text-slate-500 mb-3">맞춤의뢰 진행 중 문제가 발생하였나요?</p>
                 <Link
-                  href="#"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 hover:bg-slate-50 transition"
+                  href="/notifications"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 transition hover:bg-slate-50"
                 >
-                  고객센터 문의하기
+                  알림 센터에서 문의 안내 보기
                 </Link>
               </div>
             </div>

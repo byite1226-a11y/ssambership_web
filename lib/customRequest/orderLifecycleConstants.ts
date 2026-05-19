@@ -146,31 +146,31 @@ export const ORDER_ROOM_TERMINAL_MENTOR_NOTICE =
 // —— 주문방 UI: DB 토큰·ISO를 사용자 문구로만 변환(로직 판정에는 사용하지 않음)
 
 const ORDER_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
-  pending: "진행 대기",
-  open: "진행 중",
-  in_progress: "작업 중",
-  completed: "주문 완료",
-  delivered: "납품 완료",
-  submitted: "제출됨",
-  closed: "종료",
-  cancelled: "취소됨",
-  canceled: "취소됨",
-  unpaid: "미결제",
-  paid: "결제 완료",
-  in_review: "검토 중",
-  waiting_review: "검토 대기",
-  delivered_pending_review: "납품 검토 중",
-  pending_review: "검토 대기",
-  redelivered: "재납품",
-  delivery_submitted: "납품 제출됨",
-  accepted: "수락 완료",
-  revision_requested: "수정 요청됨",
-  disputed: "해결 요청 중",
-  refunded: "환불됨",
-  done: "처리 완료",
-  resolved: "해결됨",
-  rejected: "거절됨",
-  finished: "완료",
+  pending: "작업 대기",
+  open: "작업 진행 중",
+  in_progress: "작업 진행 중",
+  completed: "완료 및 정산",
+  delivered: "납품 대기",
+  submitted: "작업 진행 중",
+  closed: "종료됨",
+  cancelled: "종료됨",
+  canceled: "종료됨",
+  unpaid: "작업 대기",
+  paid: "수락됨",
+  in_review: "학생 확인",
+  waiting_review: "학생 확인",
+  delivered_pending_review: "학생 확인",
+  pending_review: "학생 확인",
+  redelivered: "납품 대기",
+  delivery_submitted: "납품 대기",
+  accepted: "완료 및 정산",
+  revision_requested: "학생 확인",
+  disputed: "종료됨",
+  refunded: "종료됨",
+  done: "종료됨",
+  resolved: "종료됨",
+  rejected: "종료됨",
+  finished: "완료 및 정산",
 };
 
 /** `custom_request_orders`·납품 등에서 읽은 상태 문자열 */
@@ -446,7 +446,7 @@ export function orderWorkspaceCurrentStepIndex(
 
 // —— W19 주문방: 앱형 작업공간 표시용(도메인 로직 없음)
 
-export const ORDER_ROOM_APP_SURFACE_CLASS = "bg-[#F3F7FF]";
+export const ORDER_ROOM_APP_SURFACE_CLASS = "bg-white";
 
 export const ORDER_ROOM_CONTENT_MAX = "mx-auto w-full max-w-7xl";
 

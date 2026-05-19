@@ -181,7 +181,7 @@ export async function createQuestionThreadAction(formData: FormData) {
     );
   }
 
-  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId, actor);
+  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId, actor, { isNewThread: true });
   if (!subGate.ok) {
     redirect(
       buildRedirectUrl(roomId, actor, {
@@ -248,7 +248,7 @@ export async function createQuestionMessageAction(formData: FormData) {
     );
   }
 
-  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId, actor);
+  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId, actor, { isNewThread: false });
   if (!subGate.ok) {
     redirect(
       buildRedirectUrl(roomId, actor, {

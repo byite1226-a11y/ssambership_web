@@ -14,10 +14,12 @@ type Props = {
   description: string;
   /** 좌측 네비와 중복되지 않도록 화면별로 0~1개만 전달 */
   primaryAction?: CommunityHeroCta | null;
+  secondaryAction?: CommunityHeroCta | null;
 };
 
 export function CommunityPageHero(props: Props) {
   const cta = props.primaryAction;
+  const secondary = props.secondaryAction;
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       {props.eyebrow ? (
@@ -27,14 +29,24 @@ export function CommunityPageHero(props: Props) {
         {props.title}
       </h1>
       <p className="mt-2 text-sm leading-6 text-slate-600">{props.description}</p>
-      {cta ? (
-        <div className="mt-4">
-          <Link
-            href={cta.href}
-            className={`inline-flex rounded-lg px-3.5 py-2 text-sm font-bold shadow-sm transition ${toneClass[cta.tone ?? "blue"]}`}
-          >
-            {cta.label}
-          </Link>
+      {cta || secondary ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {cta ? (
+            <Link
+              href={cta.href}
+              className={`inline-flex rounded-lg px-3.5 py-2 text-sm font-bold shadow-sm transition ${toneClass[cta.tone ?? "blue"]}`}
+            >
+              {cta.label}
+            </Link>
+          ) : null}
+          {secondary ? (
+            <Link
+              href={secondary.href}
+              className={`inline-flex rounded-lg px-3.5 py-2 text-sm font-bold shadow-sm transition ${toneClass[secondary.tone ?? "slate"]}`}
+            >
+              {secondary.label}
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </section>

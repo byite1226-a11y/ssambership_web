@@ -22,7 +22,7 @@ export default async function MentorsPage(props: Props) {
   }
   return (
     <PageScaffold
-      compactHero
+      hideHero
       hideFooterPlaceholderCards
       eyebrow="멤버십"
       title="멘토 찾기"

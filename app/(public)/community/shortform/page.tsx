@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { CommunityShortformTabs, parseShortformTab } from "@/components/community/CommunityShortformTabs";
@@ -8,6 +9,7 @@ import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroAc
 import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
 import { listShortformPosts } from "@/lib/community/communityQueries";
+import { Video } from "lucide-react";
 
 function shortformListDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
   if (role === "mentor") {
@@ -68,8 +70,26 @@ export default async function CommunityShortformPage(props: Props) {
         {listFailed ? (
           <p className="mt-6 text-sm text-slate-600">숏폼 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
         ) : empty ? (
-          <div className="mt-6">
-            <CommunityShortformEmptyPanel role={role} loggedIn={loggedIn} />
+          <div className="mt-8 flex justify-center">
+            <div className="w-full max-w-[280px] aspect-[9/16] rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center shadow-inner">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-4 text-slate-400 shadow-sm ring-1 ring-slate-100">
+                <Video className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-black text-slate-900 leading-snug">아직 등록된 숏폼이 없습니다</p>
+              <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                {role === "mentor"
+                  ? "첫 숏폼을 올려 학습 팁을 공유해보세요!"
+                  : "멘토가 올린 숏폼 영상이 준비 중입니다."}
+              </p>
+              {role === "mentor" && (
+                <Link
+                  href="/community/new"
+                  className="mt-6 inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700 transition"
+                >
+                  숏폼 업로드하기
+                </Link>
+              )}
+            </div>
           </div>
         ) : (
           <ul className="mt-6 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-3">

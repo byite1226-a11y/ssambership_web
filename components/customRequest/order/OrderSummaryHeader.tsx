@@ -258,13 +258,12 @@ export function OrderRoomPageHeader(props: OrderRoomPageHeaderProps) {
             <p className="text-xs font-black text-slate-800">{statusCardTitle}</p>
             <p className="text-[10px] font-bold text-slate-500 leading-normal truncate">{statusCardDesc}</p>
           </div>
-          <Link
-            href="#"
-            className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3.5 py-2 text-xs font-black text-blue-600 hover:bg-blue-50 transition shadow-sm shrink-0"
+          <span
+            className="ml-auto inline-flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-400"
+            title="추후 연결 예정"
           >
             <span>{statusCardButtonLabel}</span>
-            <span>&gt;</span>
-          </Link>
+          </span>
         </div>
       </div>
 
@@ -610,8 +609,7 @@ function OrderRoomPageHeaderMentor({ detail, backHref = "/custom-request" }: Ord
 
   const backLabel = "수락된 의뢰 상세로 돌아가기";
   
-  // Status-dependent labels from current normalization
-  const statusLabel = orderNorm === "completed" || orderNorm === "settled" ? "완료됨" : "수락됨"; 
+  const statusLabel = orderStatusBadgeLabelForNorm(orderNorm); 
 
   return (
     <div className="mb-6 flex flex-col space-y-4">
@@ -803,10 +801,10 @@ export function OrderRightSidebarMentor({ detail, isTerminalOrder, orderIdDispla
 function OrderStepStripMentor({ currentIndex, createdDate }: { currentIndex: number; createdDate: string }) {
   const steps = [
     { title: "수락됨", date: createdDate },
-    { title: "작업 중" },
+    { title: "작업 진행 중" },
     { title: "납품 대기" },
-    { title: "수정 요청" },
-    { title: "완료" },
+    { title: "학생 확인" },
+    { title: "완료 및 정산" },
   ];
 
   return (
@@ -816,9 +814,9 @@ function OrderStepStripMentor({ currentIndex, createdDate }: { currentIndex: num
         const isCurrent = i === currentIndex;
         const isLast = i === steps.length - 1;
 
-        const circleBg = isCurrent || isDone ? "bg-blue-600" : "bg-white border border-slate-200";
+        const circleBg = isCurrent || isDone ? "bg-[#142d61]" : "bg-white border border-slate-200";
         const circleText = isCurrent || isDone ? "text-white" : "text-slate-400";
-        const lineBg = isDone ? "bg-blue-600" : "bg-slate-200";
+        const lineBg = isDone ? "bg-[#142d61]" : "bg-slate-200";
 
         return (
           <div key={i} className="flex items-start gap-4">
@@ -837,7 +835,7 @@ function OrderStepStripMentor({ currentIndex, createdDate }: { currentIndex: num
               )}
             </div>
             <div className="flex flex-col">
-              <span className={`text-[13px] font-bold leading-6 ${isCurrent ? "text-blue-600" : isDone ? "text-slate-800" : "text-slate-400"}`}>
+              <span className={`text-[13px] font-bold leading-6 ${isCurrent ? "text-[#142d61]" : isDone ? "text-slate-800" : "text-slate-400"}`}>
                 {s.title}
               </span>
               {s.date && <span className="text-[11px] font-medium text-slate-400">{s.date}</span>}
