@@ -115,7 +115,7 @@ export async function loadHomeLandingData(supabase: SupabaseClient): Promise<Hom
   const filters = parseMentorsListFilters({});
   const [notices, mentors, shorts, boards, plans, trust] = await Promise.all([
     fetchNoticesHome(supabase),
-    loadPublicMentorsList(supabase, filters, { fetchLimit: 14, resultCap: 6 }),
+    loadPublicMentorsList(supabase, { ...filters, page: 1 }, { fetchLimit: 14, pageSize: 6 }),
     listShortformPosts(supabase, 4),
     listBoardPosts(supabase, 4),
     fetchGlobalPlansSample(supabase),

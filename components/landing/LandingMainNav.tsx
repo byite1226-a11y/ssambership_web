@@ -24,7 +24,7 @@ export function LandingMainNav(props: { isMentor?: boolean; role?: AppRole | nul
             key={item.href}
             href={href}
             className={`whitespace-nowrap text-[15px] font-bold transition-colors ${
-              active ? "text-blue-600" : "text-slate-700 hover:text-slate-900"
+              active ? "text-[#1A56DB]" : "text-slate-700 hover:text-slate-900"
             }`}
             aria-current={active ? "page" : undefined}
           >

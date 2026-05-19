@@ -65,6 +65,7 @@ export const landingGuestNav: MainNavItem[] = [
   { href: "/community", label: "커뮤니티" },
   { href: "/custom-request", label: "맞춤의뢰" },
   { href: "/cash", label: "캐시결제" },
+  { href: "/mypage", label: "마이페이지" },
 ];
 
 export function getMainNavForRole(sessionRole: AppRole | null | undefined): MainNavItem[] {

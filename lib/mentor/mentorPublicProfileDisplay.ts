@@ -23,6 +23,25 @@ export function mentorSchoolLine(display: MentorProfileDisplay): string {
   return display.university || display.department || "학교·전공 준비 중";
 }
 
+export function mentorIsVerified(verification: string | null | undefined): boolean {
+  const raw = String(verification ?? "").trim().toLowerCase();
+  if (/approved|verified|complete/.test(raw)) return true;
+  const verKo = mentorVerificationKo(verification);
+  return /완료|승인/.test(verKo);
+}
+
+export function mentorSchoolGradeLine(display: MentorProfileDisplay): string {
+  const uni = display.university?.trim();
+  const dept = display.department?.trim();
+  const grade = display.grade?.trim();
+  const gradeSuffix = grade ? (grade.endsWith("학번") ? grade : `${grade}학번`) : "";
+
+  if (uni && dept && gradeSuffix) return `${uni} ${dept} ${gradeSuffix}`;
+  if (uni && dept) return `${uni} ${dept}`;
+  if (uni && gradeSuffix) return `${uni} ${gradeSuffix}`;
+  return mentorSchoolLine(display);
+}
+
 export function mentorVerificationBadgeClass(verification: string | null | undefined): string {
   const verKo = mentorVerificationKo(verification);
   if (/완료|승인/i.test(verKo)) {
