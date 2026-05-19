@@ -4,6 +4,13 @@ import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import {
+  SUBSCRIPTIONS_ORDER_COLUMN,
+  SUBSCRIPTIONS_SELECT,
+  SUBSCRIPTIONS_TABLE,
+  buildSubscriptionsInsertPayload,
+} from "@/lib/subscribe/subscriptionsTable";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 
@@ -35,6 +42,24 @@ export async function findActiveSubscriptionForPair(
   for (const table of SUB_TABLES) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
     if (pe) continue;
+    if (table === SUBSCRIPTIONS_TABLE) {
+      const { data, error } = await supabase
+        .from(SUBSCRIPTIONS_TABLE)
+        .select(SUBSCRIPTIONS_SELECT)
+        .eq("student_id", studentId)
+        .eq("mentor_id", mentorId)
+        .order(SUBSCRIPTIONS_ORDER_COLUMN, { ascending: false })
+        .limit(20);
+      if (error) continue;
+      const rows = ((data ?? null) as unknown as Row[] | null) ?? [];
+      for (const r of rows) {
+        if (isRowSubscriptionActive(r)) {
+          return { table: SUBSCRIPTIONS_TABLE, row: r };
+        }
+      }
+      continue;
+    }
+
     const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
     const { column: mc } = await pickExistingColumn(supabase, table, MEN_FK);
     if (!sc || !mc) continue;
@@ -396,11 +421,105 @@ type CompleteResult =
  * pending 등 비확정 상태는 SUBSCRIBE_CHECKOUT_ALLOW_PENDING=true 일 때만 허용(로컬·스테이징 전용).
  * PG·웹훅에서 결제 확정 후 동일 함수를 호출하는 것이 출시 기준 흐름.
  */
+const PLAN_TABLE_CANDIDATES = ["plans", "mentor_plans", "subscription_plans", "mentor_subscription_plans"] as const;
+const PLAN_FK_CANDIDATES = ["mentor_id", "mentor_user_id", "user_id", "owner_id"] as const;
+
+/**
+ * 구독 카탈로그 티어 행이 DB에 없으면 service role로 생성(캐시 구독 전용).
+ */
+export async function ensureMentorCatalogPlanRows(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<{ ok: true; table: string | null } | { ok: false; error: string }> {
+  const plans = await fetchPlansForMentor(supabase, mentorId);
+  const { byTier } = assignPlansByTier(plans.rows);
+  const missing = SUBSCRIBE_PLAN_CATALOG.filter((p) => !byTier[p.tier]);
+  if (missing.length === 0) {
+    return { ok: true, table: plans.table };
+  }
+
+  let admin: ReturnType<typeof createServiceRoleClient>;
+  try {
+    admin = createServiceRoleClient();
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `서비스 설정 오류: ${m}` };
+  }
+
+  let table = plans.table;
+  if (!table) {
+    for (const t of PLAN_TABLE_CANDIDATES) {
+      const { error } = await admin.from(t).select("id").limit(1);
+      if (!error) {
+        table = t;
+        break;
+      }
+    }
+  }
+  if (!table) {
+    return { ok: false, error: "플랜 테이블을 찾을 수 없습니다. 스키마를 확인해 주세요." };
+  }
+
+  const { column: fk } = await pickExistingColumn(admin, table, PLAN_FK_CANDIDATES);
+  if (!fk) {
+    return { ok: false, error: `${table}: 멘토 FK 컬럼이 없습니다.` };
+  }
+  const tierCol = (await pickExistingColumn(admin, table, ["plan_tier", "tier", "slug", "code"])).column;
+  const amtCol = (await pickExistingColumn(admin, table, ["amount_cents", "price_cents", "amount", "price"])).column;
+  const labelCol = (await pickExistingColumn(admin, table, ["label", "title", "name"])).column;
+
+  for (const item of missing) {
+    const row: Record<string, unknown> = { [fk]: mentorId };
+    if (tierCol) row[tierCol] = item.tier;
+    if (amtCol) row[amtCol] = item.cashKrw * 100;
+    if (labelCol) row[labelCol] = item.label;
+    const { error } = await admin.from(table).insert(row);
+    if (error) {
+      return { ok: false, error: `${table} 플랜(${item.tier}) 생성 실패: ${error.message}` };
+    }
+  }
+  return { ok: true, table };
+}
+
+/**
+ * 캐시 지갑 즉시 차감 구독: intent 생성 → subscriptions + record_subscription_cash_debit
+ */
+export async function finalizeSubscriptionCashWalletCheckout(
+  supabase: SupabaseClient,
+  args: { studentId: string; mentorId: string; planTier: SubscribePlanTier }
+): Promise<CompleteResult> {
+  const ensured = await ensureMentorCatalogPlanRows(supabase, args.mentorId);
+  if (!ensured.ok) {
+    return { ok: false, error: ensured.error, code: "db" };
+  }
+
+  const intent = await createSubscriptionPaymentIntent(supabase, args);
+  if (!intent.ok) {
+    const code =
+      intent.code === "dup" ? ("dup" as const) : intent.code === "mentor" ? ("not_found" as const) : ("db" as const);
+    return { ok: false, error: intent.error, code };
+  }
+
+  return finalizeSubscriptionCheckout(supabase, {
+    studentId: args.studentId,
+    paymentId: intent.paymentId,
+    mentorId: args.mentorId,
+    planTier: args.planTier,
+    cashWallet: true,
+  });
+}
+
 export async function finalizeSubscriptionCheckout(
   supabase: SupabaseClient,
-  args: { studentId: string; paymentId: string; mentorId: string; planTier: SubscribePlanTier }
+  args: {
+    studentId: string;
+    paymentId: string;
+    mentorId: string;
+    planTier: SubscribePlanTier;
+    cashWallet?: boolean;
+  }
 ): Promise<CompleteResult> {
-  const { studentId, paymentId, mentorId, planTier } = args;
+  const { studentId, paymentId, mentorId, planTier, cashWallet } = args;
   const payTable = await firstPayTable(supabase);
   if (!payTable) {
     return { ok: false, error: "payments 테이블 없음", code: "db" };
@@ -473,6 +592,7 @@ export async function finalizeSubscriptionCheckout(
   }
 
   const allowPendingComplete =
+    cashWallet === true ||
     process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "true" ||
     process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "1";
   if (stCol && !allowPendingComplete) {
@@ -581,7 +701,29 @@ async function insertSubscriptionRow(
 ): Promise<InsSub> {
   void supabase;
   const admin = createServiceRoleClient();
+
+  const canonical = await admin
+    .from(SUBSCRIPTIONS_TABLE)
+    .insert(
+      buildSubscriptionsInsertPayload({
+        studentId: ctx.studentId,
+        mentorId: ctx.mentorId,
+        planId: ctx.planId,
+        planTier: ctx.planTier,
+        paymentId: ctx.paymentId,
+      })
+    )
+    .select("id")
+    .maybeSingle();
+  if (!canonical.error && canonical.data && (canonical.data as Row).id != null) {
+    return { ok: true, subscriptionId: String((canonical.data as Row).id) };
+  }
+  if (canonical.error) {
+    console.error("[insertSubscriptionRow] subscriptions insert", canonical.error);
+  }
+
   for (const table of SUB_TABLES) {
+    if (table === SUBSCRIPTIONS_TABLE) continue;
     const { error: pe } = await admin.from(table).select("id").limit(1);
     if (pe) continue;
     const { column: sc } = await pickExistingColumn(admin, table, STU_FK);
@@ -601,7 +743,10 @@ async function insertSubscriptionRow(
       return { ok: true, subscriptionId: String((data as Row).id) };
     }
   }
-  return { ok: false, error: "subscriptions insert 후보 전부 실패" };
+  return {
+    ok: false,
+    error: canonical.error?.message ?? "subscriptions insert 후보 전부 실패",
+  };
 }
 
 async function markPaymentSucceeded(

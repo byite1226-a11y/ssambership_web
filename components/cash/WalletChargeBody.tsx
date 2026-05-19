@@ -61,8 +61,21 @@ export function WalletChargeBody(props: {
   actionOk?: string | null;
   actionError?: string | null;
   allowTestTopup?: boolean;
+  hideBalanceCard?: boolean;
+  hidePackagesSection?: boolean;
+  hideFaqSection?: boolean;
 }) {
-  const { data, userId, currentBalance, actionOk, actionError, allowTestTopup = false } = props;
+  const {
+    data,
+    userId,
+    currentBalance,
+    actionOk,
+    actionError,
+    allowTestTopup = false,
+    hideBalanceCard = false,
+    hidePackagesSection = false,
+    hideFaqSection = false,
+  } = props;
   const { balance, packages, ledgerPreview, payments } = data;
 
   const balanceText = balance.error
@@ -78,7 +91,16 @@ export function WalletChargeBody(props: {
       {actionError ? <Banner kind="error" message={actionError} /> : null}
       {actionOk ? <Banner kind="info" message={actionOk} /> : null}
 
-      {/* Current Balance Card */}
+      {hideBalanceCard ? (
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+          <CashChargeWidget userId={userId} currentBalance={currentBalance} />
+          {allowTestTopup ? (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <WalletTopupTestForm />
+            </div>
+          ) : null}
+        </section>
+      ) : (
       <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[112px]">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">현재 잔액</p>
@@ -100,8 +122,9 @@ export function WalletChargeBody(props: {
           ) : null}
         </div>
       </section>
+      )}
 
-      {/* Packages Area */}
+      {hidePackagesSection ? null : (
       <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
         <h2 className="text-base font-bold text-slate-900">충전 상품</h2>
         {packages.error ? (
@@ -127,8 +150,9 @@ export function WalletChargeBody(props: {
           </ul>
         )}
       </section>
+      )}
 
-      {/* FAQ Card: visually soft and clear */}
+      {hideFaqSection ? null : (
       <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 space-y-3">
         <h2 className="text-sm font-extrabold text-slate-800">💡 자주 묻는 질문</h2>
         <ul className="list-decimal space-y-1 pl-4 text-xs text-slate-500 font-medium leading-relaxed">
@@ -137,6 +161,7 @@ export function WalletChargeBody(props: {
           ))}
         </ul>
       </section>
+      )}
 
       {/* Ledger Preview Card */}
       <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">

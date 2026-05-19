@@ -1,18 +1,35 @@
-/** 지갑 row → 표시·충전 UI용 잔액(원, 정수). balance_cents는 minor(원×100) 스케일. */
-export function parseWalletBalanceKrw(row: Record<string, unknown> | null): number {
-  if (!row) return 0;
-  if (typeof row.balance_cents === "number" && Number.isFinite(row.balance_cents)) {
-    return Math.floor(row.balance_cents / 100);
-  }
-  if (typeof row.amount_cents === "number" && Number.isFinite(row.amount_cents)) {
-    return Math.floor(row.amount_cents / 100);
-  }
-  if (typeof row.balance === "number" && Number.isFinite(row.balance)) {
-    return Math.round(row.balance);
-  }
-  if (typeof row.balance === "string" && row.balance.trim()) {
-    const n = Number(row.balance.replace(/[^\d.-]/g, ""));
-    return Number.isFinite(n) ? Math.round(n) : 0;
+export type WalletBalanceBreakdown = {
+  totalCash: number;
+  usableCash: number;
+  bonusCash: number;
+  expiringCash: number;
+};
+
+function readCashField(row: Record<string, unknown>, keys: string[]): number {
+  for (const k of keys) {
+    const v = row[k];
+    if (typeof v === "number" && Number.isFinite(v)) {
+      if (k.endsWith("_cents")) return Math.floor(v / 100);
+      return Math.round(v);
+    }
   }
   return 0;
+}
+
+/** 지갑 row → 표시·충전 UI용 잔액(캐시=원, 정수). balance_cents는 minor(원×100) 스케일. */
+export function parseWalletBalanceKrw(row: Record<string, unknown> | null): number {
+  return parseWalletBalanceBreakdown(row).totalCash;
+}
+
+export function parseWalletBalanceBreakdown(row: Record<string, unknown> | null): WalletBalanceBreakdown {
+  if (!row) {
+    return { totalCash: 0, usableCash: 0, bonusCash: 0, expiringCash: 0 };
+  }
+
+  const totalCash = readCashField(row, ["balance_cents", "amount_cents", "balance", "total_cash"]);
+  const usableCash = readCashField(row, ["usable_cents", "usable_balance", "available_cents", "available_balance"]) || totalCash;
+  const bonusCash = readCashField(row, ["bonus_cents", "bonus_balance", "bonus_cash"]);
+  const expiringCash = readCashField(row, ["expiring_cents", "expiring_balance", "expiring_cash", "expires_soon_cents"]);
+
+  return { totalCash, usableCash, bonusCash, expiringCash };
 }

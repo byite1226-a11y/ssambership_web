@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { cashKrwForPayKrw, isAllowedChargePayKrw } from "@/lib/cash/chargePackages";
 
 function parseUserIdFromCashOrderId(orderId: string): string | null {
   const m = /^cash-(.+)-(\d+)$/.exec(orderId);
@@ -55,6 +56,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "amount_mismatch", message: "결제 금액이 일치하지 않습니다." }, { status: 400 });
   }
 
+  if (!isAllowedChargePayKrw(confirmedWon)) {
+    return NextResponse.json({ error: "invalid_package", message: "허용되지 않은 충전 금액입니다." }, { status: 400 });
+  }
+
+  const cashKrw = cashKrwForPayKrw(confirmedWon);
+  if (cashKrw == null) {
+    return NextResponse.json({ error: "invalid_package", message: "허용되지 않은 충전 금액입니다." }, { status: 400 });
+  }
+
   const userIdRaw = parseUserIdFromCashOrderId(orderId);
   if (!userIdRaw) {
     return NextResponse.json({ error: "invalid_order" }, { status: 400 });
@@ -76,10 +86,10 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ ok: true, duplicate: true, amount: confirmedWon });
+    return NextResponse.json({ ok: true, duplicate: true, amount: cashKrw, payAmount: confirmedWon });
   }
 
-  const amountCents = krwWonToCents(confirmedWon);
+  const amountCents = krwWonToCents(cashKrw);
   if (amountCents <= 0) {
     return NextResponse.json({ error: "invalid_amount" }, { status: 400 });
   }
@@ -113,5 +123,5 @@ export async function POST(req: NextRequest) {
   revalidatePath("/wallet/charge");
   revalidatePath("/wallet/ledger");
 
-  return NextResponse.json({ ok: true, amount: confirmedWon, method: tossData.method ?? "카드" });
+  return NextResponse.json({ ok: true, amount: cashKrw, payAmount: confirmedWon, method: tossData.method ?? "카드" });
 }

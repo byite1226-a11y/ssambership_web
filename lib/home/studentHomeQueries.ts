@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
+import {
+  SUBSCRIPTIONS_ORDER_COLUMN,
+  SUBSCRIPTIONS_SELECT,
+  SUBSCRIPTIONS_TABLE,
+} from "@/lib/subscribe/subscriptionsTable";
 import { weeklyQuestionsLabel } from "@/lib/subscribe/subscribePageQueries";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
 import { aggregateThreadStatsForRooms } from "@/lib/home/threadStats";
@@ -69,6 +74,37 @@ async function fetchSubscriptionRowsForStudent(
   for (const table of SUB_TABLES) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
     if (pe) continue;
+    if (table === SUBSCRIPTIONS_TABLE) {
+      const o1 = await supabase
+        .from(SUBSCRIPTIONS_TABLE)
+        .select(SUBSCRIPTIONS_SELECT)
+        .eq("student_id", studentId)
+        .order(SUBSCRIPTIONS_ORDER_COLUMN, { ascending: false })
+        .limit(limit);
+      if (o1.error) {
+        const o2 = await supabase
+          .from(SUBSCRIPTIONS_TABLE)
+          .select(SUBSCRIPTIONS_SELECT)
+          .eq("student_id", studentId)
+          .limit(limit);
+        if (o2.error) {
+          return { table: SUBSCRIPTIONS_TABLE, rows: [], error: o2.error.message, probe: SUBSCRIPTIONS_TABLE };
+        }
+        return {
+          table: SUBSCRIPTIONS_TABLE,
+          rows: ((o2.data ?? null) as unknown as Row[] | null) ?? [],
+          error: null,
+          probe: `${SUBSCRIPTIONS_TABLE}.student_id (정렬 생략)`,
+        };
+      }
+      return {
+        table: SUBSCRIPTIONS_TABLE,
+        rows: ((o1.data ?? null) as unknown as Row[] | null) ?? [],
+        error: null,
+        probe: `${SUBSCRIPTIONS_TABLE}.student_id`,
+      };
+    }
+
     const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
     if (!sc) {
       return { table, rows: [], error: null, probe: `${table}: 학생 FK 없음(요약 대기)` };

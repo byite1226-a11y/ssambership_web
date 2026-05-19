@@ -3,7 +3,9 @@ import Link from "next/link";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
+import { countActiveSubscriptionsForStudent } from "@/lib/mypage/studentActiveSubscriptions";
 import { MypageMetricLine } from "@/components/mypage/MypageMetricLine";
+import { MypageSubscriptionsCard } from "@/components/mypage/MypageSubscriptionsCard";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
 
 export default async function StudentMyPage() {
@@ -13,12 +15,12 @@ export default async function StudentMyPage() {
   }
 
   const supabase = await createClient();
-  const bundle = await loadStudentMypageBundle(
-    supabase,
-    user.id,
-    profile,
-    profileLoadError?.message ?? null
-  );
+  const [bundle, activeSubs] = await Promise.all([
+    loadStudentMypageBundle(supabase, user.id, profile, profileLoadError?.message ?? null),
+    countActiveSubscriptionsForStudent(supabase, user.id),
+  ]);
+
+  const activeMentorCount = activeSubs.error ? bundle.subscriptions.valueText : String(activeSubs.count);
 
   const { roomCount } = bundle;
   const roomText = roomCount.error
@@ -49,7 +51,7 @@ export default async function StudentMyPage() {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">구독 중인 멘토</p>
-            <h3 className="text-xl font-black text-slate-900">{bundle.subscriptions.valueText || "0"} <span className="text-xs font-normal text-slate-400">명</span></h3>
+            <h3 className="text-xl font-black text-slate-900">{activeMentorCount || "0"} <span className="text-xs font-normal text-slate-400">명</span></h3>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">결제 및 주문</p>
@@ -78,28 +80,7 @@ export default async function StudentMyPage() {
 
         {/* Section 2: Detailed Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">구독 · 멤버십 관리</h2>
-              <div className="mt-2">
-                <MypageMetricLine metric={bundle.subscriptions} />
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2 select-none">
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/subscriptions">
-                구독 관리
-              </Link>
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/mentors">
-                멘토 찾기·구독
-              </Link>
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/subscribe/success">
-                결제 완료 안내
-              </Link>
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/subscribe/failed">
-                결제 실패 안내
-              </Link>
-            </div>
-          </section>
+          <MypageSubscriptionsCard />
 
           <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
             <div>
@@ -139,15 +120,9 @@ export default async function StudentMyPage() {
               <h2 className="text-base font-bold text-slate-900">고객지원</h2>
               <p className="mt-2 text-xs text-slate-600 leading-relaxed font-medium">맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있어요.</p>
             </div>
-            <div className="mt-4 flex flex-col gap-2 select-none">
+            <div className="mt-4 select-none">
               <Link className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1" href="/support/disputes">
                 분쟁·환불 현황 &rarr;
-              </Link>
-              <Link className="text-xs font-bold text-blue-600 hover:underline" href="/support/reports">
-                내 신고 내역
-              </Link>
-              <Link className="text-xs font-bold text-blue-600 hover:underline" href="/support/refunds">
-                환불 요청 안내
               </Link>
             </div>
           </section>
@@ -159,14 +134,6 @@ export default async function StudentMyPage() {
               <MypageMetricLine metric={bundle.reports} />
             </div>
             <p className="text-[10px] text-slate-400 leading-tight mt-2 select-none">작성한 리뷰와 제출한 신고는 운영 정책에 따라 안내됩니다.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link href="/legal/terms" className="text-xs font-bold text-slate-600 underline">
-                약관 안내
-              </Link>
-              <Link href="/custom-request" className="text-xs font-bold text-slate-600 underline">
-                맞춤의뢰
-              </Link>
-            </div>
           </section>
         </div>
       </div>

@@ -4,6 +4,11 @@ import { buildMentorProfileDisplay, type MentorProfileDisplay } from "@/lib/ment
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { fetchPlansForMentor, type MentorPlansLoad } from "@/lib/mentor/publicMentorBundle";
 import { getStringField, pickExistingColumn } from "@/lib/qna/safeSelect";
+import {
+  SUBSCRIPTIONS_ORDER_COLUMN,
+  SUBSCRIPTIONS_SELECT,
+  SUBSCRIPTIONS_TABLE,
+} from "@/lib/subscribe/subscriptionsTable";
 import type { UserRow } from "@/lib/types/user";
 
 type Row = Record<string, unknown>;
@@ -38,7 +43,11 @@ export type PaymentsProbeLoad = {
 };
 
 function detectTier(row: Row): SubscribePlanTier | null {
-  const title = (getStringField(row, ["title", "name", "label", "plan_name", "tier_name", "slug"]) ?? "").toLowerCase();
+  const tierCol = (getStringField(row, ["plan_tier", "tier", "slug", "code"]) ?? "").toLowerCase();
+  if (tierCol === "limited" || tierCol === "standard" || tierCol === "premium") {
+    return tierCol;
+  }
+  const title = (getStringField(row, ["title", "name", "label", "plan_name", "tier_name"]) ?? "").toLowerCase();
   if (/limited|리미티드|라이트|light/.test(title)) return "limited";
   if (/standard|스탠다드/.test(title)) return "standard";
   if (/premium|프리미엄|pro|프로/.test(title)) return "premium";
@@ -125,6 +134,32 @@ async function fetchSubscriptionForPair(
   for (const table of SUB_TABLES) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
     if (pe) continue;
+
+    if (table === SUBSCRIPTIONS_TABLE) {
+      const { data, error } = await supabase
+        .from(SUBSCRIPTIONS_TABLE)
+        .select(SUBSCRIPTIONS_SELECT)
+        .eq("student_id", studentId)
+        .eq("mentor_id", mentorId)
+        .order(SUBSCRIPTIONS_ORDER_COLUMN, { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        return {
+          row: null,
+          table: SUBSCRIPTIONS_TABLE,
+          probe: `${SUBSCRIPTIONS_TABLE}: ${error.message}`,
+          error: error.message,
+        };
+      }
+      return {
+        row: data ? ((data as unknown) as Row) : null,
+        table: SUBSCRIPTIONS_TABLE,
+        probe: `${SUBSCRIPTIONS_TABLE} · student_id+mentor_id · 최신 1건(created_at)`,
+        error: null,
+      };
+    }
+
     const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
     const { column: mc } = await pickExistingColumn(supabase, table, MEN_FK);
     if (!sc || !mc) {
@@ -167,7 +202,11 @@ async function fetchLatestPaymentProbe(
     const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
     const { column: mc } = await pickExistingColumn(supabase, table, MEN_FK);
     if (!sc) continue;
-    const { column: createdCol } = await pickExistingColumn(supabase, table, ["created_at", "inserted_at"]);
+    const { column: createdCol } = await pickExistingColumn(supabase, table, [
+      "created_at",
+      "inserted_at",
+      "updated_at",
+    ]);
     const two = mc
       ? supabase.from(table).select("*").eq(sc, studentId).eq(mc, mentorId)
       : supabase.from(table).select("*").eq(sc, studentId);

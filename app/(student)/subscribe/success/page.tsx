@@ -1,62 +1,69 @@
 import Link from "next/link";
-import { PageScaffold } from "@/components/shell/PageScaffold";
+import { redirect } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
+import { requireRole } from "@/lib/auth/routeGuard";
+import { createClient } from "@/lib/supabase/server";
+import { loadStudentSubscribePage } from "@/lib/subscribe/subscribePageQueries";
+import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
+import { isSubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
-function one(sp: Record<string, string | string[] | undefined>, k: string): string | null {
-  const v = sp[k];
-  if (Array.isArray(v)) return v[0] ?? null;
-  return typeof v === "string" && v.length ? v : null;
+function one(sp: Record<string, string | string[] | undefined>, key: string): string | undefined {
+  const v = sp[key];
+  if (Array.isArray(v)) return v[0];
+  return typeof v === "string" && v.length > 0 ? v : undefined;
 }
 
-export default async function SubscribeSuccessPage(props: Props) {
-  const sp = (await props.searchParams) ?? {};
+function fmtCash(n: number): string {
+  return `${n.toLocaleString("ko-KR")}캐시`;
+}
+
+export default async function SubscribeSuccessPage({ searchParams }: Props) {
+  const { user } = await requireRole("student");
+  const sp = (await searchParams) ?? {};
+
   const mentorId = one(sp, "mentorId");
-  const subscriptionHint = one(sp, "subscriptionId") ?? one(sp, "sub");
+  const planTierRaw = one(sp, "planTier");
+
+  if (!mentorId || !planTierRaw || !isSubscribePlanTier(planTierRaw)) {
+    redirect("/subscribe?error=" + encodeURIComponent("구독 정보가 올바르지 않습니다."));
+  }
+
+  const supabase = await createClient();
+  const data = await loadStudentSubscribePage(supabase, {
+    mentorId,
+    studentId: user.id,
+  });
+  const mentorName = data.kind === "ok" ? data.display.displayName : "멘토";
+  const plan = getSubscribeCatalogPlan(planTierRaw);
 
   return (
-    <PageScaffold
-      hideFooterPlaceholderCards
-      eyebrow="구독·결제"
-      title="결제가 완료된 것으로 표시됩니다"
-      description="실제 승인·구독 행 생성은 PG·웹훅·DB 상태에 따라 달라질 수 있어요. 아래 링크에서 질문방·구독 현황을 확인해 주세요."
-      ctas={[
-        { href: "/question-room", label: "질문방으로", tone: "blue" },
-        { href: "/subscriptions", label: "구독 관리", tone: "slate" },
-        { href: "/home", label: "학생 홈", tone: "slate" },
-      ]}
-      sections={[
-        {
-          title: "쿼리 파라미터",
-          body:
-            mentorId || subscriptionHint
-              ? `mentorId=${mentorId ?? "—"} · subscription/ref=${subscriptionHint ?? "—"}`
-              : "URL에 mentorId·subscription 식별자가 없으면, 목록 화면에서 상태를 확인해 주세요.",
-          status: "connected",
-        },
-        {
-          title: "질문방 생성",
-          body: "구독 직후 질문방(room) 생성이 지연될 수 있어요. 목록에 방이 보이지 않으면 구독 화면과 알림을 확인해 주세요.",
-          status: "skeleton",
-        },
-      ]}
-      dataPoints={["subscriptions", "mentor_student_rooms", "payments (schema-dependent)"]}
-    >
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700 shadow-sm">
-        <p className="font-extrabold text-slate-900">다음 단계</p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-xs leading-relaxed text-slate-600">
-          <li>질문 주제는 학생이 질문방에서 새로 만듭니다.</li>
-          <li>캐시 충전·원장은 맞춤의뢰 대금과 별도 메뉴입니다.</li>
-        </ul>
-        {mentorId ? (
-          <p className="mt-4 text-xs text-slate-500">
-            멘토 식별자는 URL에서만 표시됩니다.{" "}
-            <Link className="font-bold text-blue-700 underline" href={`/mentors/${encodeURIComponent(mentorId)}`}>
-              멘토 공개 프로필
-            </Link>
-          </p>
-        ) : null}
-      </div>
-    </PageScaffold>
+    <div className="mx-auto max-w-lg px-4 py-16">
+      <section className="rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-sm sm:p-10">
+        <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-500" strokeWidth={2.25} aria-hidden />
+        <h1 className="mt-4 text-2xl font-black text-slate-900">구독이 완료됐습니다!</h1>
+        <p className="mt-4 text-base text-slate-700">
+          <span className="font-bold text-slate-900">{mentorName}</span> 멘토 ·{" "}
+          <span className="font-bold text-blue-700">{plan.label}</span> 플랜
+        </p>
+        <p className="mt-2 text-sm text-slate-500">{fmtCash(plan.cashKrw)}가 캐시 잔액에서 차감되었습니다.</p>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/question-room"
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
+          >
+            질문하러 가기
+          </Link>
+          <Link
+            href="/mentors"
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50"
+          >
+            멘토 더 찾기
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }
