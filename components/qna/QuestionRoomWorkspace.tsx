@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { QuestionRoomListCatalog } from "@/components/qna/QuestionRoomListCatalog";
 import {
-  createQuestionThreadAction,
+  QuestionRoomWeeklyUsageBar,
+  type WeeklyUsageSnapshot,
+} from "@/components/qna/QuestionRoomWeeklyUsageBar";
+import { QuestionRoomStudentThreadForm } from "@/components/qna/QuestionRoomStudentThreadForm";
+import { QuestionThreadConfirmButton } from "@/components/qna/QuestionThreadConfirmButton";
+import { QuestionThreadWorkflowBadge } from "@/components/qna/QuestionThreadWorkflowBadge";
+import {
   saveConnectionNoteAction,
   sendQuestionMessageAction,
 } from "@/lib/qna/questionRoomActions";
@@ -14,9 +20,16 @@ import {
   threadInRoomPath,
 } from "@/lib/qna/formatQuestionRoomDisplay";
 import type { QuestionRoomListPreview } from "@/lib/qna/questionRoomQueries";
+import { partyUserIdFromRoomRow } from "@/lib/qna/questionRoomUiLabels";
+import { QuestionRoomStudentDesignWorkspace } from "@/components/qna/QuestionRoomStudentDesignWorkspace";
+import { QuestionRoomMentorDesignWorkspace } from "@/components/qna/QuestionRoomMentorDesignWorkspace";
+import type { MentorDisplayById } from "@/lib/qna/questionRoomStudentDisplay";
+import type { StudentDisplayById } from "@/lib/qna/questionRoomMentorContext";
 import {
-  readThreadLifecycleStatus,
-} from "@/lib/qna/questionRoomUiLabels";
+  readQuestionThreadWorkflowStatus,
+  workflowStatusLabel,
+  workflowStatusTone,
+} from "@/lib/qna/questionThreadStatus";
 import {
   ChevronLeft, 
   MessageSquare, 
@@ -77,6 +90,14 @@ export function QuestionRoomWorkspace(props: {
   roomId?: string;
   threadId?: string | null;
   listPreviewsByRoomId?: Record<string, QuestionRoomListPreview>;
+  mentorDisplays?: MentorDisplayById;
+  studentDisplays?: StudentDisplayById;
+  initialUsageByMentorId?: Record<string, import("@/lib/qna/weeklyQuestionUsage").WeeklyUsageSnapshot>;
+  messageCountsByThreadId?: Record<string, number>;
+  lastMessageByThreadId?: Record<string, Record<string, unknown>>;
+  unreadCountsByRoomId?: Record<string, number>;
+  subscriptionContext?: import("@/lib/qna/questionRoomStudentContext").QuestionRoomSubscriptionContext;
+  subjectOptions?: string[];
   roomHrefBase?: string;
   listStartQuestion?: { href: string; label: string };
   listSecondaryCta?: { href: string; label: string };
@@ -89,6 +110,8 @@ export function QuestionRoomWorkspace(props: {
   const rev = props.formRevision ?? "0";
   const uid = props.currentUserId;
   const roomBase = props.roomHrefBase || (props.variant === "mentor" ? "/mentor/question-room" : "/question-room");
+  const [weeklyUsage, setWeeklyUsage] = useState<WeeklyUsageSnapshot | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
 
   const currentRoom = useMemo(() => {
     if (!props.roomId) return null;
@@ -102,7 +125,17 @@ export function QuestionRoomWorkspace(props: {
 
   const studentName = currentRoom ? roomTitle(currentRoom) : "학생";
   const studentExtra = currentRoom ? (pickRowString(currentRoom, ["grade", "school"]) ?? pickRowString(currentRoom, ["subject", "major"])) : null;
-  const threadStatus = selectedThread ? readThreadLifecycleStatus(selectedThread) : "open";
+  const mentorId = currentRoom ? partyUserIdFromRoomRow(currentRoom, "mentor") : null;
+  const threadWorkflow = selectedThread
+    ? readQuestionThreadWorkflowStatus(selectedThread)
+    : ("pending" as const);
+  const workflowTone = workflowStatusTone(threadWorkflow);
+  const workflowBadgeClass =
+    workflowTone === "amber"
+      ? "border-amber-200 bg-amber-50 text-amber-900"
+      : workflowTone === "blue"
+        ? "border-blue-200 bg-blue-50 text-blue-900"
+        : "border-emerald-200 bg-emerald-50 text-emerald-900";
 
   const studentNoteText = useMemo(() => {
     const studentId = currentRoom ? pickRowString(currentRoom, ["student_id", "student_user_id", "student_uid"]) : null;
@@ -139,7 +172,58 @@ export function QuestionRoomWorkspace(props: {
     );
   }
 
-  // Detail View (3-column Workspace)
+  if (props.variant === "mentor" && props.surface === "detail" && props.roomId && props.currentUserId) {
+    return (
+      <QuestionRoomMentorDesignWorkspace
+        currentUserId={props.currentUserId}
+        roomId={props.roomId}
+        threadId={props.threadId ?? null}
+        rooms={props.rooms}
+        threads={props.threads}
+        messages={props.messages}
+        listPreviewsByRoomId={props.listPreviewsByRoomId ?? {}}
+        studentDisplays={props.studentDisplays ?? {}}
+        messageCountsByThreadId={props.messageCountsByThreadId}
+        lastMessageByThreadId={props.lastMessageByThreadId}
+        unreadCountsByRoomId={props.unreadCountsByRoomId}
+        roomHrefBase={roomBase}
+        draftMessageBody={props.draftMessageBody}
+        formRevision={rev}
+        actionFeedback={{
+          ok: props.actionFeedback?.ok ?? null,
+          error: props.actionFeedback?.error ?? null,
+        }}
+      />
+    );
+  }
+
+  if (props.variant === "student" && props.surface === "detail" && props.roomId && props.currentUserId) {
+    return (
+      <QuestionRoomStudentDesignWorkspace
+        currentUserId={props.currentUserId}
+        roomId={props.roomId}
+        threadId={props.threadId ?? null}
+        rooms={props.rooms}
+        threads={props.threads}
+        messages={props.messages}
+        notes={props.notes}
+        listPreviewsByRoomId={props.listPreviewsByRoomId ?? {}}
+        mentorDisplays={props.mentorDisplays ?? {}}
+        initialUsageByMentorId={props.initialUsageByMentorId}
+        messageCountsByThreadId={props.messageCountsByThreadId}
+        lastMessageByThreadId={props.lastMessageByThreadId}
+        unreadCountsByRoomId={props.unreadCountsByRoomId}
+        subscriptionContext={props.subscriptionContext}
+        subjectOptions={props.subjectOptions}
+        actionFeedback={props.actionFeedback}
+        draftMessageBody={props.draftMessageBody}
+        draftNoteBody={props.draftNoteBody}
+        formRevision={rev}
+      />
+    );
+  }
+
+  // Detail View (mentor — legacy 3-column)
   return (
     <div className="relative flex h-[calc(100vh-140px)] min-h-0 w-full flex-col overflow-hidden border-t border-slate-200 bg-white font-sans text-slate-900">
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -161,9 +245,16 @@ export function QuestionRoomWorkspace(props: {
         {/* [좌측] 질문 주제 목록 */}
         <aside className="flex h-full min-h-0 w-[300px] shrink-0 flex-col border-r border-slate-200 bg-white">
           <div className="p-6 border-b border-slate-50 shrink-0">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-[16px] font-black text-slate-900">질문 주제</h2>
             </div>
+            {props.variant === "student" && mentorId ? (
+              <QuestionRoomWeeklyUsageBar
+                mentorId={mentorId}
+                onUsageChange={setWeeklyUsage}
+                onLoadingChange={setUsageLoading}
+              />
+            ) : null}
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -173,8 +264,6 @@ export function QuestionRoomWorkspace(props: {
               props.threads.rows.map((t) => {
                 const id = String(t.id);
                 const isActive = props.threadId === id || (!props.threadId && props.threads.rows[0]?.id === t.id);
-                const status = readThreadLifecycleStatus(t);
-                
                 return (
                   <Link
                     key={id}
@@ -192,11 +281,7 @@ export function QuestionRoomWorkspace(props: {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-black ${
-                        status === "open" ? "bg-slate-100 text-slate-700" : "bg-slate-100 text-slate-400"
-                      }`}>
-                        {status === "open" ? "진행 중" : "종료"}
-                      </span>
+                      <QuestionThreadWorkflowBadge thread={t} />
                       <p className="text-[11px] font-medium text-slate-400 line-clamp-1 flex-1">
                         {pickRowString(t, ["last_message_body", "preview", "snippet"]) ?? "최근 대화 없음"}
                       </p>
@@ -226,23 +311,14 @@ export function QuestionRoomWorkspace(props: {
             <div className="shrink-0 border-t border-slate-100 bg-white p-4">
               <p className="text-[11px] font-extrabold text-slate-600">새 질문 주제</p>
               <p className="mt-1 text-[10px] font-medium leading-relaxed text-slate-500">
-                질문 주제는 학생만 만들 수 있습니다. 활성 구독이 없으면 추가가 차단될 수 있어요.
+                확인 완료된 질문만 이번 주 한도에 포함됩니다.
               </p>
-              <form action={createQuestionThreadAction} className="mt-2 space-y-2">
-                <input type="hidden" name="roomId" value={props.roomId} />
-                <input type="hidden" name="contextThreadId" value={props.threadId ?? ""} />
-                <input
-                  name="threadTitle"
-                  required
-                  placeholder="질문 주제 제목"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium outline-none focus:border-blue-400"
-                />
-                <FormSubmitButton
-                  idleLabel="주제 추가"
-                  pendingLabel="추가 중…"
-                  className="w-full h-9 rounded-xl bg-blue-600 text-[12px] font-black text-white shadow-sm hover:bg-blue-700 transition disabled:opacity-40"
-                />
-              </form>
+              <QuestionRoomStudentThreadForm
+                roomId={props.roomId}
+                contextThreadId={props.threadId}
+                usage={weeklyUsage}
+                usageLoading={usageLoading}
+              />
             </div>
           ) : null}
         </aside>
@@ -266,10 +342,8 @@ export function QuestionRoomWorkspace(props: {
                   {studentExtra && (
                     <span className="text-[12px] font-bold text-slate-400">· {studentExtra}</span>
                   )}
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                    threadStatus === "open" ? "border border-slate-200 bg-slate-50 text-slate-700" : "bg-slate-100 text-slate-400"
-                  }`}>
-                    {threadStatus === "open" ? "대기 중" : "종료됨"}
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${workflowBadgeClass}`}>
+                    {workflowStatusLabel(threadWorkflow)}
                   </span>
                 </div>
                 <p className="text-[12px] font-bold text-slate-400 mt-0.5">
@@ -282,6 +356,15 @@ export function QuestionRoomWorkspace(props: {
               <span className="text-[11px] font-bold">최근 업데이트: {currentRoom ? formatQuestionRoomDateTime(currentRoom.updated_at) : "-"}</span>
             </div>
           </header>
+
+          {props.variant === "student" &&
+          props.roomId &&
+          props.threadId &&
+          threadWorkflow === "answered" ? (
+            <div className="shrink-0 border-b border-blue-100 bg-blue-50/40 px-8 py-4">
+              <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />
+            </div>
+          ) : null}
 
           {/* 메시지 리스트 */}
           <div className="custom-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto bg-white p-8">

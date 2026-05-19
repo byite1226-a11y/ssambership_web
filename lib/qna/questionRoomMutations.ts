@@ -98,24 +98,35 @@ function buildThreadPayloads(
   roomColumn: string,
   roomId: string,
   title: string,
+  subjectTag: string | null,
   role: QnaRole,
   userId: string
 ): Record<string, unknown>[] {
-  const titleKeys = ["title", "subject", "topic"] as const;
+  const titleKeys = ["title"] as const;
+  const topicKeys = ["topic", "category", "subject"] as const;
   const roleKeys = ["author_role", "sender_role", "writer_role"] as const;
   const userKeysCommon = ["author_id", "created_by", "user_id", "sender_id"] as const;
   const userKeysRole = role === "student" ? (["student_id", "student_user_id"] as const) : (["mentor_id", "mentor_user_id"] as const);
 
   const payloads: Record<string, unknown>[] = [];
+  const tag = subjectTag?.trim() || null;
+
   for (const t of titleKeys) {
-    const base: Record<string, unknown> = { [roomColumn]: roomId, [t]: title };
-    payloads.push(base);
-    for (const roleKey of roleKeys) payloads.push({ ...base, [roleKey]: role });
-    for (const userKey of userKeysCommon) payloads.push({ ...base, [userKey]: userId });
-    for (const userKey of userKeysRole) payloads.push({ ...base, [userKey]: userId });
-    for (const roleKey of roleKeys) {
-      for (const userKey of userKeysCommon) payloads.push({ ...base, [roleKey]: role, [userKey]: userId });
-      for (const userKey of userKeysRole) payloads.push({ ...base, [roleKey]: role, [userKey]: userId });
+    const bases: Record<string, unknown>[] = [{ [roomColumn]: roomId, [t]: title, status: "pending" }];
+    if (tag) {
+      for (const tk of topicKeys) {
+        bases.push({ [roomColumn]: roomId, [t]: title, [tk]: tag, status: "pending" });
+      }
+    }
+    for (const base of bases) {
+      payloads.push(base);
+      for (const roleKey of roleKeys) payloads.push({ ...base, [roleKey]: role });
+      for (const userKey of userKeysCommon) payloads.push({ ...base, [userKey]: userId });
+      for (const userKey of userKeysRole) payloads.push({ ...base, [userKey]: userId });
+      for (const roleKey of roleKeys) {
+        for (const userKey of userKeysCommon) payloads.push({ ...base, [roleKey]: role, [userKey]: userId });
+        for (const userKey of userKeysRole) payloads.push({ ...base, [roleKey]: role, [userKey]: userId });
+      }
     }
   }
   return payloads;
@@ -172,8 +183,9 @@ export async function createQuestionThread(params: {
   userId: string;
   roomId: string;
   title: string;
+  subjectTag?: string | null;
 }): Promise<{ ok: true; threadId: string | null; row: Record<string, unknown> | null } | MutationFail> {
-  const { supabase, role, userId, roomId, title } = params;
+  const { supabase, role, userId, roomId, title, subjectTag } = params;
   if (!title.trim()) return { ok: false, error: "thread 제목을 입력하세요." };
 
   const scopeError = await ensureRoomScope(supabase, role, userId, roomId);
@@ -189,7 +201,7 @@ export async function createQuestionThread(params: {
   const created = await insertWithCandidates<Record<string, unknown>>(
     supabase,
     "question_threads",
-    buildThreadPayloads(roomColumn, roomId, title.trim(), role, userId)
+    buildThreadPayloads(roomColumn, roomId, title.trim(), subjectTag ?? null, role, userId)
   );
   if (!created.ok) return created;
 

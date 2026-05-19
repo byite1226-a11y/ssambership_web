@@ -1,6 +1,11 @@
+import {
+  readQuestionThreadWorkflowStatus,
+  workflowStatusLabel,
+  workflowStatusTone,
+} from "@/lib/qna/questionThreadStatus";
+
 /**
- * 질문방 UI 라벨·탭 분류 — DB `question_threads.status` 의 open/closed/archived 만 해석한다.
- * (스키마에 없는 status 문자열은 임의 매핑하지 않음.)
+ * 질문방 UI 라벨·탭 분류 — pending/answered/confirmed 우선, 레거시 open/closed/archived 호환.
  */
 
 export type QuestionRoomListFilterTab = "all" | "waiting" | "needReview" | "done";
@@ -47,6 +52,25 @@ export function listFilterTabAndChip(
   label: string;
   tone: "slate" | "amber" | "blue" | "emerald";
 } {
+  const workflow = readQuestionThreadWorkflowStatus(latestThread);
+  if (workflow === "confirmed") {
+    return { tab: "done", label: workflowStatusLabel("confirmed"), tone: workflowStatusTone("confirmed") };
+  }
+  if (workflow === "answered") {
+    return {
+      tab: "needReview",
+      label: variant === "student" ? workflowStatusLabel("answered") : "학생 확인 대기",
+      tone: workflowStatusTone("answered"),
+    };
+  }
+  if (workflow === "pending" && latestThread) {
+    return {
+      tab: "waiting",
+      label: variant === "student" ? "멘토 답변 대기" : "답변하기",
+      tone: workflowStatusTone("pending"),
+    };
+  }
+
   const life = readThreadLifecycleStatus(latestThread);
   if (life === "closed" || life === "archived") {
     return { tab: "done", label: "완료", tone: "emerald" };
@@ -100,6 +124,9 @@ export function messageBodyPreview(m: Row | null | undefined, maxLen: number): s
 
 /** 스레드 상세 상단·배너용 — 학생이 멘토 답변 확인 전 단계 (메시지는 시간 오름차순이라 마지막 행이 최신) */
 export function studentNeedsAckBanner(room: Row, thread: Row | null, messages: Row[]): boolean {
+  const workflow = readQuestionThreadWorkflowStatus(thread);
+  if (workflow === "answered") return true;
+  if (workflow === "confirmed") return false;
   if (readThreadLifecycleStatus(thread) !== "open") return false;
   const last = messages[messages.length - 1];
   if (!last) return false;

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { MentorQuestionRoomDashboard } from "@/components/qna/MentorQuestionRoomDashboard";
 import { requireRole } from "@/lib/auth/routeGuard";
@@ -8,6 +9,11 @@ export default async function MentorQuestionRoomListPage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
   const bundle = await loadQuestionRoomListBundle(supabase, "mentor", user.id);
+
+  const firstRoomId = bundle.rooms.rows[0]?.id;
+  if (firstRoomId != null && String(firstRoomId).length > 0) {
+    redirect(`/mentor/question-room/${encodeURIComponent(String(firstRoomId))}`);
+  }
 
   return (
     <PageScaffold

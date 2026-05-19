@@ -18,6 +18,7 @@ import {
   readThreadTitleFromForm,
   saveConnectionNote,
 } from "@/lib/qna/questionRoomMutations";
+import { markQuestionThreadAnsweredForMentor } from "@/lib/qna/questionRoomThreadService";
 
 /**
  * formatActionError 결과에도 Postgrest/HTTP/긴 raw가 남을 수 있으므로, URL 쿼리(사용자 노출)엔 이 함수를 쓴다.
@@ -292,6 +293,13 @@ export async function createQuestionMessageAction(formData: FormData) {
         draftMessage: content,
       })
     );
+  }
+
+  if (actor === "mentor" && threadId) {
+    const answered = await markQuestionThreadAnsweredForMentor(supabase, user.id, roomId, threadId);
+    if (!answered.ok) {
+      console.error("[createQuestionMessageAction] mark answered", answered.error);
+    }
   }
 
   revalidatePath(detailBasePath(roomId, actor));

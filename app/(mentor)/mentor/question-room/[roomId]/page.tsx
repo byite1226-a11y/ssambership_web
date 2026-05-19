@@ -3,7 +3,15 @@ import { PageScaffold } from "@/components/shell/PageScaffold";
 import { QuestionRoomWorkspace } from "@/components/qna/QuestionRoomWorkspace";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { loadQuestionRoomDetailBundle, userCanAccessMentorStudentRoom } from "@/lib/qna/questionRoomQueries";
+import { loadQuestionRoomDetailBundle, loadQuestionRoomListBundle, userCanAccessMentorStudentRoom } from "@/lib/qna/questionRoomQueries";
+import {
+  loadMentorUnreadCountsByRoomId,
+  loadStudentDisplaysForQuestionRooms,
+} from "@/lib/qna/questionRoomMentorContext";
+import {
+  loadLastMessageByThreadId,
+  loadMessageCountsByThreadId,
+} from "@/lib/qna/questionRoomStudentContext";
 import { extractNoteText } from "@/lib/qna/questionRoomMutations";
 import { paramToDraft } from "@/lib/qna/draftQuery";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
@@ -30,13 +38,8 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
   const rawActionError = typeof sp.error === "string" && sp.error.length ? sp.error : null;
   const errorMessageUi = rawActionError ? mapDataErrorMessage(rawActionError) : null;
   const feedbackKind = sp.kind === "thread" || sp.kind === "message" || sp.kind === "note" ? sp.kind : undefined;
-  const dThreadQ = paramToDraft(typeof sp.dThread === "string" ? sp.dThread : undefined);
   const dMessageQ = paramToDraft(typeof sp.dMessage === "string" ? sp.dMessage : undefined);
-  const dNoteQ = paramToDraft(typeof sp.dNote === "string" ? sp.dNote : undefined);
-
-  const draftThreadTitle = feedbackKind === "thread" && rawActionError ? (dThreadQ ?? "") : undefined;
   const draftMessageBody = feedbackKind === "message" && rawActionError ? (dMessageQ ?? "") : undefined;
-  const draftNoteBody = feedbackKind === "note" && rawActionError ? (dNoteQ ?? "") : undefined;
   const formRevision = typeof sp.t === "string" && sp.t.length ? sp.t : "0";
 
   const { user } = await requireRole("mentor");
@@ -45,10 +48,28 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
   if (!allowed) {
     notFound();
   }
-  const detail = await loadQuestionRoomDetailBundle(supabase, user.id, "mentor", roomId, threadFromQuery);
+
+  const [listBundle, detail] = await Promise.all([
+    loadQuestionRoomListBundle(supabase, "mentor", user.id),
+    loadQuestionRoomDetailBundle(supabase, user.id, "mentor", roomId, threadFromQuery),
+  ]);
   const { resolvedThreadId, ...bundle } = detail;
 
-  const activeThreadId = resolvedThreadId;
+  const threadIds = bundle.threads.rows
+    .map((t) => (t?.id != null ? String(t.id) : ""))
+    .filter((id) => id.length > 0);
+  const roomIds = listBundle.rooms.rows
+    .map((r) => (r?.id != null ? String(r.id) : ""))
+    .filter((id) => id.length > 0);
+
+  const [studentDisplays, messageCountsByThreadId, lastMessageByThreadId, unreadCountsByRoomId] =
+    await Promise.all([
+      loadStudentDisplaysForQuestionRooms(supabase, listBundle.rooms.rows),
+      loadMessageCountsByThreadId(supabase, threadIds),
+      loadLastMessageByThreadId(supabase, threadIds),
+      loadMentorUnreadCountsByRoomId(supabase, roomIds),
+    ]);
+
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
   return (
@@ -69,17 +90,20 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
         actionFeedback={{ kind: feedbackKind, ok: okMessage, error: errorMessageUi }}
         title="질문방"
         subtitle=""
-        rooms={bundle.rooms}
+        rooms={listBundle.rooms}
         threads={bundle.threads}
         messages={bundle.messages}
         notes={bundle.notes}
         roomId={roomId}
-        threadId={activeThreadId}
+        threadId={resolvedThreadId}
+        listPreviewsByRoomId={listBundle.listPreviewsByRoomId}
+        studentDisplays={studentDisplays}
+        messageCountsByThreadId={messageCountsByThreadId}
+        lastMessageByThreadId={lastMessageByThreadId}
+        unreadCountsByRoomId={unreadCountsByRoomId}
         roomHrefBase="/mentor/question-room"
         initialNoteText={initialNoteText}
-        draftThreadTitle={draftThreadTitle}
         draftMessageBody={draftMessageBody}
-        draftNoteBody={draftNoteBody}
         formRevision={formRevision}
       />
     </PageScaffold>
