@@ -7,13 +7,15 @@ type Props = {
   pendingLabel: string;
   className?: string;
   disabled?: boolean;
+  name?: string;
+  value?: string;
 };
 
-export function FormSubmitButton({ idleLabel, pendingLabel, className, disabled = false }: Props) {
+export function FormSubmitButton({ idleLabel, pendingLabel, className, disabled = false, name, value }: Props) {
   const { pending } = useFormStatus();
   const isDisabled = disabled || pending;
   return (
-    <button type="submit" disabled={isDisabled} className={className}>
+    <button type="submit" name={name} value={value} disabled={isDisabled} className={className}>
       {pending ? pendingLabel : idleLabel}
     </button>
   );

@@ -1,61 +1,13 @@
-import type { CustomCategoryRow } from "@/lib/customRequest/customRequestQueries";
-
-const REFERENCE_CATEGORIES = [
-  {
-    label: "학습 계획 & 방법",
-    desc: "학습 계획 수립, 시간 관리, 공부 방법 코칭",
-    icon: "📋",
-    examplePill: "주간 학습표·루틴 짜기",
-  },
-  {
-    label: "과목 개념 이해",
-    desc: "개념 설명, 문제 풀이, 질문 & 오답 정리",
-    icon: "📚",
-    examplePill: "단원 개념 정리 도움",
-  },
-  {
-    label: "과제 / 보고서",
-    desc: "아이디어, 구성, 자료 정리, 초안 피드백",
-    icon: "📄",
-    examplePill: "보고서 구성·초안 방향",
-  },
-  {
-    label: "발표 준비 코칭",
-    desc: "발표 구성, 스크립트, PPT 구성 피드백",
-    icon: "📊",
-    examplePill: "발표 대본·슬라이드 코칭",
-  },
-  {
-    label: "글쓰기 / 논술 첨삭",
-    desc: "글의 구조, 표현, 문장 피드백 및 개선",
-    icon: "📝",
-    examplePill: "첨삭·문장 다듬기",
-  },
-  {
-    label: "진로 / 진학 상담",
-    desc: "진로 탐색, 과목 선택, 입시 전략 상담",
-    icon: "🧭",
-    examplePill: "과목·진로 방향 상담",
-  },
-  {
-    label: "기타 학습상담",
-    desc: "그 외 학습 관련 고민을 편하게 상담",
-    icon: "💬",
-    examplePill: "기타 학습 고민 상담",
-  },
-] as const;
+﻿import type { CustomCategoryRow } from "@/lib/customRequest/customRequestQueries";
 
 const SUBJECT_CATEGORIES = [
-  { label: "\uC218\uD559", desc: "\uC218\uD559 \uAC1C\uB150\u00B7\uBB38\uC81C \uCF54\uCE58", icon: "\uD83D\uDCD0", examplePill: "\uAC1C\uB150 \uC815\uB9AC" },
-  { label: "\uC601\uC5B4", desc: "\uC601\uC5B4 \uC5B8\uC5B4\u00B7\uC791\uBB38 \uD53C\uB4DC\uBC31", icon: "\uD83D\uDCD6", examplePill: "\uC5B8\uC5B4 \uC791\uBB38" },
-  { label: "\uAD6D\uC5B4", desc: "\uAD6D\uC5B4 \uC791\uBB38\u00B7\uBE44\uC124 \uCF54\uCE58", icon: "\uD83D\uDCDA", examplePill: "\uBE44\uC124 \uCC98\uC0AD" },
-  { label: "\uACFC\uD559", desc: "\uACFC\uD559 \uC2E4\uD5D8\u00B7\uC774\uB860 \uC815\uB9AC", icon: "\uD83D\uDD2C", examplePill: "\uC2E4\uD5D8 \uBCF4\uACE0" },
-  { label: "\uC0AC\uD68C", desc: "\uC0AC\uD68C \uB0B4\uC2E0\u00B7\uC11C\uC220 \uCF54\uCE58", icon: "\uD83C\uDF0D", examplePill: "\uB0B4\uC2E0 \uC790\uB8CC" },
-  { label: "\uAE30\uD0C0", desc: "\uAE30\uD0C0 \uD559\uC2B5 \uC0C1\uB2F4", icon: "\uD83D\uDCAC", examplePill: "\uB9DE\uCDA4 \uC0C1\uB2F4" },
+  { label: "수학", desc: "수학 개념·문제 코치", icon: "📐", examplePill: "개념 정리" },
+  { label: "영어", desc: "영어 언어·작문 피드백", icon: "📖", examplePill: "언어 작문" },
+  { label: "국어", desc: "국어 작문·비설 코치", icon: "📚", examplePill: "비설 첨삭" },
+  { label: "과학", desc: "과학 실험·이론 정리", icon: "🔬", examplePill: "실험 보고" },
+  { label: "사회", desc: "사회 내신·서술 코치", icon: "🌍", examplePill: "내신 자료" },
+  { label: "기타", desc: "기타 학습 상담", icon: "💬", examplePill: "맞춤 상담" },
 ] as const;
-
-const ROW_A = REFERENCE_CATEGORIES.slice(0, 4);
-const ROW_B = REFERENCE_CATEGORIES.slice(4);
 
 type Props = {
   fromTable: { rows: CustomCategoryRow[]; table: string | null; error: string | null };
@@ -95,40 +47,21 @@ export function CustomRequestCategoryGrid(props: Props) {
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700/90">분야 선택</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">어떤 도움이 필요하신가요?</h2>
           <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
-            의뢰 작성 시 아래에 가까운 분야를 골라 적어 주세요. 예시 문구는 참고용입니다.
+            수학·영어·국어·과학·사회·기타 중 가까운 분야를 골라 의뢰를 등록해 주세요.
           </p>
           {categoryFallbackNote ? <p className="mt-3 text-xs font-semibold text-amber-800">{categoryFallbackNote}</p> : null}
         </header>
 
         <div className="pt-8">
-          <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-500">과목 바로 보기</p>
-          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3">
             {SUBJECT_CATEGORIES.map((c) => (
               <CategoryCard key={c.label} {...c} />
             ))}
-          </div>
-          {/* sm~lg: 균등 2열 / 3열 */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:hidden">
-            {REFERENCE_CATEGORIES.map((c) => (
-              <CategoryCard key={c.label} {...c} />
-            ))}
-          </div>
-
-          {/* xl: 4 + 3 (둘째 줄 가운데) */}
-          <div className="hidden xl:block">
-            <div className="grid grid-cols-4 gap-5">
-              {ROW_A.map((c) => (
-                <CategoryCard key={c.label} {...c} />
-              ))}
-            </div>
-            <div className="mx-auto mt-5 grid max-w-[900px] grid-cols-3 gap-5">
-              {ROW_B.map((c) => (
-                <CategoryCard key={c.label} {...c} />
-              ))}
-            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
+

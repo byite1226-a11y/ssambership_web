@@ -50,6 +50,14 @@ export default async function CustomRequestPublicPage() {
           </div>
           <CustomRequestPostListTable list={recent} max={3} />
         </section>
+        <div className="flex justify-center">
+          <Link
+            href="/custom-request/new"
+            className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#1A56DB] px-10 py-3.5 text-sm font-extrabold text-white shadow-md hover:bg-blue-700"
+          >
+            의뢰하기
+          </Link>
+        </div>
         <CustomRequestTrustBanner />
         <p className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 sm:flex-row sm:flex-wrap sm:gap-4 select-none">
           {isMentor ? (

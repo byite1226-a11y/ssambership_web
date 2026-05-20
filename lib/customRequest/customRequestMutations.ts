@@ -50,13 +50,15 @@ export type NewCustomRequestInput = {
   agreedProhibited: boolean;
   agreedNoExternalContact: boolean;
   authorId: string;
+  status?: "open" | "draft";
 };
 
 export async function insertCustomRequestPost(
   supabase: SupabaseClient,
   input: NewCustomRequestInput
 ): Promise<MutationResult> {
-  if (!input.agreedProhibited || !input.agreedNoExternalContact) {
+  const postStatus = input.status ?? "open";
+  if (postStatus !== "draft" && (!input.agreedProhibited || !input.agreedNoExternalContact)) {
     return { ok: false, error: "필수 동의 항목이 필요합니다." };
   }
   const t = "custom_request_posts";
@@ -78,8 +80,8 @@ export async function insertCustomRequestPost(
     result_format: input.deliverableFormat,
     budget_min: bMin,
     budget_max: bMax,
-    status: "open",
-    state: "open",
+    status: postStatus,
+    state: postStatus,
     author_id: input.authorId,
     student_id: input.authorId,
     user_id: input.authorId,

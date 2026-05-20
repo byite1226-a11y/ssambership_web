@@ -38,15 +38,7 @@ function FormSection(props: { step: string; title: string; hint?: string; childr
 export function CustomRequestNewForm(props: { errorMessage: string | null }) {
   const [selectedCat, setSelectedCat] = useState("");
 
-  const cats = [
-    "학습 계획 & 방법",
-    "과목 개념 이해",
-    "과제/보고서",
-    "발표 준비 코칭",
-    "글쓰기/논술 첨삭",
-    "진로/진학 상담",
-    "기타 학습상담",
-  ];
+  const cats = ["수학", "영어", "국어", "과학", "사회", "기타"];
 
   return (
     <div className="space-y-8 sm:space-y-10">
@@ -111,7 +103,7 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
                 <label className="block text-sm font-extrabold text-slate-900">
                   제목
                   <span className="mt-1 block text-xs font-medium text-slate-500">요청을 한 줄로 요약해 주세요.</span>
-                  <input name="subject" required className={`mt-2 ${inputClass}`} placeholder="한 줄로 요약해 주세요" />
+                  <input name="subject" required maxLength={100} className={`mt-2 ${inputClass}`} placeholder="한 줄로 요약해 주세요 (최대 100자)" />
                 </label>
                 <label className="mt-6 block text-sm font-extrabold text-slate-900">
                   목표 (선택)
@@ -126,6 +118,7 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
                     name="body"
                     required
                     rows={8}
+                    maxLength={2000}
                     className="min-h-[14rem] w-full resize-y rounded-xl border-0 bg-transparent px-3 py-3 text-sm font-medium leading-relaxed placeholder-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/30"
                     placeholder="의뢰 배경과 요구 사항을 자세히 적을수록 제안이 정확해져요."
                   />
@@ -153,12 +146,12 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
                   <label className="block text-sm font-extrabold text-slate-900">
                     예산 (최소)
                     <span className="mt-1 block text-xs font-medium text-slate-500">최소 금액</span>
-                    <input name="budgetMin" type="number" min={0} placeholder="0캐시" className={`mt-2 ${inputClass}`} />
+                    <input name="budgetMin" type="number" min={10000} max={200000} step={1000} placeholder="10,000" className={`mt-2 ${inputClass}`} />
                   </label>
                   <label className="block text-sm font-extrabold text-slate-900">
                     예산 (최대)
-                    <span className="mt-1 block text-xs font-medium text-slate-500">최대 금액</span>
-                    <input name="budgetMax" type="number" min={0} placeholder="0캐시" className={`mt-2 ${inputClass}`} />
+                    <span className="mt-1 block text-xs font-medium text-slate-500">10,000~200,000 캐시</span>
+                    <input name="budgetMax" type="number" min={10000} max={200000} step={1000} placeholder="200,000" className={`mt-2 ${inputClass}`} />
                   </label>
                 </div>
               </FormSection>
@@ -193,11 +186,23 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
               <p className="text-center text-xs font-medium leading-relaxed text-slate-600 sm:max-w-md sm:text-left">
                 제출 후 멘토가 제안을 보낼 수 있어요. 내용은 제출 전 다시 한 번 확인해 주세요.
               </p>
-              <FormSubmitButton
-                idleLabel="의뢰 요청 등록하기"
-                pendingLabel="등록 중…"
-                className="min-h-[52px] w-full shrink-0 rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 px-8 py-3.5 text-sm font-extrabold text-white shadow-md transition hover:from-blue-700 hover:to-violet-700 sm:w-auto"
-              />
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <button
+                  type="submit"
+                  name="intent"
+                  value="draft"
+                  className="min-h-[52px] rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-extrabold text-slate-800 hover:bg-slate-50"
+                >
+                  임시저장
+                </button>
+                <FormSubmitButton
+                  idleLabel="제출하기"
+                  pendingLabel="등록 중…"
+                  name="intent"
+                  value="submit"
+                  className="min-h-[52px] w-full shrink-0 rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 px-8 py-3.5 text-sm font-extrabold text-white shadow-md transition hover:from-blue-700 hover:to-violet-700 sm:w-auto"
+                />
+              </div>
             </div>
           </form>
         </div>

@@ -30,6 +30,9 @@ export async function submitCustomRequestNew(formData: FormData) {
   const { user } = await requireRole("student");
   const supabase = await createClient();
 
+  const intent = String(formData.get("intent") ?? "submit");
+  const isDraft = intent === "draft";
+
   const category = String(formData.get("category") ?? "").trim();
   const subject = String(formData.get("subject") ?? "").trim();
   const goal = String(formData.get("goal") ?? "").trim();
@@ -40,17 +43,23 @@ export async function submitCustomRequestNew(formData: FormData) {
   const deliverableFormat = String(formData.get("deliverableFormat") ?? "").trim();
   const agreed = formData.get("agreeProhibited") === "on" && formData.get("agreeNoExternal") === "on";
 
-  if (!category || !subject || !body) {
-    redirect(errRedirect("카테고리·과목(제목)·설명을 입력하세요."));
+  if (!isDraft && (!category || !subject || !body)) {
+    redirect(errRedirect("카테고리·제목·의뢰 내용을 입력하세요."));
   }
 
   const combined = `${subject}\n${goal}\n${body}`;
   const banned = findBannedPhrase(combined);
-  if (banned) {
+  if (!isDraft && banned) {
     redirect(errRedirect(`금지 표현이 포함되어 있습니다: "${banned}". 대필·대신 작성 요청은 등록할 수 없습니다.`));
   }
-  if (!agreed) {
+  if (!isDraft && !agreed) {
     redirect(errRedirect("금지행위 동의·외부 연락 금지에 동의해 주세요."));
+  }
+
+  const bMinNum = budgetMin ? Number(budgetMin) : null;
+  const bMaxNum = budgetMax ? Number(budgetMax) : null;
+  if (!isDraft && ((bMinNum != null && bMinNum < 10000) || (bMaxNum != null && bMaxNum > 200000))) {
+    redirect(errRedirect("예산은 10,000~200,000 캐시 범위로 입력해 주세요."));
   }
 
   const file = getPostAttachmentFileFromFormData(formData, "postAttachmentFile");
@@ -88,6 +97,7 @@ export async function submitCustomRequestNew(formData: FormData) {
     agreedProhibited: true,
     agreedNoExternalContact: true,
     authorId: user.id,
+    status: isDraft ? "draft" : "open",
   });
 
   if (!r.ok) {
@@ -129,7 +139,9 @@ export async function submitCustomRequestNew(formData: FormData) {
   }
 
   revalidatePath("/custom-request");
+  revalidatePath("/custom-request/posts");
   revalidatePath(`/custom-request/${r.id}`);
   revalidatePath(`/custom-request/${r.id}/applications`, "page");
+  if (isDraft) redirect("/custom-request/posts?draft=1");
   redirect(`/custom-request/${r.id}/applications`);
 }
