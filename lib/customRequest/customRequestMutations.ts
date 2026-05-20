@@ -67,7 +67,6 @@ export async function insertCustomRequestPost(
   const common = {
     subject: input.subject,
     body: input.body,
-    description: input.body,
     category: input.category,
     subcategory: input.goal,
     goal: input.goal,
@@ -83,9 +82,6 @@ export async function insertCustomRequestPost(
     status: postStatus,
     state: postStatus,
     author_id: input.authorId,
-    student_id: input.authorId,
-    user_id: input.authorId,
-    requester_id: input.authorId,
   };
 
   const payloads: Record<string, unknown>[] = [
@@ -93,17 +89,9 @@ export async function insertCustomRequestPost(
     {
       category: input.category,
       title: input.subject,
-      content: input.body,
-      author_id: input.authorId,
-      due_at: input.deadline,
-    },
-    {
-      category: input.category,
-      subject: input.subject,
-      goal: input.goal,
       body: input.body,
-      user_id: input.authorId,
-      client_id: input.authorId,
+      author_id: input.authorId,
+      due_at: input.deadline || null,
     },
   ];
 

@@ -7,7 +7,7 @@ export type InsertShortformInput = {
   category: ShortformCategorySlug;
   videoUrl: string;
   thumbnailUrl: string | null;
-  description: string;
+  body: string;
   tags: string[];
   source: string;
   status: "draft" | "published";
@@ -20,17 +20,15 @@ export async function insertShortformPost(
   input: InsertShortformInput
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const title = input.title.trim().slice(0, SHORTFORM_TITLE_MAX);
-  const description = input.description.trim().slice(0, SHORTFORM_DESC_MAX);
+  const body = input.body.trim().slice(0, SHORTFORM_DESC_MAX);
   if (!title) return { ok: false, error: "title" };
   if (!input.videoUrl && input.status === "published") return { ok: false, error: "video" };
   const tags = input.tags.slice(0, SHORTFORM_TAG_MAX);
 
   const payload: Record<string, unknown> = {
     author_id: userId,
-    creator_id: userId,
     title,
-    body: description,
-    description,
+    body,
     category: input.category === "all" ? "study" : input.category,
     source: input.source || null,
     video_url: input.videoUrl,
@@ -48,9 +46,9 @@ export async function insertShortformPost(
       .insert({
         author_id: userId,
         title,
-        body: description,
-        category: input.category,
-        source: input.source,
+        body,
+        category: input.category === "all" ? "study" : input.category,
+        source: input.source || null,
       })
       .select("id")
       .maybeSingle();

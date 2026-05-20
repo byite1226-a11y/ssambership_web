@@ -54,7 +54,7 @@ export function mapPostRowToPublicDetail(row: Row) {
     category: pickDisplayField(row, ["category", "category_label", "category_id"]),
     subject: pickDisplayField(row, ["subject", "topic", "course"]),
     goal: pickDisplayField(row, ["goal", "subcategory", "objective"]),
-    body: pickDisplayField(row, ["body", "content", "description", "text"]),
+    body: pickDisplayField(row, ["body"]),
     /** 표시용 `YYYY.MM.DD` 또는 `일정 협의` */
     deadline: formatDateYYYYMMDD(pickDeadlineRaw(row)),
     /** 천단위 + 원 / `금액 협의` */

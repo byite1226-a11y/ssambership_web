@@ -27,7 +27,7 @@ export async function submitShortformUploadAction(formData: FormData) {
   const status = intent === "draft" ? "draft" : "published";
   const title = String(formData.get("title") ?? "").trim();
   const category = String(formData.get("category") ?? "study") as ShortformCategorySlug;
-  const description = String(formData.get("description") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
   const source = String(formData.get("source") ?? "").trim();
   const tagsRaw = String(formData.get("tags") ?? "");
   const tags = tagsRaw
@@ -64,7 +64,7 @@ export async function submitShortformUploadAction(formData: FormData) {
     category,
     videoUrl,
     thumbnailUrl,
-    description,
+    body,
     tags,
     source,
     status,

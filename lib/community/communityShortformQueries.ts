@@ -66,10 +66,7 @@ export function mapShortformRow(row: Row): ShortformCard {
     category: typeof row.category === "string" ? row.category : null,
     thumbnailUrl: pickThumb(row),
     videoUrl: pickVideo(row),
-    description:
-      (typeof row.description === "string" && row.description) ||
-      (typeof row.body === "string" && row.body) ||
-      "",
+    description: typeof row.body === "string" ? row.body : "",
     tags,
     viewCount: typeof row.view_count === "number" ? row.view_count : 0,
     likeCount: typeof row.like_count === "number" ? row.like_count : 0,

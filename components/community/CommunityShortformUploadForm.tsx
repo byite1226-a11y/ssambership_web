@@ -68,7 +68,7 @@ export function CommunityShortformUploadForm(props: { errorCode: string | null; 
 
       <label className="block text-sm font-extrabold text-slate-800">
         {"\uC124\uBA85 (\uCD5C\uB300 500\uC790)"}
-        <textarea name="description" maxLength={500} rows={4} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" />
+        <textarea name="body" maxLength={500} rows={4} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" />
       </label>
 
       <fieldset>

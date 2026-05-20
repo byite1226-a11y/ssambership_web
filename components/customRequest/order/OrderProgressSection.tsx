@@ -25,7 +25,7 @@ type Props = {
 };
 
 function messageText(m: Row) {
-  return pickDisplayField(m, ["body", "content", "message", "text"]);
+  return pickDisplayField(m, ["body"]);
 }
 
 function formatMessageGroupDate(dateStr: unknown) {

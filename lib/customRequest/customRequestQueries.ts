@@ -120,13 +120,7 @@ export async function loadStudentCustomRequestPosts(
   if (!table) {
     return { table: null, sourceNote: te, rows: [], error: te };
   }
-  const { column, error: colErr } = await pickExistingColumn(supabase, table, [
-    "student_id",
-    "author_id",
-    "user_id",
-    "requester_id",
-    "client_id",
-  ]);
+  const { column, error: colErr } = await pickExistingColumn(supabase, table, ["author_id"]);
   if (!column) {
     return { table, sourceNote: colErr ?? "author column missing", rows: [], error: colErr };
   }
@@ -350,9 +344,7 @@ export function isAuthorOfPost(userId: string, row: Row | null): { ok: boolean; 
 }
 
 function pickAuthorColumn(row: Row): string | null {
-  for (const k of ["student_id", "author_id", "user_id", "requester_id", "client_id", "owner_id"]) {
-    if (k in row) return k;
-  }
+  if ("author_id" in row) return "author_id";
   return null;
 }
 
@@ -759,7 +751,7 @@ async function mapAppsToHints(
     }
     const detail = await loadCustomPostForPublicDetail(supabase, pid);
     const title = detail.row
-      ? pickDisplayField(detail.row, ["title", "subject", "content"])
+      ? pickDisplayField(detail.row, ["title", "subject", "body"])
       : "맞춤의뢰";
     items.push({
       application: a,
