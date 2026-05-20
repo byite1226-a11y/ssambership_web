@@ -1,10 +1,15 @@
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
+import { requireRole } from "@/lib/auth/routeGuard";
 
 /**
- * 관리자 URL(`/admin/*`) 루트 레이아웃.
- * 인증·쉘은 `admin/(console)/layout.tsx`에서만 수행하고,
- * `/admin/login`은 이 레이아웃만 적용되어 비로그인 접근이 가능합니다.
+ * `/admin/*` 세그먼트 루트. `/admin/login` 은 가드 제외.
  */
-export default function AdminSegmentLayout({ children }: { children: ReactNode }) {
+export default async function AdminSegmentLayout({ children }: { children: ReactNode }) {
+  const pathname = (await headers()).get("x-pathname") ?? "";
+  const isLogin = pathname === "/admin/login" || pathname.startsWith("/admin/login/");
+  if (!isLogin) {
+    await requireRole("admin");
+  }
   return children;
 }

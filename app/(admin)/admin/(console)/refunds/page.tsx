@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { createClient } from "@/lib/supabase/server";
-import { loadAdminRefundsList } from "@/lib/admin/adminQueries";
+import { loadAdminDashboardSummary, loadAdminRefundsList } from "@/lib/admin/adminQueries";
 import { approveAdminRefundAction, rejectAdminRefundAction } from "@/lib/admin/refundActions";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 
@@ -118,7 +118,7 @@ export default async function AdminRefundsPage(props: PageProps) {
   const flashErr = typeof errParam === "string" ? errParam : Array.isArray(errParam) ? errParam[0] : null;
 
   const supabase = await createClient();
-  const list = await loadAdminRefundsList(supabase, 50);
+  const [list, summary] = await Promise.all([loadAdminRefundsList(supabase, 50), loadAdminDashboardSummary(supabase)]);
   const rows = (list.rows as Row[]) ?? [];
 
   return (
@@ -154,6 +154,25 @@ export default async function AdminRefundsPage(props: PageProps) {
             {toAdminDisplayError(flashErr, "default") ?? "처리에 실패했습니다. 잠시 후 다시 시도해 주세요."}
           </p>
         ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase text-slate-500">환불 대기</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{summary.refundPendingCount ?? "—"}건</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase text-slate-500">정산 대기 건수</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{summary.settlementPendingCount ?? "—"}건</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-bold uppercase text-slate-500">정산 대기 금액</p>
+            <p className="mt-2 text-2xl font-black text-[#1A56DB]">
+              {summary.settlementPendingAmount != null
+                ? `${new Intl.NumberFormat("ko-KR").format(summary.settlementPendingAmount)}원`
+                : "—"}
+            </p>
+          </div>
+        </div>
 
         {focusRefundId ? (
           <p className="rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-sm text-blue-900 font-medium">

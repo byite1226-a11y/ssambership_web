@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
+import { logAdminAction } from "@/lib/admin/adminActionLog";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 const PATH = "/admin/refunds";
 
@@ -142,7 +144,16 @@ export async function approveAdminRefundAction(formData: FormData) {
 
   const msg =
     payload.noop === true ? (payload.message ?? "이미 처리되었거나 대기 상태가 아닙니다.") : "환불 승인이 완료되었습니다.";
+  const session = await createClient();
+  await logAdminAction(session, {
+    adminId: user.id,
+    actionType: "refund_approve",
+    targetType: "refund",
+    targetId: refundId,
+    detail: { note: adminNote },
+  });
   revalidatePath(PATH);
+  revalidatePath("/admin/dashboard");
   redirect(qOk(msg));
 }
 
@@ -185,6 +196,15 @@ export async function rejectAdminRefundAction(formData: FormData) {
 
   const msg =
     payload.noop === true ? (payload.message ?? "이미 처리되었거나 대기 상태가 아닙니다.") : "환불 거절이 완료되었습니다.";
+  const session = await createClient();
+  await logAdminAction(session, {
+    adminId: user.id,
+    actionType: "refund_reject",
+    targetType: "refund",
+    targetId: refundId,
+    detail: { note: adminNote },
+  });
   revalidatePath(PATH);
+  revalidatePath("/admin/dashboard");
   redirect(qOk(msg));
 }
