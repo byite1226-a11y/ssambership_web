@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { insertCustomRequestPost, insertCustomRequestPostAttachment } from "@/lib/customRequest/customRequestMutations";
 import { isAuthorOfPost } from "@/lib/customRequest/customRequestQueries";
+import { findBannedPhrase } from "@/lib/customRequest/bannedPhrases";
 import {
   buildPostAttachmentStorageObjectPath,
   getPostAttachmentFileFromFormData,
@@ -41,6 +42,12 @@ export async function submitCustomRequestNew(formData: FormData) {
 
   if (!category || !subject || !body) {
     redirect(errRedirect("카테고리·과목(제목)·설명을 입력하세요."));
+  }
+
+  const combined = `${subject}\n${goal}\n${body}`;
+  const banned = findBannedPhrase(combined);
+  if (banned) {
+    redirect(errRedirect(`금지 표현이 포함되어 있습니다: "${banned}". 대필·대신 작성 요청은 등록할 수 없습니다.`));
   }
   if (!agreed) {
     redirect(errRedirect("금지행위 동의·외부 연락 금지에 동의해 주세요."));

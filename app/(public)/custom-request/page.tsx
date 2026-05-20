@@ -20,7 +20,7 @@ export default async function CustomRequestPublicPage() {
   const isMentor = role === "mentor";
 
   const [recent, cats] = await Promise.all([
-    loadRecentCustomRequestPosts(supabase, 8),
+    loadRecentCustomRequestPosts(supabase, 3),
     loadCustomRequestCategories(supabase),
   ]);
 
@@ -41,14 +41,14 @@ export default async function CustomRequestPublicPage() {
     >
       <div className="mx-auto w-full max-w-6xl space-y-8 px-3 py-6 sm:space-y-12 sm:px-4 sm:py-8 lg:px-0">
         <CustomRequestHero role={role} />
-        <CustomRequestCategoryGrid fromTable={cats} />
         <CustomRequestSteps />
+        <CustomRequestCategoryGrid fromTable={cats} />
         <section className="space-y-4">
           <div>
             <h2 className="text-base font-extrabold text-slate-900 sm:text-xl">최근 등록된 맞춤의뢰</h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">다른 학생들이 등록한 맞춤의뢰 목록입니다.</p>
           </div>
-          <CustomRequestPostListTable list={recent} max={6} />
+          <CustomRequestPostListTable list={recent} max={3} />
         </section>
         <CustomRequestTrustBanner />
         <p className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 sm:flex-row sm:flex-wrap sm:gap-4 select-none">
@@ -74,6 +74,12 @@ export default async function CustomRequestPublicPage() {
                 className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-800 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 transition"
               >
                 진행 중인 주문 보기
+              </Link>
+              <Link
+                href="/custom-request/posts"
+                className="inline-flex min-h-[44px] items-center justify-center font-bold text-indigo-700 underline hover:text-indigo-900 transition"
+              >
+                내 의뢰 목록
               </Link>
               <Link
                 href="/custom-request/new"

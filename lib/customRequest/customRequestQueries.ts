@@ -110,6 +110,39 @@ export async function loadRecentCustomRequestPosts(supabase: SupabaseClient, lim
   return { table, sourceNote: "최근 의뢰(공개 정책에 맞는 필터는 후속)", rows: error ? [] : rows, error };
 }
 
+/** 학생 본인이 등록한 의뢰 목록 */
+export async function loadStudentCustomRequestPosts(
+  supabase: SupabaseClient,
+  studentId: string,
+  limit = 50
+): Promise<CustomListResult> {
+  const { table, error: te } = await firstReadableCustomTable(supabase, ["custom_request_posts", "custom_requests", "request_posts"]);
+  if (!table) {
+    return { table: null, sourceNote: te, rows: [], error: te };
+  }
+  const { column, error: colErr } = await pickExistingColumn(supabase, table, [
+    "student_id",
+    "author_id",
+    "user_id",
+    "requester_id",
+    "client_id",
+  ]);
+  if (!column) {
+    return { table, sourceNote: colErr ?? "author column missing", rows: [], error: colErr };
+  }
+  const { data, error } = await supabase
+    .from(table)
+    .select("*")
+    .eq(column, studentId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    const fb = await supabase.from(table).select("*").eq(column, studentId).limit(limit);
+    return { table, sourceNote: "order fallback", rows: (fb.data as Row[]) ?? [], error: fmt(fb.error) };
+  }
+  return { table, sourceNote: `${table}.${column}`, rows: (data as Row[]) ?? [], error: null };
+}
+
 export type CustomCategoryRow = { id?: string; name?: string; label?: string; title?: string; slug?: string };
 
 export async function loadCustomRequestCategories(supabase: SupabaseClient, limit = 30): Promise<{

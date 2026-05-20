@@ -45,6 +45,15 @@ const REFERENCE_CATEGORIES = [
   },
 ] as const;
 
+const SUBJECT_CATEGORIES = [
+  { label: "\uC218\uD559", desc: "\uC218\uD559 \uAC1C\uB150\u00B7\uBB38\uC81C \uCF54\uCE58", icon: "\uD83D\uDCD0", examplePill: "\uAC1C\uB150 \uC815\uB9AC" },
+  { label: "\uC601\uC5B4", desc: "\uC601\uC5B4 \uC5B8\uC5B4\u00B7\uC791\uBB38 \uD53C\uB4DC\uBC31", icon: "\uD83D\uDCD6", examplePill: "\uC5B8\uC5B4 \uC791\uBB38" },
+  { label: "\uAD6D\uC5B4", desc: "\uAD6D\uC5B4 \uC791\uBB38\u00B7\uBE44\uC124 \uCF54\uCE58", icon: "\uD83D\uDCDA", examplePill: "\uBE44\uC124 \uCC98\uC0AD" },
+  { label: "\uACFC\uD559", desc: "\uACFC\uD559 \uC2E4\uD5D8\u00B7\uC774\uB860 \uC815\uB9AC", icon: "\uD83D\uDD2C", examplePill: "\uC2E4\uD5D8 \uBCF4\uACE0" },
+  { label: "\uC0AC\uD68C", desc: "\uC0AC\uD68C \uB0B4\uC2E0\u00B7\uC11C\uC220 \uCF54\uCE58", icon: "\uD83C\uDF0D", examplePill: "\uB0B4\uC2E0 \uC790\uB8CC" },
+  { label: "\uAE30\uD0C0", desc: "\uAE30\uD0C0 \uD559\uC2B5 \uC0C1\uB2F4", icon: "\uD83D\uDCAC", examplePill: "\uB9DE\uCDA4 \uC0C1\uB2F4" },
+] as const;
+
 const ROW_A = REFERENCE_CATEGORIES.slice(0, 4);
 const ROW_B = REFERENCE_CATEGORIES.slice(4);
 
@@ -52,7 +61,7 @@ type Props = {
   fromTable: { rows: CustomCategoryRow[]; table: string | null; error: string | null };
 };
 
-function CategoryCard(props: (typeof REFERENCE_CATEGORIES)[number]) {
+function CategoryCard(props: { label: string; desc: string; icon: string; examplePill: string }) {
   const c = props;
   return (
     <article
@@ -92,6 +101,12 @@ export function CustomRequestCategoryGrid(props: Props) {
         </header>
 
         <div className="pt-8">
+          <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-slate-500">과목 바로 보기</p>
+          <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {SUBJECT_CATEGORIES.map((c) => (
+              <CategoryCard key={c.label} {...c} />
+            ))}
+          </div>
           {/* sm~lg: 균등 2열 / 3열 */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:hidden">
             {REFERENCE_CATEGORIES.map((c) => (

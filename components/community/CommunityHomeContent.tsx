@@ -1,5 +1,6 @@
 import { CommunitySectionCard } from "@/components/community/CommunitySectionCard";
 import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
+import { mapShortformRow } from "@/lib/community/communityShortformQueries";
 import { CommunityBoardPostRow } from "@/components/community/CommunityBoardPostRow";
 import { CommunityShortformEmptyPanel } from "@/components/community/CommunityShortformEmptyPanel";
 import type { AppRole } from "@/lib/types/user";
@@ -35,7 +36,7 @@ export function CommunityHomeContent(props: Props) {
             {shortRows.slice(0, 6).map((r, i) => {
               const id = typeof r.id === "string" ? r.id : null;
               return id ? (
-                <CommunityShortformVideoCard key={id} row={r} href={`/community/shortform/${id}`} linkLabel="영상 보기" />
+                <CommunityShortformVideoCard key={id} item={mapShortformRow(r)} href={`/community/shortform/${id}`} />
               ) : (
                 <li key={`sr-${i}`} className="list-none rounded-2xl border border-slate-200 p-4 text-sm text-slate-500">
                   항목을 표시할 수 없습니다.

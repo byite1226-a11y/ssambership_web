@@ -1,111 +1,67 @@
 import Link from "next/link";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { CommunityPageHero } from "@/components/community/CommunityPageHero";
-import { CommunityShortformTabs, parseShortformTab } from "@/components/community/CommunityShortformTabs";
+import { CommunityShortformCategoryTabs } from "@/components/community/CommunityShortformCategoryTabs";
 import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
-import { CommunityShortformEmptyPanel } from "@/components/community/CommunityShortformEmptyPanel";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
-import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
-import { listShortformPosts } from "@/lib/community/communityQueries";
-import { Video } from "lucide-react";
-
-function shortformListDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
-  if (role === "mentor") {
-    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요. 새 숏폼은 아래에서 업로드할 수 있어요.";
-  }
-  if (!loggedIn) {
-    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 둘러볼 수 있어요. 댓글·스크랩은 로그인 후 이용할 수 있습니다.";
-  }
-  return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요.";
-}
+import { listShortformFeed } from "@/lib/community/communityShortformQueries";
+import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
+import { listPopularHashtags } from "@/lib/community/communityBoardQueries";
+import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function CommunityShortformPage(props: Props) {
-  const { user, profile } = await getServerUserWithProfile();
-  const loggedIn = user != null;
-  const role = profile?.role;
-
   const sp = (await props.searchParams) ?? {};
-  const tabRaw = typeof sp.tab === "string" ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
-  const activeTab = parseShortformTab(tabRaw);
-
+  const category = (typeof sp.category === "string" ? sp.category : "all") as ShortformCategorySlug;
+  const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
-  const { rows, error } = await listShortformPosts(supabase, 30);
-  if (error) console.error("[community/shortform] listShortformPosts", error);
+  const [{ items, error }, tags, mentors] = await Promise.all([
+    listShortformFeed(supabase, { category, limit: 48 }),
+    listPopularHashtags(supabase, 6),
+    loadCommunityPopularMentors(supabase),
+  ]);
 
-  const listFailed = Boolean(error);
-  const empty = !listFailed && rows.length === 0;
+  const isMentor = profile?.role === "mentor";
 
   return (
     <CommunityLayoutShell
       activeNav="shortform"
-      hero={
-        <CommunityPageHero
-          eyebrow="숏폼"
-          title="숏폼"
-          description={shortformListDescription(role, loggedIn)}
-          primaryAction={buildCommunityHeroPrimaryAction({
-            surface: "shortform_list",
-            role,
-            loggedIn,
-            nextPath: "/community/shortform",
-          })}
-        />
-      }
+      rightAsidePromo="shortform"
+      sidebarStats={communitySidebarStatsForUser(user?.id ?? null)}
+      hashtags={tags.rows}
+      popularMentors={mentors}
     >
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">탐색</p>
-            <p className="mt-1 text-sm font-semibold text-slate-800">추천 · 최신 · 인기 · 전체</p>
-            <p className="mt-0.5 text-xs text-slate-500">원하는 탭으로 이동해 숏폼을 빠르게 탐색해 보세요.</p>
-          </div>
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div>
+          <h1 className="text-xl font-black text-slate-900">{"\uC877\uD3FC"}</h1>
+          <p className="mt-1 text-sm text-slate-600">{"\uBA58\uD1A0\uC758 \uC9E7\uC740 \uD559\uC2B5 \uC601\uC0C1\uC744 \uB458\uB7EC\uBCF4\uC138\uC694."}</p>
         </div>
-        <div className="mt-4">
-          <CommunityShortformTabs active={activeTab} />
-        </div>
-        {listFailed ? (
-          <p className="mt-6 text-sm text-slate-600">숏폼 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-        ) : empty ? (
-          <div className="mt-8 flex justify-center">
-            <div className="w-full max-w-[280px] aspect-[9/16] rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center shadow-inner">
-              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-4 text-slate-400 shadow-sm ring-1 ring-slate-100">
-                <Video className="w-6 h-6 text-slate-400" />
-              </div>
-              <p className="text-sm font-black text-slate-900 leading-snug">아직 등록된 숏폼이 없습니다</p>
-              <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-                {role === "mentor"
-                  ? "첫 숏폼을 올려 학습 팁을 공유해보세요!"
-                  : "멘토가 올린 숏폼 영상이 준비 중입니다."}
-              </p>
-              {role === "mentor" && (
-                <Link
-                  href="/community/new"
-                  className="mt-6 inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700 transition"
-                >
-                  숏폼 업로드하기
-                </Link>
-              )}
-            </div>
-          </div>
-        ) : (
-          <ul className="mt-6 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((r, i) => {
-              const id = typeof r.id === "string" ? r.id : null;
-              return id ? (
-                <CommunityShortformVideoCard key={id} row={r} href={`/community/shortform/${id}`} linkLabel="자세히 보기" />
-              ) : (
-                <li key={`sf-${i}`} className="list-none rounded-2xl border border-slate-200 p-4 text-sm text-slate-500">
-                  항목을 표시할 수 없습니다.
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+        {isMentor ? (
+          <Link
+            href="/community/shortform/new"
+            className="rounded-xl bg-[#1A56DB] px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:opacity-90"
+          >
+            {"\uC5C5\uB85C\uB4DC"}
+          </Link>
+        ) : null}
+      </header>
+
+      <CommunityShortformCategoryTabs active={category} />
+
+      {error ? (
+        <p className="text-sm text-slate-600">{"\uC877\uD3FC \uBAA9\uB85D\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."}</p>
+      ) : items.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-500">
+          {"\uB4F1\uB85D\uB41C \uC877\uD3FC\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}
+        </p>
+      ) : (
+        <ul className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3 lg:grid-cols-4">
+          {items.map((item) => (
+            <CommunityShortformVideoCard key={item.id} item={item} href={`/community/shortform/${item.id}`} />
+          ))}
+        </ul>
+      )}
     </CommunityLayoutShell>
   );
 }

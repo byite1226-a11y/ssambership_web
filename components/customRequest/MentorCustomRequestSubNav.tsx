@@ -38,6 +38,7 @@ function isItemActive(itemKey: string, active: MentorCustomRequestNavKey, tab?: 
   if (itemKey === "orders-billing") return active === "orders" && tab === "billing";
   if (itemKey === "orders-work") return active === "orders" && (tab === "work" || tab === "revision");
   if (itemKey === "orders-delivery") return active === "orders" && tab === "delivery";
+  if (itemKey === "orders-revision") return active === "orders" && tab === "revision";
   if (itemKey === "orders-done") return active === "orders" && tab === "done";
   return false;
 }
@@ -68,7 +69,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
     },
     {
       href: "/mentor/custom-request/orders",
-      label: "수락된 의뢰 (전체)",
+      label: "수락된 의뢰",
       key: "orders-all",
       Icon: CheckCircle,
       badgeKey: "ordersTotal",
@@ -82,7 +83,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
     },
     {
       href: "/mentor/custom-request/orders?tab=work",
-      label: "작업 진행 중",
+      label: "진행 중",
       key: "orders-work",
       Icon: PlayCircle,
       badgeKey: "work",
@@ -95,8 +96,15 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
       badgeKey: "delivery",
     },
     {
+      href: "/mentor/custom-request/orders?tab=revision",
+      label: "수정 요청",
+      key: "orders-revision",
+      Icon: XCircle,
+      badgeKey: "revision",
+    },
+    {
       href: "/mentor/custom-request/orders?tab=done",
-      label: "종료됨",
+      label: "납품 완료",
       key: "orders-done",
       Icon: XCircle,
       badgeKey: "done",
