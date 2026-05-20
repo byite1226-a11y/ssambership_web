@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
 const ELIGIBLE_STATUSES = ["active", "expired"] as const;
 const MIN_SUBSCRIPTION_COUNT = 2;
@@ -7,18 +8,32 @@ export type ReviewEligibilityResult =
   | { eligible: true; subscriptionCount: number }
   | { eligible: false; reason: string; subscriptionCount: number };
 
+async function subscriptionStudentColumn(supabase: SupabaseClient): Promise<string | null> {
+  const { column } = await pickExistingColumn(supabase, "subscriptions", ["author_id", "student_id"]);
+  return column;
+}
+
 /**
  * 동일 멘토에 대해 active/expired 구독 2회 이상 + 미작성 리뷰일 때만 작성 가능.
  */
 export async function checkReviewEligibility(
   supabase: SupabaseClient,
-  studentId: string,
+  authorId: string,
   mentorId: string
 ): Promise<ReviewEligibilityResult> {
+  const subCol = await subscriptionStudentColumn(supabase);
+  if (!subCol) {
+    return {
+      eligible: false,
+      reason: "구독 이력을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      subscriptionCount: 0,
+    };
+  }
+
   const { count, error: countErr } = await supabase
     .from("subscriptions")
     .select("*", { count: "exact", head: true })
-    .eq("student_id", studentId)
+    .eq(subCol, authorId)
     .eq("mentor_id", mentorId)
     .in("status", [...ELIGIBLE_STATUSES]);
 
@@ -46,7 +61,7 @@ export async function checkReviewEligibility(
   const { data: existing, error: reviewErr } = await supabase
     .from("reviews")
     .select("id")
-    .eq("student_id", studentId)
+    .eq("author_id", authorId)
     .eq("mentor_id", mentorId)
     .maybeSingle();
 

@@ -1,19 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
 import { formatGradeSubject, maskStudentName } from "@/lib/reviews/reviewDisplay";
-
-export type ReviewRow = {
-  id: string;
-  mentor_id: string;
-  student_id: string;
-  subscription_count: number;
-  rating: number;
-  content: string;
-  mentor_reply: string | null;
-  mentor_replied_at: string | null;
-  is_hidden: boolean;
-  created_at: string;
-};
+import { isPubliclyVisibleReview, mapReviewDbRow, type ReviewDbRow } from "@/lib/reviews/reviewRowMapper";
 
 export type ReviewCardItem = {
   id: string;
@@ -43,10 +32,11 @@ type UserMini = {
   grade_level: string | null;
 };
 
-async function loadStudentsMap(
-  supabase: SupabaseClient,
-  ids: string[]
-): Promise<Map<string, UserMini>> {
+function applyPublicFilters<T extends { eq: (col: string, val: boolean) => T }>(q: T): T {
+  return q.eq("is_hidden", false).eq("is_blinded", false);
+}
+
+async function loadAuthorsMap(supabase: SupabaseClient, ids: string[]): Promise<Map<string, UserMini>> {
   const map = new Map<string, UserMini>();
   const unique = [...new Set(ids)].slice(0, 100);
   if (!unique.length) return map;
@@ -74,18 +64,18 @@ async function mentorFirstSubject(supabase: SupabaseClient, mentorId: string): P
   return null;
 }
 
-function toCard(row: ReviewRow, student: UserMini | undefined, subject: string | null): ReviewCardItem {
-  const name = maskStudentName(student?.full_name, student?.nickname);
+function toCard(row: ReviewDbRow, author: UserMini | undefined, subject: string | null): ReviewCardItem {
+  const name = maskStudentName(author?.full_name, author?.nickname);
   const initial = name.replace(/\*/g, "").slice(0, 1) || "학";
   return {
     id: row.id,
     rating: row.rating,
-    content: row.content,
+    content: row.body,
     createdAt: row.created_at,
     subscriptionCount: row.subscription_count,
     studentInitial: initial,
     studentMaskedName: name,
-    gradeSubject: formatGradeSubject(student?.grade_level, subject),
+    gradeSubject: formatGradeSubject(author?.grade_level, subject),
     mentorReply: row.mentor_reply,
     mentorRepliedAt: row.mentor_replied_at,
   };
@@ -98,6 +88,10 @@ function buildDistribution(rows: { rating: number }[]): Record<1 | 2 | 3 | 4 | 5
     d[k] += 1;
   }
   return d;
+}
+
+function mapRows(data: Record<string, unknown>[] | null): ReviewDbRow[] {
+  return (data ?? []).map((r) => mapReviewDbRow(r));
 }
 
 export async function listMentorReviews(
@@ -117,7 +111,7 @@ export async function listMentorReviews(
     .order("created_at", { ascending: false });
 
   if (!opts.includeHidden) {
-    q = q.eq("is_hidden", false);
+    q = applyPublicFilters(q);
   }
 
   const { data, count, error } = await q.range(from, to);
@@ -132,19 +126,18 @@ export async function listMentorReviews(
     };
   }
 
-  const rows = (data ?? []) as ReviewRow[];
-  const studentIds = rows.map((r) => r.student_id);
-  const [students, subject] = await Promise.all([
-    loadStudentsMap(supabase, studentIds),
+  const rows = mapRows(data as Record<string, unknown>[] | null);
+  const authorIds = rows.map((r) => r.author_id);
+  const [authors, subject] = await Promise.all([
+    loadAuthorsMap(supabase, authorIds),
     mentorFirstSubject(supabase, mentorId),
   ]);
 
-  const { data: allRatings } = await supabase
-    .from("reviews")
-    .select("rating")
-    .eq("mentor_id", mentorId)
-    .eq("is_hidden", false)
-    .limit(500);
+  let ratingsQ = supabase.from("reviews").select("rating").eq("mentor_id", mentorId).limit(500);
+  if (!opts.includeHidden) {
+    ratingsQ = applyPublicFilters(ratingsQ);
+  }
+  const { data: allRatings } = await ratingsQ;
 
   const ratingRows = (allRatings ?? []) as { rating: number }[];
   const total = count ?? rows.length;
@@ -154,7 +147,7 @@ export async function listMentorReviews(
       : null;
 
   return {
-    items: rows.map((r) => toCard(r, students.get(r.student_id), subject)),
+    items: rows.map((r) => toCard(r, authors.get(r.author_id), subject)),
     total,
     page,
     limit,
@@ -165,10 +158,10 @@ export async function listMentorReviews(
 
 export async function createReview(
   supabase: SupabaseClient,
-  studentId: string,
-  input: { mentorId: string; rating: number; content: string }
+  authorId: string,
+  input: { mentorId: string; rating: number; body: string }
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const eligibility = await checkReviewEligibility(supabase, studentId, input.mentorId);
+  const eligibility = await checkReviewEligibility(supabase, authorId, input.mentorId);
   if (!eligibility.eligible) {
     return { ok: false, error: eligibility.reason };
   }
@@ -178,25 +171,27 @@ export async function createReview(
     return { ok: false, error: "별점은 1~5점 사이로 선택해 주세요." };
   }
 
-  const content = input.content.trim();
-  if (content.length < 20) {
+  const text = input.body.trim();
+  if (text.length < 20) {
     return { ok: false, error: "리뷰는 최소 20자 이상 작성해 주세요." };
   }
-  if (content.length > 500) {
+  if (text.length > 500) {
     return { ok: false, error: "리뷰는 최대 500자까지 작성할 수 있습니다." };
   }
 
-  const { data, error } = await supabase
-    .from("reviews")
-    .insert({
-      mentor_id: input.mentorId,
-      student_id: studentId,
-      subscription_count: eligibility.subscriptionCount,
-      rating,
-      content,
-    })
-    .select("id")
-    .single();
+  const insertRow: Record<string, unknown> = {
+    mentor_id: input.mentorId,
+    author_id: authorId,
+    rating,
+    body: text,
+  };
+
+  const subCountCol = await pickExistingColumn(supabase, "reviews", ["subscription_count"]);
+  if (subCountCol.column) {
+    insertRow[subCountCol.column] = eligibility.subscriptionCount;
+  }
+
+  const { data, error } = await supabase.from("reviews").insert(insertRow).select("id").single();
 
   if (error) {
     if (/unique|duplicate/i.test(error.message)) {
@@ -214,11 +209,11 @@ export async function replyToReview(
   reviewId: string,
   reply: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const body = reply.trim();
-  if (body.length < 2) {
+  const text = reply.trim();
+  if (text.length < 2) {
     return { ok: false, error: "답글을 입력해 주세요." };
   }
-  if (body.length > 500) {
+  if (text.length > 500) {
     return { ok: false, error: "답글은 최대 500자까지 작성할 수 있습니다." };
   }
 
@@ -242,7 +237,7 @@ export async function replyToReview(
 
   const { error } = await supabase
     .from("reviews")
-    .update({ mentor_reply: body, mentor_replied_at: new Date().toISOString() })
+    .update({ mentor_reply: text, mentor_replied_at: new Date().toISOString() })
     .eq("id", reviewId)
     .eq("mentor_id", mentorId);
 
@@ -257,7 +252,11 @@ export async function hideReview(
   reviewId: string,
   hidden: boolean
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { error } = await supabase.from("reviews").update({ is_hidden: hidden }).eq("id", reviewId);
+  const patch: Record<string, unknown> = {
+    is_hidden: hidden,
+    moderation_state: hidden ? "hidden" : "visible",
+  };
+  const { error } = await supabase.from("reviews").update(patch).eq("id", reviewId);
   if (error) {
     return { ok: false, error: "처리에 실패했습니다." };
   }
@@ -278,11 +277,11 @@ export async function listMentorReceivedReviews(
 
   if (error || !data) return [];
 
-  const rows = data as ReviewRow[];
-  const students = await loadStudentsMap(
+  const rows = mapRows(data as Record<string, unknown>[]);
+  const authors = await loadAuthorsMap(
     supabase,
-    rows.map((r) => r.student_id)
+    rows.map((r) => r.author_id)
   );
   const subject = await mentorFirstSubject(supabase, mentorId);
-  return rows.map((r) => toCard(r, students.get(r.student_id), subject));
+  return rows.filter(isPubliclyVisibleReview).map((r) => toCard(r, authors.get(r.author_id), subject));
 }

@@ -32,16 +32,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "학생만 리뷰를 작성할 수 있습니다." }, { status: 403 });
   }
 
-  let body: { mentorId?: string; rating?: number; content?: string };
+  let payload: { mentorId?: string; rating?: number; body?: string; content?: string };
   try {
-    body = (await request.json()) as typeof body;
+    payload = (await request.json()) as typeof payload;
   } catch {
     return NextResponse.json({ ok: false, error: "요청 형식이 올바르지 않습니다." }, { status: 400 });
   }
 
-  const mentorId = body.mentorId?.trim();
-  const rating = body.rating;
-  const content = body.content ?? "";
+  const mentorId = payload.mentorId?.trim();
+  const rating = payload.rating;
+  const body = (payload.body ?? payload.content ?? "").trim();
 
   if (!mentorId) {
     return NextResponse.json({ ok: false, error: "멘토를 지정해 주세요." }, { status: 400 });
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = await createClient();
-    const result = await createReview(supabase, user.id, { mentorId, rating: Number(rating), content });
+    const result = await createReview(supabase, user.id, { mentorId, rating: Number(rating), body });
     if (!result.ok) {
       return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
     }

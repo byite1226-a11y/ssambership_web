@@ -73,7 +73,7 @@ export function ReviewWriteModal(props: Props) {
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mentorId: props.mentorId, rating, content }),
+        body: JSON.stringify({ mentorId: props.mentorId, rating, body: content }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string };
       if (!json.ok) {
