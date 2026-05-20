@@ -20,7 +20,7 @@ function isCashNavItem(item: MainNavItem): boolean {
 }
 
 function isPayoutNavItem(item: MainNavItem): boolean {
-  return item.href.startsWith("/mentor/payouts") || item.label === "정산";
+  return item.href.startsWith("/mentor/payouts") || item.label === "정산" || item.label === "정산/수익";
 }
 
 export const publicMainNav: MainNavItem[] = [
@@ -45,7 +45,7 @@ export const mentorMainNav: MainNavItem[] = [
   { href: "/mentor/question-room", label: "질문방" },
   { href: "/community", label: "커뮤니티" },
   { href: "/custom-request", label: "맞춤의뢰" },
-  { href: "/mentor/payouts", label: "정산" },
+  { href: "/mentor/payouts", label: "정산/수익" },
   { href: "/mentor/profile", label: "프로필" },
 ];
 
