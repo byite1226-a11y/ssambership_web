@@ -6,9 +6,11 @@ import type { PublicMentorLoadResult } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { getStringField } from "@/lib/qna/safeSelect";
 import type { AppRole, UserRow } from "@/lib/types/user";
+import { MentorReviewList } from "@/components/mentor/MentorReviewList";
 import { ReviewEligibilityBanner } from "@/components/reviews/ReviewEligibilityBanner";
-import { ReviewWritePanel } from "@/components/reviews/ReviewWritePanel";
+import { ReviewWriteModal } from "@/components/reviews/ReviewWriteModal";
 import { ReviewReportButton } from "@/components/reviews/ReviewReportButton";
+import type { ReviewEligibilityResult } from "@/lib/reviews/checkReviewEligibility";
 import {
   USER_UI_MENTOR_MEDIA_LOAD_FAILED,
   USER_UI_MENTOR_PROFILE_LOAD_FAILED,
@@ -63,8 +65,9 @@ export function PublicMentorDetailBody(props: {
   display: MentorProfileDisplay;
   bundle: Extract<PublicMentorLoadResult, { kind: "ok" }>;
   viewer?: { userId: string; role: AppRole } | null;
+  reviewEligibility?: ReviewEligibilityResult | null;
 }) {
-  const { mentorId, userRow, display, bundle, viewer } = props;
+  const { mentorId, userRow, display, bundle, viewer, reviewEligibility } = props;
   const mediaRows = bundle.media.rows;
   const { byTier, fillProbe } = assignPlansByTier(bundle.plans.rows as Record<string, unknown>[]);
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
@@ -187,20 +190,19 @@ export function PublicMentorDetailBody(props: {
             </SectionShell>
 
             <SectionShell title="리뷰" subtitle="학생들이 남긴 평가를 모아 보여 드려요.">
-              {bundle.reviews.error ? <p className="text-sm font-bold text-amber-800">{USER_UI_MENTOR_REVIEWS_LOAD_FAILED}</p> : null}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="리뷰 수" value={bundle.reviews.count != null ? String(bundle.reviews.count) : "—"} />
-                <Field label="평균 평점" value={bundle.reviews.avgRating != null ? bundle.reviews.avgRating.toFixed(2) : "—"} />
-              </div>
-              {bundle.reviews.count == null && !bundle.reviews.error ? (
-                <p className="mt-3 text-sm text-slate-600">아직 공개된 리뷰가 없거나 집계 전이에요.</p>
-              ) : null}
+              {bundle.reviews.error ? <p className="mb-3 text-sm font-bold text-amber-800">{USER_UI_MENTOR_REVIEWS_LOAD_FAILED}</p> : null}
+              <MentorReviewList mentorId={mentorId} />
               {viewer?.role === "student" ? (
-                <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
-                  <ReviewEligibilityBanner eligibilityKnown={false} eligible={false} />
-                  <ReviewWritePanel
-                    disabled
-                    disabledReason="리뷰 자격·저장 API가 연결되면 활성화됩니다. 동일 멘토 2회 연속 결제 성공 전에는 작성할 수 없어요."
+                <div className="mt-6 space-y-4 border-t border-slate-100 pt-5">
+                  <ReviewEligibilityBanner
+                    eligibilityKnown={reviewEligibility != null}
+                    eligible={reviewEligibility?.eligible === true}
+                  />
+                  <ReviewWriteModal
+                    mentorId={mentorId}
+                    mentorName={display.displayName}
+                    initialEligible={reviewEligibility?.eligible === true}
+                    initialReason={reviewEligibility && !reviewEligibility.eligible ? reviewEligibility.reason : undefined}
                   />
                   <ReviewReportButton disabledReason="리뷰 신고 접수 API는 별도 연동이 필요합니다. 커뮤니티 신고는 해당 게시 화면을 이용해 주세요." />
                 </div>

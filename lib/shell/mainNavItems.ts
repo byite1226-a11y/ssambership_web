@@ -46,6 +46,7 @@ export const mentorMainNav: MainNavItem[] = [
   { href: "/community", label: "커뮤니티" },
   { href: "/custom-request", label: "맞춤의뢰" },
   { href: "/mentor/payouts", label: "정산/수익" },
+  { href: "/mentor/reviews", label: "리뷰" },
   { href: "/mentor/profile", label: "프로필" },
 ];
 

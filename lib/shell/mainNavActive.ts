@@ -60,6 +60,8 @@ export function isMainNavItemActive(pathname: string, itemHref: string, audience
       return p === "/mypage" || p.startsWith("/mypage/");
     case "/mentor/payouts":
       return p === "/mentor/payouts" || p.startsWith("/mentor/payouts/");
+    case "/mentor/reviews":
+      return p === "/mentor/reviews" || p.startsWith("/mentor/reviews/");
     case "/mentor/profile":
       return p === "/mentor/profile" || p.startsWith("/mentor/profile/");
     case "/admin":

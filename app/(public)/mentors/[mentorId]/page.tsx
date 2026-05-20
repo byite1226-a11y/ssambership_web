@@ -4,6 +4,7 @@ import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { loadPublicMentorBundle } from "@/lib/mentor/publicMentorBundle";
 import { createClient } from "@/lib/supabase/server";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
 type Props = {
   params: Promise<{ mentorId: string }>;
 };
@@ -18,6 +19,11 @@ export default async function MentorDetailByIdPage(props: Props) {
     user && profile?.role
       ? { userId: user.id, role: profile.role as "student" | "mentor" | "admin" }
       : null;
+
+  let reviewEligibility = null;
+  if (viewer?.role === "student" && viewer.userId) {
+    reviewEligibility = await checkReviewEligibility(supabase, viewer.userId, mentorId);
+  }
 
   if (bundle.kind === "not_found") {
     return (
@@ -70,7 +76,14 @@ export default async function MentorDetailByIdPage(props: Props) {
       loadingState=""
       errorState=""
     >
-      <PublicMentorDetailBody mentorId={mentorId} userRow={bundle.userRow} display={display} bundle={bundle} viewer={viewer} />
+      <PublicMentorDetailBody
+        mentorId={mentorId}
+        userRow={bundle.userRow}
+        display={display}
+        bundle={bundle}
+        viewer={viewer}
+        reviewEligibility={reviewEligibility}
+      />
     </PageScaffold>
   );
 }
