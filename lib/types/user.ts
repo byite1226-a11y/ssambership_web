@@ -8,6 +8,7 @@ export type UserRow = {
   role: AppRole;
   status: string;
   full_name: string | null;
+  display_name?: string | null;
   nickname: string | null;
   email: string | null;
   grade_level: string | null;

@@ -25,10 +25,17 @@ export function MentorCard(props: {
   const profileHref = `/mentors/${card.mentorId}`;
 
   const statItems = [
-    { label: "?? ??", value: card.stats.totalAnswers != null ? `${card.stats.totalAnswers}` : "?" },
-    { label: "?? ??", value: card.stats.connectedStudents != null ? `${card.stats.connectedStudents}` : "?" },
-    { label: "?? ??", value: card.stats.avgResponseLabel },
-    { label: "???", value: card.stats.satisfactionLabel },
+    {
+      label: "누적 답변",
+      value: card.stats.totalAnswers != null ? card.stats.totalAnswers.toLocaleString("ko-KR") : "—",
+    },
+    {
+      label: "연결 학생",
+      value:
+        card.stats.connectedStudents != null ? card.stats.connectedStudents.toLocaleString("ko-KR") : "—",
+    },
+    { label: "평균 응답", value: card.stats.avgResponseLabel },
+    { label: "만족도", value: card.stats.satisfactionLabel },
   ];
 
   return (
@@ -58,7 +65,7 @@ export function MentorCard(props: {
               {verified ? (
                 <span className="inline-flex items-center gap-0.5 rounded-md bg-[#1A56DB] px-1.5 py-0.5 text-[10px] font-black text-white">
                   <BadgeCheck className="h-3 w-3" />
-                  ??
+                  인증
                 </span>
               ) : null}
             </div>
@@ -107,7 +114,7 @@ export function MentorCard(props: {
           href={profileHref}
           className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#1A56DB] px-4 text-sm font-extrabold text-white transition hover:bg-[#1648c0]"
         >
-          ??? ??
+          프로필 보기
         </Link>
       </div>
     </article>

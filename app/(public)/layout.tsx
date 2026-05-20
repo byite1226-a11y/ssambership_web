@@ -20,7 +20,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
   }
 
   return (
-    <AppShell area="public" sessionRole={sessionRole}>
+    <AppShell area="public" sessionRole={sessionRole} userProfile={profile}>
       {children}
     </AppShell>
   );

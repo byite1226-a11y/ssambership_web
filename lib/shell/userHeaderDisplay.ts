@@ -22,9 +22,14 @@ function isRoleLikeName(value: string, role: AppRole): boolean {
   return false;
 }
 
-/** nickname → full_name → email 앞부분 → "사용자" */
+/** nickname → display_name → full_name → email 앞부분 → "사용자" */
 export function resolveShellUserDisplayName(profile: UserRow | null, role: AppRole): string {
-  const candidates = [profile?.nickname, profile?.full_name, profile?.email?.split("@")[0] ?? null];
+  const candidates = [
+    profile?.nickname,
+    profile?.display_name,
+    profile?.full_name,
+    profile?.email?.split("@")[0] ?? null,
+  ];
   for (const c of candidates) {
     const t = (c ?? "").trim();
     if (t && !isRoleLikeName(t, role)) return t;

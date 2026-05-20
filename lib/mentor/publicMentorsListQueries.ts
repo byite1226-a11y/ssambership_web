@@ -7,6 +7,7 @@ import { mentorIsVerified } from "@/lib/mentor/mentorPublicProfileDisplay";
 import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
 import { cashKrwForSubscribeTier } from "@/lib/subscribe/subscribePlanCatalog";
 type Row = Record<string, unknown>;
 
@@ -217,19 +218,7 @@ function formatMoney(n: number): string {
 }
 
 function priceKrwFromRow(row: Row | null, tier: SubscribePlanTier): number {
-  if (!row) return cashKrwForSubscribeTier(tier);
-  for (const k of ["amount_cents", "price_cents", "monthly_price_cents"] as const) {
-    const v = row[k];
-    if (typeof v === "number" && Number.isFinite(v) && v > 0) {
-      return Math.round(v / 100);
-    }
-  }
-  const parsed = parsePriceNumber(row);
-  if (parsed != null) {
-    if (parsed >= 10_000) return Math.round(parsed);
-    return Math.round(parsed);
-  }
-  return cashKrwForSubscribeTier(tier);
+  return cashKrwFromPlanRow(row, tier);
 }
 
 function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPrice[]; minPriceKrw: number | null } {
