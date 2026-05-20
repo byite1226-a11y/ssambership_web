@@ -1,32 +1,38 @@
 import type { ReactNode } from "react";
-import type { CommunityNavActive, CommunityRightAsidePromo } from "@/components/community/CommunityNavTypes";
+import type { CommunityBoardPostCard, CommunityHashtagRow } from "@/lib/community/communityBoardQueries";
+import type {
+  CommunityNavActive,
+  CommunityPopularMentor,
+  CommunityRightAsidePromo,
+  CommunitySidebarStats,
+} from "@/components/community/CommunityNavTypes";
 import { CommunityLeftSidebar } from "@/components/community/CommunityLeftSidebar";
 import { CommunityRightSidebar } from "@/components/community/CommunityRightSidebar";
 
 type Props = {
   activeNav: CommunityNavActive;
-  hero: ReactNode;
   children: ReactNode;
-  /** 기본: 게시판. 게시판 목록·상세는 `board`, 숏폼 목록·상세는 `shortform` */
   rightAsidePromo?: CommunityRightAsidePromo;
+  sidebarStats?: CommunitySidebarStats;
+  hashtags?: CommunityHashtagRow[];
+  popularPosts?: CommunityBoardPostCard[];
+  popularMentors?: CommunityPopularMentor[];
+  /** @deprecated hero slot — 홈은 피드만 사용 */
+  hero?: ReactNode;
 };
 
 export function CommunityLayoutShell(props: Props) {
-  const promo = props.rightAsidePromo ?? "board";
+  const promo = props.rightAsidePromo ?? "home";
   return (
-    <div className="min-h-[60vh] bg-slate-50/80 pb-16 pt-6">
+    <div className="min-h-[60vh] bg-slate-50/80 pb-20 pt-6">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(0,260px)] lg:items-start">
-          <aside className="order-2 min-w-0 lg:order-1 lg:sticky lg:top-6 lg:self-start">
-            <CommunityLeftSidebar active={props.activeNav} />
-          </aside>
-          <main className="order-1 min-w-0 space-y-6 lg:order-2">
+        <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)_280px] lg:items-start">
+          <CommunityLeftSidebar active={props.activeNav} stats={props.sidebarStats} hashtags={props.hashtags} />
+          <main className="min-w-0 space-y-4">
             {props.hero}
             {props.children}
           </main>
-          <aside className="order-3 min-w-0 lg:sticky lg:top-6 lg:self-start">
-            <CommunityRightSidebar promo={promo} />
-          </aside>
+          <CommunityRightSidebar promo={promo} popularPosts={props.popularPosts} popularMentors={props.popularMentors} />
         </div>
       </div>
     </div>

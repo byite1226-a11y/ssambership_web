@@ -1,61 +1,49 @@
-import { CommunityHomeContent } from "@/components/community/CommunityHomeContent";
-import { CommunityHomeIntroStrip } from "@/components/community/CommunityHomeIntroStrip";
+import { Suspense } from "react";
+import { CommunityHomeFeed } from "@/components/community/CommunityHomeFeed";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
-import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
-import { listBoardPosts, listShortformPosts } from "@/lib/community/communityQueries";
+import type { CommunityPostCategorySlug } from "@/lib/community/communityBoardConstants";
+import { listCommunityBoardPosts, listPopularHashtags, listWeeklyPopularPosts } from "@/lib/community/communityBoardQueries";
+import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
 
-function communityHomeDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
-  if (role === "mentor") {
-    return "멘토의 짧은 영상(숏폼)과 게시판을 한곳에서 탐색할 수 있어요. 작성은 멘토 메뉴의 커뮤니티 작성에서 이어가면 됩니다.";
-  }
-  if (!loggedIn) {
-    return "멘토의 짧은 영상(숏폼)과 게시글을 둘러볼 수 있어요. 댓글·스크랩은 로그인 후 이용할 수 있습니다.";
-  }
-  return "멘토의 짧은 영상과 게시글을 둘러보고, 댓글과 스크랩으로 학습 팁을 모아보세요. 좋은 콘텐츠는 스크랩하고, 문제가 있으면 신고해 주세요.";
-}
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
-export default async function CommunityLandingPage() {
-  const { user, profile } = await getServerUserWithProfile();
-  const loggedIn = user != null;
-  const role = profile?.role;
+export default async function CommunityLandingPage(props: Props) {
+  const sp = (await props.searchParams) ?? {};
+  const catRaw = sp.category;
+  const category = (typeof catRaw === "string" ? catRaw : "all") as CommunityPostCategorySlug;
 
+  const { user } = await getServerUserWithProfile();
   const supabase = await createClient();
-  const [sh, br] = await Promise.all([listShortformPosts(supabase, 12), listBoardPosts(supabase, 16)]);
-  if (sh.error) console.error("[community] listShortformPosts", sh.error);
-  if (br.error) console.error("[community] listBoardPosts", br.error);
+
+  const [feed, tags, popular, mentors] = await Promise.all([
+    listCommunityBoardPosts(supabase, { category, limit: 12 }),
+    listPopularHashtags(supabase, 6),
+    listWeeklyPopularPosts(supabase, 3),
+    loadCommunityPopularMentors(supabase),
+  ]);
+
+  if (feed.error) console.error("[community] feed", feed.error);
 
   return (
     <CommunityLayoutShell
       activeNav="home"
-      hero={
-        <CommunityPageHero
-          eyebrow="커뮤니티"
-          title="함께하는 학습 공간"
-          description={communityHomeDescription(role, loggedIn)}
-          primaryAction={buildCommunityHeroPrimaryAction({
-            surface: "home",
-            role,
-            loggedIn,
-            nextPath: "/community",
-          })}
-        />
-      }
+      rightAsidePromo="home"
+      sidebarStats={communitySidebarStatsForUser(user?.id ?? null)}
+      hashtags={tags.rows}
+      popularPosts={popular.posts}
+      popularMentors={mentors}
     >
-      <div className="space-y-6">
-        <CommunityHomeIntroStrip />
-        <CommunityHomeContent
-          shortRows={sh.rows}
-          shortFetchFailed={Boolean(sh.error)}
-          boardRows={br.rows}
-          boardFetchFailed={Boolean(br.error)}
-          viewerRole={role}
-          loggedIn={loggedIn}
-        />
-      </div>
+      <header className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <h1 className="text-xl font-black text-slate-900">{"\uC258\uBC84\uC2ED \uCEE4\uBAE0\uB2C8\uD2F0"}</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          {"\uD559\uC2B5\uBC95, \uB0B4\uC2E0, \uC9C4\uB85C \uC774\uC57C\uAE30\uB97C \uB098\uB204\uACE0 \uBA58\uD1A0\uC640 \uC5F0\uACB0\uD574 \uBCF4\uC138\uC694."}
+        </p>
+      </header>
+      <Suspense fallback={<p className="text-sm text-slate-500">{"\uBD88\uB7EC\uC624\uB294 \uC911\u2026"}</p>}>
+        <CommunityHomeFeed initialPosts={feed.posts} initialCursor={feed.nextCursor} initialCategory={category} />
+      </Suspense>
     </CommunityLayoutShell>
   );
 }

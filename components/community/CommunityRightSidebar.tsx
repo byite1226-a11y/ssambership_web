@@ -1,83 +1,71 @@
 import Link from "next/link";
-import type { CommunityRightAsidePromo } from "@/components/community/CommunityNavTypes";
+import type { CommunityBoardPostCard } from "@/lib/community/communityBoardQueries";
+import type { CommunityPopularMentor, CommunityRightAsidePromo } from "@/components/community/CommunityNavTypes";
 
-/** 실데이터 연결 후 `true` 로 전환해 주간 랭킹 패널을 노출하세요 */
-const WEEKLY_CREATOR_SIDEBAR_ENABLED = false;
+const PRIMARY = "#1A56DB";
 
-function boardLines(): string[] {
-  return [
-    "많이 읽힌 게시글과 댓글이 활발한 주제를 확인해 보세요.",
-    "공부법, 해설, 후기, 학습 팁을 게시글로 나눠볼 수 있어요.",
-  ];
-}
-
-function shortformLines(): string[] {
-  return ["짧은 영상으로 핵심만 훑어보기", "탭 전환으로 추천·최신·인기를 나눠 볼 수 있어요"];
-}
-
-export function CommunityRightSidebar(props: { promo: CommunityRightAsidePromo }) {
-  if (props.promo === "board") {
-    return (
-      <div className="space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-extrabold text-slate-900">인기 주제</h3>
-          <ul className="mt-3 space-y-2 text-sm text-slate-700">
-            {boardLines().map((t) => (
-              <li key={t} className="text-xs leading-relaxed text-slate-600">
-                {t}
-              </li>
-            ))}
-          </ul>
-          <Link
-            href="/community/board"
-            className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-          >
-            게시판 보기
-          </Link>
-        </section>
-
-        {WEEKLY_CREATOR_SIDEBAR_ENABLED ? (
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-extrabold text-slate-900">주간 인기 멘토·크리에이터</h3>
-            <p className="mt-2 text-xs font-semibold text-slate-700">인기 멘토 데이터 준비 중</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              활동이 쌓이면 멘토·크리에이터 랭킹을 이 영역에 표시할 예정이에요.
-            </p>
-          </section>
-        ) : null}
-      </div>
-    );
-  }
+export function CommunityRightSidebar(props: {
+  promo: CommunityRightAsidePromo;
+  popularPosts?: CommunityBoardPostCard[];
+  popularMentors?: CommunityPopularMentor[];
+}) {
+  const posts = props.popularPosts ?? [];
+  const mentors = props.popularMentors ?? [];
 
   return (
-    <div className="space-y-4">
+    <aside className="w-full space-y-4 lg:w-[280px]" aria-label={"\uCEE4\uBAE0\uB2C8\uD2F0 \uC0AC\uC774\uB4DC"}>
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-extrabold text-slate-900">인기 숏폼 탐색</h3>
-        <p className="mt-2 text-xs leading-relaxed text-slate-600">
-          실시간 랭킹 연결 전이라, 우선 목록 화면에서 인기 순·최신 영상을 둘러보는 동선을 안내해요.
-        </p>
-        <ul className="mt-3 space-y-2 text-sm text-slate-700">
-          {shortformLines().map((t) => (
-            <li key={t} className="leading-snug">
-              {t}
-            </li>
-          ))}
-        </ul>
-        <Link
-          href="/community/shortform"
-          className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-100"
-        >
-          숏폼 목록 보기
+        <h3 className="text-sm font-extrabold text-slate-900">{"\uC778\uAE30 \uBA58\uD1A0 \uB791\uD0B9"}</h3>
+        <ol className="mt-3 space-y-2">
+          {mentors.length ? (
+            mentors.slice(0, 5).map((m) => (
+              <li key={m.id}>
+                <Link href={`/mentors/${m.id}`} className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-slate-50">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black text-white" style={{ backgroundColor: PRIMARY }}>
+                    {m.rank}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-slate-900">{m.name}</span>
+                    {m.subject ? <span className="block truncate text-[10px] text-slate-500">{m.subject}</span> : null}
+                  </span>
+                </Link>
+              </li>
+            ))
+          ) : (
+            <li className="text-xs text-slate-500">{"\uBA58\uD1A0 \uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\uC774\uC5D0\uC694."}</li>
+          )}
+        </ol>
+        <Link href="/mentors" className="mt-3 inline-flex text-xs font-bold text-[#1A56DB] hover:underline">
+          {"\uBA58\uD1A0 \uCC3E\uAE30 \u2192"}
         </Link>
       </section>
 
-      {WEEKLY_CREATOR_SIDEBAR_ENABLED ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-extrabold text-slate-900">주간 인기 멘토·크리에이터</h3>
-          <p className="mt-2 text-xs font-semibold text-slate-700">인기 멘토 데이터 준비 중</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">활동이 쌓이면 멘토·크리에이터 랭킹을 이 영역에 표시할 예정이에요.</p>
-        </section>
-      ) : null}
-    </div>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-extrabold text-slate-900">{"\uC774\uBC88 \uC8FC \uC778\uAE30 \uAC8C\uC2DC\uAE00"}</h3>
+        <ul className="mt-3 space-y-2">
+          {posts.slice(0, 3).map((p, i) => (
+            <li key={p.id}>
+              <Link href={`/community/board/${p.id}`} className="block rounded-lg p-1 hover:bg-slate-50">
+                <span className="text-[10px] font-bold text-[#1A56DB]">TOP {i + 1}</span>
+                <p className="line-clamp-2 text-xs font-bold text-slate-800">{p.title}</p>
+                <p className="text-[10px] text-slate-500">
+                  {"\uC870\uD68C"} {p.viewCount} {"\u00B7"} {"\uC88B\uC544\uC694"} {p.likeCount}
+                </p>
+              </Link>
+            </li>
+          ))}
+          {!posts.length ? <li className="text-xs text-slate-500">{"\uC778\uAE30 \uAE00\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}</li> : null}
+        </ul>
+      </section>
+
+      <Link
+        href={props.promo === "shortform" ? "/community/shortform" : "/community/new"}
+        className="block rounded-2xl p-4 text-center text-white shadow-md"
+        style={{ backgroundColor: PRIMARY }}
+      >
+        <p className="text-sm font-extrabold">{"\uC877\uD3FC \uC5C5\uB85C\uB4DC"}</p>
+        <p className="mt-1 text-xs opacity-90">{"\uC9E7\uC740 \uD559\uC2B5 \uC601\uC0C1\uC744 \uC62C\uB824 \uBCF4\uC138\uC694."}</p>
+      </Link>
+    </aside>
   );
 }

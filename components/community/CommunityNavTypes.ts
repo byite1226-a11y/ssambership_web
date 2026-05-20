@@ -1,4 +1,23 @@
-export type CommunityNavActive = "home" | "board" | "shortform" | "me" | "none";
+export type CommunityNavActive =
+  | "home"
+  | "board"
+  | "shortform"
+  | "me"
+  | "my-posts"
+  | "scraps"
+  | "follows"
+  | "none";
 
-/** 우측 패널 단일 CTA: 게시판 또는 숏폼으로 유도 */
-export type CommunityRightAsidePromo = "board" | "shortform";
+export type CommunityRightAsidePromo = "board" | "shortform" | "home";
+
+export type CommunitySidebarStats = {
+  points: number;
+  badges: number;
+};
+
+export type CommunityPopularMentor = {
+  id: string;
+  name: string;
+  rank: number;
+  subject?: string | null;
+};
