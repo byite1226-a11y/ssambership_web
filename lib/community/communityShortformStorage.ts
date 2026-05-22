@@ -5,6 +5,7 @@ import {
   SHORTFORM_VIDEO_BUCKET,
   SHORTFORM_VIDEO_MAX_BYTES,
 } from "@/lib/community/communityShortformConstants";
+import { createSignedStorageUrl } from "@/lib/storage/signedStorageUrl";
 
 export async function uploadShortformVideo(
   supabase: SupabaseClient,
@@ -22,8 +23,7 @@ export async function uploadShortformVideo(
     upsert: false,
   });
   if (error) return { url: null, error: error.message };
-  const { data } = supabase.storage.from(SHORTFORM_VIDEO_BUCKET).getPublicUrl(path);
-  return { url: data.publicUrl ?? null, error: null };
+  return createSignedStorageUrl(supabase, SHORTFORM_VIDEO_BUCKET, path);
 }
 
 export async function uploadShortformThumbnail(
@@ -39,6 +39,5 @@ export async function uploadShortformThumbnail(
     upsert: false,
   });
   if (error) return { url: null, error: error.message };
-  const { data } = supabase.storage.from(SHORTFORM_THUMB_BUCKET).getPublicUrl(path);
-  return { url: data.publicUrl ?? null, error: null };
+  return createSignedStorageUrl(supabase, SHORTFORM_THUMB_BUCKET, path);
 }

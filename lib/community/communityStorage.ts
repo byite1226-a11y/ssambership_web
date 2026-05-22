@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 
+import { createSignedStorageUrl } from "@/lib/storage/signedStorageUrl";
+
 export const COMMUNITY_POST_IMAGES_BUCKET = "community-post-images";
 
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -37,8 +39,9 @@ export async function uploadCommunityPostImages(
       upsert: false,
     });
     if (error) return { urls: [], error: error.message };
-    const { data } = supabase.storage.from(COMMUNITY_POST_IMAGES_BUCKET).getPublicUrl(path);
-    if (data?.publicUrl) urls.push(data.publicUrl);
+    const signed = await createSignedStorageUrl(supabase, COMMUNITY_POST_IMAGES_BUCKET, path);
+    if (signed.error) return { urls: [], error: signed.error };
+    if (signed.url) urls.push(signed.url);
   }
   return { urls, error: null };
 }

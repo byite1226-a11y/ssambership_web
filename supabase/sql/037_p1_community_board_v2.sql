@@ -196,7 +196,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values (
   'community-post-images',
   'community-post-images',
-  true,
+  false,
   5242880,
   array['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[]
 )

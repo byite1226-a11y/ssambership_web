@@ -16,11 +16,8 @@ function errQ(msg: string) {
 }
 
 export async function submitAdminNoticeDraft(formData: FormData) {
-  await requireRole("admin");
+  const { user } = await requireRole("admin");
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Heart, Share2 } from "lucide-react";
+import { AppToast } from "@/components/ui/AppToast";
 
 export function MentorDetailHeaderActions(props: {
   mentorId: string;
@@ -12,6 +13,7 @@ export function MentorDetailHeaderActions(props: {
 }) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(props.initialFavorited);
+  const [toast, setToast] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const loginHref = `/login?next=${encodeURIComponent(`/mentors/${props.mentorId}`)}`;
 
@@ -58,13 +60,15 @@ export function MentorDetailHeaderActions(props: {
         return;
       }
       await navigator.clipboard.writeText(url);
-      window.alert("링크가 복사되었어요.");
+      setToast("링크가 복사되었어요.");
     } catch {
       /* cancelled */
     }
   };
 
   return (
+    <>
+    {toast ? <AppToast message={toast} onDismiss={() => setToast(null)} /> : null}
     <div className="flex shrink-0 flex-wrap items-center gap-2">
       <button
         type="button"
@@ -88,5 +92,6 @@ export function MentorDetailHeaderActions(props: {
         찜하기 {favCount > 0 ? favCount.toLocaleString("ko-KR") : ""}
       </button>
     </div>
+    </>
   );
 }

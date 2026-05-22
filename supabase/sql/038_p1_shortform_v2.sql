@@ -44,7 +44,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values (
   'shortform-videos',
   'shortform-videos',
-  true,
+  false,
   524288000,
   array['video/mp4', 'video/quicktime', 'video/webm']::text[]
 )
@@ -57,7 +57,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values (
   'shortform-thumbnails',
   'shortform-thumbnails',
-  true,
+  false,
   5242880,
   array['image/jpeg', 'image/png', 'image/webp']::text[]
 )
