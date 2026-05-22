@@ -11,7 +11,7 @@ import {
   CUSTOM_REQUEST_BANNED_WARNING,
   findBannedPhrase,
 } from "@/lib/customRequest/bannedPhrases";
-import { POST_ATTACHMENT_MAX_FILES } from "@/lib/customRequest/postAttachmentFiles";
+import { POST_ATTACHMENT_MAX_FILES } from "@/lib/customRequest/postAttachmentConstants";
 
 const PRIMARY = "#1A56DB";
 

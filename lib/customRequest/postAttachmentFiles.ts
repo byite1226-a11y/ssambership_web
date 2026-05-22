@@ -4,11 +4,12 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { inferStorageFileExtension } from "@/lib/customRequest/orderDeliverableFiles";
 
-export const POST_ATTACHMENT_STORAGE_BUCKET = "custom-request-post-attachments" as const;
-
-/** 의뢰 등록 첨부: 파일당 최대 50MB */
-export const POST_ATTACHMENT_MAX_FILE_BYTES = 50 * 1024 * 1024;
-export const POST_ATTACHMENT_MAX_FILES = 3;
+export {
+  POST_ATTACHMENT_MAX_FILE_BYTES,
+  POST_ATTACHMENT_MAX_FILES,
+  POST_ATTACHMENT_STORAGE_BUCKET,
+} from "@/lib/customRequest/postAttachmentConstants";
+import { POST_ATTACHMENT_MAX_FILES, POST_ATTACHMENT_STORAGE_BUCKET } from "@/lib/customRequest/postAttachmentConstants";
 
 const ORDER_ID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** object key 2nd segment: `{timestamp}-{8hex}.ext` — ASCII */
