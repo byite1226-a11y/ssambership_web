@@ -105,8 +105,8 @@ export function threadStatusListLabel(thread: Row): {
   tone: "amber" | "emerald" | "blue";
 } {
   const w = readQuestionThreadWorkflowStatus(thread);
-  if (w === "confirmed") return { label: "답변완료", tone: "emerald" };
-  if (w === "answered") return { label: "확인필요", tone: "blue" };
+  if (w === "confirmed") return { label: "완료", tone: "emerald" };
+  if (w === "answered") return { label: "답변도착", tone: "blue" };
   return { label: "답변대기", tone: "amber" };
 }
 

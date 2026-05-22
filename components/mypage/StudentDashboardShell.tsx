@@ -21,6 +21,7 @@ type Props = {
   profile: ProfileLike | null;
   profileLoadError: string | null;
   bundle: BundleLike;
+  cashBalanceKrw?: number;
   children: React.ReactNode;
 };
 
@@ -30,11 +31,13 @@ export function StudentDashboardShell({
   profile,
   profileLoadError,
   bundle,
+  cashBalanceKrw = 0,
   children,
 }: Props) {
   const name = profile?.full_name?.trim() || profile?.nickname?.trim() || user?.email || "—";
-  const sub = [profile?.email?.trim() || user?.email, profile?.grade_level].filter(Boolean).join(" · ");
-  const cashVal = bundle?.payments?.valueText || "0";
+  const emailLine = profile?.email?.trim() || user?.email || "";
+  const schoolLine = profile?.grade_level?.trim() || "";
+  const paymentCount = bundle?.payments?.valueText || "0";
 
   return (
     <div className="max-w-[1320px] mx-auto px-4 py-8 antialiased">
@@ -56,7 +59,12 @@ export function StudentDashboardShell({
                     학생
                   </span>
                 </div>
-                {sub ? <p className="mt-1 text-xs text-slate-500 font-medium truncate leading-tight">{sub}</p> : null}
+                {emailLine ? (
+                  <p className="mt-1 text-xs text-slate-500 font-medium truncate leading-tight">{emailLine}</p>
+                ) : null}
+                {schoolLine ? (
+                  <p className="text-xs text-slate-500 font-medium truncate leading-tight">{schoolLine}</p>
+                ) : null}
               </div>
             </div>
             <Link href="/mypage" className="text-xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-0.5 select-none">
@@ -96,7 +104,7 @@ export function StudentDashboardShell({
               <div className="flex items-center gap-3">
                 💰 <span>내 캐시</span>
               </div>
-              <span className="text-xs font-semibold text-slate-400">{cashVal}건</span>
+              <span className="text-xs font-semibold text-slate-400">{paymentCount}건</span>
             </Link>
             <Link 
               href="/question-room" 
@@ -161,12 +169,16 @@ export function StudentDashboardShell({
           <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">내 캐시</p>
-              <h3 className="text-3xl font-black text-slate-900 mt-2 flex items-baseline gap-1">
-                {cashVal} <span className="text-sm font-semibold text-slate-400">건</span>
+              <h3 className="mt-2 text-3xl font-black text-[#1A56DB]">
+                {cashBalanceKrw.toLocaleString("ko-KR")}
+                <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
               </h3>
-              <Link href="/wallet/ledger" className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-0.5 mt-2">
-                충전 내역 &gt;
-              </Link>
+              <p className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500">
+                <span>{paymentCount}건</span>
+                <Link href="/wallet/ledger" className="text-[#1A56DB] hover:underline">
+                  충전 내역 &gt;
+                </Link>
+              </p>
             </div>
             <Link href="/wallet/charge" className="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 transition shadow-sm w-full select-none text-center">
               캐시 충전하기
@@ -195,7 +207,7 @@ export function StudentDashboardShell({
           {/* Promotional / Soft info Card */}
           <section className="rounded-2xl border border-blue-100 bg-blue-50/30 p-6 flex flex-col justify-between min-h-[180px]">
             <div>
-              <h4 className="text-base font-extrabold text-blue-900 select-none">활동할수록<br />성장이 가속화돼요!</h4>
+              <h4 className="text-base font-extrabold text-blue-900 select-none">활동할수록<br />성장이 가속돼요!</h4>
               <p className="mt-1.5 text-xs text-blue-700 leading-relaxed">
                 질문, 답변, 리뷰를 남기고 쌤버십에서 더 많은 성장 경험을 쌓아보세요.
               </p>

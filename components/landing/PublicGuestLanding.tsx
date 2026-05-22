@@ -1,36 +1,27 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  Bookmark,
-  CreditCard,
-  MessageCircle,
-  MessageSquare,
-  Search,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowRight, CreditCard, MessageCircle, Search, TrendingUp } from "lucide-react";
 import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 
 const STATS = [
   { value: "30명+", label: "멘토" },
   { value: "1,200개+", label: "누적 답변" },
   { value: "98%", label: "학생 만족도" },
-  { value: "15분", label: "평균 답변 시간" },
+  { value: "15분", label: "평균 답변" },
 ] as const;
 
 const FEATURES = [
   {
-    icon: MessageSquare,
+    emoji: "💬",
     title: "질문 카드 누적",
     description: "단발성 Q&A가 아닌 같은 멘토와 질문을 쌓아가는 구조",
   },
   {
-    icon: Bookmark,
+    emoji: "📝",
     title: "연결노트",
     description: "멘토와 학생이 함께 만드는 장기 학습 기록",
   },
   {
-    icon: BadgeCheck,
+    emoji: "✅",
     title: "검증된 멘토",
     description: "대학교 재학 인증, 학생증 검수 완료된 멘토만 활동",
   },
@@ -184,8 +175,8 @@ export function PublicGuestLanding() {
                 key={f.title}
                 className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-[#1A56DB]/30 hover:shadow-md"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1A56DB]/10 text-[#1A56DB]">
-                  <f.icon className="h-6 w-6" strokeWidth={2} />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1A56DB]/10 text-2xl select-none">
+                  {f.emoji}
                 </div>
                 <h3 className="mt-4 text-lg font-black text-slate-900">{f.title}</h3>
                 <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{f.description}</p>

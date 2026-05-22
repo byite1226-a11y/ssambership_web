@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
+import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
+import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
 import { countActiveSubscriptionsForStudent } from "@/lib/mypage/studentActiveSubscriptions";
 import { MypageMetricLine } from "@/components/mypage/MypageMetricLine";
@@ -15,10 +17,12 @@ export default async function StudentMyPage() {
   }
 
   const supabase = await createClient();
-  const [bundle, activeSubs] = await Promise.all([
+  const [bundle, activeSubs, balance] = await Promise.all([
     loadStudentMypageBundle(supabase, user.id, profile, profileLoadError?.message ?? null),
     countActiveSubscriptionsForStudent(supabase, user.id),
+    fetchWalletBalanceByUserId(supabase, user.id),
   ]);
+  const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
 
   const activeMentorCount = activeSubs.error ? bundle.subscriptions.valueText : String(activeSubs.count);
 
@@ -36,12 +40,13 @@ export default async function StudentMyPage() {
       profile={profile}
       profileLoadError={profileLoadError?.message ?? null}
       bundle={bundle}
+      cashBalanceKrw={cashBalanceKrw}
     >
       <div className="space-y-6">
         <header>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">마이페이지</h1>
           <p className="mt-1 text-sm text-slate-500">
-            내 프로필, 구독, 질문방, 결제, 알림 현황을 한곣에서 보세요.
+            내 프로필, 구독, 질문방, 결제, 알림 현황을 한곳에서 보세요.
           </p>
         </header>
 

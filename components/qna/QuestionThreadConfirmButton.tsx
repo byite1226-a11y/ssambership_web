@@ -8,6 +8,8 @@ export function QuestionThreadConfirmButton(props: {
   roomId: string;
   threadId: string;
   onConfirmed?: () => void;
+  /** 카드 인라인용 컴팩트 버튼 */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -35,6 +37,22 @@ export function QuestionThreadConfirmButton(props: {
     } finally {
       setPending(false);
     }
+  }
+
+  if (props.compact) {
+    return (
+      <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+        {error ? <p className="mb-1 text-[10px] font-bold text-amber-800">{error}</p> : null}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => void handleConfirm()}
+          className="rounded-lg bg-[#1A56DB] px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {pending ? "처리 중…" : "확인하기"}
+        </button>
+      </div>
+    );
   }
 
   return (

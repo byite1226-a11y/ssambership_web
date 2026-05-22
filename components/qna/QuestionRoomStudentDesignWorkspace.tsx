@@ -215,7 +215,16 @@ export function QuestionRoomStudentDesignWorkspace(props: {
         : "플랜 확인 후 질문해 주세요.";
 
   const noteCards = useMemo(() => {
-    const cards: { id: string; tag: string; body: string; author: string; date: string; tone: string }[] = [];
+    const cards: {
+      id: string;
+      tag: string;
+      body: string;
+      author: string;
+      date: string;
+      tone: string;
+      statusLabel: string;
+      statusDone: boolean;
+    }[] = [];
     for (const n of props.notes.rows) {
       const body =
         (typeof n.body === "string" && n.body) ||
@@ -225,6 +234,10 @@ export function QuestionRoomStudentDesignWorkspace(props: {
       if (!body.trim()) continue;
       const authorId = messageAuthorId(n);
       const isStudent = authorId === props.currentUserId;
+      const rawStatus = String(n.status ?? n.note_status ?? n.state ?? "").toLowerCase();
+      const noteDone = ["done", "completed", "closed", "finished", "resolved"].some((s) =>
+        rawStatus.includes(s)
+      );
       cards.push({
         id: String(n.id ?? `${authorId}-${body.slice(0, 8)}`),
         tag: isStudent ? "멘토에게 요청" : "멘토가 요청",
@@ -232,6 +245,8 @@ export function QuestionRoomStudentDesignWorkspace(props: {
         author: isStudent ? "나" : roomMentorLabel(currentRoom ?? {}, props.mentorDisplays),
         date: formatMinutesAgo(n.updated_at ?? n.created_at),
         tone: isStudent ? "toMentor" : "fromMentor",
+        statusLabel: noteDone ? "완료" : "진행중",
+        statusDone: noteDone,
       });
     }
     return cards;
@@ -452,24 +467,29 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     const id = String(t.id);
                     const active = props.threadId === id || (!props.threadId && idx === 0);
                     const status = threadStatusListLabel(t);
+                    const workflow = readQuestionThreadWorkflowStatus(t);
+                    const questionNo = idx + 1;
                     const lastMsg = props.lastMessageByThreadId?.[id] ?? null;
                     const chip = threadSubjectChip(t, subjectChipsRoom);
                     const msgCount = props.messageCountsByThreadId?.[id] ?? 0;
                     const views = threadViewCount(t);
 
                     return (
-                      <Link
+                      <article
                         key={id}
-                        href={threadInRoomPath("/question-room", props.roomId, id)}
-                        scroll={false}
-                        className={`block rounded-xl border p-4 transition ${
+                        className={`rounded-xl border p-4 transition ${
                           active
                             ? "border-[#1A56DB]/40 bg-[#EEF4FF] shadow-sm ring-1 ring-[#1A56DB]/20"
                             : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm"
                         }`}
                       >
+                        <Link
+                          href={threadInRoomPath("/question-room", props.roomId, id)}
+                          scroll={false}
+                          className="block"
+                        >
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[11px] font-black text-[#1A56DB]">질문 {sortedThreads.length - idx}</span>
+                          <span className="text-[11px] font-black text-[#1A56DB]">질문 {questionNo}</span>
                           {chip.map((c) => (
                             <span
                               key={c}
@@ -499,7 +519,15 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                           </span>
                           <span>{formatMinutesAgo(t.updated_at ?? t.created_at)}</span>
                         </div>
-                      </Link>
+                        </Link>
+                        {workflow === "answered" ? (
+                          <QuestionThreadConfirmButton
+                            roomId={props.roomId}
+                            threadId={id}
+                            compact
+                          />
+                        ) : null}
+                      </article>
                     );
                   })}
                 </div>
@@ -637,7 +665,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
             className="rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-black text-slate-700 hover:bg-slate-50"
             onClick={() => setNewNoteOpen(true)}
           >
-            새 노트 작성
+            + 새 노트 작성
           </button>
         </div>
         <div className="mb-3 flex gap-2">
@@ -679,12 +707,23 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 >
                   {card.tag}
                 </span>
-                <p className="mt-2 line-clamp-3 text-[11px] font-medium leading-relaxed text-slate-700">
+                <p className="mt-2 line-clamp-2 text-[11px] font-medium leading-relaxed text-slate-700">
                   {card.body}
                 </p>
-                <p className="mt-2 text-[9px] font-bold text-slate-400">
-                  {card.author} · {card.date}
-                </p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-[9px] font-bold text-slate-400">
+                    {card.author} · {card.date}
+                  </p>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black ${
+                      card.statusDone
+                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                        : "bg-amber-50 text-amber-800 border border-amber-200"
+                    }`}
+                  >
+                    {card.statusLabel}
+                  </span>
+                </div>
               </article>
             ))
           )}
