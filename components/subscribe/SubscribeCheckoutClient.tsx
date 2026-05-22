@@ -127,7 +127,6 @@ export function SubscribeCheckoutClient(props: Props) {
                 <p className="mt-2 text-2xl font-black tabular-nums text-slate-900">{fmtCash(plan.cashKrw)}</p>
                 <p className="mt-1 text-xs text-slate-500">/ 월</p>
                 <p className="mt-3 text-sm font-semibold text-slate-700">{plan.weeklyLabel}</p>
-                <p className="mt-1 text-xs text-slate-500">{plan.priorityLabel}</p>
               </button>
             </li>
           );

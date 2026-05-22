@@ -71,6 +71,9 @@ export function roomDetailPath(roomHrefBase: string, roomId: string): string {
 }
 
 export function threadInRoomPath(roomHrefBase: string, roomId: string, threadId: string): string {
-  const roomPath = roomDetailPath(roomHrefBase, roomId);
-  return `${roomPath}?thread=${encodeURIComponent(threadId)}`;
+  return threadDetailPath(roomHrefBase, roomId, threadId);
+}
+
+export function threadDetailPath(roomHrefBase: string, roomId: string, threadId: string): string {
+  return `${roomDetailPath(roomHrefBase, roomId)}/thread/${encodeURIComponent(threadId)}`;
 }

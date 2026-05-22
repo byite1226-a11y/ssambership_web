@@ -1,4 +1,4 @@
-import { requireRole } from "@/lib/auth/routeGuard";
+import { requireWalletChargeAccess } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { parseWalletBalanceBreakdown } from "@/lib/cash/parseWalletBalanceKrw";
 import { loadWalletChargePageData } from "@/lib/cash/walletRouteData";
@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default async function WalletChargePage({ searchParams }: Props) {
-  const { user } = await requireRole("student");
+  const { user } = await requireWalletChargeAccess();
 
   const supabase = await createClient();
   const data = await loadWalletChargePageData(supabase, user.id);

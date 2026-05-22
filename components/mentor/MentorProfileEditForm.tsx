@@ -174,23 +174,17 @@ export function MentorProfileEditForm(props: {
                     </div>
                   </div>
                   <div>
-                    <label className={labelClass} htmlFor="grade">학번 <span className="ml-0.5 text-red-500">*</span></label>
+                    <label className={labelClass} htmlFor="grade">학번 (예: 22학번)</label>
                     <div className="relative mt-1.5">
-                      <select
+                      <input
                         id="grade"
                         name="grade"
-                        className={`${inputClass} appearance-none pr-10`}
+                        className={inputClass}
+                        placeholder="22학번"
                         value={formData.grade}
                         onChange={handleChange}
-                      >
-                        <option value="">학번/학년 선택</option>
-                        <option value="1학년">1학년</option>
-                        <option value="2학년">2학년</option>
-                        <option value="3학년">3학년</option>
-                        <option value="4학년">4학년</option>
-                        <option value="졸업">졸업</option>
-                      </select>
-                      <ChevronRight className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-slate-400" />
+                        maxLength={20}
+                      />
                     </div>
                   </div>
                 </div>

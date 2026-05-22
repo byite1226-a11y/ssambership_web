@@ -55,6 +55,21 @@ export async function requireRole(role: GuardRole): Promise<{ user: User; profil
   return { user, profile };
 }
 
+/** 캐시 충전 — 학생·멘토 (관리자 제외) */
+export async function requireWalletChargeAccess(): Promise<{ user: User; profile: UserRow | null }> {
+  const { user, profile } = await getServerUserWithProfile();
+  if (!user) {
+    redirect(await loginRedirectUrlForGuard("student"));
+  }
+  if (profile?.role === "admin") {
+    redirect(getPostLoginPath("admin"));
+  }
+  if (profile && profile.role !== "student" && profile.role !== "mentor") {
+    redirect(getPostLoginPath(profile.role));
+  }
+  return { user, profile };
+}
+
 /**
  * QnA 서버 액션: `actor`(student|mentor)는 **public.users.profile.role** 만 신뢰.
  * formData의 `name="actor"` 는 권한에 사용하지 말 것(클라이언트 변조 방지).

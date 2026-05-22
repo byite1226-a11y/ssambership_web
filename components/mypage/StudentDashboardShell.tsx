@@ -185,25 +185,6 @@ export function StudentDashboardShell({
             </Link>
           </section>
 
-          {/* Quick Shortcuts Card */}
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide">바로가기</h3>
-            <div className="space-y-1">
-              <Link href="/question-room" className="flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition duration-150">
-                <span>💬 내 질문 & 답변</span>
-                <span className="text-slate-400">&gt;</span>
-              </Link>
-              <Link href="/custom-request/orders" className="flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition duration-150">
-                <span>📋 맞춤의뢰 내역</span>
-                <span className="text-slate-400">&gt;</span>
-              </Link>
-              <Link href="/support/disputes" className="flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition duration-150">
-                <span>⚠️ 분쟁·환불 현황</span>
-                <span className="text-slate-400">&gt;</span>
-              </Link>
-            </div>
-          </section>
-
           {/* Promotional / Soft info Card */}
           <section className="rounded-2xl border border-blue-100 bg-blue-50/30 p-6 flex flex-col justify-between min-h-[180px]">
             <div>

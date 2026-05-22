@@ -30,7 +30,7 @@ const FEATURES = [
 const PLAN_BENEFITS: Record<string, string[]> = {
   limited: ["주 4개 신규 질문", "1:1 질문방 이용", "연결노트 기록"],
   standard: ["주 9개 신규 질문", "균형 잡힌 질문 한도", "연결노트 + 진행 관리"],
-  premium: ["질문 무제한(FUP)", "집중 멘토링", "연결노트 + 맞춤 피드백"],
+  premium: ["질문 무제한", "집중 멘토링", "연결노트 + 맞춤 피드백"],
 };
 
 const STEPS = [

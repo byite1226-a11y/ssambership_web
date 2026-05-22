@@ -1,6 +1,6 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { CommunityMeTabNav } from "@/components/community/CommunityMeTabNav";
 import { CommunityMeTabPanels, type CommunityMeActivityPayload } from "@/components/community/CommunityMeTabPanels";
+import { CommunityMeOverviewSections } from "@/components/community/CommunityMeOverviewSections";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
@@ -87,9 +87,11 @@ export default async function CommunityMePage(props: PageProps) {
           </p>
         </div>
 
-        <CommunityMeTabNav active={tab} />
-
-        <CommunityMeTabPanels tab={tab} loggedIn={loggedIn} role={role} loginNextPath={loginNextPath} activity={activity} />
+        {tab === "overview" ? (
+          <CommunityMeOverviewSections activity={activity} />
+        ) : (
+          <CommunityMeTabPanels tab={tab} loggedIn={loggedIn} role={role} loginNextPath={loginNextPath} activity={activity} />
+        )}
       </div>
     </CommunityLayoutShell>
   );

@@ -68,12 +68,12 @@ export function formatQuestionsRemainingLabel(
     ] as const) {
       const v = counterRow[k];
       if (typeof v === "number" && Number.isFinite(v)) {
-        if (tier === "premium" && v >= 999) return "무제한(FUP)";
+        if (tier === "premium" && v >= 999) return "질문 무제한";
         return `${v}회`;
       }
     }
   }
-  if (tier === "premium") return "무제한(FUP)";
+  if (tier === "premium") return "질문 무제한";
   if (tier === "standard") return "주 9회 (플랜 기준)";
   if (tier === "limited") return "주 4회 (플랜 기준)";
   return "—";

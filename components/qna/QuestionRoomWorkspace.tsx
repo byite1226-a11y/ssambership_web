@@ -106,6 +106,9 @@ export function QuestionRoomWorkspace(props: {
   draftMessageBody?: string;
   draftNoteBody?: string;
   formRevision?: string;
+  showChatPanel?: boolean;
+  backHref?: string | null;
+  threadDetailMode?: boolean;
 }) {
   const rev = props.formRevision ?? "0";
   const uid = props.currentUserId;
@@ -219,6 +222,9 @@ export function QuestionRoomWorkspace(props: {
         draftMessageBody={props.draftMessageBody}
         draftNoteBody={props.draftNoteBody}
         formRevision={rev}
+        showChatPanel={props.showChatPanel}
+        backHref={props.backHref}
+        threadDetailMode={props.threadDetailMode}
       />
     );
   }

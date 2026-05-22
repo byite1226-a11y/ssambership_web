@@ -41,7 +41,7 @@ function KindBadge(props: { kind: "board" | "shortform" }) {
   );
 }
 
-function MePostsList(props: { items: CommunityMePostListItem[] }) {
+export function MePostsList(props: { items: CommunityMePostListItem[] }) {
   if (props.items.length === 0) return null;
   return (
     <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/40">

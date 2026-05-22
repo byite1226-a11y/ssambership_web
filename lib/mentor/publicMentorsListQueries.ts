@@ -284,10 +284,12 @@ function gradeMatchesFilter(grades: MentorGradeFilter[], blob: string): boolean 
 function mentorTypeMatchesFilter(types: MentorTypeFilter[], blob: string): boolean {
   if (!types.length) return true;
   return types.some((t) => {
-    if (t === "현직교사") return /교사|교원|현직/.test(blob);
-    if (t === "전문강사") return /강사|전문/.test(blob);
-    if (t === "이대치대학대") return /이과|치대|학대|의대|한의|약대|수의/.test(blob);
-    if (t === "대학생멘토") return /대학|학번|재학|원생/.test(blob);
+    if (t === "메디컬계열") return /의대|한의|약대|수의|메디컬|간호|치대|메디컬계/.test(blob);
+    if (t === "교육학과") return /교육|교대|교원|교직|교육학/.test(blob);
+    if (t === "공대") return /공대|공학|기계|전자|컴공|화공|건축|토목|산공/.test(blob);
+    if (t === "경영경제대") return /경영|경제|상경|회계|금융|무역|경제대/.test(blob);
+    if (t === "문과대") return /문과|인문|국어|영어|사회|법학|정치|행정|언어|철학|역사/.test(blob);
+    if (t === "SKY") return /서울대|연세|고려|서연고|sky/.test(blob);
     return false;
   });
 }

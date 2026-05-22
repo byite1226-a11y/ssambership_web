@@ -17,7 +17,7 @@ export function MentorsListSidebar(props: {
           </li>
           <li className="flex gap-2">
             <span className="text-[#1A56DB]">•</span>
-            답변 우선순위는 요금제에 따라 다르게 적용됩니다
+            요금제에 따라 주간 질문 한도가 달라집니다
           </li>
           <li className="flex gap-2">
             <span className="text-[#1A56DB]">•</span>

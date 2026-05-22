@@ -14,6 +14,7 @@ export function isCashNavHref(href: string): boolean {
 }
 
 function isCashNavItem(item: MainNavItem): boolean {
+  if (item.href === "/wallet/charge") return false;
   if (isCashNavHref(item.href)) return true;
   const label = item.label.trim();
   return label === "캐시결제" || label === "캐시 충전" || label === "지갑";
@@ -45,6 +46,7 @@ export const mentorMainNav: MainNavItem[] = [
   { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰" },
   { href: "/community", label: "커뮤니티" },
   { href: "/wallet/charge", label: "캐시충전" },
+  { href: "/mentor/payouts", label: "정산" },
 ];
 
 export const adminMainNav: MainNavItem[] = [

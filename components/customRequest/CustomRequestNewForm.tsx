@@ -57,6 +57,17 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
 
   const bannedHit = useMemo(() => findBannedPhrase(`${subject}\n${body}`), [subject, body]);
   const bodyTooShort = body.trim().length > 0 && body.trim().length < 50;
+  const [showIncomplete, setShowIncomplete] = useState(false);
+
+  const incompleteFields = useMemo(() => {
+    const list: string[] = [];
+    if (!selectedCat) list.push("카테고리");
+    if (!subject.trim()) list.push("의뢰 제목");
+    if (body.trim().length < 50) list.push("의뢰 내용 (50자 이상)");
+    return list;
+  }, [selectedCat, subject, body]);
+
+  const canSubmit = !bannedHit && incompleteFields.length === 0;
 
   return (
     <div className="space-y-8 sm:space-y-10">
@@ -90,7 +101,9 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
 
               <FormSection step="1" title="카테고리 선택" hint="필수 · 하나를 선택해 주세요">
                 <input type="hidden" name="category" value={selectedCat} required={selectedCat.length > 0} />
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div
+                  className={`grid grid-cols-2 gap-3 sm:grid-cols-3 ${showIncomplete && !selectedCat ? "rounded-xl ring-2 ring-red-400 ring-offset-2" : ""}`}
+                >
                   {CATEGORIES.map((c) => {
                     const on = selectedCat === c;
                     return (
@@ -120,9 +133,12 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
                     maxLength={100}
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className={`mt-2 ${inputClass}`}
+                    className={`mt-2 ${inputClass} ${showIncomplete && !subject.trim() ? "border-red-400 ring-2 ring-red-200" : ""}`}
                     placeholder="한 줄로 요약 (최대 100자)"
                   />
+                  {showIncomplete && !subject.trim() ? (
+                    <p className="mt-1 text-xs font-semibold text-red-700">의뢰 제목을 입력해 주세요.</p>
+                  ) : null}
                 </label>
                 <label className="mt-6 block text-sm font-extrabold text-slate-900">
                   의뢰 내용
@@ -134,9 +150,16 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
                     maxLength={2000}
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
-                    className="mt-2 min-h-[14rem] w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium leading-relaxed placeholder-slate-400 focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35"
+                    className={`mt-2 min-h-[14rem] w-full resize-y rounded-xl border px-3 py-3 text-sm font-medium leading-relaxed placeholder-slate-400 focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 ${
+                      showIncomplete && body.trim().length < 50
+                        ? "border-red-400 ring-2 ring-red-200"
+                        : "border-slate-200"
+                    }`}
                     placeholder={BODY_PLACEHOLDER}
                   />
+                  {showIncomplete && body.trim().length < 50 ? (
+                    <p className="mt-1 text-xs font-semibold text-red-700">의뢰 내용은 50자 이상 입력해 주세요.</p>
+                  ) : null}
                   <span className="mt-1 block text-xs font-medium text-slate-500">
                     {body.trim().length}/2000자 (최소 50자)
                   </span>
@@ -232,23 +255,48 @@ export function CustomRequestNewForm(props: { errorMessage: string | null }) {
               </FormSection>
             </div>
 
-            <div className="flex flex-col gap-4 border-t border-slate-200/90 bg-slate-100/50 px-5 py-5 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-8 sm:py-6">
-              <button
-                type="submit"
-                name="intent"
-                value="draft"
-                className="min-h-[52px] rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-extrabold text-slate-800 hover:bg-slate-50"
-              >
-                임시저장
-              </button>
-              <FormSubmitButton
-                idleLabel="의뢰 등록하기"
-                pendingLabel="등록 중…"
-                name="intent"
-                value="submit"
-                disabled={Boolean(bannedHit) || body.trim().length < 50 || !selectedCat}
-                className="min-h-[52px] w-full shrink-0 rounded-2xl bg-[#1A56DB] px-8 py-3.5 text-sm font-extrabold text-white shadow-md hover:bg-blue-700 sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
-              />
+            <div className="flex flex-col gap-4 border-t border-slate-200/90 bg-slate-100/50 px-5 py-5 sm:px-8 sm:py-6">
+              {showIncomplete && incompleteFields.length > 0 ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                  <p className="font-extrabold">아래 항목을 완성해 주세요:</p>
+                  <ul className="mt-2 list-inside list-disc font-medium">
+                    {incompleteFields.map((f) => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+                <button
+                  type="submit"
+                  name="intent"
+                  value="draft"
+                  className="min-h-[52px] rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-extrabold text-slate-800 hover:bg-slate-50"
+                >
+                  임시저장
+                </button>
+                <div
+                  className="w-full sm:w-auto"
+                  onMouseEnter={() => {
+                    if (!canSubmit) setShowIncomplete(true);
+                  }}
+                >
+                  <FormSubmitButton
+                    idleLabel="의뢰 등록하기"
+                    pendingLabel="등록 중…"
+                    name="intent"
+                    value="submit"
+                    disabled={!canSubmit}
+                    onClick={(e) => {
+                      if (!canSubmit) {
+                        e.preventDefault();
+                        setShowIncomplete(true);
+                      }
+                    }}
+                    className="min-h-[52px] w-full shrink-0 rounded-2xl bg-[#1A56DB] px-8 py-3.5 text-sm font-extrabold text-white shadow-md hover:bg-blue-700 sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+              </div>
             </div>
           </form>
         </div>

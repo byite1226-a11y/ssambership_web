@@ -505,27 +505,6 @@ export default async function MentorCustomRequestDashboardPage() {
               </Link>
             </div>
 
-            {/* 빠른 메뉴 */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="text-[14px] font-black text-slate-900 mb-3">빠른 메뉴</h3>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { label: "의뢰 가이드", href: "#", emoji: "📋" },
-                  { label: "프로필 관리", href: "/mentor/profile/edit", emoji: "👤" },
-                  { label: "정산 관리", href: "/mentor/payouts", emoji: "💳" },
-                  { label: "알림 설정", href: "/notifications", emoji: "🔔" },
-                ].map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="flex flex-col items-center gap-1.5 rounded-lg p-2 hover:bg-slate-50 transition text-center"
-                  >
-                    <span className="text-[20px]">{item.emoji}</span>
-                    <span className="text-[10px] font-semibold text-slate-600 leading-tight">{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
           </aside>
         </div>
       </MentorCustomRequestWorkspaceLayout>

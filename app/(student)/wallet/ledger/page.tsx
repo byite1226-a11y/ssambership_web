@@ -12,7 +12,7 @@ type Props = { searchParams?: Promise<Record<string, string | string[] | undefin
 export default async function WalletLedgerPage(props: Props) {
   const { user, profile, error: profileLoadError } = await getServerUserWithProfile();
   if (profile?.role === "mentor") {
-    redirect("/mentor/dashboard");
+    redirect("/wallet/charge");
   }
   if (!user) {
     redirect(`/login/student?next=${encodeURIComponent("/wallet/ledger")}`);

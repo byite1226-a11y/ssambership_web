@@ -26,9 +26,9 @@ function SubscriptionCardSkeleton() {
 
 function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:bg-white">
-      <div className="flex gap-3 sm:gap-4">
-        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
+    <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 transition hover:border-slate-300 hover:bg-white">
+      <div className="flex gap-4 sm:gap-5">
+        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
           {item.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={item.photoUrl} alt="" className="h-full w-full object-cover" />
@@ -42,8 +42,8 @@ function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-extrabold text-slate-900">{item.mentorName}</h3>
-          <p className="mt-0.5 text-xs font-bold text-blue-700">{item.planLabel}</p>
+          <h3 className="truncate text-base font-extrabold text-slate-900">{item.mentorName}</h3>
+          <p className="mt-1 text-sm font-bold text-blue-700">{item.planLabel}</p>
           <dl className="mt-2 grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
             <div>
               <dt className="inline font-semibold text-slate-500">구독 시작 </dt>

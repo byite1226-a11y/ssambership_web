@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { QuestionRoomNewNoteModal } from "@/components/qna/QuestionRoomNewNoteModal";
 import {
+  ArrowLeft,
   BadgeCheck,
   CheckCircle2,
   Eye,
@@ -45,6 +46,7 @@ import { mentorSchoolLine, mentorSubjectChips } from "@/lib/mentor/mentorPublicP
 type Row = Record<string, unknown>;
 type SortKey = "newest" | "oldest";
 type NoteTab = "all" | "toMentor" | "fromMentor";
+type RightPanelTab = "chat" | "notes";
 
 function messageBody(m: Row): string {
   return (
@@ -116,6 +118,11 @@ export function QuestionRoomStudentDesignWorkspace(props: {
   draftMessageBody?: string;
   draftNoteBody?: string;
   formRevision?: string;
+  /** false: 방 목록 화면(채팅 패널 숨김, 연결노트만) */
+  showChatPanel?: boolean;
+  backHref?: string | null;
+  /** true: 중앙에 선택 질문 상세(목록 대신) */
+  threadDetailMode?: boolean;
 }) {
   const rev = props.formRevision ?? "0";
 
@@ -128,9 +135,11 @@ export function QuestionRoomStudentDesignWorkspace(props: {
   const mentorDisplay = mentorDisplayForRoom(currentRoom, props.mentorDisplays);
   const subCtx = props.subscriptionContext;
 
+  const showChatPanel = props.showChatPanel !== false;
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
   const [noteTab, setNoteTab] = useState<NoteTab>("all");
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>(showChatPanel ? "chat" : "notes");
   const [newQuestionOpen, setNewQuestionOpen] = useState(false);
   const [newNoteOpen, setNewNoteOpen] = useState(false);
   const [weeklyUsage, setWeeklyUsage] = useState<WeeklyUsageSnapshot | null>(null);
@@ -440,6 +449,33 @@ export function QuestionRoomStudentDesignWorkspace(props: {
           </header>
 
           <div className="flex min-h-0 flex-1 flex-col">
+            {props.threadDetailMode && selectedThread ? (
+              <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  {threadSubjectChip(selectedThread, subjectChipsRoom).map((c) => (
+                    <span
+                      key={c}
+                      className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[9px] font-bold text-slate-600"
+                    >
+                      {c}
+                    </span>
+                  ))}
+                  <span
+                    className={`ml-auto rounded-full border px-2 py-0.5 text-[9px] font-black ${threadStatusBadgeClass(threadStatusListLabel(selectedThread).tone)}`}
+                  >
+                    {threadStatusListLabel(selectedThread).label}
+                  </span>
+                </div>
+                <h2 className="mt-4 text-xl font-black text-slate-900">{threadTitleFromRow(selectedThread)}</h2>
+                <p className="mt-4 whitespace-pre-wrap text-sm font-medium leading-relaxed text-slate-700">
+                  {threadPreviewText(selectedThread, props.lastMessageByThreadId?.[String(selectedThread.id)] ?? null)}
+                </p>
+                <p className="mt-4 text-[11px] font-bold text-slate-400">
+                  등록 {formatMinutesAgo(selectedThread.created_at ?? selectedThread.updated_at)}
+                </p>
+              </div>
+            ) : (
+            <>
             <div className="flex shrink-0 items-center justify-between border-b border-slate-50 px-6 py-3">
               <h2 className="text-[14px] font-black text-slate-900">질문 목록</h2>
               <select
@@ -465,7 +501,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 <div className="space-y-3">
                   {sortedThreads.map((t, idx) => {
                     const id = String(t.id);
-                    const active = props.threadId === id || (!props.threadId && idx === 0);
+                    const active = props.threadId === id;
                     const status = threadStatusListLabel(t);
                     const workflow = readQuestionThreadWorkflowStatus(t);
                     const questionNo = idx + 1;
@@ -534,202 +570,248 @@ export function QuestionRoomStudentDesignWorkspace(props: {
               )}
             </div>
 
-            <div className="shrink-0 border-t border-slate-100 px-6 py-5">
-              <button
-                type="button"
-                disabled={weeklyUsage != null && !weeklyUsage.canAsk}
-                onClick={() => setNewQuestionOpen(true)}
-                className="mx-auto flex h-11 items-center justify-center gap-2 rounded-full border border-[#1A56DB]/20 bg-[#EEF4FF] px-6 text-[13px] font-black text-[#1A56DB] transition hover:bg-[#E0ECFF] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Plus className="h-4 w-4" />
-                새로운 질문하기
-              </button>
-            </div>
+            {!props.threadDetailMode ? (
+              <div className="shrink-0 border-t border-slate-100 px-6 py-5">
+                <button
+                  type="button"
+                  disabled={weeklyUsage != null && !weeklyUsage.canAsk}
+                  onClick={() => setNewQuestionOpen(true)}
+                  className="mx-auto flex h-11 items-center justify-center gap-2 rounded-full border border-[#1A56DB]/20 bg-[#EEF4FF] px-6 text-[13px] font-black text-[#1A56DB] transition hover:bg-[#E0ECFF] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Plus className="h-4 w-4" />
+                  새로운 질문하기
+                </button>
+              </div>
+            ) : null}
+            </>
+            )}
           </div>
         </main>
 
-        {/* 우측 320px */}
+        {/* 우측 패널: 실시간 채팅 / 연결 노트 */}
         <aside className="flex w-[320px] shrink-0 flex-col bg-[#f8fafc]">
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-            <h2 className="text-[13px] font-black text-slate-900">실시간 질문방</h2>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              온라인
-            </span>
-          </div>
-
-          {threadWorkflow === "answered" && props.threadId ? (
-            <div className="shrink-0 border-b border-blue-100 bg-white px-4 py-3">
-              <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />
+          {props.backHref ? (
+            <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-2.5">
+              <Link
+                href={props.backHref}
+                className="inline-flex items-center gap-1.5 text-[12px] font-black text-[#1A56DB] hover:underline"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                질문 목록으로
+              </Link>
             </div>
           ) : null}
 
-          <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-            {props.messages.loading ? (
-              <p className="py-8 text-center text-[11px] font-bold text-slate-400">대화 불러오는 중…</p>
-            ) : !props.threadId ? (
-              <p className="py-8 text-center text-[11px] font-bold text-slate-400">질문을 선택하면 대화가 표시됩니다.</p>
-            ) : props.messages.rows.length === 0 ? (
-              <p className="py-8 text-center text-[11px] font-bold text-slate-400">아직 메시지가 없습니다.</p>
-            ) : (
-              props.messages.rows.map((m) => {
-                const body = messageBody(m);
-                const author = messageAuthorId(m);
-                const mine = author === props.currentUserId;
-                const mentorName = roomMentorLabel(currentRoom ?? {}, props.mentorDisplays);
-
-                return (
-                  <div key={String(m.id)} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[88%] ${mine ? "items-end" : "items-start"} flex flex-col`}>
-                      {!mine ? (
-                        <span className="mb-1 text-[10px] font-bold text-slate-500">{mentorName}</span>
-                      ) : null}
-                      <div
-                        className={`rounded-2xl px-4 py-2.5 text-[12px] font-medium leading-relaxed shadow-sm ${
-                          mine
-                            ? "rounded-tr-sm bg-blue-600 text-white"
-                            : "rounded-tl-sm border border-slate-200 bg-white text-slate-800"
-                        }`}
-                      >
-                        {renderMessageContent(body)}
-                      </div>
-                      <span className="mt-1 px-1 text-[9px] font-bold text-slate-400">
-                        {formatQuestionRoomDateTime(m.created_at) ?? formatMinutesAgo(m.created_at)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div className="relative shrink-0 border-t border-slate-200 bg-white p-3">
-            <form key={`chat-${props.threadId ?? "x"}-${rev}`} action={sendQuestionMessageAction}>
-              <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
-                <button
-                  type="button"
-                  disabled
-                  title="첨부는 준비 중입니다"
-                  className="shrink-0 p-2 text-slate-300"
-                >
-                  <Paperclip className="h-5 w-5" />
-                </button>
-                <textarea
-                  name="messageBody"
-                  required
-                  disabled={!props.threadId}
-                  defaultValue={props.draftMessageBody ?? ""}
-                  rows={2}
-                  placeholder={props.threadId ? "질문을 입력하세요..." : "질문을 먼저 선택해 주세요"}
-                  className="min-h-[44px] flex-1 resize-none bg-transparent text-[12px] font-medium outline-none disabled:opacity-50"
-                />
-                {props.threadId ? <input type="hidden" name="threadId" value={props.threadId} /> : null}
-                <input type="hidden" name="roomId" value={props.roomId} />
-                <input type="hidden" name="actor" value="student" />
-                <input type="hidden" name="contextThreadId" value={props.threadId ?? ""} />
-                <ChatSendButton disabled={!props.threadId} />
-              </div>
-            </form>
-
-            <div className="mt-3 rounded-xl border border-[#1A56DB]/20 bg-[#EEF4FF] p-3">
-              <p className="text-[11px] font-black text-[#1A56DB]">질문 전 확인해보세요!</p>
-              <ul className="mt-2 space-y-1.5 text-[10px] font-medium text-slate-600">
-                <li className="flex items-start gap-1.5">
-                  <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[#1A56DB]" />
-                  단원·문항 번호를 함께 적어 주세요
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[#1A56DB]" />
-                  시도한 풀이 과정을 포함해 주세요
-                </li>
-                <li className="flex items-start gap-1.5">
-                  <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[#1A56DB]" />
-                  사진·수식은 메시지에 붙여 넣을 수 있어요
-                </li>
-              </ul>
-              <p className="mt-2 text-[10px] font-bold text-slate-700">
-                이번 주 질문 {usageQuotaLabel(weeklyUsage)}
-              </p>
-              <p className="text-[10px] font-black text-[#1A56DB]">{remainingLabel}</p>
-            </div>
-          </div>
-        </aside>
-      </div>
-
-      {/* 연결 노트 */}
-      <section className="shrink-0 border-t border-slate-200 bg-white px-6 py-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-[14px] font-black text-slate-900">연결 노트</h2>
-          <button
-            type="button"
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-black text-slate-700 hover:bg-slate-50"
-            onClick={() => setNewNoteOpen(true)}
-          >
-            + 새 노트 작성
-          </button>
-        </div>
-        <div className="mb-3 flex gap-2">
-          {(
-            [
-              ["all", "전체 노트"],
-              ["toMentor", "멘토에게 요청"],
-              ["fromMentor", "멘토가 요청"],
-            ] as const
-          ).map(([key, label]) => (
+          <div className="flex shrink-0 border-b border-slate-200 bg-white">
+            {showChatPanel ? (
+              <button
+                type="button"
+                onClick={() => setRightPanelTab("chat")}
+                className={`flex-1 px-3 py-2.5 text-[12px] font-black transition ${
+                  rightPanelTab === "chat"
+                    ? "border-b-2 border-[#1A56DB] text-[#1A56DB]"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                실시간 채팅
+              </button>
+            ) : null}
             <button
-              key={key}
               type="button"
-              onClick={() => setNoteTab(key)}
-              className={`rounded-full px-3 py-1 text-[11px] font-black transition ${
-                noteTab === key ? "bg-[#1A56DB] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              onClick={() => setRightPanelTab("notes")}
+              className={`flex-1 px-3 py-2.5 text-[12px] font-black transition ${
+                rightPanelTab === "notes"
+                  ? "border-b-2 border-[#1A56DB] text-[#1A56DB]"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              {label}
+              연결 노트
             </button>
-          ))}
-        </div>
+          </div>
 
-        <div className="custom-scrollbar mb-4 flex gap-3 overflow-x-auto pb-2">
-          {filteredNoteCards.length === 0 ? (
-            <p className="py-4 text-[11px] font-bold text-slate-400">표시할 노트가 없습니다.</p>
-          ) : (
-            filteredNoteCards.map((card) => (
-              <article
-                key={card.id}
-                className="w-[220px] shrink-0 rounded-xl border border-slate-200 bg-slate-50/80 p-3"
-              >
-                <span
-                  className={`rounded px-1.5 py-0.5 text-[9px] font-black ${
-                    card.tone === "toMentor"
-                      ? "bg-blue-50 text-blue-800 border border-blue-100"
-                      : "bg-violet-50 text-violet-800 border border-violet-100"
-                  }`}
-                >
-                  {card.tag}
+          {rightPanelTab === "chat" && showChatPanel ? (
+            <>
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4 py-2">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  온라인
                 </span>
-                <p className="mt-2 line-clamp-2 text-[11px] font-medium leading-relaxed text-slate-700">
-                  {card.body}
-                </p>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <p className="text-[9px] font-bold text-slate-400">
-                    {card.author} · {card.date}
+              </div>
+
+              {threadWorkflow === "answered" && props.threadId ? (
+                <div className="shrink-0 border-b border-blue-100 bg-white px-4 py-3">
+                  <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />
+                </div>
+              ) : null}
+
+              <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+                {props.messages.loading ? (
+                  <p className="py-8 text-center text-[11px] font-bold text-slate-400">대화 불러오는 중…</p>
+                ) : !props.threadId ? (
+                  <p className="py-8 text-center text-[11px] font-bold text-slate-400">질문을 선택하면 대화가 표시됩니다.</p>
+                ) : props.messages.rows.length === 0 ? (
+                  <p className="py-8 text-center text-[11px] font-bold text-slate-400">아직 메시지가 없습니다.</p>
+                ) : (
+                  props.messages.rows.map((m) => {
+                    const body = messageBody(m);
+                    const author = messageAuthorId(m);
+                    const mine = author === props.currentUserId;
+                    const mentorName = roomMentorLabel(currentRoom ?? {}, props.mentorDisplays);
+
+                    return (
+                      <div key={String(m.id)} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[88%] ${mine ? "items-end" : "items-start"} flex flex-col`}>
+                          {!mine ? (
+                            <span className="mb-1 text-[10px] font-bold text-slate-500">{mentorName}</span>
+                          ) : null}
+                          <div
+                            className={`rounded-2xl px-4 py-2.5 text-[12px] font-medium leading-relaxed shadow-sm ${
+                              mine
+                                ? "rounded-tr-sm bg-blue-600 text-white"
+                                : "rounded-tl-sm border border-slate-200 bg-white text-slate-800"
+                            }`}
+                          >
+                            {renderMessageContent(body)}
+                          </div>
+                          <span className="mt-1 px-1 text-[9px] font-bold text-slate-400">
+                            {formatQuestionRoomDateTime(m.created_at) ?? formatMinutesAgo(m.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="relative shrink-0 border-t border-slate-200 bg-white p-3">
+                <form key={`chat-${props.threadId ?? "x"}-${rev}`} action={sendQuestionMessageAction}>
+                  <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                    <button
+                      type="button"
+                      disabled
+                      title="첨부는 준비 중입니다"
+                      className="shrink-0 p-2 text-slate-300"
+                    >
+                      <Paperclip className="h-5 w-5" />
+                    </button>
+                    <textarea
+                      name="messageBody"
+                      required
+                      disabled={!props.threadId}
+                      defaultValue={props.draftMessageBody ?? ""}
+                      rows={2}
+                      placeholder={props.threadId ? "질문을 입력하세요..." : "질문을 먼저 선택해 주세요"}
+                      className="min-h-[44px] flex-1 resize-none bg-transparent text-[12px] font-medium outline-none disabled:opacity-50"
+                    />
+                    {props.threadId ? <input type="hidden" name="threadId" value={props.threadId} /> : null}
+                    <input type="hidden" name="roomId" value={props.roomId} />
+                    <input type="hidden" name="actor" value="student" />
+                    <input type="hidden" name="contextThreadId" value={props.threadId ?? ""} />
+                    <ChatSendButton disabled={!props.threadId} />
+                  </div>
+                </form>
+
+                <div className="mt-3 rounded-xl border border-[#1A56DB]/20 bg-[#EEF4FF] p-3">
+                  <p className="text-[11px] font-black text-[#1A56DB]">질문 전 확인해보세요!</p>
+                  <ul className="mt-2 space-y-1.5 text-[10px] font-medium text-slate-600">
+                    <li className="flex items-start gap-1.5">
+                      <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[#1A56DB]" />
+                      단원·문항 번호를 함께 적어 주세요
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[#1A56DB]" />
+                      시도한 풀이 과정을 포함해 주세요
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-[#1A56DB]" />
+                      사진·수식은 메시지에 붙여 넣을 수 있어요
+                    </li>
+                  </ul>
+                  <p className="mt-2 text-[10px] font-bold text-slate-700">
+                    이번 주 질문 {usageQuotaLabel(weeklyUsage)}
                   </p>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black ${
-                      card.statusDone
-                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                        : "bg-amber-50 text-amber-800 border border-amber-200"
+                  <p className="text-[10px] font-black text-[#1A56DB]">{remainingLabel}</p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-[12px] font-black text-slate-900">방 전체 연결 노트</p>
+                <button
+                  type="button"
+                  className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] font-black text-slate-700 hover:bg-slate-50"
+                  onClick={() => setNewNoteOpen(true)}
+                >
+                  + 새 노트
+                </button>
+              </div>
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {(
+                  [
+                    ["all", "전체"],
+                    ["toMentor", "멘토에게"],
+                    ["fromMentor", "멘토가"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setNoteTab(key)}
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-black transition ${
+                      noteTab === key ? "bg-[#1A56DB] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
-                    {card.statusLabel}
-                  </span>
-                </div>
-              </article>
-            ))
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {filteredNoteCards.length === 0 ? (
+                <p className="py-6 text-center text-[11px] font-bold text-slate-400">표시할 노트가 없습니다.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {filteredNoteCards.map((card) => (
+                    <li
+                      key={card.id}
+                      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                    >
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-[9px] font-black ${
+                          card.tone === "toMentor"
+                            ? "bg-blue-50 text-blue-800 border border-blue-100"
+                            : "bg-violet-50 text-violet-800 border border-violet-100"
+                        }`}
+                      >
+                        {card.tag}
+                      </span>
+                      <p className="mt-2 text-[11px] font-medium leading-relaxed text-slate-700">{card.body}</p>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <p className="text-[9px] font-bold text-slate-400">
+                          {card.author} · {card.date}
+                        </p>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black ${
+                            card.statusDone
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              : "bg-amber-50 text-amber-800 border border-amber-200"
+                          }`}
+                        >
+                          {card.statusLabel}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!showChatPanel ? (
+                <p className="mt-4 text-[10px] font-medium leading-relaxed text-slate-500">
+                  질문 카드를 누르면 상세 화면에서 실시간 채팅을 이어갈 수 있어요.
+                </p>
+              ) : null}
+            </div>
           )}
-        </div>
-
-      </section>
+        </aside>
+      </div>
 
       <QuestionRoomNewQuestionModal
         open={newQuestionOpen}

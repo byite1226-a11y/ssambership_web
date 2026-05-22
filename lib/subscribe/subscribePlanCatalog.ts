@@ -31,8 +31,8 @@ export const SUBSCRIBE_PLAN_CATALOG: readonly SubscribePlanCatalogItem[] = [
     tier: "premium",
     label: "프리미엄",
     cashKrw: 249_900,
-    weeklyLabel: "질문 무제한(FUP)",
-    priorityLabel: "답변 우선순위 최상",
+    weeklyLabel: "질문 무제한",
+    priorityLabel: "",
   },
 ] as const;
 

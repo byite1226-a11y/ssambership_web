@@ -1,5 +1,4 @@
-import { notFound, redirect } from "next/navigation";
-import { threadDetailPath } from "@/lib/qna/formatQuestionRoomDisplay";
+import { notFound } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { QuestionRoomWorkspace } from "@/components/qna/QuestionRoomWorkspace";
 import { requireRole } from "@/lib/auth/routeGuard";
@@ -20,37 +19,29 @@ import {
 import { extractNoteText } from "@/lib/qna/questionRoomMutations";
 import { paramToDraft } from "@/lib/qna/draftQuery";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { roomDetailPath } from "@/lib/qna/formatQuestionRoomDisplay";
 
 type Props = {
-  params: Promise<{ roomId: string }>;
+  params: Promise<{ roomId: string; threadId: string }>;
   searchParams?: Promise<{
-    thread?: string;
     ok?: string;
     error?: string;
     kind?: "thread" | "message" | "note";
     t?: string;
-    dThread?: string;
     dMessage?: string;
     dNote?: string;
   }>;
 };
 
-export default async function StudentQuestionRoomDetailPage(props: Props) {
-  const { roomId } = await props.params;
+export default async function StudentQuestionThreadDetailPage(props: Props) {
+  const { roomId, threadId } = await props.params;
   const sp = (await props.searchParams) ?? {};
-  const threadFromQuery = typeof sp.thread === "string" && sp.thread.length ? sp.thread : null;
-  if (threadFromQuery) {
-    redirect(threadDetailPath("/question-room", roomId, threadFromQuery));
-  }
   const okMessage = typeof sp.ok === "string" && sp.ok.length ? sp.ok : null;
   const rawActionError = typeof sp.error === "string" && sp.error.length ? sp.error : null;
   const errorMessageUi = rawActionError ? mapDataErrorMessage(rawActionError) : null;
   const feedbackKind = sp.kind === "thread" || sp.kind === "message" || sp.kind === "note" ? sp.kind : undefined;
-  const dThreadQ = paramToDraft(typeof sp.dThread === "string" ? sp.dThread : undefined);
   const dMessageQ = paramToDraft(typeof sp.dMessage === "string" ? sp.dMessage : undefined);
   const dNoteQ = paramToDraft(typeof sp.dNote === "string" ? sp.dNote : undefined);
-
-  const draftThreadTitle = feedbackKind === "thread" && rawActionError ? (dThreadQ ?? "") : undefined;
   const draftMessageBody = feedbackKind === "message" && rawActionError ? (dMessageQ ?? "") : undefined;
   const draftNoteBody = feedbackKind === "note" && rawActionError ? (dNoteQ ?? "") : undefined;
   const formRevision = typeof sp.t === "string" && sp.t.length ? sp.t : "0";
@@ -64,9 +55,13 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
 
   const [listBundle, detail] = await Promise.all([
     loadQuestionRoomListBundle(supabase, "student", user.id),
-    loadQuestionRoomDetailBundle(supabase, user.id, "student", roomId, null),
+    loadQuestionRoomDetailBundle(supabase, user.id, "student", roomId, threadId),
   ]);
-  const { ...bundle } = detail;
+  const { resolvedThreadId, ...bundle } = detail;
+  if (!resolvedThreadId) {
+    notFound();
+  }
+
   const mentorDisplays = await loadMentorDisplaysForQuestionRooms(supabase, listBundle.rooms.rows);
   const currentRoom = listBundle.rooms.rows.find((r) => r && String(r.id) === String(roomId)) ?? null;
 
@@ -87,7 +82,6 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
     ]);
 
   const subjectOptions = currentRoom ? roomSubjectChips(currentRoom, mentorDisplays, 8) : [];
-
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
   return (
@@ -113,8 +107,7 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
         messages={bundle.messages}
         notes={bundle.notes}
         roomId={roomId}
-        threadId={null}
-        showChatPanel={false}
+        threadId={resolvedThreadId}
         listPreviewsByRoomId={listBundle.listPreviewsByRoomId}
         mentorDisplays={mentorDisplays}
         initialUsageByMentorId={initialUsageByMentorId}
@@ -125,10 +118,12 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
         subjectOptions={subjectOptions}
         roomHrefBase="/question-room"
         initialNoteText={initialNoteText}
-        draftThreadTitle={draftThreadTitle}
         draftMessageBody={draftMessageBody}
         draftNoteBody={draftNoteBody}
         formRevision={formRevision}
+        showChatPanel
+        threadDetailMode
+        backHref={roomDetailPath("/question-room", roomId)}
       />
     </PageScaffold>
   );

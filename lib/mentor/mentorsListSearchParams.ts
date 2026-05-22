@@ -23,10 +23,12 @@ export type MentorSubjectFilter =
 export type MentorGradeFilter = "중등" | "고등" | "N수" | "공통";
 
 export type MentorTypeFilter =
-  | "현직교사"
-  | "전문강사"
-  | "이대치대학대"
-  | "대학생멘토";
+  | "메디컬계열"
+  | "교육학과"
+  | "공대"
+  | "경영경제대"
+  | "문과대"
+  | "SKY";
 
 export type MentorPriceBandFilter = "under30" | "30to50" | "50to100" | "over100" | "custom";
 
@@ -91,10 +93,12 @@ export const MENTOR_GRADE_OPTIONS: { id: MentorGradeFilter; label: string }[] = 
 ];
 
 export const MENTOR_TYPE_OPTIONS: { id: MentorTypeFilter; label: string }[] = [
-  { id: "현직교사", label: "현직교사" },
-  { id: "전문강사", label: "전문강사" },
-  { id: "이대치대학대", label: "이대/치대/학대 멘토" },
-  { id: "대학생멘토", label: "대학(원)생 멘토" },
+  { id: "메디컬계열", label: "메디컬계열" },
+  { id: "교육학과", label: "교육학과" },
+  { id: "공대", label: "공대" },
+  { id: "경영경제대", label: "경영·경제대" },
+  { id: "문과대", label: "문과대" },
+  { id: "SKY", label: "SKY" },
 ];
 
 export const MENTOR_PRICE_BAND_OPTIONS: {

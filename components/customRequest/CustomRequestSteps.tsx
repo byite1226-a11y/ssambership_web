@@ -62,8 +62,23 @@ export function CustomRequestSteps() {
           ))}
         </div>
 
-        {/* Mobile: 세로 타임라인 */}
-        <ol className="mt-8 space-y-0 lg:hidden select-none" aria-label="맞춤의뢰 진행 단계">
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:hidden">
+          {STEPS.map((s) => (
+            <article
+              key={s.title}
+              className="flex min-h-[180px] flex-col rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-200 bg-gradient-to-br from-blue-600 to-violet-600 text-sm font-black text-white">
+                {s.num}
+              </span>
+              <p className="mt-4 text-base font-extrabold text-slate-900">{s.title}</p>
+              <p className="mt-2 flex-1 text-xs font-medium leading-relaxed text-slate-600">{s.desc}</p>
+            </article>
+          ))}
+        </div>
+
+        {/* Mobile narrow: 세로 타임라인 (sm 미만) */}
+        <ol className="mt-8 hidden space-y-0 max-sm:block select-none" aria-label="맞춤의뢰 진행 단계">
           {STEPS.map((s, i) => {
             const isLast = i === STEPS.length - 1;
             return (

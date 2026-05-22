@@ -138,7 +138,7 @@ export function PlanComparisonCards(props: {
                 </div>
                 <p className="mt-1 text-base font-black tabular-nums text-slate-900">{price}</p>
                 <p className="mt-0.5 text-[11px] font-semibold text-slate-600">
-                  {catalog.weeklyLabel} · {catalog.priorityLabel}
+                  {catalog.weeklyLabel}
                 </p>
               </div>
             </label>

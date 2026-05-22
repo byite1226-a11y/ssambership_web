@@ -21,6 +21,21 @@ export type MentorProfileDisplay = {
   grade: string;
 };
 
+function looksLikeStudentId(value: string): boolean {
+  const v = value.trim();
+  if (!v) return false;
+  return /\d{1,2}학번/.test(v) || /^\d{2}$/.test(v);
+}
+
+/** 학번 필드 우선, legacy로 department_name에 학번이 들어간 경우 보조 표시 */
+export function resolveMentorGradeDisplay(profileRow: Row | null): string {
+  const grade = getProfileFieldString(profileRow, ["grade", "grade_level", "academic_year"]);
+  if (grade.trim()) return grade.trim();
+  const dept = getProfileFieldString(profileRow, ["department_name"]);
+  if (looksLikeStudentId(dept)) return dept.trim();
+  return "";
+}
+
 export function mentorDisplayNameFromUser(user: UserRow | null): string {
   if (!user) return "멘토";
   const n = (user.full_name ?? "").trim() || (user.nickname ?? "").trim();
@@ -52,7 +67,7 @@ export function buildMentorProfileDisplay(
       "portrait_url",
     ]),
     verification: getProfileFieldString(profileRow, ["verification_status", "kyc_status"]),
-    grade: getProfileFieldString(profileRow, ["grade", "grade_level", "academic_year"]),
+    grade: resolveMentorGradeDisplay(profileRow),
   };
 }
 

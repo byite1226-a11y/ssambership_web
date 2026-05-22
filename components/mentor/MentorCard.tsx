@@ -186,7 +186,7 @@ export function MentorCard(props: {
                   </span>
                 </div>
                 <p className="mt-0.5 text-[10px] font-medium leading-snug text-slate-600">
-                  {t.weeklyLabel} · {t.priorityLabel}
+                  {t.weeklyLabel}
                 </p>
               </li>
             ))}
