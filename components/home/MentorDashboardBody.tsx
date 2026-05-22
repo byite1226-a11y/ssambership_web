@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { EmptyState } from "@/components/common/EmptyState";
 import {
   customOrderLine,
   mentorCustomOrderWorkroomHref,
@@ -7,148 +7,123 @@ import {
 } from "@/lib/home/mentorDashboardQueries";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 
-function CtaButton(props: { href: string; children: ReactNode; tone: "blue" | "slate" | "amber" }) {
-  const map = {
-    blue: "min-h-[44px] border border-transparent bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-500",
-    slate: "min-h-[44px] border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50",
-    amber: "min-h-[44px] border border-transparent bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-amber-400",
-  } as const;
-  return (
-    <Link href={props.href} className={`inline-flex items-center justify-center rounded-xl transition-colors ${map[props.tone]}`}>
-      {props.children}
-    </Link>
-  );
+function formatOrderDate(row: Record<string, unknown>): string {
+  const raw = pickDisplayField(row, ["updated_at", "created_at", "accepted_at"]);
+  if (raw === "—") return "";
+  const match = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[1]}.${match[2]}.${match[3]}` : raw.slice(0, 10);
 }
 
-function KpiCard(props: {
+function KpiStatCard(props: {
   label: string;
   value: string;
-  description: string;
-  href: string;
-  linkLabel: string;
+  sub: string;
+  tone?: "default" | "amber";
 }) {
+  const border =
+    props.tone === "amber" ? "border-amber-200 bg-amber-50/40" : "border-slate-200 bg-white";
   return (
-    <article className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className={`flex flex-col justify-between rounded-2xl border p-5 shadow-sm ${border}`}>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{props.label}</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{props.label}</p>
         <p className="mt-2 text-3xl font-black tabular-nums text-slate-900">{props.value}</p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">{props.description}</p>
       </div>
-      <Link href={props.href} className="mt-3 block text-sm font-bold text-blue-700 hover:underline">
-        {props.linkLabel} &rarr;
-      </Link>
+      <p className={`mt-3 text-xs font-semibold ${props.tone === "amber" ? "text-amber-800" : "text-slate-500"}`}>
+        {props.sub}
+      </p>
     </article>
   );
 }
 
-function emptyOrValue(raw: string, emptyLabel: string): string {
-  return raw === "—" || !raw.trim() ? emptyLabel : raw;
-}
-
-function formatOrderDate(row: Record<string, unknown>): string {
-  const raw = pickDisplayField(row, ["updated_at", "created_at", "accepted_at"]);
-  if (raw === "—") return "";
-  const match = raw.match(/\d{4}-\d{2}-\d{2}/);
-  return match ? match[0].replace(/-/g, ".") : raw.slice(0, 10);
-}
-
 export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
-  const { connectedRoomCount, threadStats, payouts, customRecent, notifyProbe } = data;
+  const { threadStats, customRecent, payouts, activeStudentCount, disputeCount, monthlyRevenueCash } =
+    data;
   const customErr = customRecent.error;
-  const amountErr = Boolean(payouts.payoutError);
 
-  const queueValue = emptyOrValue(threadStats.error ? "—" : String(threadStats.mentorQueueEstimate), "0");
-  const openThreadsValue = emptyOrValue(threadStats.error ? "—" : String(threadStats.openThreads), "0");
-  const customValue = emptyOrValue(customErr ? "—" : String(customRecent.rows.length), "0");
-  const payoutValue = emptyOrValue(
-    amountErr ? "—" : `${payouts.monthExpectedCents.toLocaleString("ko-KR")}원`,
-    "0원",
-  );
-  const notifyValue =
-    notifyProbe.status === "connected" ? "있음" : notifyProbe.status === "empty" ? "없음" : "확인 필요";
+  const newQuestions = threadStats.error ? "—" : String(threadStats.mentorQueueEstimate);
+  const monthlyAnswers = threadStats.error ? "—" : String(threadStats.openThreads);
+  const students = String(activeStudentCount);
+  const revenue =
+    payouts.payoutError || payouts.monthExpectedCents === 0
+      ? monthlyRevenueCash > 0
+        ? monthlyRevenueCash.toLocaleString("ko-KR")
+        : "0"
+      : Math.round(payouts.monthExpectedCents / 100).toLocaleString("ko-KR");
+  const disputes = String(disputeCount);
 
-  const recentOrders = customRecent.rows.slice(0, 5);
+  const recentOrders = customRecent.rows.slice(0, 3);
 
   const quickLinks = [
-    { href: "/mentor/question-room", label: "질문방 관리" },
-    { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰" },
-    { href: "/mentor/payouts", label: "정산" },
-    { href: "/mentor/profile", label: "프로필" },
-    { href: "/mentor/community/new", label: "커뮤니티 글쓰기" },
+    { href: "/mentor/question-room", label: "질문방" },
+    { href: "/mentor/profile/edit", label: "프로필 관리" },
+    { href: "/mentor/payouts", label: "정산 관리" },
+    { href: "/notifications", label: "알림 설정" },
   ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12 text-sm text-slate-800">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <p className="text-xs font-extrabold uppercase tracking-wide text-blue-600">멘토 홈</p>
+      <header>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-[#1A56DB]">멘토 홈</p>
         <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">멘토 대시보드</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-          오늘 처리할 일을 확인하고 빠르게 이동하세요.
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          오늘 처리할 질문·의뢰·알림을 한눈에 확인하세요.
         </p>
-        <div className="mt-5 flex flex-wrap gap-2.5">
-          <CtaButton href="/mentor/question-room" tone="blue">
-            질문방 관리
-          </CtaButton>
-          <CtaButton href="/mentor/custom-request/dashboard" tone="slate">
-            맞춤의뢰
-          </CtaButton>
-          <CtaButton href="/mentor/payouts" tone="slate">
-            정산
-          </CtaButton>
-          <CtaButton href="/mentor/profile" tone="slate">
-            프로필
-          </CtaButton>
-          <CtaButton href="/mentor/support/disputes" tone="amber">
-            분쟁 현황
-          </CtaButton>
-        </div>
-      </section>
+      </header>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <KpiCard
-          label="답변 대기"
-          value={queueValue}
-          description={threadStats.error ? "\uc9d1\uacc4\ub97c \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc5b4\uc694." : "\ub2f5\ubcc0\uc774 \ud544\uc694\ud55c \ud56d\ubaa9(\ucd94\uc815)"}
-          href="/mentor/question-room"
-          linkLabel="질문방 열기"
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <KpiStatCard
+          label="새 질문"
+          value={`${newQuestions}건`}
+          sub={threadStats.error ? "집계를 불러오지 못했어요" : `오늘 +${newQuestions}건`}
         />
-        <KpiCard
-          label="진행 중 질문"
-          value={openThreadsValue}
-          description={`\uc5f0\uacb0\ub41c \uc9c8\ubb38\ubc29 ${connectedRoomCount}\uacf3`}
-          href="/mentor/question-room"
-          linkLabel="질문방 열기"
+        <KpiStatCard
+          label="이번 달 답변"
+          value={`${monthlyAnswers}건`}
+          sub="답변 완료"
         />
-        <KpiCard
-          label="맞춤의뢰"
-          value={customValue}
-          description={customErr ? "\ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc5b4\uc694." : "\ucd5c\uadfc \uc8fc\ubb38\u00b7\uc758\ub8b0 \uac74\uc218"}
-          href="/mentor/custom-request/orders"
-          linkLabel="주문 목록"
+        <KpiStatCard
+          label="구독 학생"
+          value={`${students}명`}
+          sub="활성 구독"
         />
-        <KpiCard
-          label="이번 달 정산"
-          value={payoutValue}
-          description={amountErr ? payouts.payoutError ?? "\uc815\uc0b0 \ub0b4\uc5ed \uc5c6\uc74c" : payouts.tableHint}
-          href="/mentor/payouts"
-          linkLabel="정산 상세"
+        <KpiStatCard
+          label="이번 달 수익"
+          value={`${revenue} 캐시`}
+          sub={payouts.payoutError ? "정산 내역 확인 필요" : "지난 달 대비 —"}
         />
-        <KpiCard
-          label="알림"
-          value={notifyValue}
-          description={notifyProbe.detail}
-          href="/notifications"
-          linkLabel="알림 보기"
+        <KpiStatCard
+          label="분쟁/신고"
+          value={`${disputes}건`}
+          sub="확인 필요"
+          tone="amber"
         />
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900">최근 맞춤의뢰</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-bold text-slate-900">맞춤의뢰</h2>
+            <Link href="/mentor/custom-request/orders" className="text-xs font-bold text-[#1A56DB] hover:underline">
+              전체 보기 &gt;
+            </Link>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">진행 중인 의뢰 최대 3건</p>
           {customErr ? (
             <p className="mt-4 text-sm text-red-700">맞춤의뢰를 불러오지 못했어요.</p>
           ) : recentOrders.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">최근 맞춤의뢰가 없어요.</p>
+            <div className="mt-4">
+              <EmptyState
+                title="아직 진행 중인 의뢰가 없어요"
+                description="새 의뢰에 제안하면 여기에 표시돼요."
+              >
+                <Link
+                  href="/mentor/custom-request/posts"
+                  className="rounded-xl bg-[#1A56DB] px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                >
+                  의뢰 둘러보기
+                </Link>
+              </EmptyState>
+            </div>
           ) : (
             <ul className="mt-4 divide-y divide-slate-100">
               {recentOrders.map((r, i) => {
@@ -163,7 +138,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
                       {oid ? (
                         <Link
                           href={mentorCustomOrderWorkroomHref(oid)}
-                          className="block truncate text-sm font-bold text-slate-900 hover:text-blue-700 hover:underline"
+                          className="block truncate text-sm font-bold text-slate-900 hover:text-[#1A56DB] hover:underline"
                         >
                           {titleLine}
                         </Link>
@@ -180,9 +155,6 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
               })}
             </ul>
           )}
-          <Link href="/mentor/custom-request/orders" className="mt-3 block text-sm font-bold text-blue-700 hover:underline">
-            주문 목록 &rarr;
-          </Link>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -196,7 +168,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
                   className="flex min-h-[44px] items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-4 text-sm font-bold text-slate-800 transition hover:border-slate-200 hover:bg-white"
                 >
                   {item.label}
-                  <span className="text-slate-400">&rarr;</span>
+                  <span className="text-slate-400">&gt;</span>
                 </Link>
               </li>
             ))}

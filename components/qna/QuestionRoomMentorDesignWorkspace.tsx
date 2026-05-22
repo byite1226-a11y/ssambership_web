@@ -176,7 +176,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
             {props.rooms.loading ? (
               <p className="p-4 text-center text-[11px] font-bold text-slate-400">불러오는 중…</p>
             ) : filteredRooms.length === 0 ? (
-              <p className="p-4 text-center text-[11px] font-bold text-slate-400">질문방이 없습니다.</p>
+              <p className="p-4 text-center text-[11px] font-bold text-slate-500">아직 연결된 학생 질문방이 없어요</p>
             ) : (
               filteredRooms.map((room) => {
                 const rid = String(room.id);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Bell, MessageCircle, Search, User } from "lucide-react";
+import { Bell, ChevronDown, MessageCircle, Search, User } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { ShellHeaderInner } from "@/components/shell/ShellHeaderInner";
 import { getMainNavForRole } from "@/lib/shell/mainNavItems";
@@ -110,10 +110,22 @@ function HeaderActionsDesktop({ sessionRole, userProfile }: HeaderActionsProps) 
         <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-500 group-hover:border-slate-300">
           <User className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
         </span>
-        <span className="hidden min-w-0 truncate text-sm font-bold text-slate-900 sm:inline">{display.primary}</span>
-        <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-extrabold text-slate-600">
-          {display.roleBadge}
+        <span className="hidden min-w-0 truncate text-sm font-bold text-slate-900 sm:inline">
+          {sessionRole === "mentor" ? (
+            <>
+              {display.primary} {display.roleBadge}
+            </>
+          ) : (
+            display.primary
+          )}
         </span>
+        {sessionRole !== "mentor" ? (
+          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-extrabold text-slate-600">
+            {display.roleBadge}
+          </span>
+        ) : (
+          <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-400 sm:block" aria-hidden />
+        )}
       </Link>
       <a
         href="/logout"

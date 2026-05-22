@@ -11,9 +11,11 @@ export type AdminKpiCard = {
 
 export type AdminTrendPoint = { date: string; signups: number; cashKrw: number };
 
+export type AdminIssueKind = "신고" | "콘텐츠검수" | "환불" | "분쟁";
+
 export type AdminIssueRow = {
   id: string;
-  kind: string;
+  kind: AdminIssueKind;
   title: string;
   status: string;
   createdAt: string;

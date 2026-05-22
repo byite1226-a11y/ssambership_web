@@ -65,7 +65,7 @@ function QuestionRoomMockup() {
           </span>
         </div>
         <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#1A56DB] px-3 py-2 text-[10px] font-medium text-white">
-          선생님, 이 풀이 과정에서 막혔어요!
+          멘토님, 이 풀이 과정에서 막혔어요!
         </div>
         <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-3 py-2 text-[10px] text-slate-700">
           극한 정의를 먼저 적어 보면 좋아요.

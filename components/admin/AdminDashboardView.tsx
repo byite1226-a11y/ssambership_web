@@ -41,26 +41,21 @@ function formatIssueTime(iso: string): string {
   return new Intl.DateTimeFormat("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);
 }
 
+const issueKindClass: Record<string, string> = {
+  신고: "bg-red-50 text-red-700 border-red-200",
+  콘텐츠검수: "bg-blue-50 text-blue-700 border-blue-200",
+  환불: "bg-amber-50 text-amber-800 border-amber-200",
+  분쟁: "bg-orange-50 text-orange-800 border-orange-200",
+};
+
 export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
   const { kpis, trend, donut, issues, schedule } = props.data;
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">관리자 대시보드</h1>
-          <p className="mt-1 text-sm text-slate-600">운영 현황을 한눈에 확인합니다.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <input
-            type="search"
-            placeholder="검색 (이름, ID, 제목)"
-            className="min-w-[200px] flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          />
-          <input type="date" className="rounded-xl border border-slate-200 px-3 py-2 text-sm" aria-label="시작일" />
-          <span className="self-center text-slate-400">~</span>
-          <input type="date" className="rounded-xl border border-slate-200 px-3 py-2 text-sm" aria-label="종료일" />
-        </div>
+      <header>
+        <h1 className="text-2xl font-black text-slate-900">관리자 대시보드</h1>
+        <p className="mt-1 text-sm text-slate-600">운영 현황을 한눈에 확인합니다.</p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -126,19 +121,28 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
                 <th className="px-5 py-3">상태</th>
                 <th className="px-5 py-3">접수시간</th>
                 <th className="px-5 py-3">담당자</th>
+                <th className="px-5 py-3 w-12" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {issues.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-slate-500">
-                    최근 이슈가 없습니다.
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-500">
+                    아직 최근 운영 이슈가 없어요
                   </td>
                 </tr>
               ) : (
                 issues.map((row) => (
                   <tr key={row.id} className="hover:bg-slate-50/50">
-                    <td className="px-5 py-3 font-semibold text-slate-700">{row.kind}</td>
+                    <td className="px-5 py-3">
+                      <span
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${
+                          issueKindClass[row.kind] ?? "bg-slate-50 text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        {row.kind}
+                      </span>
+                    </td>
                     <td className="px-5 py-3">
                       <Link href={row.href} className="font-bold text-[#1A56DB] hover:underline">
                         {row.title}
@@ -147,11 +151,19 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
                     <td className="px-5 py-3 text-slate-600">{row.status}</td>
                     <td className="px-5 py-3 text-slate-500">{formatIssueTime(row.createdAt)}</td>
                     <td className="px-5 py-3 text-slate-500">{row.assignee}</td>
+                    <td className="px-5 py-3 text-center text-slate-400" aria-label="더보기">
+                      ⋮
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
+        </div>
+        <div className="border-t border-slate-100 px-5 py-3 text-center">
+          <button type="button" className="text-xs font-bold text-slate-500 hover:text-[#1A56DB]">
+            더 보기 ∨
+          </button>
         </div>
       </section>
 
@@ -172,15 +184,30 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-extrabold text-slate-900">오늘 일정</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-extrabold text-slate-900">오늘 일정</h2>
+            <Link href="/admin/notices" className="text-xs font-bold text-[#1A56DB] hover:underline">
+              전체 보기 &gt;
+            </Link>
+          </div>
           <ul className="mt-4 space-y-3">
-            {schedule.map((s) => (
-              <li key={s.time} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
-                <span className="shrink-0 text-xs font-black text-[#1A56DB]">{s.time}</span>
-                <span className="text-sm font-semibold text-slate-800">{s.title}</span>
-              </li>
-            ))}
+            {schedule.length === 0 ? (
+              <li className="text-sm text-slate-500">아직 등록된 일정이 없어요</li>
+            ) : (
+              schedule.map((s) => (
+                <li key={s.time} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+                  <span className="shrink-0 text-xs font-black text-[#1A56DB]">{s.time}</span>
+                  <span className="text-sm font-semibold text-slate-800">{s.title}</span>
+                </li>
+              ))
+            )}
           </ul>
+          <button
+            type="button"
+            className="mt-4 w-full rounded-xl border border-dashed border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:border-[#1A56DB] hover:text-[#1A56DB]"
+          >
+            + 일정 추가
+          </button>
         </section>
       </div>
     </div>

@@ -13,6 +13,8 @@ import {
   fetchMentorCustomRequestOrdersFromPrimaryTable,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/home/mentorDashboardQueries";
+import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsQueries";
+import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { fetchMentorWorkspaceCounts, mentorWorkspaceSidebarCounts } from "@/lib/customRequest/mentorCounts";
 import {
   MENTOR_OPEN_POST_CATEGORY_COLORS,
@@ -76,11 +78,30 @@ function getRecentActivity(row: Row): string {
 export default async function MentorCustomRequestDashboardPage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
-  const [{ items: recentApplied }, orders, dashboardCounts] = await Promise.all([
+  const [{ items: recentApplied }, orders, dashboardCounts, payouts, mentorProfile] = await Promise.all([
     loadMentorRecentApplicationsWithPostHints(supabase, user.id, 5),
     fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 12),
     fetchMentorWorkspaceCounts(supabase, user.id),
+    loadMentorPayoutsPageData(supabase, user.id),
+    fetchMentorProfileRow(supabase, user.id),
   ]);
+
+  const profileRow = mentorProfile.row ?? {};
+  const avgRating =
+    typeof profileRow.avg_rating === "number"
+      ? profileRow.avg_rating
+      : typeof profileRow.average_rating === "number"
+        ? profileRow.average_rating
+        : null;
+  const reviewCount =
+    typeof profileRow.review_count === "number"
+      ? profileRow.review_count
+      : typeof profileRow.reviews_count === "number"
+        ? profileRow.reviews_count
+        : 0;
+  const monthRevenueCash = Math.round(payouts.monthExpectedCents / 100);
+  const expectedSettlementCash = payouts.settlementPayouts.totals.expectedMentorAmount;
+  const paidSettlementCash = payouts.settlementPayouts.totals.paidMentorAmount;
 
   const dashOrderIds = orders.rows
     .map((r) => (typeof (r as { id?: unknown }).id === "string" ? String((r as { id: string }).id) : ""))
@@ -230,11 +251,11 @@ export default async function MentorCustomRequestDashboardPage() {
                 <span className="text-[12px] font-semibold text-slate-500">이번 달 수익</span>
               </div>
               <p className="text-[22px] font-black tracking-tight text-slate-900">
-                —
+                {monthRevenueCash.toLocaleString("ko-KR")}
                 <span className="text-[13px] font-bold text-slate-500 ml-0.5">캐시</span>
               </p>
             </div>
-            <p className="mt-2 text-[12px] font-medium text-slate-400">정산 내역에서 확인</p>
+            <p className="mt-2 text-[12px] font-medium text-slate-400">이번 달 예상 수익</p>
           </div>
         </div>
 
@@ -271,8 +292,14 @@ export default async function MentorCustomRequestDashboardPage() {
                   데이터를 불러올 수 없습니다.
                 </div>
               ) : activeOrders.length === 0 ? (
-                <div className="py-12 text-center text-[13px] font-medium text-slate-400">
-                  진행 중인 의뢰가 아직 없습니다.
+                <div className="px-5 py-10 text-center">
+                  <p className="text-[13px] font-bold text-slate-600">아직 진행 중인 의뢰가 없어요</p>
+                  <Link
+                    href="/mentor/custom-request/posts"
+                    className="mt-3 inline-block text-[12px] font-bold text-[#1A56DB] hover:underline"
+                  >
+                    의뢰 둘러보기
+                  </Link>
                 </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
@@ -435,6 +462,47 @@ export default async function MentorCustomRequestDashboardPage() {
                   })}
                 </ul>
               )}
+            </div>
+
+            {/* 수익 현황 */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="text-[14px] font-black text-slate-900">수익 현황</h3>
+              <dl className="mt-3 space-y-2 text-[12px]">
+                <div className="flex justify-between gap-2">
+                  <dt className="font-semibold text-slate-500">총 예상 수익</dt>
+                  <dd className="font-black text-slate-900">{monthRevenueCash.toLocaleString("ko-KR")} 캐시</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="font-semibold text-slate-500">진행 중</dt>
+                  <dd className="font-bold text-blue-600">{expectedSettlementCash.toLocaleString("ko-KR")} 캐시</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="font-semibold text-slate-500">완료(정산 예정)</dt>
+                  <dd className="font-bold text-emerald-700">{paidSettlementCash.toLocaleString("ko-KR")} 캐시</dd>
+                </div>
+              </dl>
+              <Link
+                href="/mentor/payouts"
+                className="mt-3 inline-flex text-[12px] font-bold text-[#1A56DB] hover:underline"
+              >
+                정산/수익 관리 &gt;
+              </Link>
+            </div>
+
+            {/* 나의 평점 */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h3 className="text-[14px] font-black text-slate-900">나의 평점</h3>
+              <p className="mt-2 text-2xl font-black text-[#1A56DB]">
+                {avgRating != null ? avgRating.toFixed(1) : "—"}
+                <span className="text-sm font-bold text-slate-400"> / 5.0</span>
+              </p>
+              <p className="mt-1 text-amber-500 text-sm" aria-hidden>
+                {"★".repeat(Math.round(avgRating ?? 0))}
+                {"☆".repeat(5 - Math.round(avgRating ?? 0))}
+              </p>
+              <Link href="/mentor/reviews" className="mt-3 inline-flex text-[12px] font-bold text-[#1A56DB] hover:underline">
+                리뷰 {reviewCount}개 보기 &gt;
+              </Link>
             </div>
 
             {/* 빠른 메뉴 */}

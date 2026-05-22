@@ -2,8 +2,8 @@ import type { AppRole } from "@/lib/types/user";
 
 export type MainNavItem = { href: string; label: string };
 
-/** 멘토가 접근하면 대시보드로 보낼 캐시·지갑 경로 */
-export const MENTOR_BLOCKED_CASH_PATHS = ["/cash", "/wallet/charge", "/wallet/ledger"] as const;
+/** 멘토가 접근하면 대시보드로 보낼 캐시·지갑 경로 (충전은 네비 허용) */
+export const MENTOR_BLOCKED_CASH_PATHS = ["/cash", "/wallet/ledger"] as const;
 
 export function isCashNavHref(href: string): boolean {
   return (
@@ -41,13 +41,10 @@ export const studentMainNav: MainNavItem[] = [
 ];
 
 export const mentorMainNav: MainNavItem[] = [
-  { href: "/mentors", label: "멘토 찾기" },
   { href: "/mentor/question-room", label: "질문방" },
+  { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰" },
   { href: "/community", label: "커뮤니티" },
-  { href: "/custom-request", label: "맞춤의뢰" },
-  { href: "/mentor/payouts", label: "정산/수익" },
-  { href: "/mentor/reviews", label: "리뷰" },
-  { href: "/mentor/profile", label: "프로필" },
+  { href: "/wallet/charge", label: "캐시충전" },
 ];
 
 export const adminMainNav: MainNavItem[] = [

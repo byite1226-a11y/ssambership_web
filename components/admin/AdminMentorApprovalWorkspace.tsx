@@ -43,6 +43,7 @@ const FILTERS = [
 export function AdminMentorApprovalWorkspace(props: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState(props.statusFilter || "all");
+  const [rejectOpen, setRejectOpen] = useState(false);
 
   const filtered = useMemo(() => {
     if (filter === "all") return props.rows;
@@ -159,19 +160,50 @@ export function AdminMentorApprovalWorkspace(props: Props) {
                       추가서류 요청
                     </button>
                   </form>
-                  <form action={rejectMentorApplicationAction} className="space-y-2">
-                    <input type="hidden" name="mentorUserId" value={mentorUserId} />
-                    <textarea name="rejectionReason" required rows={2} placeholder="반려 사유" className="w-full rounded-lg border px-3 py-2 text-sm" />
-                    <button type="submit" className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">
-                      반려
-                    </button>
-                  </form>
+                  <button
+                    type="button"
+                    onClick={() => setRejectOpen(true)}
+                    className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white hover:bg-red-700"
+                  >
+                    반려
+                  </button>
                 </div>
               ) : null}
             </div>
           )}
         </aside>
       </div>
+
+      {rejectOpen && selected && mentorUserId ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal>
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-black text-slate-900">반려 사유 입력</h3>
+            <p className="mt-1 text-xs text-slate-500">{displayName(selected, user)} 멘토 신청을 반려합니다.</p>
+            <form action={rejectMentorApplicationAction} className="mt-4 space-y-3">
+              <input type="hidden" name="mentorUserId" value={mentorUserId} />
+              <textarea
+                name="rejectionReason"
+                required
+                rows={4}
+                placeholder="반려 사유를 입력해 주세요"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRejectOpen(false)}
+                  className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-bold text-slate-700"
+                >
+                  취소
+                </button>
+                <button type="submit" className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">
+                  반려 확정
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

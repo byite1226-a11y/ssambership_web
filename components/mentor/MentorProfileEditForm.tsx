@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitMentorProfileEdit } from "@/lib/mentor/mentorProfileEditActions";
@@ -7,7 +8,8 @@ import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
 import { MentorPublicProfilePreviewCard } from "@/components/mentor/MentorPublicProfilePreviewCard";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
-import { Camera, ChevronRight, HelpCircle, RotateCcw, PlayCircle, Info, LayoutGrid, Video, Plus } from "lucide-react";
+import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus } from "lucide-react";
 
 type Q = { 
   row: Record<string, unknown> | null; 
@@ -113,8 +115,8 @@ export function MentorProfileEditForm(props: {
       {/* Header Area */}
       <div className="mb-10 flex flex-col items-start justify-between gap-4 border-b border-slate-100 pb-8 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">멘토 총 프로필 관리</h1>
-          <p className="mt-2 text-sm font-medium text-slate-500">학생들이 나를 더 잘 이해할 수 있도록 정보를 입력하고 관리해보세요.</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">멘토 프로필 관리</h1>
+          <p className="mt-2 text-sm font-medium text-slate-500">기본 정보·소개·과목·요금제·인증 서류를 관리하세요.</p>
         </div>
         <div className="flex items-center gap-4">
           <p suppressHydrationWarning className="text-xs font-medium text-slate-400">마지막 저장: {lastSavedStr}</p>
@@ -158,7 +160,7 @@ export function MentorProfileEditForm(props: {
               <div className="flex-1 space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className={labelClass} htmlFor="nickname">닉네임</label>
+                    <label className={labelClass} htmlFor="nickname">이름</label>
                     <div className="relative mt-1.5">
                       <input
                         id="nickname"
@@ -172,7 +174,7 @@ export function MentorProfileEditForm(props: {
                     </div>
                   </div>
                   <div>
-                    <label className={labelClass} htmlFor="grade">학년 <span className="ml-0.5 text-red-500">*</span></label>
+                    <label className={labelClass} htmlFor="grade">학번 <span className="ml-0.5 text-red-500">*</span></label>
                     <div className="relative mt-1.5">
                       <select
                         id="grade"
@@ -181,7 +183,7 @@ export function MentorProfileEditForm(props: {
                         value={formData.grade}
                         onChange={handleChange}
                       >
-                        <option value="">학년 선택</option>
+                        <option value="">학번/학년 선택</option>
                         <option value="1학년">1학년</option>
                         <option value="2학년">2학년</option>
                         <option value="3학년">3학년</option>
@@ -258,32 +260,101 @@ export function MentorProfileEditForm(props: {
                     className={inputClass}
                     value={formData.intro}
                     onChange={handleChange}
-                    maxLength={60}
+                    maxLength={50}
                   />
+                  <p className="mt-1 text-right text-[10px] font-medium text-slate-400">{formData.intro.length}/50</p>
                 </div>
               </div>
 
               <div>
-                <label className={labelClass} htmlFor="bio">자기소개 <span className="ml-0.5 text-red-500">*</span></label>
+                <label className={labelClass} htmlFor="bio">상세 소개 <span className="ml-0.5 text-red-500">*</span></label>
                 <div className="relative mt-1.5">
                   <textarea
                     id="bio"
                     name="bio"
-                    placeholder="자세한 자기소개를 입력해주세요"
-                    rows={4}
-                    className={`${inputClass} min-h-[120px] py-3 resize-none`}
+                    placeholder="멘토링 스타일, 경력, 강점을 자세히 적어주세요"
+                    rows={6}
+                    className={`${inputClass} min-h-[140px] py-3 resize-none`}
                     value={formData.bio}
                     onChange={handleChange}
-                    maxLength={300}
+                    maxLength={500}
                   />
+                  <p className="mt-1 text-right text-[10px] font-medium text-slate-400">{formData.bio.length}/500</p>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* 4. 대표 콘텐츠 설정 */}
+          {/* 3. 전공 및 과목 */}
           <section className="space-y-6">
-            <SectionHeader number="4" title="대표 콘텐츠 설정" optional />
+            <SectionHeader number="3" title="전공 및 과목" required />
+            <div>
+              <label className={labelClass} htmlFor="subjects">과목 태그</label>
+              <p className="mt-1 text-xs font-medium text-slate-500">쉼표(,)로 구분해 입력하세요. 예: 수학, 영어, 논술</p>
+              <input
+                id="subjects"
+                name="subjects"
+                className={`${inputClass} mt-2`}
+                value={formData.subjects}
+                onChange={handleChange}
+                placeholder="수학, 영어, 물리"
+              />
+              <input type="hidden" name="tags" value={initial.tags} />
+            </div>
+          </section>
+
+          {/* 4. 요금제 (잠금) */}
+          <section className="space-y-4">
+            <SectionHeader number="4" title="요금제 설정" />
+            <p className="text-xs font-medium text-slate-500">플랫폼 정책에 따라 가격은 수정할 수 없어요.</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {SUBSCRIBE_PLAN_CATALOG.map((plan) => (
+                <div
+                  key={plan.tier}
+                  className={`rounded-xl border p-4 ${plan.recommend ? "border-2 border-[#1A56DB] bg-blue-50/30" : "border-slate-200 bg-slate-50/50"}`}
+                >
+                  <p className="text-sm font-black text-slate-900">{plan.label}</p>
+                  <p className="mt-1 text-lg font-black text-[#1A56DB]">
+                    {plan.cashKrw.toLocaleString("ko-KR")} <span className="text-xs font-bold text-slate-500">캐시/월</span>
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold text-slate-600">{plan.weeklyLabel}</p>
+                  <p className="mt-2 text-[10px] font-bold text-slate-400">수정 불가</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 5. 인증 서류 */}
+          <section className="space-y-4">
+            <SectionHeader number="5" title="인증 서류" />
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-sm font-bold text-slate-800">
+                학생증 업로드 상태:{" "}
+                <span className="text-[#1A56DB]">{mentorVerificationKo(initial.verification)}</span>
+              </p>
+              {initial.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={initial.photoUrl}
+                  alt="학생증 미리보기"
+                  className="mt-3 max-h-40 rounded-lg border object-contain"
+                />
+              ) : (
+                <p className="mt-2 text-xs font-medium text-slate-500">아직 업로드된 학생증이 없어요.</p>
+              )}
+              <Link
+                href="/mentor/verification"
+                className="mt-3 inline-block text-xs font-bold text-[#1A56DB] hover:underline"
+              >
+                인증 서류 제출하기 &gt;
+              </Link>
+            </div>
+            {formData.subOpen ? <input type="hidden" name="subscribeOpen" value="on" /> : null}
+          </section>
+
+          {/* 6. 대표 콘텐츠 설정 */}
+          <section className="space-y-6">
+            <SectionHeader number="6" title="대표 콘텐츠 설정" optional />
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button 

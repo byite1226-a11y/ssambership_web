@@ -40,8 +40,8 @@ export function resolveShellUserDisplayName(profile: UserRow | null, role: AppRo
 export function shellUserHeaderDisplay(profile: UserRow | null, role: AppRole): ShellUserHeaderDisplay {
   const roleBadge = ROLE_BADGE[role];
   const base = resolveShellUserDisplayName(profile, role);
-  const primary = `${base} 님`;
+  const primary = role === "mentor" ? base : `${base} 님`;
   const profileHref =
-    role === "mentor" ? "/mentor/profile" : role === "student" ? "/mypage" : "/admin";
+    role === "mentor" ? "/mentor/profile/edit" : role === "student" ? "/mypage" : "/admin";
   return { primary, roleBadge, profileHref };
 }
