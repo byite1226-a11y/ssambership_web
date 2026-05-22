@@ -68,7 +68,7 @@ export default async function StudentSubscribePage(props: Props) {
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <div className="space-y-4 lg:sticky lg:top-8">
           <MentorSubscribeSummaryCard mentorId={data.mentorId} display={data.display} />
-          <WalletChargeSidebar breakdown={breakdown} balanceError={balance.error} />
+          <WalletChargeSidebar breakdown={breakdown} balanceError={balance.error} variant="balance-only" />
         </div>
 
         <main className="min-w-0">

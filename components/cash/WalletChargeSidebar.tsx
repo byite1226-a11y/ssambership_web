@@ -24,8 +24,11 @@ function fmtCash(n: number): string {
 export function WalletChargeSidebar(props: {
   breakdown: WalletBalanceBreakdown;
   balanceError?: string | null;
+  /** 구독 페이지 등: 잔액 카드만 */
+  variant?: "full" | "balance-only";
 }) {
-  const { breakdown, balanceError } = props;
+  const { breakdown, balanceError, variant = "full" } = props;
+  const balanceOnly = variant === "balance-only";
 
   return (
     <aside className="space-y-4 lg:sticky lg:top-8">
@@ -57,6 +60,8 @@ export function WalletChargeSidebar(props: {
         </Link>
       </section>
 
+      {balanceOnly ? null : (
+      <>
       <section className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
         <h2 className="text-sm font-extrabold text-blue-900">충전 혜택</h2>
         <ul className="mt-3 space-y-2 text-xs leading-relaxed text-blue-800">
@@ -81,6 +86,8 @@ export function WalletChargeSidebar(props: {
           ))}
         </ul>
       </section>
+      </>
+      )}
     </aside>
   );
 }

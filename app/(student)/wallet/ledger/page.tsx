@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
 import { loadWalletLedgerPageData } from "@/lib/cash/walletRouteData";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
+import { Suspense } from "react";
 import { WalletLedgerPageBody } from "@/components/cash/WalletLedgerPageBody";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
@@ -44,13 +45,15 @@ export default async function WalletLedgerPage(props: Props) {
       profileLoadError={profileLoadError?.message ?? null}
       bundle={bundle}
     >
-      <div className="space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         <header>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">캐시 원장</h1>
-          <p className="mt-1 text-sm text-slate-500">충전·사용 내역을 시간 순으로 확인합니다.</p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">캐시 사용내역</h1>
+          <p className="mt-1 text-sm text-slate-500">충전·구독·맞춤의뢰 등 캐시 흐름을 확인합니다.</p>
         </header>
 
-        <WalletLedgerPageBody data={data} />
+        <Suspense fallback={<p className="text-sm text-slate-500">불러오는 중…</p>}>
+          <WalletLedgerPageBody data={data} />
+        </Suspense>
       </div>
     </StudentDashboardShell>
   );

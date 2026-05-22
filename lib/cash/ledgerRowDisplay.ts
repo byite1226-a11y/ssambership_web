@@ -61,6 +61,34 @@ export function ledgerReasonLabel(row: Row): string {
 }
 
 /** 주문/결제 연결(있다면) — UUID는 축약 표기 */
+export type LedgerUiKind = "charge" | "subscription" | "custom_request" | "other";
+
+export function ledgerUiKind(row: Row): LedgerUiKind {
+  const typeRaw = getStringField(row, ["type", "entry_type", "kind", "category"]) ?? "";
+  const reasonRaw = getStringField(row, ["reason", "description", "note", "memo", "summary"]) ?? "";
+  const blob = `${typeRaw} ${reasonRaw}`.toLowerCase();
+  if (/custom.?request|맞춤|의뢰|order/.test(blob)) return "custom_request";
+  if (/subscription|구독|subscribe|멤버십/.test(blob)) return "subscription";
+  if (/topup|charge|충전|credit|deposit|staging/.test(blob)) return "charge";
+  return "other";
+}
+
+export function ledgerIsCredit(row: Row): boolean {
+  const label = ledgerAmountLabel(row);
+  return !label.startsWith("-") && label !== "—";
+}
+
+export function ledgerBalanceAfter(row: Row): string {
+  for (const k of ["balance_after_cents", "balance_cents", "balance_after", "running_balance_cents"] as const) {
+    const v = row[k];
+    if (typeof v === "number" && Number.isFinite(v)) {
+      const n = k.includes("cents") ? v / 100 : v;
+      return `${Math.round(n).toLocaleString("ko-KR")}캐시`;
+    }
+  }
+  return "—";
+}
+
 export function ledgerOrderOrPaymentRef(row: Row): string {
   const a = getStringField(row, [
     "payment_id",

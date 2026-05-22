@@ -82,6 +82,7 @@ export default async function WalletChargeSuccessPage({ searchParams }: Props) {
                   + {fmtCash(bonusKrw)} 보너스 추가 적립!
                 </p>
               ) : null}
+              <p className="mt-1 text-xs text-slate-500">총 {fmtCash(cashKrw)} 지급</p>
 
               <p className="mt-6 text-sm text-slate-600">
                 현재 잔액{" "}

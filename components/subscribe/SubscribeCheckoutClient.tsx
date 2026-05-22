@@ -127,6 +127,7 @@ export function SubscribeCheckoutClient(props: Props) {
                 <p className="mt-2 text-2xl font-black tabular-nums text-slate-900">{fmtCash(plan.cashKrw)}</p>
                 <p className="mt-1 text-xs text-slate-500">/ 월</p>
                 <p className="mt-3 text-sm font-semibold text-slate-700">{plan.weeklyLabel}</p>
+                <p className="mt-1 text-xs text-slate-500">{plan.priorityLabel}</p>
               </button>
             </li>
           );
@@ -135,7 +136,7 @@ export function SubscribeCheckoutClient(props: Props) {
 
       {insufficient ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          <p className="font-bold">캐시가 부족합니다. 충전하러 가기</p>
+          <p className="font-bold">캐시가 부족합니다.</p>
           <p className="mt-1">
             선택한 플랜은 {fmtCash(selected.cashKrw)}가 필요합니다. 현재 잔액 {fmtCash(currentBalanceCash)}.
           </p>
