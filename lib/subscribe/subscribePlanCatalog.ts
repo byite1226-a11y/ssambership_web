@@ -2,17 +2,38 @@ import type { SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 
 export type SubscribePlanCatalogItem = {
   tier: SubscribePlanTier;
+  /** UI 표기명 (내부 tier id는 limited/standard/premium 유지) */
   label: string;
   cashKrw: number;
   weeklyLabel: string;
+  priorityLabel: string;
   recommend?: boolean;
 };
 
 /** 보고서 잠금 구독 플랜 (1캐시 = 1원). DB plan_id는 런타임에 멘토 플랜 행에서 조회. */
 export const SUBSCRIBE_PLAN_CATALOG: readonly SubscribePlanCatalogItem[] = [
-  { tier: "limited", label: "Limited", cashKrw: 55_000, weeklyLabel: "주 4개 질문" },
-  { tier: "standard", label: "Standard", cashKrw: 114_900, weeklyLabel: "주 9개 질문", recommend: true },
-  { tier: "premium", label: "Premium", cashKrw: 249_900, weeklyLabel: "질문 무제한(FUP)" },
+  {
+    tier: "limited",
+    label: "베이직",
+    cashKrw: 55_000,
+    weeklyLabel: "주 4개 질문",
+    priorityLabel: "답변 우선순위 일반",
+  },
+  {
+    tier: "standard",
+    label: "스탠다드",
+    cashKrw: 114_900,
+    weeklyLabel: "주 9개 질문",
+    priorityLabel: "답변 우선순위 높음",
+    recommend: true,
+  },
+  {
+    tier: "premium",
+    label: "프리미엄",
+    cashKrw: 249_900,
+    weeklyLabel: "질문 무제한",
+    priorityLabel: "답변 우선순위 최상",
+  },
 ] as const;
 
 export function getSubscribeCatalogPlan(tier: SubscribePlanTier): SubscribePlanCatalogItem {

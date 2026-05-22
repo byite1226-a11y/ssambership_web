@@ -5,12 +5,13 @@ import {
   type PlansByTier,
 } from "@/lib/subscribe/subscribePageQueries";
 import type { GlobalPlansLoad } from "@/lib/landing/landingPageQueries";
+import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 
-const TIERS: { id: keyof PlansByTier; label: string; rec?: boolean }[] = [
-  { id: "limited", label: "Limited" },
-  { id: "standard", label: "Standard", rec: true },
-  { id: "premium", label: "Premium" },
-];
+const TIERS = SUBSCRIBE_PLAN_CATALOG.map((p) => ({
+  id: p.tier,
+  label: p.label,
+  rec: p.recommend,
+}));
 
 export function PricingPreviewSection(props: { plans: GlobalPlansLoad; byTier: PlansByTier; fillProbe: string }) {
   const { plans, byTier, fillProbe } = props;

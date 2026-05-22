@@ -1,4 +1,5 @@
 import { PageScaffold } from "@/components/shell/PageScaffold";
+import { MentorRecentRecorder } from "@/components/mentor/MentorRecentRecorder";
 import { PublicMentorDetailBody, PublicMentorNotFoundBody } from "@/components/mentor/PublicMentorDetailBody";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { loadPublicMentorBundle } from "@/lib/mentor/publicMentorBundle";
@@ -76,6 +77,7 @@ export default async function MentorDetailByIdPage(props: Props) {
       loadingState=""
       errorState=""
     >
+      <MentorRecentRecorder mentorId={mentorId} />
       <PublicMentorDetailBody
         mentorId={mentorId}
         userRow={bundle.userRow}

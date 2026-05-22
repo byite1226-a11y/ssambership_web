@@ -2,10 +2,13 @@
 import { filtersToHrefRecord, mentorsListHref } from "@/lib/mentor/mentorsListSearchParams";
 
 const SORT_LABEL: Record<MentorsListFilters["sort"], string> = {
+  popular: "인기순",
   new: "최신순",
   review: "리뷰많은순",
   price_asc: "가격낮은순",
   price_desc: "가격높은순",
+  rating: "평점순",
+  response: "답변속도순",
 };
 
 export function MentorResultsSummaryBar(props: {

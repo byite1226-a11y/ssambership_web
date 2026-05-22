@@ -5,13 +5,14 @@ import {
   weeklyQuestionsLabel,
   type SubscribePlanTier,
 } from "@/lib/subscribe/subscribePageQueries";
+import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
-const TIERS: { id: SubscribePlanTier; label: string; recommend?: boolean }[] = [
-  { id: "limited", label: "Limited" },
-  { id: "standard", label: "Standard", recommend: true },
-  { id: "premium", label: "Premium" },
-];
+const TIERS = SUBSCRIBE_PLAN_CATALOG.map((p) => ({
+  id: p.tier,
+  label: p.label,
+  recommend: p.recommend,
+}));
 
 export type PlanComparisonLayout = "checkout" | "rail" | "grid";
 

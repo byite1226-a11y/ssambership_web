@@ -9,6 +9,7 @@ export function MentorFavoriteButton(props: {
   initialFavorited: boolean;
   isLoggedIn: boolean;
   loginNext?: string;
+  className?: string;
 }) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(props.initialFavorited);
@@ -50,7 +51,10 @@ export function MentorFavoriteButton(props: {
       disabled={pending}
       aria-label={favorited ? "찜 해제" : "찜하기"}
       aria-pressed={favorited}
-      className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 shadow-sm transition hover:scale-105 disabled:opacity-60"
+      className={
+        props.className ??
+        "absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 shadow-sm transition hover:scale-105 disabled:opacity-60"
+      }
     >
       <Heart
         className={`h-4 w-4 ${favorited ? "fill-[#1A56DB] text-[#1A56DB]" : "text-slate-400"}`}

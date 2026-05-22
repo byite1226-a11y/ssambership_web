@@ -1,4 +1,3 @@
-import { PageScaffold } from "@/components/shell/PageScaffold";
 import { MentorsListBody } from "@/components/mentor/MentorsListBody";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { loadFavoriteMentorIdsForUser } from "@/lib/mentor/mentorFavorites";
@@ -31,29 +30,11 @@ export default async function MentorsPage(props: Props) {
   }
 
   return (
-    <PageScaffold
-      hideHero
-      hideFooterPlaceholderCards
-      eyebrow="멤버십"
-      title="멘토 찾기"
-      description="필터와 검색으로 맞는 멘토를 찾고, 프로필에서 구독·질문을 이어가요."
-      ctas={
-        user
-          ? []
-          : [{ href: `/login?next=${encodeURIComponent("/mentors")}`, label: "로그인", tone: "slate" }]
-      }
-      sections={[]}
-      dataPoints={[]}
-      emptyState=""
-      loadingState=""
-      errorState=""
-    >
-      <MentorsListBody
-        filters={filters}
-        list={list}
-        favoriteIds={favoriteIds}
-        isLoggedIn={Boolean(user)}
-      />
-    </PageScaffold>
+    <MentorsListBody
+      filters={filters}
+      list={list}
+      favoriteIds={favoriteIds}
+      isLoggedIn={Boolean(user)}
+    />
   );
 }

@@ -4,6 +4,7 @@ import { filtersToHrefRecord, mentorsListHref } from "@/lib/mentor/mentorsListSe
 import type { PublicMentorsListResult } from "@/lib/mentor/publicMentorsListQueries";
 import { MentorGrid } from "@/components/mentor/MentorGrid";
 import { MentorsListFilterSidebar } from "@/components/mentor/MentorsListFilterSidebar";
+import { MentorsListSidebar } from "@/components/mentor/MentorsListSidebar";
 import { MentorsListTopFilterBar } from "@/components/mentor/MentorsListTopFilterBar";
 
 const COPY_PUBLIC_LIST_HINT =
@@ -18,6 +19,7 @@ export function MentorsListBody(props: {
   const { filters, list } = props;
   const hrefBase = filtersToHrefRecord(filters);
   const favoriteSet = new Set(props.favoriteIds);
+  const favoriteCards = list.cards.filter((c) => favoriteSet.has(c.mentorId));
   const showListHint = list.onlySelfVisibleHint && list.cards.length === 0;
   const from = list.totalCount === 0 ? 0 : (list.page - 1) * list.pageSize + 1;
   const to = Math.min(list.page * list.pageSize, list.totalCount);
@@ -35,33 +37,37 @@ export function MentorsListBody(props: {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] min-w-0 px-4 pb-12 sm:px-5 lg:px-6">
-      <header className="mb-6 border-b border-slate-100 pb-5">
+      <header className="mb-6">
         <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#1A56DB]">멤버십</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">멘토 찾기</h1>
         <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
-          필터와 검색으로 맞는 멘토를 찾고, 프로필에서 구독·질문을 이어가요.
+          과목·학년·요금으로 멘토를 찾고, 베이직·스탠다드·프리미엄 플랜으로 구독을 시작하세요.
         </p>
       </header>
 
-      <MentorsListTopFilterBar filters={filters} />
+      <MentorsListTopFilterBar
+        filters={filters}
+        favoriteCount={props.favoriteIds.length}
+        totalCount={list.totalCount}
+      />
 
-      <div className="mt-6 flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:items-start">
-        <aside className="hidden lg:col-span-3 lg:block lg:sticky lg:top-6 lg:self-start">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-[15px] font-black text-slate-900">상세 필터</h2>
-            <p className="mt-1 text-[11px] font-medium text-slate-500">과목·학교·가격·인증으로 좁혀 보세요.</p>
-            <div className="mt-4">
-              <MentorsListFilterSidebar filters={filters} />
+      <div className="mt-6 flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:items-start">
+        <aside className="hidden xl:col-span-2 xl:block xl:sticky xl:top-6 xl:self-start">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-[14px] font-black text-slate-900">필터</h2>
+            <div className="mt-3">
+              <MentorsListFilterSidebar filters={filters} totalCount={list.totalCount} />
             </div>
           </div>
         </aside>
 
-        <main className="min-w-0 lg:col-span-9">
+        <main className="min-w-0 xl:col-span-7">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <p className="text-sm font-bold text-slate-700">
               {list.totalCount > 0 ? (
                 <>
-                  총 <span className="font-black text-[#1A56DB]">{list.totalCount}</span>명 · {from}–{to}번째
+                  검색 결과 <span className="font-black text-[#1A56DB]">{list.totalCount}</span>명 · {from}–{to}
+                  번째
                 </>
               ) : (
                 "조건에 맞는 멘토 0명"
@@ -80,7 +86,7 @@ export function MentorsListBody(props: {
 
           {list.cards.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-10 text-center">
-              <p className="text-lg font-black text-slate-900">조건에 맞는 멘토가 없어요</p>
+              <p className="text-lg font-black text-slate-900">아직 데이터가 없어요</p>
               <p className="mt-2 text-sm text-slate-600">필터를 조정하거나 검색어를 바꿔 보세요.</p>
               <Link href="/mentors" className="mt-4 inline-block text-sm font-bold text-[#1A56DB] underline">
                 필터 초기화
@@ -88,8 +94,25 @@ export function MentorsListBody(props: {
             </div>
           ) : (
             <>
-              <MentorGrid cards={list.cards} favoriteIds={favoriteSet} isLoggedIn={props.isLoggedIn} />
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <MentorGrid
+                cards={list.cards}
+                favoriteIds={favoriteSet}
+                isLoggedIn={props.isLoggedIn}
+                view={filters.view}
+              />
+
+              {list.hasMore ? (
+                <div className="mt-6">
+                  <Link
+                    href={mentorsListHref(hrefBase, { page: String(list.page + 1) })}
+                    className="flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-dashed border-[#1A56DB]/40 bg-blue-50/50 text-sm font-extrabold text-[#1A56DB] transition hover:bg-blue-50"
+                  >
+                    더 많은 멘토 보기
+                  </Link>
+                </div>
+              ) : null}
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 {list.page > 1 ? (
                   <Link
                     href={mentorsListHref(hrefBase, { page: String(list.page - 1) })}
@@ -101,18 +124,14 @@ export function MentorsListBody(props: {
                 <span className="text-sm font-bold text-slate-500">
                   {list.page} / {Math.max(1, Math.ceil(list.totalCount / list.pageSize))}
                 </span>
-                {list.hasMore ? (
-                  <Link
-                    href={mentorsListHref(hrefBase, { page: String(list.page + 1) })}
-                    className="min-h-[44px] rounded-xl bg-[#1A56DB] px-6 text-sm font-extrabold text-white hover:bg-[#1648c0]"
-                  >
-                    더 보기
-                  </Link>
-                ) : null}
               </div>
             </>
           )}
         </main>
+
+        <aside className="min-w-0 xl:col-span-3 xl:sticky xl:top-6 xl:self-start">
+          <MentorsListSidebar favoriteCards={favoriteCards} />
+        </aside>
       </div>
     </div>
   );

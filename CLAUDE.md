@@ -28,7 +28,7 @@
 
 ## 절대 잠금값 (변경 금지)
 - 상단 네비: 멘토 찾기 │ 질문방 │ 커뮤니티 │ 맞춤의뢰 │ 캐시결제 │ 마이페이지
-- 요금제: Limited 주4개 / Standard 주9개 / Premium FUP(내부16개)
+- 요금제(표기): 베이직 주4개 / 스탠다드 주9개 / 프리미엄 FUP(내부16개) — 내부 tier id: limited/standard/premium
 - cap: 1.0 / 2.5 / 4.5
 - 수수료: 구독 플랫폼30%/멘토70%, 맞춤의뢰 플랫폼20%/멘토80%
 - 질문방 구조: mentor_student_room → question_threads → question_messages

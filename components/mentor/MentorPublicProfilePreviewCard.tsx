@@ -3,6 +3,7 @@
 import { Camera, HelpCircle, PlayCircle } from "lucide-react";
 import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
+import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
 import { priceLabelFromPlanRow } from "@/lib/subscribe/subscribePageQueries";
 import {
   formatMentorPriceLabel,
@@ -163,7 +164,7 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
               {(["limited", "standard", "premium"] as const).map((tier) => {
                 const row = stats?.byTier?.[tier] ?? null;
                 const price = row ? priceLabelFromPlanRow(row) : "—";
-                const label = tier.charAt(0).toUpperCase() + tier.slice(1);
+                const label = getSubscribeCatalogPlan(tier).label;
                 const badgeColor =
                   tier === "limited"
                     ? "bg-emerald-50 text-emerald-800 border-emerald-100"

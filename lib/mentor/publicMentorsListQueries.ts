@@ -8,7 +8,11 @@ import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVis
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
-import { cashKrwForSubscribeTier } from "@/lib/subscribe/subscribePlanCatalog";
+import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
+import type {
+  MentorGradeFilter,
+  MentorTypeFilter,
+} from "@/lib/mentor/mentorsListSearchParams";
 type Row = Record<string, unknown>;
 
 export const PUBLIC_MENTORS_RLS_HINT =
@@ -25,6 +29,10 @@ export type MentorTierPrice = {
   tier: SubscribePlanTier;
   label: string;
   cashLabel: string;
+  cashKrw: number;
+  weeklyLabel: string;
+  priorityLabel: string;
+  recommend?: boolean;
 };
 
 export type MentorPublicListCard = {
@@ -196,7 +204,7 @@ async function batchPlanLabels(
       }
       const label =
         standardPrice != null
-          ? `Standard ${formatMoney(standardPrice)}`
+          ? `${getSubscribeCatalogPlan("standard").label} ${formatMoney(standardPrice)}`
           : minPrice != null
             ? `대표 ${formatMoney(minPrice)}~`
             : null;
@@ -225,15 +233,19 @@ function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPr
   const tiers: SubscribePlanTier[] = ["limited", "standard", "premium"];
   const tierPrices: MentorTierPrice[] = tiers.map((tier) => {
     const row = byTier?.[tier] ?? null;
+    const catalog = getSubscribeCatalogPlan(tier);
     const krw = priceKrwFromRow(row, tier);
-    const label = tier === "limited" ? "Limited" : tier === "standard" ? "Standard" : "Premium";
     return {
       tier,
-      label,
+      label: catalog.label,
       cashLabel: `${krw.toLocaleString("ko-KR")} 캐시`,
+      cashKrw: krw,
+      weeklyLabel: catalog.weeklyLabel,
+      priorityLabel: catalog.priorityLabel,
+      recommend: catalog.recommend,
     };
   });
-  const minPriceKrw = tierPrices.length ? Math.min(...tierPrices.map((t) => priceKrwFromRow(byTier?.[t.tier] ?? null, t.tier))) : null;
+  const minPriceKrw = tierPrices.length ? Math.min(...tierPrices.map((t) => t.cashKrw)) : null;
   return { tierPrices, minPriceKrw };
 }
 
@@ -252,27 +264,51 @@ function subjectMatchesPreset(subject: string, subjectsText: string): boolean {
   if (!subject) return true;
   const blob = subjectsText.toLowerCase();
   if (subject === "기타") {
-    const presets = ["수학", "영어", "국어", "과학", "사회"];
+    const presets = ["수학", "영어", "국어", "과학", "사회", "논술", "코딩"];
     return !presets.some((p) => blob.includes(p));
   }
   return blob.includes(subject.toLowerCase());
 }
 
+function gradeMatchesFilter(grades: MentorGradeFilter[], blob: string): boolean {
+  if (!grades.length) return true;
+  return grades.some((g) => {
+    if (g === "중등") return /중등|중학|중1|중2|중3/.test(blob);
+    if (g === "고등") return /고등|고1|고2|고3|내신|수능/.test(blob);
+    if (g === "N수") return /n수|재수|검정/.test(blob);
+    if (g === "공통") return /공통|전학년|전 과목/.test(blob);
+    return false;
+  });
+}
+
+function mentorTypeMatchesFilter(types: MentorTypeFilter[], blob: string): boolean {
+  if (!types.length) return true;
+  return types.some((t) => {
+    if (t === "현직교사") return /교사|교원|현직/.test(blob);
+    if (t === "전문강사") return /강사|전문/.test(blob);
+    if (t === "이대치대학대") return /이과|치대|학대|의대|한의|약대|수의/.test(blob);
+    if (t === "대학생멘토") return /대학|학번|재학|원생/.test(blob);
+    return false;
+  });
+}
+
 function cardMatchesFilters(f: MentorsListFilters, card: MentorPublicListCard): boolean {
   const d = card.display;
-  if (f.q) {
-    const blob = [d.displayName, d.intro, d.subjects, d.tags, d.university, d.department, d.highSchool]
-      .join(" ")
-      .toLowerCase();
-    if (!blob.includes(f.q.toLowerCase())) return false;
-  }
+  const blob = [d.displayName, d.intro, d.subjects, d.tags, d.university, d.department, d.highSchool, d.grade]
+    .join(" ")
+    .toLowerCase();
+
+  if (f.q && !blob.includes(f.q.toLowerCase())) return false;
   if (f.school && !schoolMatchesPreset(f.school, d.university)) return false;
   if (!f.school && f.university && !d.university.toLowerCase().includes(f.university.toLowerCase())) return false;
   if (f.subject && !subjectMatchesPreset(f.subject, d.subjects || d.tags)) return false;
   if (f.verifiedOnly && !mentorIsVerified(d.verification)) return false;
   if (f.verification && !d.verification.toLowerCase().includes(f.verification.toLowerCase())) return false;
+  if (!gradeMatchesFilter(f.grades, blob)) return false;
+  if (!mentorTypeMatchesFilter(f.mentorTypes, blob)) return false;
+
   const priceMin = f.priceMin != null && f.priceMin > 0 ? f.priceMin : null;
-  const priceMax = f.priceMax != null && f.priceMax < 300_000 ? f.priceMax : null;
+  const priceMax = f.priceMax != null && f.priceMax < 500_000 ? f.priceMax : null;
   if (priceMin != null && card.minPriceKrw != null && card.minPriceKrw < priceMin) return false;
   if (priceMax != null && card.minPriceKrw != null && card.minPriceKrw > priceMax) return false;
   return true;
@@ -280,8 +316,24 @@ function cardMatchesFilters(f: MentorsListFilters, card: MentorPublicListCard): 
 
 function sortKey(f: MentorsListSort): (a: MentorPublicListCard, b: MentorPublicListCard) => number {
   switch (f) {
+    case "popular":
+      return (a, b) => {
+        const scoreA = (a.reviewCount ?? 0) * 10 + (a.avgRating ?? 0);
+        const scoreB = (b.reviewCount ?? 0) * 10 + (b.avgRating ?? 0);
+        return scoreB - scoreA;
+      };
     case "review":
       return (a, b) => (b.reviewCount ?? -1e9) - (a.reviewCount ?? -1e9);
+    case "rating":
+      return (a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1);
+    case "response":
+      return (a, b) => {
+        const parseMin = (label: string) => {
+          const m = label.match(/(\d+)\s*분/);
+          return m ? Number(m[1]) : Number.POSITIVE_INFINITY;
+        };
+        return parseMin(a.stats.avgResponseLabel) - parseMin(b.stats.avgResponseLabel);
+      };
     case "price_desc":
       return (a, b) => (b.minPriceKrw ?? -1) - (a.minPriceKrw ?? -1);
     case "price_asc":

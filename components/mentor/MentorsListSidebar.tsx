@@ -1,59 +1,80 @@
 import Link from "next/link";
 import type { MentorPublicListCard } from "@/lib/mentor/publicMentorsListQueries";
 
-/**
- * 멘토 목록 우측: 안내, 인기 태그, CTA — 더미 멘토 없이 실제 카드에서만 집계.
- */
-export function MentorsListSidebar(props: { cards: MentorPublicListCard[] }) {
+export function MentorsListSidebar(props: {
+  favoriteCards: MentorPublicListCard[];
+}) {
+  const favorites = props.favoriteCards.slice(0, 5);
 
   return (
-    <div className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-[0_4px_24px_rgba(15,23,42,0.06)] sm:p-5">
-      <div className="space-y-5">
-      <div className="rounded-2xl border border-blue-100/80 bg-gradient-to-br from-blue-600 to-indigo-700 p-5 text-white shadow-md sm:p-5">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-white/80">시작하기</p>
-        <h2 className="mt-2 text-xl font-black leading-tight">멘토와 연결해 보세요</h2>
-        <p className="mt-2 text-sm font-medium leading-relaxed text-blue-50">
-          프로필에서 구독·질문방으로 이어질 수 있어요. 학생 계정으로 로그인하면 질문방이 열려요.
-        </p>
-        <div className="mt-5 flex flex-col gap-2">
-          <Link
-            href={`/login/student?next=${encodeURIComponent("/mentors")}`}
-            className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-4 text-sm font-extrabold text-blue-800 shadow-sm transition hover:bg-blue-50"
-          >
-            학생 로그인
-          </Link>
-          <Link
-            href="/question-room"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-xl border-2 border-white/40 px-4 text-sm font-extrabold text-white transition hover:bg-white/10"
-          >
-            내 질문방
-          </Link>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200/90 bg-slate-50/50 p-4 sm:p-5">
-        <h2 className="text-sm font-black text-slate-900 mb-3">이용 안내</h2>
-        <ol className="list-decimal list-inside space-y-2 text-xs font-bold text-slate-600">
-          <li>멘토 프로필 확인</li>
-          <li>요금제 선택</li>
-          <li>구독 결제</li>
-          <li>질문방에서 질문 시작</li>
-        </ol>
-      </div>
-
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/90 p-4 sm:p-5">
-        <h2 className="text-sm font-black text-slate-900">찜한 멘토</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          찜·알림은 아직 연결되지 않았어요. <span className="font-bold text-slate-800">준비 중</span>입니다.
-        </p>
-        <span
-          className="mt-4 inline-flex w-full min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-400"
-          title="다음 릴리스에서 제공할 예정입니다"
-          role="status"
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-black text-slate-900">구독제 이용 안내</h2>
+        <ul className="mt-3 space-y-2.5 text-xs font-medium leading-relaxed text-slate-600">
+          <li className="flex gap-2">
+            <span className="text-[#1A56DB]">•</span>
+            정해진 질문 횟수 내에서 자유롭게 질문하고 답변을 받아보세요
+          </li>
+          <li className="flex gap-2">
+            <span className="text-[#1A56DB]">•</span>
+            답변 우선순위는 요금제에 따라 다르게 적용됩니다
+          </li>
+          <li className="flex gap-2">
+            <span className="text-[#1A56DB]">•</span>
+            모든 질문과 답변은 질문방에서 확인할 수 있어요
+          </li>
+        </ul>
+        <Link
+          href="/subscribe"
+          className="mt-4 inline-flex text-xs font-extrabold text-[#1A56DB] hover:underline"
         >
-          ♥ 찜하기 (준비 중)
-        </span>
+          자세히 보기 &gt;
+        </Link>
       </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-black text-slate-900">찜한 멘토</h2>
+        {favorites.length === 0 ? (
+          <p className="mt-2 text-xs text-slate-500">아직 찜한 멘토가 없어요. 카드의 하트를 눌러 저장해 보세요.</p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {favorites.map((c) => {
+              const minPrice = c.minPriceKrw;
+              const priceText =
+                minPrice != null ? `${minPrice.toLocaleString("ko-KR")}캐시~` : "요금 확인";
+              return (
+                <li key={c.mentorId}>
+                  <Link
+                    href={`/mentors/${c.mentorId}`}
+                    className="block rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 transition hover:border-[#1A56DB]/30"
+                  >
+                    <p className="text-xs font-black text-slate-900">{c.display.displayName}</p>
+                    <p className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
+                      {c.display.university || "학교 정보 준비 중"} · {priceText}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Link
+          href="/mentors?view=list"
+          className="mt-4 inline-flex text-xs font-extrabold text-[#1A56DB] hover:underline"
+        >
+          찜 보기 &gt;
+        </Link>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-600 to-indigo-700 p-5 text-white shadow-md">
+        <p className="text-[10px] font-extrabold uppercase tracking-wide text-white/80">이벤트</p>
+        <h3 className="mt-1 text-base font-black leading-snug">친구 초대하고 무제한 질문 이용권 받자!</h3>
+        <p className="mt-2 text-xs font-medium leading-relaxed text-violet-100">
+          친구가 가입하면 양쪽 모두 보너스 질문권을 드려요. (준비 중)
+        </p>
+        <span className="mt-4 inline-flex rounded-lg bg-white/20 px-3 py-1.5 text-[11px] font-bold">
+          곧 오픈
+        </span>
       </div>
     </div>
   );
