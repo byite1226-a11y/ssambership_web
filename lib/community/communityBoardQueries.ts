@@ -234,11 +234,11 @@ export async function listPopularHashtags(
 
 function getMockHashtags(): CommunityHashtagRow[] {
   return [
-    { tag: "\uC218\uD559\uACF5\uBD80\uBC95", count: 1284 },
-    { tag: "\uB0B4\uC2E0\uD575\uC2EC", count: 892 },
-    { tag: "\uC218\uB2A5\uD2B9\uAC15", count: 756 },
-    { tag: "\uBA58\uD1A0\uAD6C\uB3C5", count: 621 },
-    { tag: "\uC9C4\uB85C\uC0C1\uB2F4", count: 498 },
+    { tag: "수학공부법", count: 1284 },
+    { tag: "내신관리", count: 982 },
+    { tag: "대학생활", count: 877 },
+    { tag: "진로고민", count: 765 },
+    { tag: "시간관리", count: 642 },
   ];
 }
 

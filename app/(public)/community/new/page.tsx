@@ -19,13 +19,17 @@ export default async function CommunityNewPage(props: Props) {
   const draftSaved = sp.draft === "1";
 
   const supabase = await createClient();
-  const [tags, mentors] = await Promise.all([listPopularHashtags(supabase, 6), loadCommunityPopularMentors(supabase)]);
+  const [tags, mentors, sidebarStats] = await Promise.all([
+    listPopularHashtags(supabase, 6),
+    loadCommunityPopularMentors(supabase),
+    communitySidebarStatsForUser(supabase, user.id),
+  ]);
 
   return (
     <CommunityLayoutShell
       activeNav="none"
       rightAsidePromo="board"
-      sidebarStats={communitySidebarStatsForUser(user.id)}
+      sidebarStats={sidebarStats}
       hashtags={tags.rows}
       popularMentors={mentors}
     >

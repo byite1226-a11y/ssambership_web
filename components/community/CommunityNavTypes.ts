@@ -19,5 +19,7 @@ export type CommunityPopularMentor = {
   id: string;
   name: string;
   rank: number;
+  school?: string | null;
+  priceLabel?: string | null;
   subject?: string | null;
 };

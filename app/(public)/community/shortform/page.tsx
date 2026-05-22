@@ -16,10 +16,11 @@ export default async function CommunityShortformPage(props: Props) {
   const category = (typeof sp.category === "string" ? sp.category : "all") as ShortformCategorySlug;
   const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
-  const [{ items, error }, tags, mentors] = await Promise.all([
+  const [{ items, error }, tags, mentors, sidebarStats] = await Promise.all([
     listShortformFeed(supabase, { category, limit: 48 }),
     listPopularHashtags(supabase, 6),
     loadCommunityPopularMentors(supabase),
+    communitySidebarStatsForUser(supabase, user?.id ?? null),
   ]);
 
   const isMentor = profile?.role === "mentor";
@@ -28,7 +29,7 @@ export default async function CommunityShortformPage(props: Props) {
     <CommunityLayoutShell
       activeNav="shortform"
       rightAsidePromo="shortform"
-      sidebarStats={communitySidebarStatsForUser(user?.id ?? null)}
+      sidebarStats={sidebarStats}
       hashtags={tags.rows}
       popularMentors={mentors}
     >

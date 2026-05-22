@@ -1,75 +1,59 @@
-import { CommunityBoardEmptyPanel } from "@/components/community/CommunityBoardEmptyPanel";
-import { CommunityBoardPostRow } from "@/components/community/CommunityBoardPostRow";
+import { Suspense } from "react";
+import { CommunityHomeFeed } from "@/components/community/CommunityHomeFeed";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
-import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
-import { listBoardPosts } from "@/lib/community/communityQueries";
+import type { CommunityPostCategorySlug } from "@/lib/community/communityBoardConstants";
+import {
+  listCommunityBoardPosts,
+  listPopularHashtags,
+  listWeeklyPopularPosts,
+} from "@/lib/community/communityBoardQueries";
+import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
 
-function boardListDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
-  if (role === "mentor") {
-    return "공부법, 해설, 후기, 학습 팁을 읽고 댓글로 소통해 보세요. 새 게시글은 아래에서 작성할 수 있어요.";
-  }
-  if (!loggedIn) {
-    return "공부법, 해설, 후기, 학습 팁을 둘러볼 수 있어요. 댓글·스크랩은 로그인 후 이용할 수 있습니다.";
-  }
-  return "공부법, 해설, 후기, 학습 팁을 읽고 댓글로 소통해 보세요.";
-}
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
-export default async function CommunityBoardPage() {
-  const { user, profile } = await getServerUserWithProfile();
-  const loggedIn = user != null;
-  const role = profile?.role;
+export default async function CommunityBoardPage(props: Props) {
+  const sp = (await props.searchParams) ?? {};
+  const catRaw = sp.category;
+  const category = (typeof catRaw === "string" ? catRaw : "all") as CommunityPostCategorySlug;
 
+  const { user } = await getServerUserWithProfile();
   const supabase = await createClient();
-  const { rows, error } = await listBoardPosts(supabase, 50);
-  if (error) console.error("[community/board] listBoardPosts", error);
 
-  const failed = Boolean(error);
-  const empty = !failed && rows.length === 0;
+  const [feed, tags, popular, mentors, sidebarStats] = await Promise.all([
+    listCommunityBoardPosts(supabase, { category, limit: 12 }),
+    listPopularHashtags(supabase, 6),
+    listWeeklyPopularPosts(supabase, 3),
+    loadCommunityPopularMentors(supabase),
+    communitySidebarStatsForUser(supabase, user?.id ?? null),
+  ]);
+
+  if (feed.error) console.error("[community/board] feed", feed.error);
 
   return (
     <CommunityLayoutShell
       activeNav="board"
       rightAsidePromo="board"
-      hero={
-        <CommunityPageHero
-          eyebrow="게시판"
-          title="게시글 목록"
-          description={boardListDescription(role, loggedIn)}
-          primaryAction={buildCommunityHeroPrimaryAction({
-            surface: "board_list",
-            role,
-            loggedIn,
-            nextPath: "/community/board",
-          })}
-          secondaryAction={{ href: "/community", label: "커뮤니티 홈", tone: "slate" }}
-        />
-      }
+      sidebarStats={sidebarStats}
+      hashtags={tags.rows}
+      popularPosts={popular.posts}
+      popularMentors={mentors}
     >
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-slate-100 bg-gradient-to-r from-blue-50/40 to-indigo-50/40 px-5 py-4 text-sm text-slate-700 shadow-sm">
-          <p className="font-black text-slate-900">게시판 안내</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:text-sm">
-            공부법·해설·후기·학습 팁 중심의 글을 카드 형태로 모았어요. 카테고리·작성자 역할·댓글 수를 함께 확인해 보세요.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
-          {failed ? (
-            <p className="p-4 text-sm text-slate-600">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-          ) : empty ? (
-            <CommunityBoardEmptyPanel role={role} loggedIn={loggedIn} />
-          ) : (
-            <ul className="space-y-4">
-              {rows.map((r, i) => (
-                <CommunityBoardPostRow key={typeof r.id === "string" ? r.id : `bd-${i}`} row={r} index={i} />
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      <header className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <h1 className="text-xl font-black text-slate-900">게시글 목록</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          공부법, 해설, 후기, 학습 팁을 카테고리별로 모아 봤어요. 댓글과 스크랩은 로그인 후 이용할 수 있어요.
+        </p>
+      </header>
+      <Suspense fallback={<p className="text-sm text-slate-500">불러오는 중…</p>}>
+        <CommunityHomeFeed
+          initialPosts={feed.posts}
+          initialCursor={feed.nextCursor}
+          initialCategory={category}
+          basePath="/community/board"
+        />
+      </Suspense>
     </CommunityLayoutShell>
   );
 }

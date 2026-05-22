@@ -13,9 +13,14 @@ type Props = {
   initialPosts: CommunityBoardPostCard[];
   initialCursor: string | null;
   initialCategory: string;
+  /** 목록 URL 기준 (홈: /community, 게시판: /community/board) */
+  basePath?: string;
+  writeHref?: string;
 };
 
 export function CommunityHomeFeed(props: Props) {
+  const basePath = props.basePath ?? "/community";
+  const writeHref = props.writeHref ?? "/community/new";
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get("category") ?? props.initialCategory ?? "all";
@@ -52,7 +57,7 @@ export function CommunityHomeFeed(props: Props) {
     return () => {
       cancelled = true;
     };
-  }, [props.initialPosts, props.initialCursor, props.initialCategory, category]);
+  }, [props.initialPosts, props.initialCursor, props.initialCategory, category, basePath]);
 
   const loadMore = useCallback(async () => {
     if (loading || done || !cursor) return;
@@ -89,12 +94,13 @@ export function CommunityHomeFeed(props: Props) {
     const p = new URLSearchParams(searchParams.toString());
     if (slug === "all") p.delete("category");
     else p.set("category", slug);
-    router.push(`/community?${p.toString()}`);
+    const qs = p.toString();
+    router.push(qs ? `${basePath}?${qs}` : basePath);
   }
 
   return (
     <section className="space-y-4">
-      <nav className="flex flex-wrap gap-2" aria-label={"\uCE74\uD14C\uACE0\uB9AC"}>
+      <nav className="flex flex-wrap gap-2" aria-label="카테고리">
         {COMMUNITY_POST_CATEGORIES.map((c) => {
           const active = category === c.slug;
           return (
@@ -115,9 +121,12 @@ export function CommunityHomeFeed(props: Props) {
       </nav>
 
       {posts.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-500">
-          {"\uC544\uC9C1 \uAC8C\uC2DC\uAE00\uC774 \uC5C6\uC2B5\uB2C8\uB2E4. \uCCAB \uAE00\uC744 \uC791\uC131\uD574 \uBCF4\uC138\uC694!"}
-        </p>
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-12 text-center">
+          <p className="text-sm font-bold text-slate-800">아직 게시글이 없어요. 첫 번째 글을 작성해보세요!</p>
+          <Link href={writeHref} className="mt-4 inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
+            글쓰기 하러 가기
+          </Link>
+        </div>
       ) : (
         <ul className="space-y-3">
           {posts.map((post) => (
@@ -130,19 +139,20 @@ export function CommunityHomeFeed(props: Props) {
 
       <div ref={sentinelRef} className="h-8" aria-hidden />
       {loading ? (
-        <p className="text-center text-xs font-semibold text-slate-500">{"\uBD88\uB7EC\uC624\uB294 \uC911\u2026"}</p>
+        <p className="text-center text-xs font-semibold text-slate-500">불러오는 중…</p>
       ) : null}
       {done && posts.length > 0 ? (
-        <p className="text-center text-xs text-slate-400">{"\uBAA8\uB450 \uBD88\uB7EC\uC654\uC2B5\uB2C8\uB2E4."}</p>
+        <p className="text-center text-xs text-slate-400">모두 불러왔습니다.</p>
       ) : null}
 
       <Link
-        href="/community/new"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full text-2xl font-black text-white shadow-lg transition hover:scale-105 sm:bottom-8 sm:right-8"
+        href={writeHref}
+        className="fixed bottom-6 right-6 z-40 flex h-14 items-center gap-1 rounded-full px-5 text-sm font-extrabold text-white shadow-lg transition hover:scale-105 sm:bottom-8 sm:right-8"
         style={{ backgroundColor: PRIMARY }}
-        aria-label={"\uAE00\uC4F0\uAE30"}
+        aria-label="글쓰기"
       >
-        +
+        <span className="text-xl leading-none">+</span>
+        <span>글쓰기</span>
       </Link>
     </section>
   );

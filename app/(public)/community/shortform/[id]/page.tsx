@@ -28,13 +28,17 @@ export default async function CommunityShortformDetailPage(props: Props) {
 
   const { rows: comments } = item ? await loadCommunityComments(supabase, "shortform", id) : { rows: [] };
   const returnPath = `/community/shortform/${id}`;
-  const [tags, mentors] = await Promise.all([listPopularHashtags(supabase, 6), loadCommunityPopularMentors(supabase)]);
+  const [tags, mentors, sidebarStats] = await Promise.all([
+    listPopularHashtags(supabase, 6),
+    loadCommunityPopularMentors(supabase),
+    communitySidebarStatsForUser(supabase, user?.id ?? null),
+  ]);
 
   return (
     <CommunityLayoutShell
       activeNav="shortform"
       rightAsidePromo="shortform"
-      sidebarStats={communitySidebarStatsForUser(user?.id ?? null)}
+      sidebarStats={sidebarStats}
       hashtags={tags.rows}
       popularMentors={mentors}
     >

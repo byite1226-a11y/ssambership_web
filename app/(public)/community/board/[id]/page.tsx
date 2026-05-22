@@ -52,13 +52,17 @@ export default async function CommunityBoardDetailPage(props: Props) {
 
   const reactions = post ? await getPostReactionFlags(supabase, id, user?.id ?? null) : { liked: false, scrapped: false };
 
-  const [tags, mentors] = await Promise.all([listPopularHashtags(supabase, 6), loadCommunityPopularMentors(supabase)]);
+  const [tags, mentors, sidebarStats] = await Promise.all([
+    listPopularHashtags(supabase, 6),
+    loadCommunityPopularMentors(supabase),
+    communitySidebarStatsForUser(supabase, user?.id ?? null),
+  ]);
 
   return (
     <CommunityLayoutShell
       activeNav="board"
       rightAsidePromo="board"
-      sidebarStats={communitySidebarStatsForUser(user?.id ?? null)}
+      sidebarStats={sidebarStats}
       hashtags={tags.rows}
       popularMentors={mentors}
     >
