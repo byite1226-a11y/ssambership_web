@@ -9,14 +9,17 @@ import { isAuthorOfPost } from "@/lib/customRequest/customRequestQueries";
 import { findBannedPhrase } from "@/lib/customRequest/bannedPhrases";
 import {
   buildPostAttachmentStorageObjectPath,
-  getPostAttachmentFileFromFormData,
   getOriginalFilenameForDisplay,
+  getPostAttachmentFilesFromFormData,
+  POST_ATTACHMENT_MAX_FILE_BYTES,
+  POST_ATTACHMENT_MAX_FILES,
   POST_ATTACHMENT_STORAGE_BUCKET,
   removePostAttachmentStorageObjectBestEffort,
   validatePostAttachmentFileForUpload,
   validatePostAttachmentFileMagicBytes,
   validatePostAttachmentStoragePath,
 } from "@/lib/customRequest/postAttachmentFiles";
+import { CUSTOM_REQUEST_BANNED_WARNING } from "@/lib/customRequest/bannedPhrases";
 
 const NEW = "/custom-request/new";
 
@@ -46,11 +49,17 @@ export async function submitCustomRequestNew(formData: FormData) {
   if (!isDraft && (!category || !subject || !body)) {
     redirect(errRedirect("카테고리·제목·의뢰 내용을 입력하세요."));
   }
+  if (!isDraft && body.length < 50) {
+    redirect(errRedirect("의뢰 내용은 최소 50자 이상 입력해 주세요."));
+  }
+  if (!isDraft && !deadline) {
+    redirect(errRedirect("마감일을 선택해 주세요."));
+  }
 
   const combined = `${subject}\n${goal}\n${body}`;
   const banned = findBannedPhrase(combined);
   if (!isDraft && banned) {
-    redirect(errRedirect(`금지 표현이 포함되어 있습니다: "${banned}". 대필·대신 작성 요청은 등록할 수 없습니다.`));
+    redirect(errRedirect(CUSTOM_REQUEST_BANNED_WARNING));
   }
   if (!isDraft && !agreed) {
     redirect(errRedirect("금지행위 동의·외부 연락 금지에 동의해 주세요."));
@@ -62,10 +71,15 @@ export async function submitCustomRequestNew(formData: FormData) {
     redirect(errRedirect("예산은 10,000~200,000 캐시 범위로 입력해 주세요."));
   }
 
-  const file = getPostAttachmentFileFromFormData(formData, "postAttachmentFile");
-  let fileBuffer: ArrayBuffer | null = null;
-  let resolvedOriginalName: string | null = null;
-  if (file) {
+  const attachFiles = getPostAttachmentFilesFromFormData(formData, "postAttachmentFiles");
+  if (attachFiles.length > POST_ATTACHMENT_MAX_FILES) {
+    redirect(errRedirect(`첨부 파일은 최대 ${POST_ATTACHMENT_MAX_FILES}개까지입니다.`));
+  }
+  const preparedFiles: { file: File; buffer: ArrayBuffer; originalName: string }[] = [];
+  for (const file of attachFiles) {
+    if (file.size > POST_ATTACHMENT_MAX_FILE_BYTES) {
+      redirect(errRedirect("첨부 파일은 각 50MB 이하여야 합니다."));
+    }
     const verr = validatePostAttachmentFileForUpload({
       name: file.name,
       size: file.size,
@@ -74,15 +88,16 @@ export async function submitCustomRequestNew(formData: FormData) {
     if (verr) {
       redirect(errRedirect(verr));
     }
-    resolvedOriginalName = getOriginalFilenameForDisplay(file.name);
+    const resolvedOriginalName = getOriginalFilenameForDisplay(file.name);
     if (resolvedOriginalName == null) {
       redirect(errRedirect("파일 이름이 비어 있거나 사용할 수 없습니다."));
     }
-    fileBuffer = await file.arrayBuffer();
+    const fileBuffer = await file.arrayBuffer();
     const mErr = validatePostAttachmentFileMagicBytes(file.type, fileBuffer);
     if (mErr) {
       redirect(errRedirect(mErr));
     }
+    preparedFiles.push({ file, buffer: fileBuffer, originalName: resolvedOriginalName });
   }
 
   const r = await insertCustomRequestPost(supabase, {
@@ -104,37 +119,39 @@ export async function submitCustomRequestNew(formData: FormData) {
     redirect(errRedirect(r.error));
   }
 
-  if (file && fileBuffer && resolvedOriginalName) {
+  if (preparedFiles.length > 0) {
     const row = r.row;
     if (!row || isAuthorOfPost(user.id, row).ok === false) {
       redirect(errRedirect("의뢰 등록 직후 본인 확인에 실패해 첨부를 저장할 수 없습니다."));
     }
-    const { objectPath } = buildPostAttachmentStorageObjectPath(r.id, file.type, file.name);
-    const pCheck = validatePostAttachmentStoragePath(objectPath, r.id);
-    if (pCheck.ok === false) {
-      redirect(errRedirect(pCheck.userMessage));
-    }
-    const { error: upErr } = await supabase.storage
-      .from(POST_ATTACHMENT_STORAGE_BUCKET)
-      .upload(objectPath, fileBuffer, {
-        contentType: file.type && file.type.length > 0 ? file.type : "application/octet-stream",
-        upsert: false,
+    for (const { file, buffer, originalName } of preparedFiles) {
+      const { objectPath } = buildPostAttachmentStorageObjectPath(r.id, file.type, file.name);
+      const pCheck = validatePostAttachmentStoragePath(objectPath, r.id);
+      if (pCheck.ok === false) {
+        redirect(errRedirect(pCheck.userMessage));
+      }
+      const { error: upErr } = await supabase.storage
+        .from(POST_ATTACHMENT_STORAGE_BUCKET)
+        .upload(objectPath, buffer, {
+          contentType: file.type && file.type.length > 0 ? file.type : "application/octet-stream",
+          upsert: false,
+        });
+      if (upErr) {
+        console.error("[submitCustomRequestNew] post attachment storage upload", upErr);
+        redirect(errRedirect(upErr.message || "첨부 업로드에 실패했습니다. 잠시 후 다시 시도하세요."));
+      }
+      const ins = await insertCustomRequestPostAttachment(supabase, {
+        postId: r.id,
+        uploadedBy: user.id,
+        storagePath: objectPath,
+        originalFilename: originalName,
+        mimeType: (file.type || "application/octet-stream").toLowerCase(),
+        fileSizeBytes: file.size,
       });
-    if (upErr) {
-      console.error("[submitCustomRequestNew] post attachment storage upload", upErr);
-      redirect(errRedirect(upErr.message || "첨부 업로드에 실패했습니다. 잠시 후 다시 시도하세요."));
-    }
-    const ins = await insertCustomRequestPostAttachment(supabase, {
-      postId: r.id,
-      uploadedBy: user.id,
-      storagePath: objectPath,
-      originalFilename: resolvedOriginalName,
-      mimeType: (file.type || "application/octet-stream").toLowerCase(),
-      fileSizeBytes: file.size,
-    });
-    if (ins.ok === false) {
-      await removePostAttachmentStorageObjectBestEffort(supabase, objectPath);
-      redirect(errRedirect(`첨부 메타 저장 실패: ${ins.error}`));
+      if (ins.ok === false) {
+        await removePostAttachmentStorageObjectBestEffort(supabase, objectPath);
+        redirect(errRedirect(`첨부 메타 저장 실패: ${ins.error}`));
+      }
     }
   }
 

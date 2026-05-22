@@ -216,7 +216,7 @@ export default async function MentorCustomRequestDashboardPage() {
               </p>
             </div>
             <p className="mt-2 text-[12px] font-semibold text-slate-500">
-              정산 대기 {deliveryPendingCount}건
+              납품 대기 {deliveryPendingCount}건
             </p>
           </div>
 

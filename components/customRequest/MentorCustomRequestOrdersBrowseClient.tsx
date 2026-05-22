@@ -21,7 +21,7 @@ const TABS: { id: MentorOrderBrowseTabId; label: string; countKey: string }[] = 
 ];
 
 // Step labels matching reference image (req_15 card stepper)
-const STEP_LABELS = ["수락됨", "작업 진행 중", "납품 대기", "학생 확인", "완료 및 정산"];
+const STEP_LABELS = ["작업 대기", "작업 중", "납품 대기", "수정 요청", "완료"];
 
 function getStepIndex(row: Row, disputeSet: ReadonlySet<string>): number {
   const tab = classifyMentorOrderBrowseTab(row, disputeSet);
@@ -42,7 +42,7 @@ function getStatusBadge(row: Row, disputeSet: ReadonlySet<string>): { label: str
   if (tab === "billing") return { label: "작업 대기", cls: "bg-amber-50 text-amber-800 border-amber-200" };
   if (tab === "work") return { label: "작업 진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
   if (tab === "delivery") return { label: "납품 대기", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
-  if (tab === "revision") return { label: "학생 확인", cls: "bg-orange-50 text-orange-700 border-orange-200" };
+  if (tab === "revision") return { label: "수정 요청", cls: "bg-orange-50 text-orange-700 border-orange-200" };
   if (tab === "done") return { label: "종료됨", cls: "bg-slate-50 text-slate-600 border-slate-200" };
   return { label: "작업 진행 중", cls: "bg-blue-50 text-blue-700 border-blue-200" };
 }

@@ -10,6 +10,8 @@ import {
   normalizedPrimaryOrderStatus,
   orderStatusBadgeLabelForNorm,
   orderWorkspaceCurrentStepIndex,
+  ORDER_ROOM_TIMELINE_STEPS,
+  formatOrderRoomDate,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { confirmStudentCustomOrderPaymentAction } from "@/lib/customRequest/orderStudentActions";
 import type { AppRole } from "@/lib/types/user";
@@ -326,21 +328,39 @@ export type LeftContextProps = {
   orderIdDisplay: string;
 };
 
-function OrderStepStrip({ currentIndex }: { currentIndex: number }) {
-  const steps = [
-    { title: "주문 생성", desc: "주문방이 생성되었어요." },
-    { title: "진행 중", desc: "멘토가 과제를 진행 중이에요." },
-    { title: "납품 완료", desc: "멘토가 파일을 제출했어요." },
-    { title: "검토 중", desc: "파일을 확인하고 있어요." },
-    { title: "주문 완료", desc: "수락 시 주문이 완료됩니다." },
-  ];
+function OrderStepStrip({
+  currentIndex,
+  orderRow,
+}: {
+  currentIndex: number;
+  orderRow: Record<string, unknown> | null;
+}) {
+  const dateForStep = (i: number): string | null => {
+    if (!orderRow) return null;
+    const keys: (keyof typeof orderRow)[][] = [
+      ["created_at"],
+      ["in_progress_at", "started_at", "work_started_at"],
+      ["delivered_at", "delivery_submitted_at"],
+      ["revision_requested_at", "updated_at"],
+      ["completed_at", "accepted_at", "closed_at"],
+    ];
+    for (const k of keys[i] ?? []) {
+      const v = orderRow[k as string];
+      if (v != null && String(v).trim()) {
+        const d = formatOrderRoomDate(v);
+        return d !== "—" ? d : null;
+      }
+    }
+    return i === 0 && orderRow.created_at ? formatOrderRoomDate(orderRow.created_at) : null;
+  };
 
   return (
     <ol className="relative space-y-4" aria-label="주문 단계">
-      {steps.map((s, i) => {
+      {ORDER_ROOM_TIMELINE_STEPS.map((s, i) => {
         const isDone = i < currentIndex;
         const isCurrent = i === currentIndex;
-        const isLast = i === steps.length - 1;
+        const isLast = i === ORDER_ROOM_TIMELINE_STEPS.length - 1;
+        const stepDate = dateForStep(i);
 
         return (
           <li key={i} className="flex gap-3">
@@ -377,6 +397,9 @@ function OrderStepStrip({ currentIndex }: { currentIndex: number }) {
                 )}
               </div>
               <p className="mt-0.5 text-[10px] font-semibold text-slate-400 leading-normal">{s.desc}</p>
+              {stepDate ? (
+                <p className="mt-0.5 text-[10px] font-bold text-slate-500">{stepDate}</p>
+              ) : null}
             </div>
           </li>
         );
@@ -451,7 +474,7 @@ export function OrderLeftContextPanel(props: LeftContextProps) {
           <p className="text-xs font-black uppercase tracking-wider text-slate-400">주문 단계</p>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[8px] font-black text-slate-500">실시간 흐름</span>
         </div>
-        <OrderStepStrip currentIndex={stepIndex} />
+        <OrderStepStrip currentIndex={stepIndex} orderRow={orderRow} />
       </div>
 
       <div className={`${cardClass} space-y-3`}>
@@ -700,7 +723,7 @@ export function OrderRightSidebarMentor({ detail, isTerminalOrder, orderIdDispla
       {/* Section 1: 진행 단계 */}
       <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
         <h3 className="text-[15px] font-extrabold text-slate-900 mb-5">진행 단계</h3>
-        <OrderStepStripMentor currentIndex={stepIndex} createdDate={orderCreated} />
+        <OrderStepStripMentor currentIndex={stepIndex} createdDate={orderCreated} orderRow={orderRow} />
       </div>
 
       {/* Section 2: 의뢰 정보 */}
@@ -798,21 +821,42 @@ export function OrderRightSidebarMentor({ detail, isTerminalOrder, orderIdDispla
   );
 }
 
-function OrderStepStripMentor({ currentIndex, createdDate }: { currentIndex: number; createdDate: string }) {
-  const steps = [
-    { title: "수락됨", date: createdDate },
-    { title: "작업 진행 중" },
-    { title: "납품 대기" },
-    { title: "학생 확인" },
-    { title: "완료 및 정산" },
-  ];
+function OrderStepStripMentor({
+  currentIndex,
+  createdDate,
+  orderRow,
+}: {
+  currentIndex: number;
+  createdDate: string;
+  orderRow: Record<string, unknown> | null;
+}) {
+  const dateForStep = (i: number): string | undefined => {
+    if (i === 0) return createdDate !== "—" ? createdDate : undefined;
+    if (!orderRow) return undefined;
+    const keys = [
+      [],
+      ["in_progress_at", "started_at"],
+      ["delivered_at", "delivery_submitted_at"],
+      ["revision_requested_at"],
+      ["completed_at", "accepted_at"],
+    ][i];
+    for (const k of keys) {
+      const v = orderRow[k];
+      if (v != null && String(v).trim()) {
+        const d = formatOrderRoomDate(v);
+        if (d !== "—") return d;
+      }
+    }
+    return undefined;
+  };
 
   return (
     <div className="relative flex flex-col space-y-4 pl-2">
-      {steps.map((s, i) => {
+      {ORDER_ROOM_TIMELINE_STEPS.map((s, i) => {
+        const date = dateForStep(i);
         const isDone = i < currentIndex;
         const isCurrent = i === currentIndex;
-        const isLast = i === steps.length - 1;
+        const isLast = i === ORDER_ROOM_TIMELINE_STEPS.length - 1;
 
         const circleBg = isCurrent || isDone ? "bg-[#142d61]" : "bg-white border border-slate-200";
         const circleText = isCurrent || isDone ? "text-white" : "text-slate-400";
@@ -838,7 +882,7 @@ function OrderStepStripMentor({ currentIndex, createdDate }: { currentIndex: num
               <span className={`text-[13px] font-bold leading-6 ${isCurrent ? "text-[#142d61]" : isDone ? "text-slate-800" : "text-slate-400"}`}>
                 {s.title}
               </span>
-              {s.date && <span className="text-[11px] font-medium text-slate-400">{s.date}</span>}
+              {date ? <span className="text-[11px] font-medium text-slate-400">{date}</span> : null}
             </div>
           </div>
         );

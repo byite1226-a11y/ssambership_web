@@ -8,7 +8,6 @@ import {
   Package,
   XCircle,
   ClipboardList,
-  Star,
   BookOpen,
   HelpCircle,
   MessageCircle,
@@ -117,12 +116,6 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
       label: "제안 내역",
       key: "applied-history",
       Icon: ClipboardList,
-    },
-    {
-      href: "/mentor/custom-request/posts",
-      label: "즐겨찾기 의뢰",
-      key: "bookmarks",
-      Icon: Star,
     },
     {
       href: "/legal/no-offplatform-contact",

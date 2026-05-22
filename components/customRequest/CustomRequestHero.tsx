@@ -2,20 +2,20 @@ import Link from "next/link";
 
 const PROCESS_ROWS = [
   {
-    title: "의뢰 요청 등록",
-    desc: "필요한 내용·예산·희망 일정을 정리해 올려요.",
+    title: "의뢰 등록",
+    desc: "필요한 내용·예산·희망 일정을 정리해 올려요",
   },
   {
     title: "멘토 지원",
-    desc: "멘토가 의뢰를 보고 제안을 보내요.",
+    desc: "멘토가 의뢰를 보고 제안을 보내요",
   },
   {
     title: "멘토 선택",
-    desc: "제안을 비교하고 한 분을 골라요.",
+    desc: "제안을 비교하고 한 분을 골라요",
   },
   {
-    title: "상담 & 피드백",
-    desc: "선택한 멘토와 코칭·피드백을 이어가요.",
+    title: "납품 확인",
+    desc: "납품 파일을 확인하고 완료해요",
   },
 ] as const;
 
@@ -36,7 +36,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-blue-700/90">맞춤의뢰</p>
               <h1 className="mt-3 max-w-[22rem] text-balance text-3xl font-black leading-[1.12] tracking-tight text-slate-900 sm:max-w-xl sm:text-4xl sm:leading-[1.1] lg:text-[2.65rem] lg:leading-[1.08]">
-                전문 멘토에게 <span className="text-blue-600">맞춤 과외</span>를 의뢰하세요
+                전문 멘토에게 학습을 의뢰하세요
               </h1>
               <p className="mt-5 max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
                 학교 공부, 진로 고민, 학습 방법까지 — 요청을 올리고 멘토 제안을 비교한 뒤, 한 분을 골라 이어갈 수 있어요.
@@ -85,7 +85,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
               <span className="mr-1.5" aria-hidden>
                 🛡️
               </span>
-              대필/완성 대행은 제공하지 않습니다. 학습 코칭·피드백 중심으로 도움을 드려요.
+              대필/완성 대행은 제공하지 않습니다. 학습 코칭·피드백·자료 정리 중심으로 도움을 드려요.
             </p>
           </div>
 

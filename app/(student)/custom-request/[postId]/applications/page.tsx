@@ -38,8 +38,8 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
       compactHero
       hideFooterPlaceholderCards
       eyebrow="맞춤의뢰"
-      title="지원서 비교"
-      description="제출된 제안을 가격·납기·내용으로 비교해요. 한 분을 고르면 이후 주문·진행이 이어질 수 있어요."
+      title="멘토 지원서 목록"
+      description="제출된 제안을 비교하고 한 분을 선택해 주세요. 선택 후 주문방에서 작업이 이어집니다."
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
         { href: `/custom-request/${postId}`, label: "의뢰 상세", tone: "slate" },

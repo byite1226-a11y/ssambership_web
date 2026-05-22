@@ -519,7 +519,27 @@ export function formatApplicationPriceKrwDisplay(row: Row): string {
   if (n === null) {
     return "가격 미입력";
   }
-  return new Intl.NumberFormat("ko-KR").format(n) + "원";
+  return new Intl.NumberFormat("ko-KR").format(n) + "캐시";
+}
+
+/** 예상 기간 (N일) */
+export function formatApplicationDurationDays(row: Row): string {
+  for (const k of ["expected_days", "duration_days", "delivery_days", "days"] as const) {
+    const v = row[k];
+    if (typeof v === "number" && v > 0) return `${Math.round(v)}일`;
+    if (typeof v === "string" && /^\d+$/.test(v.trim())) return `${v.trim()}일`;
+  }
+  for (const k of ["expected_duration", "duration_weeks", "timeline"] as const) {
+    const v = row[k];
+    if (typeof v === "string" && v.trim() && v.trim() !== "—") {
+      const n = Number(String(v).replace(/[^\d]/g, ""));
+      if (Number.isFinite(n) && n > 0) return `${n}일`;
+      return v.trim();
+    }
+  }
+  const due = formatApplicationDueDateDisplay(row);
+  if (due !== "납기 미정") return due;
+  return "기간 협의";
 }
 
 function dateLikeToYmdDots(v: unknown): string | null {

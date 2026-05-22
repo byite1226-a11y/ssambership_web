@@ -147,30 +147,30 @@ export const ORDER_ROOM_TERMINAL_MENTOR_NOTICE =
 
 const ORDER_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
   pending: "작업 대기",
-  open: "작업 진행 중",
-  in_progress: "작업 진행 중",
-  completed: "완료 및 정산",
+  open: "작업 중",
+  in_progress: "작업 중",
+  completed: "완료",
   delivered: "납품 대기",
-  submitted: "작업 진행 중",
+  submitted: "작업 중",
   closed: "종료됨",
   cancelled: "종료됨",
   canceled: "종료됨",
   unpaid: "작업 대기",
   paid: "수락됨",
-  in_review: "학생 확인",
-  waiting_review: "학생 확인",
-  delivered_pending_review: "학생 확인",
-  pending_review: "학생 확인",
+  in_review: "납품 대기",
+  waiting_review: "납품 대기",
+  delivered_pending_review: "납품 대기",
+  pending_review: "납품 대기",
   redelivered: "납품 대기",
   delivery_submitted: "납품 대기",
-  accepted: "완료 및 정산",
-  revision_requested: "학생 확인",
+  accepted: "완료",
+  revision_requested: "수정 요청",
   disputed: "종료됨",
   refunded: "종료됨",
   done: "종료됨",
   resolved: "종료됨",
   rejected: "종료됨",
-  finished: "완료 및 정산",
+  finished: "완료",
 };
 
 /** `custom_request_orders`·납품 등에서 읽은 상태 문자열 */
@@ -393,13 +393,16 @@ export function deliverableVersionLabelKorean(version: unknown, zeroBasedIndex: 
   return `${step}차 납품`;
 }
 
-export const ORDER_WORKSPACE_STEP_LABELS = [
-  "주문 생성",
-  "진행 중",
-  "납품 완료",
-  "검토 중",
-  "주문 완료",
+/** 주문방 좌측 타임라인 5단계 */
+export const ORDER_ROOM_TIMELINE_STEPS = [
+  { id: "waiting", title: "작업 대기", desc: "멘토 작업 시작을 기다리고 있어요." },
+  { id: "in_progress", title: "작업 중", desc: "멘토가 작업을 진행하고 있어요." },
+  { id: "delivered", title: "납품 대기", desc: "납품 파일을 확인해 주세요." },
+  { id: "revision", title: "수정 요청", desc: "수정 요청이 접수되었어요." },
+  { id: "completed", title: "완료", desc: "주문이 완료되었어요." },
 ] as const;
+
+export const ORDER_WORKSPACE_STEP_LABELS = ORDER_ROOM_TIMELINE_STEPS.map((s) => s.title);
 
 export function orderWorkspaceCurrentStepIndex(
   norm: string,
@@ -411,21 +414,25 @@ export function orderWorkspaceCurrentStepIndex(
     return 4;
   }
 
+  if (n === "revision_requested") {
+    return 3;
+  }
+
   if (
     isOrderStatusAllowingStudentAccept(n) ||
     n === "in_review" ||
     n === "waiting_review" ||
     n === "delivered_pending_review" ||
-    n === "pending_review"
+    n === "pending_review" ||
+    n === "delivered" ||
+    n === "redelivered" ||
+    n === "delivery_submitted" ||
+    hasDeliverable
   ) {
-    return 3;
-  }
-
-  if (hasDeliverable) {
     return 2;
   }
 
-  if (n === ORDER_INSERT_STATUS_PENDING) {
+  if (n === ORDER_INSERT_STATUS_PENDING || n === "unpaid") {
     return 0;
   }
 
@@ -433,15 +440,12 @@ export function orderWorkspaceCurrentStepIndex(
     n === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS ||
     n === "in_progress" ||
     n === "open" ||
-    n === "delivered" ||
-    n === "redelivered" ||
-    n === "delivery_submitted" ||
     n === "submitted"
   ) {
     return 1;
   }
 
-  return 1;
+  return 0;
 }
 
 // —— W19 주문방: 앱형 작업공간 표시용(도메인 로직 없음)

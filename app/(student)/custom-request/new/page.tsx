@@ -13,8 +13,8 @@ export default async function CustomRequestNewPage(props: PageProps) {
     <PageScaffold
       compactHero
       hideHero
-      eyebrow="의뢰 등록"
-      title="의뢰 등록"
+      eyebrow="맞춤의뢰"
+      title="의뢰 등록하기"
       description="요청 내용을 작성하고 필요한 자료를 첨부해 주세요. 멘토 지원을 받은 뒤 주문 확정, 결제 안내, 납품은 단계별로 진행됩니다."
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰 소개", tone: "slate" },

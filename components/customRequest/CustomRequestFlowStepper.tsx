@@ -1,8 +1,8 @@
 const STEPS = [
-  { n: 1, label: "의뢰 요청 등록" },
-  { n: 2, label: "멘토 지원" },
-  { n: 3, label: "멘토 선택" },
-  { n: 4, label: "상담 & 피드백" },
+  { n: 1, label: "카테고리" },
+  { n: 2, label: "의뢰 내용" },
+  { n: 3, label: "조건 설정" },
+  { n: 4, label: "확인" },
 ] as const;
 
 type Props = {
