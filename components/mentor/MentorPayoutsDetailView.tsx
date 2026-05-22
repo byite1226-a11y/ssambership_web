@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatCashKrw } from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutDetailLine, PayoutLineType } from "@/lib/mentor/mentorPayoutsService";
-import { Download, ChevronLeft } from "lucide-react";
+import { formatYearMonthLabel } from "@/lib/mentor/mentorPayoutsService";
+import { MentorPayoutsSettlementTable } from "@/components/mentor/payouts/MentorPayoutsSettlementTable";
+import { detailLineToSettlementRow } from "@/lib/mentor/mentorPayoutsService";
+import { Download } from "lucide-react";
+import {
+  formatCashKrw,
+  formatPayoutTableDate,
+  settlementStatusBadge,
+  typeBadgeLabel,
+} from "@/components/mentor/payouts/payoutUi";
 
 type DetailResponse = {
   ok: boolean;
@@ -19,19 +27,9 @@ function monthOptions(count = 12): { value: string; label: string }[] {
   for (let i = 0; i < count; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    out.push({ value: ym, label: `${d.getFullYear()}년 ${d.getMonth() + 1}월` });
+    out.push({ value: ym, label: formatYearMonthLabel(ym) });
   }
   return out;
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(d);
-}
-
-function typeLabel(t: PayoutLineType): string {
-  return t === "subscription" ? "구독" : "맞춤의뢰";
 }
 
 export function MentorPayoutsDetailView() {
@@ -42,6 +40,8 @@ export function MentorPayoutsDetailView() {
   const [error, setError] = useState<string | null>(null);
   const [lines, setLines] = useState<MentorPayoutDetailLine[]>([]);
   const [totals, setTotals] = useState({ paymentAmount: 0, feeAmount: 0, netAmount: 0 });
+
+  const tableRows = useMemo(() => lines.map(detailLineToSettlementRow), [lines]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,15 +72,18 @@ export function MentorPayoutsDetailView() {
 
   async function exportExcel() {
     const XLSX = await import("xlsx");
-    const rows = lines.map((l) => ({
-      날짜: formatDate(l.date),
-      유형: typeLabel(l.type),
-      내용: l.description,
-      결제금액: l.paymentAmount,
-      수수료: l.feeAmount,
-      순수령액: l.netAmount,
-      상태: l.status,
-    }));
+    const rows = tableRows.map((r) => {
+      const st = settlementStatusBadge(r.uiStatus);
+      return {
+        날짜: formatPayoutTableDate(r.date),
+        유형: typeBadgeLabel(r.type),
+        내용: r.description,
+        결제금액: r.grossAmount,
+        수수료: r.feeAmount,
+        순수령액: r.netAmount,
+        상태: st.label,
+      };
+    });
     rows.push({
       날짜: "합계",
       유형: "",
@@ -97,11 +100,11 @@ export function MentorPayoutsDetailView() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl pb-12">
+    <div className="mx-auto max-w-6xl px-4 pb-16 pt-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link href="/mentor/payouts" className="rounded-lg border border-slate-200 p-2 hover:bg-slate-50">
-            <ChevronLeft className="h-4 w-4" />
+        <div className="space-y-2">
+          <Link href="/mentor/payouts" className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
+            ← 정산 요약으로
           </Link>
           <div>
             <h1 className="text-2xl font-black text-slate-900">정산 상세</h1>
@@ -119,13 +122,13 @@ export function MentorPayoutsDetailView() {
         </button>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="mb-4 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <label className="text-xs font-semibold text-slate-600">
           기간
           <select
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="mt-1 block rounded-lg border px-3 py-2 text-sm"
+            className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold"
           >
             {months.map((m) => (
               <option key={m.value} value={m.value}>
@@ -139,7 +142,7 @@ export function MentorPayoutsDetailView() {
           <select
             value={type}
             onChange={(e) => setType(e.target.value as "all" | PayoutLineType)}
-            className="mt-1 block rounded-lg border px-3 py-2 text-sm"
+            className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold"
           >
             <option value="all">전체</option>
             <option value="subscription">구독</option>
@@ -149,64 +152,29 @@ export function MentorPayoutsDetailView() {
       </div>
 
       {error ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{error}</p>
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">
+          {error}
+        </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[900px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50 text-xs font-bold text-slate-600">
-              <th className="px-4 py-3">날짜</th>
-              <th className="px-4 py-3">유형</th>
-              <th className="px-4 py-3">내용</th>
-              <th className="px-4 py-3">결제금액</th>
-              <th className="px-4 py-3">수수료</th>
-              <th className="px-4 py-3">순수령액</th>
-              <th className="px-4 py-3">상태</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
-                  불러오는 중…
-                </td>
-              </tr>
-            ) : !lines.length ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
-                  표시할 내역이 없습니다.
-                </td>
-              </tr>
-            ) : (
-              lines.map((l) => (
-                <tr key={l.id} className="hover:bg-slate-50/40">
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(l.date)}</td>
-                  <td className="px-4 py-3 text-xs font-bold text-slate-700">{typeLabel(l.type)}</td>
-                  <td className="max-w-xs truncate px-4 py-3 text-slate-800" title={l.description}>
-                    {l.description}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums font-semibold">{formatCashKrw(l.paymentAmount)}</td>
-                  <td className="px-4 py-3 tabular-nums text-slate-500">{formatCashKrw(l.feeAmount)}</td>
-                  <td className="px-4 py-3 tabular-nums font-black text-[#1A56DB]">{formatCashKrw(l.netAmount)}</td>
-                  <td className="px-4 py-3 text-xs font-bold text-slate-600">{l.status}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-          <tfoot>
-            <tr className="border-t border-slate-200 bg-slate-50/80 font-bold">
-              <td colSpan={3} className="px-4 py-3 text-slate-800">
-                합계
-              </td>
-              <td className="px-4 py-3 tabular-nums">{formatCashKrw(totals.paymentAmount)}</td>
-              <td className="px-4 py-3 tabular-nums text-slate-600">{formatCashKrw(totals.feeAmount)}</td>
-              <td className="px-4 py-3 tabular-nums text-[#1A56DB]">{formatCashKrw(totals.netAmount)}</td>
-              <td />
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      {loading ? (
+        <p className="py-16 text-center text-sm text-slate-500">불러오는 중…</p>
+      ) : (
+        <>
+          <MentorPayoutsSettlementTable rows={tableRows} variant="detail" />
+          <div className="mt-4 flex flex-wrap justify-end gap-6 rounded-2xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm font-bold">
+            <span className="text-slate-600">
+              결제금액 합계 <span className="text-slate-900">{formatCashKrw(totals.paymentAmount)}</span>
+            </span>
+            <span className="text-slate-600">
+              수수료 합계 <span className="text-slate-900">{formatCashKrw(totals.feeAmount)}</span>
+            </span>
+            <span className="text-[#1A56DB]">
+              순수령액 합계 <span className="font-black">{formatCashKrw(totals.netAmount)}</span>
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

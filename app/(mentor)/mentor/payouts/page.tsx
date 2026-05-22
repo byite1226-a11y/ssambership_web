@@ -1,15 +1,12 @@
-import { MentorPayoutsSummaryView } from "@/components/mentor/MentorPayoutsSummaryView";
+import { MentorPayoutsPage } from "@/components/mentor/payouts/MentorPayoutsPage";
 import { requireRole } from "@/lib/auth/routeGuard";
-import { loadMentorPayoutMonthlyCards, loadMentorPayoutSummary } from "@/lib/mentor/mentorPayoutsService";
+import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsService";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function MentorPayoutsPage() {
+export default async function MentorPayoutsRoutePage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
-  const [summary, months] = await Promise.all([
-    loadMentorPayoutSummary(supabase, user.id),
-    loadMentorPayoutMonthlyCards(supabase, user.id, 6),
-  ]);
+  const data = await loadMentorPayoutsPageData(supabase, user.id);
 
-  return <MentorPayoutsSummaryView summary={summary} months={months} />;
+  return <MentorPayoutsPage data={data} />;
 }

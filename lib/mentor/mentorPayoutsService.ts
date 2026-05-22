@@ -363,6 +363,316 @@ export type MentorPayoutDetailResult = {
   };
 };
 
+export type PayoutUiStatus = "paid" | "scheduled" | "hold" | "cancelled";
+
+export type MentorPayoutSettlementTableRow = {
+  id: string;
+  date: string;
+  type: PayoutLineType;
+  description: string;
+  grossAmount: number;
+  feeAmount: number;
+  netAmount: number;
+  uiStatus: PayoutUiStatus;
+  isCancelled: boolean;
+};
+
+export type MentorPayoutPerformanceRow = {
+  id: string;
+  date: string;
+  type: PayoutLineType;
+  title: string;
+  studentName: string;
+  amount: number;
+  uiStatus: "done" | "in_progress" | "cancelled";
+};
+
+export type MentorPayoutScheduleInfo = {
+  nextPayoutDateIso: string;
+  nextPayoutLabel: string;
+  monthProgressPct: number;
+  monthLabel: string;
+  completedPayoutAmount: number;
+  expectedPayoutAmount: number;
+};
+
+export type MentorPayoutsPageData = {
+  summary: MentorPayoutSummary;
+  months: MentorPayoutMonthlyCard[];
+  schedule: MentorPayoutScheduleInfo;
+  revenueShare: {
+    subscription: number;
+    customRequest: number;
+    total: number;
+    subscriptionPct: number;
+    customRequestPct: number;
+  };
+  kpis: {
+    subscription: { amount: number; momPct: number | null };
+    customRequest: { amount: number; momPct: number | null };
+    total: { amount: number; momPct: number | null };
+    lifetimePaid: number;
+  };
+  settlementLines: MentorPayoutSettlementTableRow[];
+  performanceLines: MentorPayoutPerformanceRow[];
+  defaultMonth: string;
+};
+
+const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
+export function formatPayoutDateLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const w = WEEKDAY_KO[d.getDay()];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day} (${w})`;
+}
+
+export function formatYearMonthLabel(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m) return ym;
+  return `${y}년 ${String(m).padStart(2, "0")}월`;
+}
+
+export function formatChartMonthLabel(ym: string): string {
+  const [y, m] = ym.split("-");
+  if (!y || !m) return ym;
+  return `${y.slice(-2)}.${m}`;
+}
+
+function pctChange(current: number, previous: number): number | null {
+  if (previous === 0) return current > 0 ? 100 : current === 0 ? 0 : null;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
+
+function prevYm(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return ymKey(d);
+}
+
+export function buildPayoutScheduleInfo(
+  expectedAmount: number,
+  completedAmount: number,
+  from = new Date()
+): MentorPayoutScheduleInfo {
+  const y = from.getFullYear();
+  const m = from.getMonth();
+  const day = from.getDate();
+  const target =
+    day < 10 ? new Date(y, m, 10) : new Date(y, m + 1, 10);
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const progress = Math.min(100, Math.round((day / daysInMonth) * 100));
+
+  return {
+    nextPayoutDateIso: target.toISOString(),
+    nextPayoutLabel: formatPayoutDateLabel(target.toISOString()),
+    monthProgressPct: progress,
+    monthLabel: `${m + 1}월`,
+    completedPayoutAmount: completedAmount,
+    expectedPayoutAmount: expectedAmount,
+  };
+}
+
+function mapLineStatusToUi(status: string, net: number): PayoutUiStatus {
+  const s = status.toLowerCase();
+  if (s.includes("취소") || s.includes("cancel") || net < 0) return "cancelled";
+  if (s.includes("완료") || s.includes("paid") || s.includes("지급")) return "paid";
+  if (s.includes("보류") || s.includes("hold")) return "hold";
+  return "scheduled";
+}
+
+export function detailLineToSettlementRow(line: MentorPayoutDetailLine): MentorPayoutSettlementTableRow {
+  const uiStatus = mapLineStatusToUi(line.status, line.netAmount);
+  const isCancelled = uiStatus === "cancelled";
+  return {
+    id: line.id,
+    date: line.date,
+    type: line.type,
+    description: line.description,
+    grossAmount: isCancelled ? -Math.abs(line.paymentAmount) : line.paymentAmount,
+    feeAmount: isCancelled ? Math.abs(line.feeAmount) : line.feeAmount,
+    netAmount: line.netAmount,
+    uiStatus,
+    isCancelled,
+  };
+}
+
+async function loadLifetimePaidPayouts(client: SupabaseClient, mentorId: string): Promise<number> {
+  for (const table of ["payouts", "mentor_payouts"] as const) {
+    const { error: pe } = await client.from(table).select("id").limit(1);
+    if (pe) continue;
+    const mentorCol = await pickExistingColumn(client, table, [
+      "mentor_id",
+      "mentor_user_id",
+      "user_id",
+    ]);
+    if (!mentorCol.column) continue;
+    const { data, error } = await client
+      .from(table)
+      .select("*")
+      .eq(mentorCol.column, mentorId)
+      .in("status", ["paid", "completed", "done"])
+      .limit(500);
+    if (error || !data) continue;
+    return (data as Row[]).reduce((sum, r) => {
+      for (const k of ["amount", "amount_cents", "net_amount", "payout_amount", "mentor_amount"]) {
+        const n = intWon(r[k]);
+        if (n > 0) return sum + (k.includes("cent") ? minorUnitsToCash(n) : n);
+      }
+      return sum;
+    }, 0);
+  }
+  const settlement = await loadMentorSettlementItemsForPayouts(client, mentorId);
+  return settlement.totals.paidMentorAmount;
+}
+
+function orderTitle(o: Row): string {
+  for (const k of ["title", "subject", "post_title", "request_title"]) {
+    const v = o[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return "맞춤의뢰 주문";
+}
+
+function orderStudentName(o: Row): string {
+  for (const k of ["student_name", "student_nickname", "buyer_name"]) {
+    const v = o[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return "학생";
+}
+
+function orderPerfStatus(o: Row): MentorPayoutPerformanceRow["uiStatus"] {
+  const st = String(o.status ?? "").toLowerCase();
+  if (["cancelled", "canceled", "refunded", "dispute"].some((x) => st.includes(x))) return "cancelled";
+  if (["completed", "complete", "done", "accepted", "delivered"].some((x) => st.includes(x))) return "done";
+  return "in_progress";
+}
+
+async function loadPerformanceLines(
+  client: SupabaseClient,
+  mentorId: string
+): Promise<MentorPayoutPerformanceRow[]> {
+  const rows: MentorPayoutPerformanceRow[] = [];
+
+  const { data: orders, error } = await client
+    .from("custom_request_orders")
+    .select("*")
+    .eq("mentor_id", mentorId)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (!error && orders) {
+    for (const o of orders as Row[]) {
+      const gross = orderGrossWon(o);
+      rows.push({
+        id: `perf-cr-${String(o.id ?? "")}`,
+        date: pickTs(o),
+        type: "custom_request",
+        title: orderTitle(o),
+        studentName: orderStudentName(o),
+        amount: gross > 0 ? Math.floor(gross * MENTOR_CUSTOM_REQUEST_SHARE) : 0,
+        uiStatus: orderPerfStatus(o),
+      });
+    }
+  }
+
+  const subIds = await subscriptionIdsForMentor(client, mentorId);
+  if (subIds.length) {
+    const q = await client
+      .from("cash_ledger")
+      .select("*")
+      .eq("reason", "subscription_payment")
+      .in("ref_id", subIds.slice(0, 100))
+      .order("created_at", { ascending: false })
+      .limit(40);
+    if (!q.error && q.data) {
+      for (const r of q.data as Row[]) {
+        const payment = minorUnitsToCash(intWon(r.delta_cents));
+        rows.push({
+          id: `perf-sub-${String(r.id ?? "")}`,
+          date: pickTs(r),
+          type: "subscription",
+          title: "구독 결제",
+          studentName: "구독 학생",
+          amount: Math.floor(payment * MENTOR_SUBSCRIPTION_SHARE),
+          uiStatus: "done",
+        });
+      }
+    }
+  }
+
+  rows.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return rows;
+}
+
+export async function loadMentorPayoutsPageData(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<MentorPayoutsPageData> {
+  const client = await readClient(supabase);
+  const ym = currentYm();
+  const prev = prevYm(ym);
+
+  const [summary, months, subLines, crLines, settlement, lifetimePaid, performanceLines] =
+    await Promise.all([
+      loadMentorPayoutSummary(supabase, mentorId),
+      loadMentorPayoutMonthlyCards(supabase, mentorId, 6),
+      loadSubscriptionLines(client, mentorId),
+      loadCustomRequestLines(client, mentorId),
+      loadMentorSettlementItemsForPayouts(client, mentorId),
+      loadLifetimePaidPayouts(client, mentorId),
+      loadPerformanceLines(client, mentorId),
+    ]);
+
+  const all = [...subLines, ...crLines];
+  const settlementLines = all.map(detailLineToSettlementRow).sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  const thisSub = sumNetByType(all, "subscription", ym);
+  const thisCr = sumNetByType(all, "custom_request", ym);
+  const prevSub = sumNetByType(all, "subscription", prev);
+  const prevCr = sumNetByType(all, "custom_request", prev);
+  const thisTotal = thisSub + thisCr;
+  const prevTotal = prevSub + prevCr;
+
+  const shareTotal = thisTotal > 0 ? thisTotal : 1;
+  const revenueShare = {
+    subscription: thisSub,
+    customRequest: thisCr,
+    total: thisTotal,
+    subscriptionPct: Math.round((thisSub / shareTotal) * 100),
+    customRequestPct: Math.round((thisCr / shareTotal) * 100),
+  };
+
+  const paidThisMonth = settlement.lines
+    .filter(({ settlement: s }) => String(s.status ?? "").toLowerCase() === "paid" && inYm(pickTs(s), ym))
+    .reduce((a, { settlement: s }) => a + intWon(s.mentor_amount), 0);
+
+  const schedule = buildPayoutScheduleInfo(
+    summary.thisMonthScheduledPayout,
+    paidThisMonth > 0 ? paidThisMonth : settlement.totals.paidMentorAmount
+  );
+
+  return {
+    summary,
+    months,
+    schedule,
+    revenueShare,
+    kpis: {
+      subscription: { amount: thisSub, momPct: pctChange(thisSub, prevSub) },
+      customRequest: { amount: thisCr, momPct: pctChange(thisCr, prevCr) },
+      total: { amount: thisTotal, momPct: pctChange(thisTotal, prevTotal) },
+      lifetimePaid,
+    },
+    settlementLines,
+    performanceLines,
+    defaultMonth: ym,
+  };
+}
+
 export async function loadMentorPayoutDetail(
   supabase: SupabaseClient,
   mentorId: string,
