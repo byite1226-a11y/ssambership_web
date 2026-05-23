@@ -19,11 +19,6 @@ async function insertWithCandidates(
     const payload = payloads[attemptIndex];
     const { data, error } = await supabase.from(table).insert(payload).select("*").limit(1).maybeSingle();
     if (!error) {
-      console.log("[communityMutations] insertWithCandidates ok", {
-        table,
-        attemptIndex,
-        payloadKeys: Object.keys(payload),
-      });
       return { row: (data as Record<string, unknown> | null) ?? null, error: null };
     }
     lastError = error.message;

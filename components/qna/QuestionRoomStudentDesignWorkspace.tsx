@@ -473,6 +473,52 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 <p className="mt-4 text-[11px] font-bold text-slate-400">
                   등록 {formatMinutesAgo(selectedThread.created_at ?? selectedThread.updated_at)}
                 </p>
+
+                <div className="mt-8 border-t border-slate-100 pt-6">
+                  <h3 className="text-[13px] font-black text-slate-900">답변</h3>
+                  {props.messages.loading ? (
+                    <p className="mt-4 py-6 text-center text-[12px] font-bold text-slate-400">답변을 불러오는 중…</p>
+                  ) : props.messages.rows.length === 0 ? (
+                    <p className="mt-4 py-6 text-center text-[12px] font-bold text-slate-400">아직 답변 메시지가 없습니다.</p>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      {props.messages.rows.map((m) => {
+                        const body = messageBody(m);
+                        const author = messageAuthorId(m);
+                        const mine = author === props.currentUserId;
+                        const mentorName = roomMentorLabel(currentRoom ?? {}, props.mentorDisplays);
+
+                        return (
+                          <div key={String(m.id)} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                            <div className={`max-w-[92%] ${mine ? "items-end" : "items-start"} flex flex-col`}>
+                              {!mine ? (
+                                <span className="mb-1 text-[10px] font-bold text-slate-500">{mentorName}</span>
+                              ) : null}
+                              <div
+                                className={`rounded-2xl px-4 py-2.5 text-[12px] font-medium leading-relaxed shadow-sm ${
+                                  mine
+                                    ? "rounded-tr-sm bg-blue-600 text-white"
+                                    : "rounded-tl-sm border border-slate-200 bg-white text-slate-800"
+                                }`}
+                              >
+                                {renderMessageContent(body)}
+                              </div>
+                              <span className="mt-1 px-1 text-[9px] font-bold text-slate-400">
+                                {formatQuestionRoomDateTime(m.created_at) ?? formatMinutesAgo(m.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {threadWorkflow === "answered" && props.threadId ? (
+                  <div className="mt-6">
+                    <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />
+                  </div>
+                ) : null}
               </div>
             ) : (
             <>

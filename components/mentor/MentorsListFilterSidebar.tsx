@@ -33,10 +33,11 @@ export function MentorsListFilterSidebar(props: {
   );
 
   const sortValue = extraSort || (props.filters.sort !== "popular" ? props.filters.sort : "");
+  const filterKey = JSON.stringify(filtersToHrefRecord(props.filters));
 
   return (
     <div className={props.className ?? ""}>
-      <form method="get" action="/mentors" className="flex flex-col">
+      <form key={filterKey} method="get" action="/mentors" className="flex flex-col">
         <div className="max-h-[calc(100vh-12rem)] space-y-6 overflow-y-auto pr-1 lg:max-h-[calc(100vh-10rem)]">
           <input type="hidden" name="q" value={props.filters.q} />
           {props.filters.view === "grid" ? <input type="hidden" name="view" value="grid" /> : null}

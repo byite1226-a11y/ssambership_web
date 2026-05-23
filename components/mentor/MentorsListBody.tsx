@@ -38,7 +38,7 @@ export function MentorsListBody(props: {
   return (
     <div className="mx-auto w-full max-w-[1600px] min-w-0 px-4 pb-12 sm:px-5 lg:px-6">
       <header className="mb-6">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#1A56DB]">멤버십</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#1A56DB]">쌤버십</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">멘토 찾기</h1>
         <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
           과목·학년·요금으로 멘토를 찾고, 베이직·스탠다드·프리미엄 플랜으로 구독을 시작하세요.

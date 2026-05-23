@@ -220,7 +220,7 @@ export async function listPopularHashtags(
     .limit(limit);
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
-      return { rows: getMockHashtags(), error: null };
+      return { rows: [], error: null };
     }
     return { rows: [], error: error.message };
   }
@@ -228,18 +228,7 @@ export async function listPopularHashtags(
     tag: r.tag,
     count: r.count ?? 0,
   }));
-  if (!rows.length) return { rows: getMockHashtags(), error: null };
   return { rows, error: null };
-}
-
-function getMockHashtags(): CommunityHashtagRow[] {
-  return [
-    { tag: "수학공부법", count: 1284 },
-    { tag: "내신관리", count: 982 },
-    { tag: "대학생활", count: 877 },
-    { tag: "진로고민", count: 765 },
-    { tag: "시간관리", count: 642 },
-  ];
 }
 
 export async function listWeeklyPopularPosts(

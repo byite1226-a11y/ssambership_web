@@ -42,6 +42,7 @@ export const studentMainNav: MainNavItem[] = [
 ];
 
 export const mentorMainNav: MainNavItem[] = [
+  { href: "/mentor/dashboard", label: "대시보드" },
   { href: "/mentor/question-room", label: "질문방" },
   { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰" },
   { href: "/community", label: "커뮤니티" },
