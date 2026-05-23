@@ -1,7 +1,8 @@
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
+import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
+import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
-import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
 import { WalletChargeFailClient } from "@/components/cash/WalletChargeFailClient";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
@@ -19,15 +20,11 @@ export default async function WalletChargeFailPage({ searchParams }: Props) {
   const message = one(sp, "message") ?? "결제가 취소되었거나 승인되지 않았습니다.";
 
   const supabase = await createClient();
-  const bundle = await loadStudentMypageBundle(
-    supabase,
-    user.id,
-    profile,
-    null
-  );
+  const balance = await fetchWalletBalanceByUserId(supabase, user.id);
+  const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
 
   return (
-    <StudentDashboardShell activeTab="wallet" user={user} profile={profile} profileLoadError={null} bundle={bundle}>
+    <StudentDashboardShell activeTab="wallet" user={user} profile={profile} profileLoadError={null} cashBalanceKrw={cashBalanceKrw}>
       <WalletChargeFailClient code={code} message={message} />
     </StudentDashboardShell>
   );

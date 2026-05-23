@@ -12,6 +12,7 @@ type PaymentMethod = "card" | "easy" | "bank";
 type Props = {
   userId: string;
   currentBalance: number;
+  isAuthenticated?: boolean;
 };
 
 export function CashChargeWidget({ userId, currentBalance }: Props) {

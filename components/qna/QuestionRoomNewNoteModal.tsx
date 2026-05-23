@@ -11,6 +11,7 @@ export function QuestionRoomNewNoteModal(props: {
   roomId: string;
   threadId?: string | null;
   defaultBody?: string;
+  actor?: "student" | "mentor";
 }) {
   useEffect(() => {
     if (!props.open) return;
@@ -58,7 +59,7 @@ export function QuestionRoomNewNoteModal(props: {
             className="h-32 w-full rounded-xl border border-slate-200 px-4 py-3 text-[13px] font-medium outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
           />
           <input type="hidden" name="roomId" value={props.roomId} />
-          <input type="hidden" name="actor" value="student" />
+          <input type="hidden" name="actor" value={props.actor ?? "student"} />
           <input type="hidden" name="contextThreadId" value={props.threadId ?? ""} />
           <div className="flex gap-2">
             <button

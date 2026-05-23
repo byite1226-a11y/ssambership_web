@@ -184,6 +184,7 @@ export function QuestionRoomWorkspace(props: {
         rooms={props.rooms}
         threads={props.threads}
         messages={props.messages}
+        notes={props.notes}
         listPreviewsByRoomId={props.listPreviewsByRoomId ?? {}}
         studentDisplays={props.studentDisplays ?? {}}
         messageCountsByThreadId={props.messageCountsByThreadId}
@@ -191,6 +192,7 @@ export function QuestionRoomWorkspace(props: {
         unreadCountsByRoomId={props.unreadCountsByRoomId}
         roomHrefBase={roomBase}
         draftMessageBody={props.draftMessageBody}
+        draftNoteBody={props.draftNoteBody}
         formRevision={rev}
         actionFeedback={{
           ok: props.actionFeedback?.ok ?? null,

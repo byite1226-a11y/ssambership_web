@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
-import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
+import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
+import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
 import { loadWalletLedgerPageData } from "@/lib/cash/walletRouteData";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
 import { Suspense } from "react";
@@ -24,12 +25,8 @@ export default async function WalletLedgerPage(props: Props) {
   const to = (Array.isArray(sp.to) ? sp.to[0] : sp.to) ?? null;
   const kind = (Array.isArray(sp.kind) ? sp.kind[0] : sp.kind) ?? null;
 
-  const bundle = await loadStudentMypageBundle(
-    supabase,
-    user.id,
-    profile,
-    profileLoadError?.message ?? null
-  );
+  const balance = await fetchWalletBalanceByUserId(supabase, user.id);
+  const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
 
   const data = await loadWalletLedgerPageData(supabase, user.id, {
     from: from ?? undefined,
@@ -43,7 +40,7 @@ export default async function WalletLedgerPage(props: Props) {
       user={user}
       profile={profile}
       profileLoadError={profileLoadError?.message ?? null}
-      bundle={bundle}
+      cashBalanceKrw={cashBalanceKrw}
     >
       <div className="mx-auto max-w-4xl space-y-6">
         <header>

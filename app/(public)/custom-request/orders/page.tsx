@@ -28,7 +28,6 @@ export default async function StudentCustomRequestOrdersListPage() {
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰 홈", tone: "slate" },
         { href: "/custom-request/new", label: "새 의뢰 등록", tone: "blue" },
-        { href: "/home", label: "학생 홈", tone: "slate" },
       ]}
       sections={[]}
       dataPoints={[]}

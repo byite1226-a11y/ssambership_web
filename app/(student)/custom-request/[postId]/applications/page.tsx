@@ -43,7 +43,6 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
       ctas={[
         { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
         { href: `/custom-request/${postId}`, label: "의뢰 상세", tone: "slate" },
-        { href: "/home", label: "홈", tone: "slate" },
       ]}
       sections={[]}
       emptyState=""

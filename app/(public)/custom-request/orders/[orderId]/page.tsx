@@ -88,7 +88,7 @@ export default async function CustomRequestOrderPage(props: PageProps) {
           ? [{ href: "/mentor/custom-request/orders", label: "맞춤의뢰 주문 목록", tone: "slate" }]
           : [
               { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
-              { href: "/home", label: "대시/홈", tone: "blue" },
+              { href: "/custom-request/orders", label: "내 주문 내역", tone: "blue" },
             ]
       }
       sections={[]}

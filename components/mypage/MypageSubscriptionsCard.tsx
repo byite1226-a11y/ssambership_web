@@ -26,9 +26,9 @@ function SubscriptionCardSkeleton() {
 
 function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 transition hover:border-slate-300 hover:bg-white">
+    <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-6 transition hover:border-slate-300 hover:bg-white">
       <div className="flex gap-4 sm:gap-5">
-        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
+        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
           {item.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={item.photoUrl} alt="" className="h-full w-full object-cover" />

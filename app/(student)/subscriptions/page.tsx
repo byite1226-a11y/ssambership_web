@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
+import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
+import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
 
@@ -12,12 +14,11 @@ export default async function StudentSubscriptionsPage() {
   }
 
   const supabase = await createClient();
-  const bundle = await loadStudentMypageBundle(
-    supabase,
-    user.id,
-    profile,
-    profileLoadError?.message ?? null
-  );
+  const [bundle, balance] = await Promise.all([
+    loadStudentMypageBundle(supabase, user.id, profile, profileLoadError?.message ?? null),
+    fetchWalletBalanceByUserId(supabase, user.id),
+  ]);
+  const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
 
   return (
     <StudentDashboardShell
@@ -25,7 +26,7 @@ export default async function StudentSubscriptionsPage() {
       user={user}
       profile={profile}
       profileLoadError={profileLoadError?.message ?? null}
-      bundle={bundle}
+      cashBalanceKrw={cashBalanceKrw}
     >
       <div className="space-y-6">
         <header>

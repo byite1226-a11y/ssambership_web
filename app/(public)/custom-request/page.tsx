@@ -15,9 +15,10 @@ export const revalidate = 0;
 
 export default async function CustomRequestPublicPage() {
   const supabase = await createClient();
-  const { profile } = await getServerUserWithProfile();
+  const { user, profile } = await getServerUserWithProfile();
   const role = profile?.role ?? null;
   const isMentor = role === "mentor";
+  const isLoggedIn = Boolean(user);
 
   const [recent, cats] = await Promise.all([
     loadRecentCustomRequestPosts(supabase, 3),
@@ -32,9 +33,11 @@ export default async function CustomRequestPublicPage() {
       eyebrow="맞춤의뢰"
       title="맞춤의뢰"
       description="요청을 올리고 멘토 제안을 비교한 뒤, 주문·상담까지 이어가요."
-      ctas={[
-        { href: `/login/student?next=${encodeURIComponent("/custom-request")}`, label: "학생 로그인", tone: "slate" },
-      ]}
+      ctas={
+        isLoggedIn
+          ? []
+          : [{ href: `/login/student?next=${encodeURIComponent("/custom-request")}`, label: "학생 로그인", tone: "slate" }]
+      }
       sections={[]}
       dataPoints={[]}
       emptyState=""

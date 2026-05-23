@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Bell, HelpCircle, Star } from "lucide-react";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
@@ -46,7 +47,6 @@ export default async function StudentMyPage() {
       user={user}
       profile={profile}
       profileLoadError={profileLoadError?.message ?? null}
-      bundle={bundle}
       cashBalanceKrw={cashBalanceKrw}
     >
       <div className="space-y-6">
@@ -98,12 +98,12 @@ export default async function StudentMyPage() {
           </div>
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
           <MypageSubscriptionsCard />
 
-          <section className="flex min-h-[280px] flex-col rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm">
+          <section className="flex min-h-[300px] flex-col rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">결제 · 캐시</p>
-            <p className="mt-2 text-4xl font-black tabular-nums text-[#1A56DB]">
+            <p className="mt-3 text-2xl font-black tabular-nums text-[#1A56DB]">
               {cashBalanceKrw.toLocaleString("ko-KR")}
               <span className="ml-2 text-base font-bold text-slate-500">캐시</span>
             </p>
@@ -151,16 +151,14 @@ export default async function StudentMyPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          <section className="flex min-h-[180px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm">
+          <section className="flex min-h-[200px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
             <div>
-              <p className="text-3xl" aria-hidden>
-                🔔
-              </p>
+              <Bell className="h-6 w-6 text-[#1A56DB]" strokeWidth={2} />
               <h2 className="mt-3 text-sm font-bold text-slate-500">알림</h2>
-              <p className="mt-1 text-3xl font-black text-slate-900">{bundle.notifications.valueText}</p>
-              <p className="mt-1 text-xs text-slate-500">{bundle.notifications.detail}</p>
+              <p className="mt-2 text-3xl font-black text-slate-900">{bundle.notifications.valueText}</p>
+              <p className="mt-1 text-sm text-slate-500">{bundle.notifications.detail}</p>
             </div>
-            <div className="mt-4 select-none">
+            <div className="mt-4">
               <Link
                 className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
                 href="/notifications"
@@ -170,17 +168,16 @@ export default async function StudentMyPage() {
             </div>
           </section>
 
-          <section className="flex min-h-[180px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm">
+          <section className="flex min-h-[200px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
             <div>
-              <p className="text-3xl" aria-hidden>
-                💬
-              </p>
+              <HelpCircle className="h-6 w-6 text-[#1A56DB]" strokeWidth={2} />
               <h2 className="mt-3 text-sm font-bold text-slate-500">고객지원</h2>
-              <p className="mt-1 text-xs font-medium leading-relaxed text-slate-600">
+              <p className="mt-2 text-3xl font-black text-slate-900">문의</p>
+              <p className="mt-1 text-sm text-slate-500">
                 맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있어요.
               </p>
             </div>
-            <div className="mt-4 select-none">
+            <div className="mt-4">
               <Link
                 className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
                 href="/support/disputes"
@@ -190,18 +187,16 @@ export default async function StudentMyPage() {
             </div>
           </section>
 
-          <section className="flex min-h-[180px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm md:col-span-2 lg:col-span-1">
+          <section className="flex min-h-[200px] flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm md:col-span-2 lg:col-span-1">
             <div>
-              <p className="text-3xl" aria-hidden>
-                ⭐
-              </p>
+              <Star className="h-6 w-6 text-amber-500" strokeWidth={2} />
               <h2 className="mt-3 text-sm font-bold text-slate-500">리뷰 · 신고</h2>
-              <p className="mt-1 text-3xl font-black text-slate-900">{bundle.reviews.valueText}</p>
-              <p className="mt-1 text-xs text-slate-500">{bundle.reviews.detail}</p>
-              <p className="mt-3 text-2xl font-black text-slate-800">{bundle.reports.valueText}</p>
-              <p className="text-xs text-slate-500">{bundle.reports.detail}</p>
+              <p className="mt-2 text-3xl font-black text-slate-900">{bundle.reviews.valueText}</p>
+              <p className="mt-1 text-sm text-slate-500">{bundle.reviews.detail}</p>
+              <p className="mt-4 text-2xl font-black text-slate-800">{bundle.reports.valueText}</p>
+              <p className="text-sm text-slate-500">{bundle.reports.detail}</p>
             </div>
-            <p className="mt-2 select-none text-[10px] leading-tight text-slate-400">
+            <p className="mt-3 text-xs leading-tight text-slate-400">
               작성한 리뷰와 제출한 신고는 운영 정책에 따라 안내됩니다.
             </p>
           </section>

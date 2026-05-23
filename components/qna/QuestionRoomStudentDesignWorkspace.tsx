@@ -743,15 +743,15 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                   className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] font-black text-slate-700 hover:bg-slate-50"
                   onClick={() => setNewNoteOpen(true)}
                 >
-                  + 새 노트
+                  새 노트 작성
                 </button>
               </div>
               <div className="mb-3 flex flex-wrap gap-1.5">
                 {(
                   [
-                    ["all", "전체"],
-                    ["toMentor", "멘토에게"],
-                    ["fromMentor", "멘토가"],
+                    ["all", "전체 노트"],
+                    ["toMentor", "멘토에게 요청"],
+                    ["fromMentor", "멘토가 요청"],
                   ] as const
                 ).map(([key, label]) => (
                   <button
@@ -767,7 +767,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 ))}
               </div>
               {filteredNoteCards.length === 0 ? (
-                <p className="py-6 text-center text-[11px] font-bold text-slate-400">표시할 노트가 없습니다.</p>
+                <p className="py-6 text-center text-[11px] font-bold text-slate-400">아직 연결 노트가 없어요</p>
               ) : (
                 <ul className="space-y-2">
                   {filteredNoteCards.map((card) => (
@@ -784,7 +784,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                       >
                         {card.tag}
                       </span>
-                      <p className="mt-2 text-[11px] font-medium leading-relaxed text-slate-700">{card.body}</p>
+                      <p className="mt-2 line-clamp-2 text-[11px] font-medium leading-relaxed text-slate-700">{card.body}</p>
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <p className="text-[9px] font-bold text-slate-400">
                           {card.author} · {card.date}
