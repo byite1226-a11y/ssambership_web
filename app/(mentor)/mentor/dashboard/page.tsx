@@ -1,17 +1,20 @@
 import { PageScaffold } from "@/components/shell/PageScaffold";
-import { MentorDashboardBody } from "@/components/home/MentorDashboardBody";
+import { MentorDashboardPage } from "@/components/mentor/dashboard/MentorDashboardPage";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { loadMentorDashboardData } from "@/lib/home/mentorDashboardQueries";
+import { loadMentorHubDashboardData } from "@/lib/mentor/dashboard/mentorHubDashboardQueries";
 
-export default async function MentorDashboardPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function MentorDashboardRoutePage() {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
-  const data = await loadMentorDashboardData(supabase, user.id);
+  const data = await loadMentorHubDashboardData(supabase, user.id);
 
   return (
     <PageScaffold hideHero hideFooterPlaceholderCards sections={[]} ctas={[]} dataPoints={[]}>
-      <MentorDashboardBody data={data} />
+      <MentorDashboardPage data={data} />
     </PageScaffold>
   );
 }

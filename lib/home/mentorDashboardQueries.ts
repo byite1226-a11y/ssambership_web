@@ -113,7 +113,7 @@ async function notificationsCountProbe(
   return { label: "알림", detail: "알림 건수를 아직 표시할 수 없어요", status: "skeleton" };
 }
 
-async function countActiveSubscriptionsForMentor(
+export async function countActiveSubscriptionsForMentor(
   supabase: SupabaseClient,
   mentorId: string
 ): Promise<number> {
