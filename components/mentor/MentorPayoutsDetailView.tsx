@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { MentorPayoutDetailLine, PayoutLineType } from "@/lib/mentor/mentorPayoutsService";
-import { formatYearMonthLabel } from "@/lib/mentor/mentorPayoutsService";
+import type { MentorPayoutDetailLine, PayoutLineType } from "@/lib/mentor/mentorPayoutsTypes";
+import { detailLineToSettlementRow, formatYearMonthLabel } from "@/lib/mentor/mentorPayoutsDisplay";
 import { MentorPayoutsSettlementTable } from "@/components/mentor/payouts/MentorPayoutsSettlementTable";
-import { detailLineToSettlementRow } from "@/lib/mentor/mentorPayoutsService";
 import { Download } from "lucide-react";
 import {
   formatCashKrw,

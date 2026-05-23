@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { updateMentorPayoutAccountAction } from "@/lib/mentor/mentorPayoutAccountActions";
 import { formatCashKrw } from "@/lib/mentor/mentorPayoutsConstants";
-import type { MentorPayoutMonthlyCard, MentorPayoutSummary } from "@/lib/mentor/mentorPayoutsService";
+import type { MentorPayoutMonthlyCard, MentorPayoutSummary } from "@/lib/mentor/mentorPayoutsTypes";
 import { ArrowRight, Building2, Calendar, Info, Wallet } from "lucide-react";
 
 type Props = {

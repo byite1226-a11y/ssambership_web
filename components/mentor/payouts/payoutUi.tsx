@@ -1,5 +1,5 @@
 import { formatCashKrw } from "@/lib/mentor/mentorPayoutsConstants";
-import type { PayoutLineType, PayoutUiStatus } from "@/lib/mentor/mentorPayoutsService";
+import type { PayoutLineType, PayoutUiStatus } from "@/lib/mentor/mentorPayoutsTypes";
 
 export { formatCashKrw };
 

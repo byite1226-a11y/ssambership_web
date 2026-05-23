@@ -1,6 +1,6 @@
 "use client";
 
-import type { MentorPayoutSettlementTableRow } from "@/lib/mentor/mentorPayoutsService";
+import type { MentorPayoutSettlementTableRow } from "@/lib/mentor/mentorPayoutsTypes";
 import {
   formatCashKrw,
   formatPayoutTableDate,

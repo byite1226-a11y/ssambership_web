@@ -1,7 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import type { MentorPayoutScheduleInfo, MentorPayoutSummary } from "@/lib/mentor/mentorPayoutsService";
+import type { MentorPayoutScheduleInfo, MentorPayoutSummary } from "@/lib/mentor/mentorPayoutsTypes";
 import { MentorPayoutsDonutChart } from "./MentorPayoutsCharts";
 import { formatCashKrw } from "./payoutUi";
 import { Info } from "lucide-react";

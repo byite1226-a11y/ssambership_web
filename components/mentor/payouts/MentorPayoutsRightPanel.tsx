@@ -1,7 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import type { MentorPayoutMonthlyCard, MentorPayoutScheduleInfo } from "@/lib/mentor/mentorPayoutsService";
+import type { MentorPayoutMonthlyCard, MentorPayoutScheduleInfo } from "@/lib/mentor/mentorPayoutsTypes";
 import { MentorPayoutsMonthlyBarChart } from "./MentorPayoutsCharts";
 import { formatCashKrw } from "./payoutUi";
 

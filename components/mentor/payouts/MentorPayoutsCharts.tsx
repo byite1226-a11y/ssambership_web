@@ -11,8 +11,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatChartMonthLabel } from "@/lib/mentor/mentorPayoutsService";
-import type { MentorPayoutMonthlyCard } from "@/lib/mentor/mentorPayoutsService";
+import { formatChartMonthLabel } from "@/lib/mentor/mentorPayoutsDisplay";
+import type { MentorPayoutMonthlyCard } from "@/lib/mentor/mentorPayoutsTypes";
 import { formatCashKrw } from "./payoutUi";
 
 const PRIMARY = "#1A56DB";

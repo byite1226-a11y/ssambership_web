@@ -1,6 +1,4 @@
-"use client";
-
-import type { MentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsService";
+import type { MentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsTypes";
 import { MentorPayoutsLeftSidebar } from "./MentorPayoutsLeftSidebar";
 import { MentorPayoutsMain } from "./MentorPayoutsMain";
 import { MentorPayoutsRightPanel } from "./MentorPayoutsRightPanel";

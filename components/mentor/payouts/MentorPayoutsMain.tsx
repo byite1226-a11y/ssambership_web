@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { MentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsService";
-import { formatYearMonthLabel } from "@/lib/mentor/mentorPayoutsService";
+import type { MentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsTypes";
+import { formatYearMonthLabel } from "@/lib/mentor/mentorPayoutsDisplay";
 import { Download } from "lucide-react";
 import { MentorPayoutsKpiCards } from "./MentorPayoutsKpiCards";
 import { MentorPayoutsPerformanceTable } from "./MentorPayoutsPerformanceTable";

@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
@@ -9,40 +11,42 @@ import {
   MENTOR_SUBSCRIPTION_SHARE,
   minorUnitsToCash,
 } from "@/lib/mentor/mentorPayoutsConstants";
+import { buildPayoutScheduleInfo, detailLineToSettlementRow } from "@/lib/mentor/mentorPayoutsDisplay";
+import type {
+  MentorPayoutDetailLine,
+  MentorPayoutDetailResult,
+  MentorPayoutMonthlyCard,
+  MentorPayoutPerformanceRow,
+  MentorPayoutScheduleInfo,
+  MentorPayoutSettlementTableRow,
+  MentorPayoutSummary,
+  MentorPayoutsPageData,
+  PayoutLineType,
+  PayoutUiStatus,
+} from "@/lib/mentor/mentorPayoutsTypes";
+
+export type {
+  MentorPayoutDetailLine,
+  MentorPayoutDetailResult,
+  MentorPayoutMonthlyCard,
+  MentorPayoutPerformanceRow,
+  MentorPayoutScheduleInfo,
+  MentorPayoutSettlementTableRow,
+  MentorPayoutSummary,
+  MentorPayoutsPageData,
+  PayoutLineType,
+  PayoutUiStatus,
+};
+
+export {
+  buildPayoutScheduleInfo,
+  detailLineToSettlementRow,
+  formatChartMonthLabel,
+  formatPayoutDateLabel,
+  formatYearMonthLabel,
+} from "@/lib/mentor/mentorPayoutsDisplay";
 
 type Row = Record<string, unknown>;
-
-export type PayoutLineType = "subscription" | "custom_request";
-
-export type MentorPayoutDetailLine = {
-  id: string;
-  type: PayoutLineType;
-  date: string;
-  description: string;
-  paymentAmount: number;
-  feeAmount: number;
-  netAmount: number;
-  status: string;
-};
-
-export type MentorPayoutMonthlyCard = {
-  yearMonth: string;
-  label: string;
-  revenue: number;
-  scheduledPayout: number;
-  status: "paid" | "scheduled";
-};
-
-export type MentorPayoutSummary = {
-  thisMonthRevenue: number;
-  thisMonthScheduledPayout: number;
-  thisMonthSubscription: number;
-  thisMonthCustomRequest: number;
-  lifetimeSubscription: number;
-  lifetimeCustomRequest: number;
-  bankDisplay: string;
-  bankEditable: boolean;
-};
 
 function ymKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -354,94 +358,6 @@ export async function loadMentorPayoutMonthlyCards(
   return cards;
 }
 
-export type MentorPayoutDetailResult = {
-  lines: MentorPayoutDetailLine[];
-  totals: {
-    paymentAmount: number;
-    feeAmount: number;
-    netAmount: number;
-  };
-};
-
-export type PayoutUiStatus = "paid" | "scheduled" | "hold" | "cancelled";
-
-export type MentorPayoutSettlementTableRow = {
-  id: string;
-  date: string;
-  type: PayoutLineType;
-  description: string;
-  grossAmount: number;
-  feeAmount: number;
-  netAmount: number;
-  uiStatus: PayoutUiStatus;
-  isCancelled: boolean;
-};
-
-export type MentorPayoutPerformanceRow = {
-  id: string;
-  date: string;
-  type: PayoutLineType;
-  title: string;
-  studentName: string;
-  amount: number;
-  uiStatus: "done" | "in_progress" | "cancelled";
-};
-
-export type MentorPayoutScheduleInfo = {
-  nextPayoutDateIso: string;
-  nextPayoutLabel: string;
-  monthProgressPct: number;
-  monthLabel: string;
-  completedPayoutAmount: number;
-  expectedPayoutAmount: number;
-};
-
-export type MentorPayoutsPageData = {
-  summary: MentorPayoutSummary;
-  months: MentorPayoutMonthlyCard[];
-  schedule: MentorPayoutScheduleInfo;
-  revenueShare: {
-    subscription: number;
-    customRequest: number;
-    total: number;
-    subscriptionPct: number;
-    customRequestPct: number;
-  };
-  kpis: {
-    subscription: { amount: number; momPct: number | null };
-    customRequest: { amount: number; momPct: number | null };
-    total: { amount: number; momPct: number | null };
-    lifetimePaid: number;
-  };
-  settlementLines: MentorPayoutSettlementTableRow[];
-  performanceLines: MentorPayoutPerformanceRow[];
-  defaultMonth: string;
-};
-
-const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
-
-export function formatPayoutDateLabel(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const w = WEEKDAY_KO[d.getDay()];
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}.${m}.${day} (${w})`;
-}
-
-export function formatYearMonthLabel(ym: string): string {
-  const [y, m] = ym.split("-").map(Number);
-  if (!y || !m) return ym;
-  return `${y}년 ${String(m).padStart(2, "0")}월`;
-}
-
-export function formatChartMonthLabel(ym: string): string {
-  const [y, m] = ym.split("-");
-  if (!y || !m) return ym;
-  return `${y.slice(-2)}.${m}`;
-}
-
 function pctChange(current: number, previous: number): number | null {
   if (previous === 0) return current > 0 ? 100 : current === 0 ? 0 : null;
   return Math.round(((current - previous) / previous) * 1000) / 10;
@@ -451,53 +367,6 @@ function prevYm(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
   const d = new Date(y, m - 2, 1);
   return ymKey(d);
-}
-
-export function buildPayoutScheduleInfo(
-  expectedAmount: number,
-  completedAmount: number,
-  from = new Date()
-): MentorPayoutScheduleInfo {
-  const y = from.getFullYear();
-  const m = from.getMonth();
-  const day = from.getDate();
-  const target =
-    day < 10 ? new Date(y, m, 10) : new Date(y, m + 1, 10);
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const progress = Math.min(100, Math.round((day / daysInMonth) * 100));
-
-  return {
-    nextPayoutDateIso: target.toISOString(),
-    nextPayoutLabel: formatPayoutDateLabel(target.toISOString()),
-    monthProgressPct: progress,
-    monthLabel: `${m + 1}월`,
-    completedPayoutAmount: completedAmount,
-    expectedPayoutAmount: expectedAmount,
-  };
-}
-
-function mapLineStatusToUi(status: string, net: number): PayoutUiStatus {
-  const s = status.toLowerCase();
-  if (s.includes("취소") || s.includes("cancel") || net < 0) return "cancelled";
-  if (s.includes("완료") || s.includes("paid") || s.includes("지급")) return "paid";
-  if (s.includes("보류") || s.includes("hold")) return "hold";
-  return "scheduled";
-}
-
-export function detailLineToSettlementRow(line: MentorPayoutDetailLine): MentorPayoutSettlementTableRow {
-  const uiStatus = mapLineStatusToUi(line.status, line.netAmount);
-  const isCancelled = uiStatus === "cancelled";
-  return {
-    id: line.id,
-    date: line.date,
-    type: line.type,
-    description: line.description,
-    grossAmount: isCancelled ? -Math.abs(line.paymentAmount) : line.paymentAmount,
-    feeAmount: isCancelled ? Math.abs(line.feeAmount) : line.feeAmount,
-    netAmount: line.netAmount,
-    uiStatus,
-    isCancelled,
-  };
 }
 
 async function loadLifetimePaidPayouts(client: SupabaseClient, mentorId: string): Promise<number> {
