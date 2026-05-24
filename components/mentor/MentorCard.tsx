@@ -181,9 +181,7 @@ export function MentorCard(props: {
                       </span>
                     ) : null}
                   </span>
-                  <span className="text-xs font-black tabular-nums text-slate-900">
-                    월 {t.cashKrw.toLocaleString("ko-KR")}캐시
-                  </span>
+                  <span className="text-xs font-black tabular-nums text-slate-900">{t.cashLabel}</span>
                 </div>
                 <p className="mt-0.5 text-[10px] font-medium leading-snug text-slate-600">
                   {t.weeklyLabel}

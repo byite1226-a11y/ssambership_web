@@ -8,7 +8,11 @@ import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVis
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
-import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
+import {
+  cashKrwForSubscribeTier,
+  formatSubscribePlanCashMonthlyLabel,
+  getSubscribeCatalogPlan,
+} from "@/lib/subscribe/subscribePlanCatalog";
 import type {
   MentorGradeFilter,
   MentorTypeFilter,
@@ -221,8 +225,7 @@ async function batchPlanLabels(
 }
 
 function formatMoney(n: number): string {
-  if (n >= 1000 && n === Math.floor(n)) return `${Math.round(n).toLocaleString("ko-KR")}원`;
-  return `${n}`;
+  return formatSubscribePlanCashMonthlyLabel(n);
 }
 
 function priceKrwFromRow(row: Row | null, tier: SubscribePlanTier): number {
@@ -234,11 +237,11 @@ function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPr
   const tierPrices: MentorTierPrice[] = tiers.map((tier) => {
     const row = byTier?.[tier] ?? null;
     const catalog = getSubscribeCatalogPlan(tier);
-    const krw = priceKrwFromRow(row, tier);
+    const krw = cashKrwForSubscribeTier(tier);
     return {
       tier,
       label: catalog.label,
-      cashLabel: `${krw.toLocaleString("ko-KR")} 캐시`,
+      cashLabel: formatSubscribePlanCashMonthlyLabel(krw),
       cashKrw: krw,
       weeklyLabel: catalog.weeklyLabel,
       priorityLabel: catalog.priorityLabel,

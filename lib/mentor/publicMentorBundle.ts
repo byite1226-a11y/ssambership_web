@@ -48,7 +48,7 @@ export type PublicMentorLoadResult =
       message: string;
     };
 
-async function fetchReviewsSummary(
+export async function fetchReviewsSummary(
   supabase: SupabaseClient,
   mentorId: string
 ): Promise<MentorReviewsSummary> {

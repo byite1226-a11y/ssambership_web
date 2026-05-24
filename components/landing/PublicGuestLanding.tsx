@@ -85,30 +85,6 @@ function QuestionRoomMockup() {
   );
 }
 
-function LandingFooter() {
-  return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div>
-          <p className="text-lg font-black text-slate-900">쌤버십</p>
-          <p className="mt-1 text-sm font-medium text-slate-500">구독형 질문 멘토링 플랫폼</p>
-        </div>
-        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold text-slate-600">
-          <Link href="/legal/terms" className="hover:text-[#1A56DB]">
-            이용약관
-          </Link>
-          <Link href="/legal/privacy" className="hover:text-[#1A56DB]">
-            개인정보처리방침
-          </Link>
-          <Link href="/login?next=%2Fmypage" className="hover:text-[#1A56DB]">
-            고객센터
-          </Link>
-        </nav>
-        <p className="text-xs font-medium text-slate-400">© {new Date().getFullYear()} SSAMBESHIP. All rights reserved.</p>
-      </div>
-    </footer>
-  );
-}
 
 export function PublicGuestLanding() {
   return (
@@ -283,8 +259,6 @@ export function PublicGuestLanding() {
           </Link>
         </div>
       </section>
-
-      <LandingFooter />
     </div>
   );
 }

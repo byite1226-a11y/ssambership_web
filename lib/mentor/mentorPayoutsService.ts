@@ -6,6 +6,7 @@ import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { loadMentorSettlementItemsForPayouts } from "@/lib/mentor/mentorPayoutsQueries";
 import {
   DEFAULT_MASKED_BANK_DISPLAY,
+  MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE,
   MENTOR_CUSTOM_REQUEST_SHARE,
   MENTOR_SUBSCRIPTION_PLATFORM_SHARE,
   MENTOR_SUBSCRIPTION_SHARE,
@@ -173,8 +174,11 @@ async function loadCustomRequestLines(client: SupabaseClient, mentorId: string):
   const fromSettlement: MentorPayoutDetailLine[] = settlement.lines.map(({ settlement: s, order }) => {
     const gross = intWon(s.gross_amount) || orderGrossWon(order);
     const payment = gross > 0 ? gross : intWon(s.mentor_amount) + intWon(s.platform_fee_amount);
-    const net = intWon(s.mentor_amount) || Math.floor(payment * MENTOR_CUSTOM_REQUEST_SHARE);
-    const fee = intWon(s.platform_fee_amount) || payment - net;
+    const expectedFee = Math.floor(payment * MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE);
+    const feeRaw = intWon(s.platform_fee_amount);
+    const fee =
+      feeRaw > 0 && payment > 0 && feeRaw / payment < 0.15 ? expectedFee : feeRaw || expectedFee;
+    const net = intWon(s.mentor_amount) || payment - fee;
     const st = String(s.status ?? "").toLowerCase();
     const status =
       st === "paid" ? "지급완료" : st === "on_hold" ? "보류" : st === "payable" ? "지급가능" : "정산예정";

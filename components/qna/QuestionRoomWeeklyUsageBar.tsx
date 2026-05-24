@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 export type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
 import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
+import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsage";
 
 export function QuestionRoomWeeklyUsageBar(props: {
   mentorId: string | null;
@@ -58,8 +59,8 @@ export function QuestionRoomWeeklyUsageBar(props: {
   if (!props.mentorId) return null;
 
   const used = usage?.used ?? 0;
-  const limitLabel = usage?.limitLabel ?? "—";
   const unlimited = usage != null && usage.limit >= 999;
+  const quotaLabel = weeklyQuestionQuotaLabel(usage);
   const pct =
     usage && !unlimited && usage.limit > 0
       ? Math.min(100, Math.round((used / usage.limit) * 100))
@@ -80,9 +81,7 @@ export function QuestionRoomWeeklyUsageBar(props: {
             다시 시도
           </button>
         ) : (
-          <span className="text-[10px] font-black text-slate-600">
-            {used}/{limitLabel}개 사용
-          </span>
+          <span className="text-[10px] font-black text-slate-600">{quotaLabel}</span>
         )}
       </div>
       {!loading && !error && usage ? (

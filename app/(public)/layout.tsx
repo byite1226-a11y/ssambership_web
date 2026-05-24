@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { SiteFooter } from "@/components/common/SiteFooter";
 import { AppShell } from "@/components/shell/AppShell";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { mentorBlockedCashPath } from "@/lib/shell/mainNavItems";
@@ -22,6 +23,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
   return (
     <AppShell area="public" sessionRole={sessionRole} userProfile={profile}>
       {children}
+      <SiteFooter />
     </AppShell>
   );
 }

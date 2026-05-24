@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { updateMentorPayoutAccountAction } from "@/lib/mentor/mentorPayoutAccountActions";
-import { formatCashKrw } from "@/lib/mentor/mentorPayoutsConstants";
+import {
+  CUSTOM_REQUEST_PLATFORM_FEE_LABEL,
+  SUBSCRIPTION_PLATFORM_FEE_LABEL,
+  formatCashKrw,
+} from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutMonthlyCard, MentorPayoutSummary } from "@/lib/mentor/mentorPayoutsTypes";
 import { ArrowRight, Building2, Calendar, Info, Wallet } from "lucide-react";
 
@@ -106,12 +110,14 @@ export function MentorPayoutsSummaryView({ summary, months }: Props) {
               icon={<Wallet className="h-4 w-4" />}
               month={summary.thisMonthSubscription}
               lifetime={summary.lifetimeSubscription}
+              feeNote={SUBSCRIPTION_PLATFORM_FEE_LABEL}
             />
             <RevenueCard
               title="맞춤의뢰 수익"
               icon={<Calendar className="h-4 w-4" />}
               month={summary.thisMonthCustomRequest}
               lifetime={summary.lifetimeCustomRequest}
+              feeNote={CUSTOM_REQUEST_PLATFORM_FEE_LABEL}
             />
           </div>
 
@@ -167,6 +173,7 @@ function RevenueCard(props: {
   icon: React.ReactNode;
   month: number;
   lifetime: number;
+  feeNote?: string;
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -174,6 +181,9 @@ function RevenueCard(props: {
         {props.icon}
         <h3 className="text-sm font-black text-slate-900">{props.title}</h3>
       </div>
+      {props.feeNote ? (
+        <p className="mt-2 text-[11px] font-semibold text-slate-500">{props.feeNote}</p>
+      ) : null}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase text-slate-400">이번 달 누적</p>

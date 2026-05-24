@@ -4,6 +4,8 @@ import { mentorMainNav } from "@/lib/shell/mainNavItems";
 const PRIMARY = "#1A56DB";
 
 export function MentorDashboardSideNav() {
+  const sideItems = mentorMainNav.filter((item) => item.href !== "/mentor/dashboard");
+
   return (
     <aside className="hidden w-[240px] shrink-0 xl:block">
       <nav className="sticky top-24 space-y-1 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -15,7 +17,7 @@ export function MentorDashboardSideNav() {
         >
           대시보드
         </Link>
-        {mentorMainNav.map((item) => (
+        {sideItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}

@@ -1,12 +1,43 @@
 /**
  * 멘토 정산 UI 표시 헬퍼 — 클라이언트·서버 공용 (server-only import 없음)
  */
+import {
+  CUSTOM_REQUEST_PLATFORM_FEE_LABEL,
+  MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE,
+  MENTOR_SUBSCRIPTION_PLATFORM_SHARE,
+  SUBSCRIPTION_PLATFORM_FEE_LABEL,
+} from "@/lib/mentor/mentorPayoutsConstants";
 import type {
   MentorPayoutDetailLine,
   MentorPayoutScheduleInfo,
   MentorPayoutSettlementTableRow,
+  PayoutLineType,
   PayoutUiStatus,
 } from "@/lib/mentor/mentorPayoutsTypes";
+
+export function platformFeeLabelForType(type: PayoutLineType): string {
+  return type === "subscription" ? SUBSCRIPTION_PLATFORM_FEE_LABEL : CUSTOM_REQUEST_PLATFORM_FEE_LABEL;
+}
+
+export function platformFeeRateForType(type: PayoutLineType): number {
+  return type === "subscription" ? MENTOR_SUBSCRIPTION_PLATFORM_SHARE : MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE;
+}
+
+/** DB fee_rate가 잘못 저장된 경우(예: 0.1) 유형별 잠금값으로 보정 */
+export function resolvePlatformFeeRate(type: PayoutLineType, raw: unknown): number {
+  const expected = platformFeeRateForType(type);
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n)) return expected;
+  const asFraction = n > 0 && n <= 1 ? n : n / 100;
+  if (Math.abs(asFraction - expected) < 0.02) return expected;
+  if (type === "subscription" && asFraction <= 0.11) return MENTOR_SUBSCRIPTION_PLATFORM_SHARE;
+  if (type === "custom_request" && asFraction <= 0.11) return MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE;
+  return expected;
+}
+
+export function formatPlatformFeeRateLabel(type: PayoutLineType, raw?: unknown): string {
+  return platformFeeLabelForType(type);
+}
 
 const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
 

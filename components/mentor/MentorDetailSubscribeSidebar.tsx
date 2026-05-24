@@ -9,7 +9,7 @@ import type { SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 const BENEFITS = [
   "연결노트 제공 — 내 공부 흐름을 한눈에 정리",
   "1:1 맞춤 답변 — 전공 멘토의 상세한 답변",
-  "질문 히스토리 무제한 — 이전 질문과 답변 무제한 확인",
+  "구독 해지 후에도 이전 질문·답변 전체 열람 가능",
   "우선 답변 혜택 — 일반 질문보다 빠른 답변 제공",
   "멘토 자료 제공 — 핵심 요약 노트 및 자료 제공",
 ] as const;

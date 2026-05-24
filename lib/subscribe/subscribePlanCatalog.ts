@@ -44,6 +44,11 @@ export function cashKrwForSubscribeTier(tier: SubscribePlanTier): number {
   return getSubscribeCatalogPlan(tier).cashKrw;
 }
 
+/** UI: `114,900캐시 / 월` (잠금 플랜 캐시 단위) */
+export function formatSubscribePlanCashMonthlyLabel(cashKrw: number): string {
+  return `${cashKrw.toLocaleString("ko-KR")}캐시 / 월`;
+}
+
 export function isSubscribeAmountForTier(amountKrw: number, tier: SubscribePlanTier): boolean {
   return getSubscribeCatalogPlan(tier).cashKrw === amountKrw;
 }

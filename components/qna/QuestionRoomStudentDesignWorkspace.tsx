@@ -19,6 +19,7 @@ import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { QuestionRoomNewQuestionModal } from "@/components/qna/QuestionRoomNewQuestionModal";
 import { QuestionThreadConfirmButton } from "@/components/qna/QuestionThreadConfirmButton";
 import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
+import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsage";
 import { sendQuestionMessageAction } from "@/lib/qna/questionRoomActions";
 import {
   formatMinutesAgo,
@@ -76,12 +77,6 @@ function renderMessageContent(body: string) {
     );
   }
   return <span className="whitespace-pre-wrap break-words">{trimmed}</span>;
-}
-
-function usageQuotaLabel(u: WeeklyUsageSnapshot | null | undefined): string {
-  if (!u) return "—/—";
-  const limit = u.limit >= 999 ? "∞" : String(u.limit);
-  return `${u.used}/${limit}`;
 }
 
 function ChatSendButton(props: { disabled?: boolean }) {
@@ -350,7 +345,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                           <p className="mt-1 text-[10px] font-medium text-slate-400">과목 정보 없음</p>
                         )}
                         <p className="mt-1 text-[10px] font-bold text-[#1A56DB]">
-                          이번 주 질문 {usageQuotaLabel(usage)}
+                          {weeklyQuestionQuotaLabel(usage)}
                         </p>
                         <p className="mt-0.5 text-[9px] font-medium text-slate-400">
                           {formatMinutesAgo(
@@ -420,7 +415,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 ) : null}
                 <div className="mt-4 max-w-md">
                   <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
-                    <span>이번 주 질문 {usageQuotaLabel(weeklyUsage)}</span>
+                    <span>{weeklyQuestionQuotaLabel(weeklyUsage)}</span>
                     <span className="text-slate-400">
                       {weeklyUsage?.planTier ? String(weeklyUsage.planTier).toUpperCase() : "플랜"}
                     </span>
@@ -774,7 +769,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     </li>
                   </ul>
                   <p className="mt-2 text-[10px] font-bold text-slate-700">
-                    이번 주 질문 {usageQuotaLabel(weeklyUsage)}
+                    {weeklyQuestionQuotaLabel(weeklyUsage)}
                   </p>
                   <p className="text-[10px] font-black text-[#1A56DB]">{remainingLabel}</p>
                 </div>

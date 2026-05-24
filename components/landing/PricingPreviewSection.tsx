@@ -40,7 +40,7 @@ export function PricingPreviewSection(props: { plans: GlobalPlansLoad; byTier: P
                 <h3 className="font-black text-slate-900">{t.label}</h3>
                 {t.rec ? <span className="text-xs font-bold text-emerald-700">추천</span> : null}
               </div>
-              <p className="mt-2 text-xl font-black text-slate-900">{priceLabelFromPlanRow(row)}</p>
+              <p className="mt-2 text-xl font-black text-slate-900">{priceLabelFromPlanRow(row, t.id)}</p>
               <p className="mt-1 text-xs text-slate-600">주간 신규 질문: {weeklyQuestionsLabel(row)}</p>
             </div>
           );

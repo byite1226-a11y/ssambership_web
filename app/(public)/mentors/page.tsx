@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { MentorsListBody } from "@/components/mentor/MentorsListBody";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { loadFavoriteMentorIdsForUser } from "@/lib/mentor/mentorFavorites";
@@ -7,6 +8,11 @@ import { createClient } from "@/lib/supabase/server";
 
 type Props = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export const metadata: Metadata = {
+  title: "멘토 찾기",
+  description: "과목·학년·요금으로 멘토를 찾고 구독을 시작하세요.",
 };
 
 export default async function MentorsPage(props: Props) {

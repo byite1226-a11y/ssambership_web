@@ -163,7 +163,7 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
             <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
               {(["limited", "standard", "premium"] as const).map((tier) => {
                 const row = stats?.byTier?.[tier] ?? null;
-                const price = row ? priceLabelFromPlanRow(row) : "—";
+                const price = priceLabelFromPlanRow(row, tier);
                 const label = getSubscribeCatalogPlan(tier).label;
                 const badgeColor =
                   tier === "limited"

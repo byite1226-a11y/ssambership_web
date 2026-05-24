@@ -59,23 +59,23 @@ export function formatQuestionsRemainingLabel(
   tier: SubscribePlanTier | null
 ): string {
   if (counterRow) {
-    for (const k of [
-      "questions_remaining",
-      "remaining_questions",
-      "monthly_questions_remaining",
-      "questions_left",
-      "weekly_questions_remaining",
-    ] as const) {
+    for (const k of ["weekly_questions_remaining", "questions_remaining", "remaining_questions"] as const) {
       const v = counterRow[k];
       if (typeof v === "number" && Number.isFinite(v)) {
-        if (tier === "premium" && v >= 999) return "질문 무제한";
-        return `${v}회`;
+        if (tier === "premium" && v >= 999) return "주 무제한 질문";
+        const cap =
+          tier === "limited" ? 4 : tier === "standard" ? 9 : tier === "premium" ? 999 : null;
+        if (cap != null && cap < 999) {
+          const used = Math.max(0, cap - v);
+          return `주 ${cap}개 질문 · ${used}/${cap}`;
+        }
+        return `남은 질문 ${v}회`;
       }
     }
   }
-  if (tier === "premium") return "질문 무제한";
-  if (tier === "standard") return "주 9회 (플랜 기준)";
-  if (tier === "limited") return "주 4회 (플랜 기준)";
+  if (tier === "premium") return "주 무제한 질문";
+  if (tier === "standard") return "주 9개 질문 (플랜 기준)";
+  if (tier === "limited") return "주 4개 질문 (플랜 기준)";
   return "—";
 }
 

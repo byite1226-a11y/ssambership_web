@@ -1,4 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
+import {
+  cashKrwForSubscribeTier,
+  formatSubscribePlanCashMonthlyLabel,
+  getSubscribeCatalogPlan,
+} from "@/lib/subscribe/subscribePlanCatalog";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { buildMentorProfileDisplay, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
@@ -78,14 +84,15 @@ export function assignPlansByTier(rows: Row[]): { byTier: PlansByTier; fillProbe
   };
 }
 
-export function priceLabelFromPlanRow(row: Row | null): string {
-  if (!row) return "—";
-  for (const k of ["price", "monthly_price", "amount", "price_krw", "amount_cents"]) {
-    const v = row[k];
-    if (typeof v === "number" && Number.isFinite(v)) return `${v.toLocaleString("ko-KR")}원`;
-    if (typeof v === "string" && v.trim()) return v;
-  }
-  return "가격 컬럼 미매칭";
+export function priceLabelFromPlanRow(row: Row | null, tier?: SubscribePlanTier): string {
+  const resolvedTier = tier ?? (row ? detectTier(row) : null);
+  const krw = resolvedTier
+    ? cashKrwForSubscribeTier(resolvedTier)
+    : row
+      ? cashKrwFromPlanRow(row)
+      : 0;
+  if (krw <= 0) return "—";
+  return formatSubscribePlanCashMonthlyLabel(krw);
 }
 
 export function weeklyQuestionsLabel(row: Row | null): string {
@@ -97,11 +104,21 @@ export function weeklyQuestionsLabel(row: Row | null): string {
     "quota_per_week",
     "new_questions_per_week",
   ]);
-  if (s) return s;
-  for (const k of ["weekly_new_questions", "questions_per_week"]) {
-    const v = row[k];
-    if (typeof v === "number") return `주 ${v}회`;
+  if (s) {
+    const trimmed = s.trim();
+    if (/^주\s*\d/.test(trimmed) || trimmed.includes("무제한")) return trimmed;
+    const n = Number(trimmed.replace(/[^\d]/g, ""));
+    if (Number.isFinite(n) && n > 0) return `주 ${n}개 질문`;
+    return trimmed;
   }
+  for (const k of ["weekly_new_questions", "questions_per_week", "weekly_question_limit"] as const) {
+    const v = row[k];
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+      return v >= 999 ? "주 무제한 질문" : `주 ${v}개 질문`;
+    }
+  }
+  const tier = detectTier(row);
+  if (tier) return getSubscribeCatalogPlan(tier).weeklyLabel;
   return "질문 한도는 구독 플랜에 따라 달라요";
 }
 

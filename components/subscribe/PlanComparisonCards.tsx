@@ -104,10 +104,7 @@ export function PlanComparisonCards(props: {
           const row = byTier[tierId];
           const selected = selectedTier === tierId;
           const isRec = Boolean(t.recommend);
-          const price =
-            row != null
-              ? priceLabelFromPlanRow(row)
-              : `월 ${catalog.cashKrw.toLocaleString("ko-KR")}캐시`;
+          const price = priceLabelFromPlanRow(row, tierId);
 
           return (
             <label
@@ -185,7 +182,7 @@ export function PlanComparisonCards(props: {
                       isRec ? "text-blue-700" : "text-slate-900"
                     }`}
                   >
-                    {priceLabelFromPlanRow(row)}
+                    {priceLabelFromPlanRow(row, t.id)}
                   </p>
                 </div>
                 <p className="mt-1 break-keep text-[11px] font-bold leading-snug text-slate-600">
@@ -273,7 +270,7 @@ export function PlanComparisonCards(props: {
                     selected ? "text-blue-700" : "text-slate-900"
                   }`}
                 >
-                  {priceLabelFromPlanRow(row)}
+                  {priceLabelFromPlanRow(row, t.id)}
                 </p>
               </div>
 

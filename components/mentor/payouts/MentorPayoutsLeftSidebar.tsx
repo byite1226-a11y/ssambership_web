@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  CUSTOM_REQUEST_PLATFORM_FEE_LABEL,
+  SUBSCRIPTION_PLATFORM_FEE_LABEL,
+} from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutScheduleInfo, MentorPayoutSummary } from "@/lib/mentor/mentorPayoutsTypes";
 import { MentorPayoutsDonutChart } from "./MentorPayoutsCharts";
 import { formatCashKrw } from "./payoutUi";
@@ -39,9 +43,19 @@ export function MentorPayoutsLeftSidebar(props: Props) {
               </span>
             </dd>
           </div>
-          <div className="flex justify-between gap-2">
-            <dt className="font-semibold text-slate-500">수수료 반영</dt>
-            <dd className="font-bold text-slate-800">적용됨 (플랫폼)</dd>
+          <div className="space-y-1.5">
+            <div className="flex justify-between gap-2">
+              <dt className="font-semibold text-slate-500">수수료 반영</dt>
+              <dd className="font-bold text-slate-800">적용됨</dd>
+            </div>
+            <div className="flex justify-between gap-2 pl-2 text-[11px]">
+              <dt className="font-medium text-slate-500">구독</dt>
+              <dd className="text-right font-semibold text-slate-700">{SUBSCRIPTION_PLATFORM_FEE_LABEL}</dd>
+            </div>
+            <div className="flex justify-between gap-2 pl-2 text-[11px]">
+              <dt className="font-medium text-slate-500">맞춤의뢰</dt>
+              <dd className="text-right font-semibold text-slate-700">{CUSTOM_REQUEST_PLATFORM_FEE_LABEL}</dd>
+            </div>
           </div>
         </dl>
         <Link

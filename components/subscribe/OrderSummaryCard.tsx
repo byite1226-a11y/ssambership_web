@@ -26,7 +26,7 @@ export function OrderSummaryCard(props: {
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-slate-500">결제 예정</dt>
-          <dd className="font-extrabold text-slate-900">{priceLabelFromPlanRow(row)}</dd>
+          <dd className="font-extrabold text-slate-900">{priceLabelFromPlanRow(row, props.selectedTier)}</dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-slate-500">주간 질문</dt>

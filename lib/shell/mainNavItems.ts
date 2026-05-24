@@ -21,7 +21,12 @@ function isCashNavItem(item: MainNavItem): boolean {
 }
 
 function isPayoutNavItem(item: MainNavItem): boolean {
-  return item.href.startsWith("/mentor/payouts") || item.label === "정산" || item.label === "정산/수익";
+  return (
+    item.href.startsWith("/mentor/payouts") ||
+    item.label === "정산" ||
+    item.label === "정산/수익" ||
+    item.label === "캐시정산"
+  );
 }
 
 export const publicMainNav: MainNavItem[] = [
@@ -41,13 +46,19 @@ export const studentMainNav: MainNavItem[] = [
   { href: "/mypage", label: "마이페이지" },
 ];
 
-export const mentorMainNav: MainNavItem[] = [
-  { href: "/mentor/dashboard", label: "대시보드" },
+/** 멘토 상단 헤더 네비 (잠금값 — 대시보드 제외) */
+export const mentorHeaderNav: MainNavItem[] = [
   { href: "/mentor/question-room", label: "질문방" },
   { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰" },
   { href: "/community", label: "커뮤니티" },
   { href: "/wallet/charge", label: "캐시충전" },
   { href: "/mentor/payouts", label: "정산" },
+];
+
+/** 멘토 사이드바·내부 메뉴 — 대시보드 포함 */
+export const mentorMainNav: MainNavItem[] = [
+  { href: "/mentor/dashboard", label: "대시보드" },
+  ...mentorHeaderNav,
 ];
 
 export const adminMainNav: MainNavItem[] = [
@@ -74,7 +85,7 @@ export function getMainNavForRole(sessionRole: AppRole | null | undefined): Main
   if (sessionRole == null) {
     items = publicMainNav;
   } else if (sessionRole === "mentor") {
-    items = mentorMainNav;
+    items = mentorHeaderNav;
   } else if (sessionRole === "admin") {
     items = adminMainNav;
   } else {

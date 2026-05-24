@@ -5,6 +5,10 @@ export const MENTOR_CUSTOM_REQUEST_SHARE = 0.8 as const;
 export const MENTOR_SUBSCRIPTION_PLATFORM_SHARE = 0.3 as const;
 export const MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE = 0.2 as const;
 
+/** UI 표기 — 플랫폼 수수료(공제) */
+export const SUBSCRIPTION_PLATFORM_FEE_LABEL = "30% 공제 (플랫폼 수수료)" as const;
+export const CUSTOM_REQUEST_PLATFORM_FEE_LABEL = "20% 공제 (플랫폼 수수료)" as const;
+
 import { formatCashKrw as formatCashKrwDisplay, minorUnitsToDisplayCash } from "@/lib/utils/formatDisplay";
 
 /** cash_ledger minor 단위 → 표시 캐시(원) */

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CUSTOM_REQUEST_PLATFORM_FEE_LABEL } from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutsBundle } from "@/lib/mentor/mentorPayoutsQueries";
 import { formatKrwWon } from "@/lib/mentor/mentorPayoutsQueries";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
@@ -35,13 +36,8 @@ function cell(v: unknown): string {
   return String(v);
 }
 
-function formatFeeRate(raw: unknown): string {
-  const n = typeof raw === "number" ? raw : Number(raw);
-  if (!Number.isFinite(n)) return "—";
-  if (n >= 0 && n <= 1) {
-    return `${(n * 100).toFixed(1)}%`;
-  }
-  return `${n}%`;
+function formatFeeRate(_raw: unknown): string {
+  return CUSTOM_REQUEST_PLATFORM_FEE_LABEL;
 }
 
 function formatTs(v: unknown): string {

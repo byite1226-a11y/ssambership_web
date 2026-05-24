@@ -1,5 +1,6 @@
 import { LandingTopNav } from "@/components/landing/LandingTopNav";
 import { NoticeBanner } from "@/components/landing/NoticeBanner";
+import { SiteFooter } from "@/components/common/SiteFooter";
 import type { User } from "@supabase/supabase-js";
 import type { UserRow } from "@/lib/types/user";
 import type { ReactNode } from "react";
@@ -10,6 +11,7 @@ export function LandingLayout(props: { user: User | null; profile: UserRow | nul
       <NoticeBanner />
       <LandingTopNav user={props.user} profile={props.profile} />
       <main className="w-full min-w-0">{props.children}</main>
+      <SiteFooter />
     </div>
   );
 }
