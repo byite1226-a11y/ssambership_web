@@ -14,6 +14,12 @@ type MentorSignupFormProps = {
   value: MentorSignupFormValues;
   onChange: (v: MentorSignupFormValues) => void;
   disabled?: boolean;
+  fieldErrors?: Partial<
+    Record<
+      "nickname" | "universityName" | "departmentName" | "teachingSubjectsCsv" | "highSchoolName" | "studentIdFile",
+      string
+    >
+  >;
 };
 
 const input =
@@ -64,7 +70,7 @@ function UploadIcon({ className = "h-7 w-7" }: { className?: string }) {
   );
 }
 
-export function MentorSignupForm({ value, onChange, disabled }: MentorSignupFormProps) {
+export function MentorSignupForm({ value, onChange, disabled, fieldErrors }: MentorSignupFormProps) {
   function hText<K extends keyof MentorSignupFormValues>(k: K, ev: ChangeEvent<HTMLInputElement>) {
     if (k === "studentIdFile") {
       return;
@@ -85,7 +91,7 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
         </SectionHeader>
         <div>
           <label htmlFor="m-nick" className={label}>
-            닉네임
+            닉네임 <span className="text-red-500">*</span>
           </label>
           <input
             id="m-nick"
@@ -95,7 +101,13 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
             disabled={disabled}
             autoComplete="nickname"
             placeholder="멘티가 보는 이름"
+            aria-invalid={!!fieldErrors?.nickname}
           />
+          {fieldErrors?.nickname ? (
+            <p className="mt-1.5 text-sm text-red-600" role="alert">
+              {fieldErrors.nickname}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -106,7 +118,7 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-4 md:gap-5">
           <div>
             <label htmlFor="m-uni" className={label}>
-              대학교
+              대학교 <span className="text-red-500">*</span>
             </label>
             <input
               id="m-uni"
@@ -115,11 +127,17 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
               onChange={(e) => hText("universityName", e)}
               disabled={disabled}
               placeholder="캠퍼스·분교"
+              aria-invalid={!!fieldErrors?.universityName}
             />
+            {fieldErrors?.universityName ? (
+              <p className="mt-1.5 text-sm text-red-600" role="alert">
+                {fieldErrors.universityName}
+              </p>
+            ) : null}
           </div>
           <div>
             <label htmlFor="m-dept" className={label}>
-              학과
+              학과 <span className="text-red-500">*</span>
             </label>
             <input
               id="m-dept"
@@ -128,12 +146,18 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
               onChange={(e) => hText("departmentName", e)}
               disabled={disabled}
               placeholder="단과·전공"
+              aria-invalid={!!fieldErrors?.departmentName}
             />
+            {fieldErrors?.departmentName ? (
+              <p className="mt-1.5 text-sm text-red-600" role="alert">
+                {fieldErrors.departmentName}
+              </p>
+            ) : null}
           </div>
         </div>
         <div className="mt-5 sm:mt-6">
           <label htmlFor="m-hs" className={label}>
-            출신 고등학교
+            출신고교 <span className="text-red-500">*</span>
           </label>
           <input
             id="m-hs"
@@ -142,7 +166,13 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
             onChange={(e) => hText("highSchoolName", e)}
             disabled={disabled}
             placeholder="가입·프로필에 반영"
+            aria-invalid={!!fieldErrors?.highSchoolName}
           />
+          {fieldErrors?.highSchoolName ? (
+            <p className="mt-1.5 text-sm text-red-600" role="alert">
+              {fieldErrors.highSchoolName}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -152,7 +182,7 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
         </SectionHeader>
         <div>
           <label htmlFor="m-sub" className={label}>
-            응답·노출에 쓰는 과목(쉼표 구분)
+            전공과목 <span className="text-red-500">*</span>
           </label>
           <input
             id="m-sub"
@@ -161,8 +191,15 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
             onChange={(e) => hText("teachingSubjectsCsv", e)}
             disabled={disabled}
             placeholder="쉼표로 구분 (예: 수학, 국어, 수능)"
+            aria-invalid={!!fieldErrors?.teachingSubjectsCsv}
           />
-          <p className={hint}>답변이 기대되는 과목(분야)을 적어 주세요. 띄어쓰기는 그대로 반영돼요.</p>
+          {fieldErrors?.teachingSubjectsCsv ? (
+            <p className="mt-1.5 text-sm text-red-600" role="alert">
+              {fieldErrors.teachingSubjectsCsv}
+            </p>
+          ) : (
+            <p className={hint}>답변이 기대되는 과목(분야)을 적어 주세요. 띄어쓰기는 그대로 반영돼요.</p>
+          )}
         </div>
       </section>
 
@@ -179,7 +216,7 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
         </div>
         <div className="p-4 sm:p-5 md:px-6 md:py-5">
           <span className={label} id="m-student-id-label">
-            파일 첨부
+            학생증 업로드 <span className="text-red-500">*</span>
           </span>
           <p className="mb-3 mt-1.5 text-sm text-slate-500 sm:mb-4 sm:text-base">
             JPG, PNG, PDF — 정면이 선명하도록, 글씨가 읽혀요.
@@ -225,32 +262,11 @@ export function MentorSignupForm({ value, onChange, disabled }: MentorSignupForm
               aria-labelledby="m-student-id-label"
             />
           </label>
-        </div>
-      </section>
-
-      <section className={fieldSection} aria-labelledby="m-sec-intro">
-        <SectionHeader n="5 · 한 줄 소개" id="m-sec-intro">
-          멘토 소개
-        </SectionHeader>
-        <div>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <label htmlFor="m-intro" className={label}>
-              멘티에게 보이는 첫 문장
-            </label>
-            <span className="text-sm tabular-nums text-slate-500 sm:text-base">
-              {value.introLine.length} / 200
-            </span>
-          </div>
-          <input
-            id="m-intro"
-            type="text"
-            className={input}
-            value={value.introLine}
-            onChange={(e) => onChange(patch(value, { introLine: e.target.value }))}
-            disabled={disabled}
-            maxLength={200}
-            placeholder="멘티가 첫 화면에서 읽는 한 문장 (정책·금칙어는 운영 기준에 따릅니다)"
-          />
+          {fieldErrors?.studentIdFile ? (
+            <p className="mt-2 text-sm text-red-600" role="alert">
+              {fieldErrors.studentIdFile}
+            </p>
+          ) : null}
         </div>
       </section>
     </div>

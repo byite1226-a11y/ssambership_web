@@ -39,9 +39,18 @@ type RoleLoginFormProps = {
   initialNext?: string | null;
   /** «유형 선택» 링크: `next` 유지하려면 `/login?next=...` */
   rolePickerHref?: string;
+  hideRolePickerLink?: boolean;
 };
 
-export function RoleLoginForm({ role, emailId, passwordId, submitLabel, initialNext, rolePickerHref = "/login" }: RoleLoginFormProps) {
+export function RoleLoginForm({
+  role,
+  emailId,
+  passwordId,
+  submitLabel,
+  initialNext,
+  rolePickerHref = "/login",
+  hideRolePickerLink = false,
+}: RoleLoginFormProps) {
   const searchParams = useSearchParams();
   const signupFollowUp = searchParams.get("message") === "signup-check-email";
   const [email, setEmail] = useState("");
@@ -240,11 +249,16 @@ export function RoleLoginForm({ role, emailId, passwordId, submitLabel, initialN
         {loading ? "처리 중…" : submitLabel}
       </button>
 
-      <p className="text-center text-sm text-slate-600 sm:text-base">
-        <Link href={rolePickerHref} className="font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-slate-800">
-          ← 로그인 유형 다시 선택
-        </Link>
-      </p>
+      {!hideRolePickerLink ? (
+        <p className="text-center text-sm text-slate-600 sm:text-base">
+          <Link
+            href={rolePickerHref}
+            className="font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-slate-800"
+          >
+            ← 로그인 유형 다시 선택
+          </Link>
+        </p>
+      ) : null}
     </form>
   );
 }

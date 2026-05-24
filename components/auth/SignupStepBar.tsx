@@ -5,9 +5,9 @@ type SignupStepBarProps = {
 };
 
 const steps: { n: 1 | 2 | 3; label: string }[] = [
-  { n: 1, label: "역할 선택" },
-  { n: 2, label: "정보 입력" },
-  { n: 3, label: "가입 완료" },
+  { n: 1, label: "1. 역할 선택" },
+  { n: 2, label: "2. 정보 입력" },
+  { n: 3, label: "3. 가입 완료" },
 ];
 
 const lineDone = "bg-sky-300/80";
