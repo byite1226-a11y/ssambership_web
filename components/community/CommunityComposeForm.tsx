@@ -46,13 +46,13 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
             {"\uAC8C\uC2DC\uAE00 \uC791\uC131"}
           </button>
           <button type="button" className="border-b-2 text-sm font-extrabold" style={{ borderColor: PRIMARY, color: PRIMARY }}>
-            {"\uC877\uD3FC \uC5C5\uB85C\uB4DC"}
+            {"숏폼 \uC5C5\uB85C\uB4DC"}
           </button>
         </div>
         <p className="text-sm text-slate-600">
-          {"\uC877\uD3FC \uC601\uC0C1 \uC5C5\uB85C\uB4DC\uB294 "}
+          {"숏폼 \uC601\uC0C1 \uC5C5\uB85C\uB4DC\uB294 "}
           <Link href="/community/shortform" className="font-bold text-[#1A56DB]">
-            {"\uC877\uD3FC \uBA54\uB274"}
+            {"숏폼 \uBA54\uB274"}
           </Link>
           {"\uC5D0\uC11C \uC774\uC5B4\uAC00\uC694. \uBA58\uD1A0\uB294 \uBA58\uD1A0 \uBA54\uB274\uC758 \uCEF4\uD37C\uB2C8\uD2F0 \uC791\uC131\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC788\uC5B4\uC694."}
         </p>
@@ -61,7 +61,7 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
           className="inline-flex rounded-xl px-4 py-2.5 text-sm font-bold text-white"
           style={{ backgroundColor: PRIMARY }}
         >
-          {"\uBA58\uD1A0 \uC877\uD3FC \uC791\uC131 \uC774\uB3D9"}
+          {"\uBA58\uD1A0 숏폼 \uC791\uC131 \uC774\uB3D9"}
         </Link>
       </section>
     );
@@ -74,7 +74,7 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
           {"\uAC8C\uC2DC\uAE00 \uC791\uC131"}
         </button>
         <button type="button" onClick={() => setTab("shortform")} className="text-sm font-bold text-slate-500">
-          {"\uC877\uD3FC \uC5C5\uB85C\uB4DC"}
+          {"숏폼 \uC5C5\uB85C\uB4DC"}
         </button>
       </div>
 

@@ -24,9 +24,9 @@ type Props = {
 export function CommunityLayoutShell(props: Props) {
   const promo = props.rightAsidePromo ?? "home";
   return (
-    <div className="min-h-[60vh] bg-slate-50/80 pb-20 pt-6">
+    <div className="min-h-[60vh] pb-20 pt-6">
       <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
-        <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)_280px] lg:items-start">
+        <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)_260px] lg:items-start">
           <CommunityLeftSidebar active={props.activeNav} hashtags={props.hashtags} />
           <main className="min-w-0 space-y-4">
             {props.hero}

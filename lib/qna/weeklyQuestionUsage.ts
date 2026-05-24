@@ -1,31 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { findActiveSubscriptionForPair } from "@/lib/subscribe/subscribeCheckoutService";
-import type { SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
-import { isSubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { isSubscribePlanTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { QUESTION_THREADS_ROOM_FK_CANDIDATES } from "@/lib/qna/questionThreadRoomRef";
-
-export type WeeklyUsageSnapshot = {
-  used: number;
-  limit: number;
-  remaining: number;
-  canAsk: boolean;
-  limitLabel: string;
-  planTier?: string | null;
-  weekStart?: string | null;
-  weekEnd?: string | null;
-};
-
-export type WeeklyQuestionUsage = {
-  used: number;
-  limit: number;
-  remaining: number;
-  canAsk: boolean;
-  planTier: SubscribePlanTier | null;
-  weekStart: string | null;
-  weekEnd: string | null;
-};
+import type { WeeklyQuestionUsage } from "@/lib/qna/weeklyQuestionUsageDisplay";
+export type { WeeklyQuestionUsage, WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
+export {
+  weeklyQuestionQuotaLabel,
+  weeklyUsageDisplayLimit,
+  weeklyUsageToSnapshot,
+} from "@/lib/qna/weeklyQuestionUsageDisplay";
 
 function limitForTier(tier: SubscribePlanTier | null): number {
   if (tier === "limited") return 4;
@@ -166,44 +150,4 @@ export async function loadWeeklyUsageByMentorIds(
     })
   );
   return out;
-}
-
-export async function fetchWeeklyQuestionUsageServiceRole(
-  studentId: string,
-  mentorId: string
-): Promise<{ usage: WeeklyQuestionUsage | null; error: string | null }> {
-  try {
-    const admin = createServiceRoleClient();
-    return fetchWeeklyQuestionUsage(admin, studentId, mentorId);
-  } catch (e) {
-    const m = e instanceof Error ? e.message : String(e);
-    return { usage: null, error: m };
-  }
-}
-
-export function weeklyUsageDisplayLimit(usage: WeeklyQuestionUsage): string {
-  if (usage.limit >= 999) return "무제한";
-  return String(usage.limit);
-}
-
-/** 질문방 UI — 주간 한도 표기 (예: 주 4개 질문 · 1/4) */
-export function weeklyQuestionQuotaLabel(
-  usage: Pick<WeeklyQuestionUsage, "used" | "limit"> | WeeklyUsageSnapshot | null | undefined
-): string {
-  if (!usage) return "주 —개 질문";
-  if (usage.limit >= 999) return `주 무제한 질문 · ${usage.used} 사용`;
-  return `주 ${usage.limit}개 질문 · ${usage.used}/${usage.limit}`;
-}
-
-export function weeklyUsageToSnapshot(usage: WeeklyQuestionUsage): WeeklyUsageSnapshot {
-  return {
-    used: usage.used,
-    limit: usage.limit,
-    remaining: usage.remaining,
-    canAsk: usage.canAsk,
-    limitLabel: weeklyUsageDisplayLimit(usage),
-    planTier: usage.planTier,
-    weekStart: usage.weekStart,
-    weekEnd: usage.weekEnd,
-  };
 }

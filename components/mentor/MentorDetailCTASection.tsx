@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { FREE_QUESTION_POLICY_SHORT } from "@/lib/mentor/freeQuestionPolicy";
 
 const GUARANTEES = [
   { label: "안전한 연결", desc: "검증된 멘토와만 연결" },
@@ -43,6 +44,8 @@ export function MentorDetailCTASection(props: {
           {freeLabel}
         </Link>
       </div>
+
+      <p className="mt-4 text-center text-xs font-medium text-slate-600">{FREE_QUESTION_POLICY_SHORT}</p>
 
       <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {GUARANTEES.map((g) => (

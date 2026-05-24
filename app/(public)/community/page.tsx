@@ -36,9 +36,9 @@ export default async function CommunityLandingPage(props: Props) {
       popularPosts={popular.posts}
       popularMentors={mentors}
     >
-      <header className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <header className="px-1 py-2">
         <h1 className="text-xl font-black text-slate-900">쌤버십 커뮤니티</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm leading-relaxed text-slate-700">
           학습법, 내신, 진로 이야기를 나누고 멘토와 연결해 보세요.
         </p>
       </header>

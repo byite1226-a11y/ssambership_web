@@ -1,13 +1,24 @@
 import Link from "next/link";
 import { ArrowRight, CreditCard, MessageCircle, Search, TrendingUp } from "lucide-react";
+import { FREE_QUESTION_POLICY_SHORT } from "@/lib/mentor/freeQuestionPolicy";
+import type { LandingPublicStats } from "@/lib/landing/landingPageQueries";
 import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 
-const STATS = [
-  { value: "30명+", label: "멘토" },
-  { value: "1,200개+", label: "누적 답변" },
-  { value: "98%", label: "학생 만족도" },
-  { value: "15분", label: "평균 답변" },
-] as const;
+function formatLandingStatCount(n: number | null): string {
+  if (n == null || n <= 0) return "준비 중";
+  return `${n.toLocaleString("ko-KR")}+`;
+}
+
+function buildStats(stats: LandingPublicStats) {
+  return [
+    { value: formatLandingStatCount(stats.mentorCount), label: "전국 멘토" },
+    { value: formatLandingStatCount(stats.questionCount), label: "누적 질문" },
+    {
+      value: stats.satisfactionPercent != null ? `${stats.satisfactionPercent}%` : "—",
+      label: "학생 만족도",
+    },
+  ] as const;
+}
 
 const FEATURES = [
   {
@@ -86,7 +97,8 @@ function QuestionRoomMockup() {
 }
 
 
-export function PublicGuestLanding() {
+export function PublicGuestLanding(props: { stats: LandingPublicStats }) {
+  const STATS = buildStats(props.stats);
   return (
     <div className="w-full">
       {/* Section 1 — Hero */}
@@ -127,7 +139,7 @@ export function PublicGuestLanding() {
       {/* Section 2 — Stats */}
       <section className="bg-white py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-8">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
             {STATS.map((s) => (
               <div key={s.label} className="text-center">
                 <p className="text-2xl font-black text-[#1A56DB] sm:text-3xl">{s.value}</p>
@@ -248,8 +260,8 @@ export function PublicGuestLanding() {
       {/* Section 6 — CTA */}
       <section className="bg-[#1A56DB] py-14 sm:py-16">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <h2 className="text-2xl font-black text-white sm:text-3xl">지금 시작하면 무료 질문권 3개 제공</h2>
-          <p className="mt-3 text-sm font-medium text-blue-100">가입 후 멘토를 구독하고 질문방을 열어 보세요</p>
+          <h2 className="text-2xl font-black text-white sm:text-3xl">지금 시작해 보세요</h2>
+          <p className="mt-3 text-sm font-medium text-blue-100">{FREE_QUESTION_POLICY_SHORT}</p>
           <Link
             href="/mentors"
             className="mt-8 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-extrabold text-[#1A56DB] shadow-lg transition hover:bg-blue-50"

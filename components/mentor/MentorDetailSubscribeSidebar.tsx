@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { PlanComparisonCards } from "@/components/subscribe/PlanComparisonCards";
-import type { PlansByTier } from "@/lib/subscribe/subscribePageQueries";
-import type { SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import type { PlansByTier, SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { FREE_QUESTION_POLICY_SHORT } from "@/lib/mentor/freeQuestionPolicy";
 
 const BENEFITS = [
   "연결노트 제공 — 내 공부 흐름을 한눈에 정리",
@@ -82,7 +82,7 @@ export function MentorDetailSubscribeSidebar(props: {
         </div>
 
         <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-[10px] font-semibold leading-relaxed text-amber-950">
-          무료 질문은 한 멘토에게 최대 3개까지 사용할 수 있어요!
+          {FREE_QUESTION_POLICY_SHORT}
         </p>
         <p className="mt-2 text-[10px] font-medium text-slate-500">
           추가 질문은 구독을 통해서 이용할 수 있습니다.

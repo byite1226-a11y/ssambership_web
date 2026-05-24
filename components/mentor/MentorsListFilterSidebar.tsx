@@ -206,7 +206,7 @@ export function MentorsListFilterSidebar(props: {
         <div className="sticky bottom-0 mt-4 space-y-2 border-t border-slate-100 bg-white pt-4">
           <button
             type="submit"
-            className="min-h-[44px] w-full rounded-xl bg-[#1A56DB] px-4 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            className="min-h-[44px] w-full whitespace-nowrap rounded-xl bg-[#1A56DB] px-4 text-sm font-extrabold text-white hover:bg-[#1648c0]"
           >
             검색 결과 {props.totalCount.toLocaleString("ko-KR")}명 보기
           </button>

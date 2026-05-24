@@ -42,14 +42,14 @@ export default async function CustomRequestPublicPage() {
       dataPoints={[]}
       emptyState=""
     >
-      <div className="mx-auto w-full max-w-6xl space-y-8 px-3 py-6 sm:space-y-12 sm:px-4 sm:py-8 lg:px-0">
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-3 py-4 sm:space-y-8 sm:px-4 sm:py-6 lg:px-0">
         <CustomRequestHero role={role} />
         <CustomRequestSteps />
         <CustomRequestCategoryGrid fromTable={cats} />
         <section className="space-y-4">
           <div>
             <h2 className="text-base font-extrabold text-slate-900 sm:text-xl">최근 등록된 맞춤의뢰</h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">다른 학생들이 등록한 맞춤의뢰 목록입니다.</p>
+            <p className="mt-0.5 text-xs font-medium text-slate-600 sm:text-sm">다른 학생들이 등록한 맞춤의뢰 목록입니다.</p>
           </div>
           <CustomRequestPostListTable list={recent} max={3} />
         </section>

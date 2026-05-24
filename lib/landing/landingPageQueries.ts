@@ -30,6 +30,42 @@ export type TrustMetric = {
   probe: string;
 };
 
+export type LandingPublicStats = {
+  mentorCount: number | null;
+  questionCount: number | null;
+  satisfactionPercent: number | null;
+  mentorProbe: string;
+  questionProbe: string;
+  satisfactionProbe: string;
+};
+
+async function fetchLandingPublicStats(supabase: SupabaseClient): Promise<LandingPublicStats> {
+  const [mentors, questions, reviews] = await Promise.all([
+    supabase.from("mentor_profiles").select("*", { count: "exact", head: true }),
+    supabase.from("question_threads").select("*", { count: "exact", head: true }),
+    supabase.from("reviews").select("rating").limit(500),
+  ]);
+
+  let satisfactionPercent: number | null = null;
+  if (!reviews.error && reviews.data?.length) {
+    const ratings = (reviews.data as { rating?: number }[])
+      .map((r) => r.rating)
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    if (ratings.length) {
+      satisfactionPercent = Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length / 5) * 100);
+    }
+  }
+
+  return {
+    mentorCount: mentors.error ? null : mentors.count,
+    questionCount: questions.error ? null : questions.count,
+    satisfactionPercent,
+    mentorProbe: mentors.error ? mentors.error.message : "mentor_profiles count",
+    questionProbe: questions.error ? questions.error.message : "question_threads count",
+    satisfactionProbe: reviews.error ? reviews.error.message : `reviews avg (${reviews.data?.length ?? 0} rows)`,
+  };
+}
+
 async function fetchNoticesHome(supabase: SupabaseClient): Promise<NoticeBannerLoad> {
   for (const table of NOTICE_TABLES) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
@@ -109,17 +145,19 @@ export type HomeLandingData = {
   pricingByTier: PlansByTier;
   pricingFillProbe: string;
   trust: TrustMetric[];
+  publicStats: LandingPublicStats;
 };
 
 export async function loadHomeLandingData(supabase: SupabaseClient): Promise<HomeLandingData> {
   const filters = parseMentorsListFilters({});
-  const [notices, mentors, shorts, boards, plans, trust] = await Promise.all([
+  const [notices, mentors, shorts, boards, plans, trust, publicStats] = await Promise.all([
     fetchNoticesHome(supabase),
     loadPublicMentorsList(supabase, { ...filters, page: 1 }, { fetchLimit: 14, pageSize: 6 }),
     listShortformPosts(supabase, 4),
     listBoardPosts(supabase, 4),
     fetchGlobalPlansSample(supabase),
     fetchTrustMetrics(supabase),
+    fetchLandingPublicStats(supabase),
   ]);
   const { byTier, fillProbe } = assignPlansByTier(plans.rows as Row[]);
   return {
@@ -131,5 +169,6 @@ export async function loadHomeLandingData(supabase: SupabaseClient): Promise<Hom
     pricingByTier: byTier,
     pricingFillProbe: fillProbe,
     trust,
+    publicStats,
   };
 }

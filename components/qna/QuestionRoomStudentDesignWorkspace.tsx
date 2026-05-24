@@ -19,8 +19,8 @@ import {
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { QuestionRoomNewQuestionModal } from "@/components/qna/QuestionRoomNewQuestionModal";
 import { QuestionThreadConfirmButton } from "@/components/qna/QuestionThreadConfirmButton";
-import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
-import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsage";
+import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
+import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsageDisplay";
 import { sendQuestionMessageAction } from "@/lib/qna/questionRoomActions";
 import {
   formatMinutesAgo,

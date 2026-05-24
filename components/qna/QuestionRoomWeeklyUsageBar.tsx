@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
-import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
-import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsage";
+export type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
+import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
+import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsageDisplay";
 
 export function QuestionRoomWeeklyUsageBar(props: {
   mentorId: string | null;

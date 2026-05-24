@@ -24,6 +24,10 @@ import {
   USER_UI_MENTOR_PROFILE_LOAD_FAILED,
   USER_UI_MENTOR_USER_LOAD_FAILED,
 } from "@/lib/constants/userFacingMessages";
+import {
+  avgResponseHoursFromProfileRow,
+  formatAvgResponseHoursLabel,
+} from "@/lib/mentor/avgResponseHoursDisplay";
 
 type Row = Record<string, unknown>;
 
@@ -50,13 +54,8 @@ function mentorDetailStats(
     "student_count",
     "active_students",
   ]);
-  const respMin = statFromProfile(profileRow, [
-    "avg_response_minutes",
-    "average_response_minutes",
-    "response_time_minutes",
-  ]);
-  const avgResponseLabel =
-    respMin != null ? `${respMin}분 이내` : "15분 이내";
+  const responseHours = avgResponseHoursFromProfileRow(profileRow);
+  const avgResponseLabel = formatAvgResponseHoursLabel(responseHours);
   const satisfactionLabel =
     reviews.avgRating != null
       ? `${Math.round((reviews.avgRating / 5) * 100)}%`

@@ -1,4 +1,5 @@
 import type { PromotionsLoad } from "@/lib/subscribe/subscribePageQueries";
+import { FREE_QUESTION_POLICY_SHORT } from "@/lib/mentor/freeQuestionPolicy";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 export function PromotionNoticeBox(props: { promotions: PromotionsLoad }) {
@@ -10,11 +11,8 @@ export function PromotionNoticeBox(props: { promotions: PromotionsLoad }) {
       <div className="grid gap-4 md:grid-cols-2 md:items-start">
         <div className="rounded-2xl border border-blue-200 bg-blue-50/90 p-5 shadow-sm">
           <h3 className="text-sm font-extrabold text-blue-950">무료 질문 정책</h3>
-          <p className="mt-2 text-sm leading-relaxed text-blue-900">
-            가입·초기 혜택으로 <strong>무료 15회 질문</strong>을 사용할 수 있습니다(상세·소진 조건은 운영 정책 확정 후
-            이 영역에 반영).
-          </p>
-          <p className="mt-3 text-xs leading-snug text-blue-900/85">멘토별 구독 전에도 무료 질문권을 활용할 수 있는지 안내를 확인해 주세요.</p>
+          <p className="mt-2 text-sm leading-relaxed text-blue-900">{FREE_QUESTION_POLICY_SHORT}</p>
+          <p className="mt-3 text-xs leading-snug text-blue-900/85">멘토별 구독 전에도 무료 질문권을 활용할 수 있어요.</p>
         </div>
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-sm">

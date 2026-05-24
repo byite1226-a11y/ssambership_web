@@ -92,7 +92,7 @@ export function QuestionRoomWorkspace(props: {
   listPreviewsByRoomId?: Record<string, QuestionRoomListPreview>;
   mentorDisplays?: MentorDisplayById;
   studentDisplays?: StudentDisplayById;
-  initialUsageByMentorId?: Record<string, import("@/lib/qna/weeklyQuestionUsage").WeeklyUsageSnapshot>;
+  initialUsageByMentorId?: Record<string, import("@/lib/qna/weeklyQuestionUsageDisplay").WeeklyUsageSnapshot>;
   messageCountsByThreadId?: Record<string, number>;
   lastMessageByThreadId?: Record<string, Record<string, unknown>>;
   unreadCountsByRoomId?: Record<string, number>;

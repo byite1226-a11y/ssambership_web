@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { QuestionRoomStudentThreadForm } from "@/components/qna/QuestionRoomStudentThreadForm";
-import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
+import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
 
 export function QuestionRoomNewQuestionModal(props: {
   open: boolean;

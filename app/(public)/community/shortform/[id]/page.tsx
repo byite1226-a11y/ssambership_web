@@ -21,7 +21,7 @@ export default async function CommunityShortformDetailPage(props: Props) {
   let loadError: string | null = null;
   if (idOk) {
     const res = await getShortformDetail(supabase, id);
-    if (res.error) loadError = "\uC877\uD3FC\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
+    if (res.error) loadError = "숏폼\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
     else if (res.item) {
       item = res.item;
       await incrementShortformView(supabase, id);

@@ -1,0 +1,49 @@
+import type { SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+
+export type WeeklyUsageSnapshot = {
+  used: number;
+  limit: number;
+  remaining: number;
+  canAsk: boolean;
+  limitLabel: string;
+  planTier?: string | null;
+  weekStart?: string | null;
+  weekEnd?: string | null;
+};
+
+export type WeeklyQuestionUsage = {
+  used: number;
+  limit: number;
+  remaining: number;
+  canAsk: boolean;
+  planTier: SubscribePlanTier | null;
+  weekStart: string | null;
+  weekEnd: string | null;
+};
+
+export function weeklyUsageDisplayLimit(usage: WeeklyQuestionUsage): string {
+  if (usage.limit >= 999) return "무제한";
+  return String(usage.limit);
+}
+
+/** 질문방 UI — 주간 한도 표기 (예: 주 4개 질문 · 1/4) */
+export function weeklyQuestionQuotaLabel(
+  usage: Pick<WeeklyQuestionUsage, "used" | "limit"> | WeeklyUsageSnapshot | null | undefined
+): string {
+  if (!usage) return "주 —개 질문";
+  if (usage.limit >= 999) return `주 무제한 질문 · ${usage.used} 사용`;
+  return `주 ${usage.limit}개 질문 · ${usage.used}/${usage.limit}`;
+}
+
+export function weeklyUsageToSnapshot(usage: WeeklyQuestionUsage): WeeklyUsageSnapshot {
+  return {
+    used: usage.used,
+    limit: usage.limit,
+    remaining: usage.remaining,
+    canAsk: usage.canAsk,
+    limitLabel: weeklyUsageDisplayLimit(usage),
+    planTier: usage.planTier,
+    weekStart: usage.weekStart,
+    weekEnd: usage.weekEnd,
+  };
+}

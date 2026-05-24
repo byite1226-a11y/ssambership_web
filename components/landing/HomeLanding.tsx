@@ -16,7 +16,7 @@ export function HomeLanding(props: {
   const logged = Boolean(props.user);
 
   if (!logged) {
-    return <PublicGuestLanding />;
+    return <PublicGuestLanding stats={props.data.publicStats} />;
   }
 
   return (

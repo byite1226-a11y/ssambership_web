@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
-import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
+import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
 import { WEEKLY_QUESTION_LIMIT_MESSAGE } from "@/lib/qna/questionThreadStatus";
 
 const DEFAULT_SUBJECTS = ["미적분", "확률과통계", "수학Ⅰ", "수학Ⅱ", "기하", "대수", "물리", "화학"] as const;

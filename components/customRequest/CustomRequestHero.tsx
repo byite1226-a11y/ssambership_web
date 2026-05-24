@@ -30,7 +30,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
     <section className="w-full">
       <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-br from-slate-50 via-white to-sky-50/50 shadow-[0_8px_40px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-500/[0.07] to-transparent" aria-hidden />
-        <div className="relative grid min-h-[min(28rem,calc(100vh-12rem))] grid-cols-1 gap-10 p-8 sm:p-10 lg:min-h-[26rem] lg:grid-cols-2 lg:gap-14 lg:p-12 xl:min-h-[28rem] xl:p-14">
+        <div className="relative grid min-h-0 grid-cols-1 gap-8 p-6 sm:p-8 lg:grid-cols-2 lg:gap-10 lg:p-10">
           {/* 좌측 랜딩 */}
           <div className="flex min-w-0 flex-col justify-between gap-10">
             <div>
@@ -38,7 +38,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
               <h1 className="mt-3 max-w-[22rem] text-balance text-3xl font-black leading-[1.12] tracking-tight text-slate-900 sm:max-w-xl sm:text-4xl sm:leading-[1.1] lg:text-[2.65rem] lg:leading-[1.08]">
                 전문 멘토에게 의뢰하세요
               </h1>
-              <p className="mt-5 max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+              <p className="mt-4 max-w-xl text-sm font-medium leading-relaxed text-slate-700 sm:text-base">
                 학교 공부, 진로 고민, 학습 방법까지 — 요청을 올리고 멘토 제안을 비교한 뒤, 한 분을 골라 이어갈 수 있어요.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -81,7 +81,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
                 </a>
               </div>
             </div>
-            <p className="max-w-xl rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 text-xs font-medium leading-relaxed text-slate-600 shadow-sm">
+            <p className="max-w-xl rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-xs font-medium leading-relaxed text-slate-700 shadow-sm">
               <span className="mr-1.5" aria-hidden>
                 🛡️
               </span>
@@ -90,7 +90,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
           </div>
 
           {/* 우측 진행 프로세스 */}
-          <div className="flex min-h-[20rem] flex-col lg:min-h-0">
+          <div className="flex min-h-0 flex-col lg:min-h-0">
             <div className="flex h-full flex-1 flex-col rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] sm:p-8">
               <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-500">진행 프로세스</p>
               <p className="mt-2 text-lg font-black text-slate-900">요청부터 피드백까지</p>

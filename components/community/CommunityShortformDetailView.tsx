@@ -90,7 +90,7 @@ export function CommunityShortformDetailView(props: {
         </section>
 
         <Link href="/community/shortform" className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
-          {"\u2190 \uC877\uD3FC \uBAA9\uB85D"}
+          {"\u2190 숏폼 \uBAA9\uB85D"}
         </Link>
       </div>
     </div>
