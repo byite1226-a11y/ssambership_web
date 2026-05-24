@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { PenLine } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { COMMUNITY_POST_CATEGORIES } from "@/lib/community/communityBoardConstants";
 import type { CommunityBoardPostCard } from "@/lib/community/communityBoardQueries";
@@ -121,10 +122,15 @@ export function CommunityHomeFeed(props: Props) {
       </nav>
 
       {posts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-12 text-center">
-          <p className="text-sm font-bold text-slate-800">아직 게시글이 없어요. 첫 번째 글을 작성해보세요!</p>
-          <Link href={writeHref} className="mt-4 inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
-            글쓰기 하러 가기
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
+          <PenLine className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+          <h3 className="mt-4 text-lg font-black text-slate-900">아직 게시글이 없어요</h3>
+          <p className="mt-2 text-sm font-medium text-slate-600">이 카테고리에 첫 번째 글을 작성해보세요.</p>
+          <Link
+            href={writeHref}
+            className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+          >
+            글 작성하기
           </Link>
         </div>
       ) : (

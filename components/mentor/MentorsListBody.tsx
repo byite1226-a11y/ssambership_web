@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SearchX } from "lucide-react";
 import type { MentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
 import { filtersToHrefRecord, mentorsListHref } from "@/lib/mentor/mentorsListSearchParams";
 import type { PublicMentorsListResult } from "@/lib/mentor/publicMentorsListQueries";
@@ -9,6 +10,22 @@ import { MentorsListTopFilterBar } from "@/components/mentor/MentorsListTopFilte
 
 const COPY_PUBLIC_LIST_HINT =
   "현재 공개된 멘토 정보만 표시하고 있어요. 더 많은 멘토는 순차적으로 준비 중이에요.";
+
+function mentorsListFiltersApplied(filters: MentorsListFilters): boolean {
+  return Boolean(
+    filters.q.trim() ||
+      filters.subject ||
+      filters.school ||
+      filters.university.trim() ||
+      filters.verification ||
+      filters.verifiedOnly ||
+      filters.grades.length > 0 ||
+      filters.mentorTypes.length > 0 ||
+      filters.priceBand ||
+      filters.priceMin != null ||
+      filters.priceMax != null
+  );
+}
 
 export function MentorsListBody(props: {
   filters: MentorsListFilters;
@@ -84,7 +101,21 @@ export function MentorsListBody(props: {
             </div>
           ) : null}
 
-          {list.cards.length === 0 ? (
+          {list.cards.length === 0 && mentorsListFiltersApplied(filters) ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-16 text-center">
+              <SearchX className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+              <h3 className="mt-4 text-lg font-black text-slate-900">조건에 맞는 멘토가 없어요</h3>
+              <p className="mt-2 max-w-sm text-sm font-medium text-slate-600">
+                필터를 바꾸거나 검색어를 수정해보세요.
+              </p>
+              <Link
+                href="/mentors"
+                className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+              >
+                필터 초기화
+              </Link>
+            </div>
+          ) : list.cards.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-10 text-center">
               <p className="text-lg font-black text-slate-900">아직 데이터가 없어요</p>
               <p className="mt-2 text-sm text-slate-600">필터를 조정하거나 검색어를 바꿔 보세요.</p>

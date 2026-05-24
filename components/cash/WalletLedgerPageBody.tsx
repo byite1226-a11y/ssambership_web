@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ReceiptText } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { formatWalletRowDisplay } from "@/lib/cash/cashQueries";
 import type { WalletLedgerPageData } from "@/lib/cash/walletRouteData";
@@ -74,8 +75,10 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
       ? formatWalletRowDisplay(data.balance.row)
       : "0캐시";
 
+  const ledgerRows = (data.ledger.rows ?? []) as Record<string, unknown>[];
+
   const filtered = useMemo(() => {
-    let rows = (data.ledger.rows ?? []) as Record<string, unknown>[];
+    let rows = ledgerRows;
     if (period !== "custom") {
       const start = periodStart(period);
       if (start) {
@@ -99,7 +102,7 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
       rows = rows.filter((r) => ledgerUiKind(r) === kind);
     }
     return rows;
-  }, [data.ledger.rows, period, kind, customFrom, customTo]);
+  }, [ledgerRows, period, kind, customFrom, customTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -234,8 +237,22 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         {data.ledger.error ? (
           <p className="text-sm text-red-700">사용 내역을 불러오지 못했습니다.</p>
+        ) : ledgerRows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <ReceiptText className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+            <h3 className="mt-4 text-lg font-black text-slate-900">아직 사용 내역이 없어요</h3>
+            <p className="mt-2 max-w-sm text-sm font-medium text-slate-600">
+              캐시를 충전하고 멘토 서비스를 이용해보세요.
+            </p>
+            <Link
+              href="/wallet/charge"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            >
+              캐시 충전하기
+            </Link>
+          </div>
         ) : filtered.length === 0 ? (
-          <p className="py-12 text-center text-sm font-bold text-slate-500">사용 내역이 없어요</p>
+          <p className="py-12 text-center text-sm font-bold text-slate-500">선택한 조건에 맞는 내역이 없어요</p>
         ) : (
           <>
             <div className="overflow-x-auto">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
+import { Inbox } from "lucide-react";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import {
   mentorCustomOrderPaymentLine,
@@ -173,8 +174,18 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
       {/* Order Cards */}
       <ul className="space-y-4">
         {filtered.length === 0 ? (
-          <li className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-12 text-center text-sm font-semibold text-slate-500">
-            이 조건에 해당하는 의뢰가 없습니다.
+          <li className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/80 px-6 py-16 text-center">
+            <Inbox className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+            <h3 className="mt-4 text-lg font-black text-slate-900">이 단계에 해당하는 의뢰가 없어요</h3>
+            <p className="mt-2 max-w-md text-sm font-medium text-slate-600">
+              새 의뢰 목록에서 관심 있는 의뢰에 제안해보세요.
+            </p>
+            <Link
+              href="/mentor/custom-request/posts"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            >
+              새 의뢰 보기
+            </Link>
           </li>
         ) : (
           filtered.map((raw) => {

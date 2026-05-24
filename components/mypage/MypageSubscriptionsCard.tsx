@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { UserSearch } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { ActiveSubscriptionCard } from "@/lib/mypage/studentActiveSubscriptions";
 
@@ -147,12 +148,13 @@ export function MypageSubscriptionsCard() {
             {state.message}
           </p>
         ) : state.items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center">
-            <p className="text-sm font-bold text-slate-800">아직 구독한 멘토가 없어요</p>
-            <p className="mt-1 text-xs text-slate-500">관심 있는 멘토를 찾아 구독을 시작해 보세요.</p>
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-12 text-center">
+            <UserSearch className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+            <h3 className="mt-4 text-base font-black text-slate-900">아직 구독 중인 멘토가 없어요</h3>
+            <p className="mt-2 text-sm font-medium text-slate-600">나에게 맞는 멘토를 찾아 구독해보세요.</p>
             <Link
               href="/mentors"
-              className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
             >
               멘토 찾기
             </Link>

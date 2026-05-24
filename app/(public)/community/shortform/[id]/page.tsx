@@ -6,6 +6,8 @@ import { isCommunityPostUuid, loadCommunityComments } from "@/lib/community/comm
 import { getShortformDetail, incrementShortformView } from "@/lib/community/communityShortformQueries";
 import { listPopularHashtags } from "@/lib/community/communityBoardQueries";
 import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
+import Link from "next/link";
+import { VideoOff } from "lucide-react";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -44,7 +46,19 @@ export default async function CommunityShortformDetailPage(props: Props) {
     >
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         {loadError ? <p className="text-sm font-semibold text-red-800">{loadError}</p> : null}
-        {!item && !loadError ? <p className="text-sm text-slate-600">{"\uC877\uD3FC\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."}</p> : null}
+        {!item && !loadError ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <VideoOff className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+            <h2 className="mt-4 text-xl font-black text-slate-900">숏폼을 찾을 수 없어요</h2>
+            <p className="mt-2 text-sm font-medium text-slate-600">삭제되었거나 존재하지 않는 콘텐츠예요.</p>
+            <Link
+              href="/community/shortform"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            >
+              숏폼 목록으로
+            </Link>
+          </div>
+        ) : null}
         {item ? (
           <CommunityShortformDetailView
             item={item}

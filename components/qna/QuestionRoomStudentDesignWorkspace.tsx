@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Eye,
   MessageCircle,
+  MessageCirclePlus,
   Paperclip,
   Plus,
   Search,
@@ -261,6 +262,24 @@ export function QuestionRoomStudentDesignWorkspace(props: {
     if (noteTab === "toMentor") return c.tone === "toMentor";
     return c.tone === "fromMentor";
   });
+
+  if (!props.rooms.loading && props.rooms.rows.length === 0) {
+    return (
+      <div className="flex min-h-[calc(100vh-120px)] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
+        <MessageCirclePlus className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+        <h2 className="mt-4 text-xl font-black text-slate-900">구독한 멘토에게 질문해보세요</h2>
+        <p className="mt-2 max-w-md text-sm font-medium text-slate-600">
+          멘토를 구독하면 이 곳에서 자유롭게 질문할 수 있어요.
+        </p>
+        <Link
+          href="/mentors"
+          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+        >
+          멘토 찾기
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f8fafc] font-sans text-slate-900 shadow-sm">

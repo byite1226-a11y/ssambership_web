@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Star } from "lucide-react";
 import type { ReviewCardItem } from "@/lib/reviews/reviewQueries";
 import { starIcons } from "@/lib/reviews/reviewDisplay";
 
@@ -64,9 +65,13 @@ export function MentorReviewsManage(props: { initialItems: ReviewCardItem[] }) {
       {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</p> : null}
 
       {!items.length ? (
-        <p className="rounded-2xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-500">
-          아직 받은 리뷰가 없습니다.
-        </p>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
+          <Star className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+          <h3 className="mt-4 text-lg font-black text-slate-900">아직 받은 후기가 없어요</h3>
+          <p className="mt-2 max-w-md text-sm font-medium text-slate-600">
+            학생이 동일 멘토를 2회 이상 이용하면 후기를 남길 수 있어요.
+          </p>
+        </div>
       ) : (
         <ul className="space-y-4">
           {items.map((item) => (
