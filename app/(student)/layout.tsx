@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { AppShell } from "@/components/shell/AppShell";
 import { requireRole, requireWalletChargeAccess } from "@/lib/auth/routeGuard";
+import { loadShellNotificationBell } from "@/lib/notifications/loadShellNotificationBell";
 import type { AppRole } from "@/lib/types/user";
 
 function isWalletChargePath(pathname: string): boolean {
@@ -12,22 +13,25 @@ export default async function StudentLayout({ children }: { children: ReactNode 
   const pathname = (await headers()).get("x-pathname") ?? "";
 
   if (isWalletChargePath(pathname)) {
-    const { profile } = await requireWalletChargeAccess();
+    const { user, profile } = await requireWalletChargeAccess();
     const sessionRole: AppRole = profile?.role === "mentor" ? "mentor" : "student";
+    const notificationBell = user ? await loadShellNotificationBell(user.id, sessionRole) : null;
     return (
       <AppShell
         area={sessionRole === "mentor" ? "mentor" : "student"}
         sessionRole={sessionRole}
         userProfile={profile}
+        notificationBell={notificationBell}
       >
         {children}
       </AppShell>
     );
   }
 
-  const { profile } = await requireRole("student");
+  const { user, profile } = await requireRole("student");
+  const notificationBell = await loadShellNotificationBell(user.id, "student");
   return (
-    <AppShell area="student" sessionRole="student" userProfile={profile}>
+    <AppShell area="student" sessionRole="student" userProfile={profile} notificationBell={notificationBell}>
       {children}
     </AppShell>
   );

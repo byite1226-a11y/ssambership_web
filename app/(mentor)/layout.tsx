@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/AppShell";
 import { mentorBlockedCashPath } from "@/lib/shell/mainNavItems";
+import { loadShellNotificationBell } from "@/lib/notifications/loadShellNotificationBell";
 import { requireRole } from "@/lib/auth/routeGuard";
 
 export default async function MentorLayout({ children }: { children: ReactNode }) {
@@ -11,9 +12,10 @@ export default async function MentorLayout({ children }: { children: ReactNode }
     redirect("/mentor/dashboard");
   }
 
-  const { profile } = await requireRole("mentor");
+  const { user, profile } = await requireRole("mentor");
+  const notificationBell = await loadShellNotificationBell(user.id, "mentor");
   return (
-    <AppShell area="mentor" sessionRole="mentor" userProfile={profile}>
+    <AppShell area="mentor" sessionRole="mentor" userProfile={profile} notificationBell={notificationBell}>
       {children}
     </AppShell>
   );

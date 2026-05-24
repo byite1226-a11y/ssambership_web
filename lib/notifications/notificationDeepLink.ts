@@ -6,6 +6,19 @@ type Row = Record<string, unknown>;
 
 const URL_KEYS = ["target_url", "link", "action_url", "href", "deep_link", "url", "path"] as const;
 
+function linkFromJsonField(v: unknown): string | null {
+  if (v == null || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  for (const k of URL_KEYS) {
+    const s = o[k];
+    if (typeof s === "string" && s.startsWith("/")) {
+      const safe = safeInternalNextPath(s.trim());
+      if (safe) return safe;
+    }
+  }
+  return null;
+}
+
 /**
  * row에 내부 상대 경로만 허용. http(s)·// 등 외부 URL은 무시(휴리스틱으로 이어짐).
  */
@@ -42,6 +55,32 @@ function pickId(row: Row, keys: string[]): string | null {
 export function resolveNotificationHref(row: Row, role: AppRole, typeHint: string | null): string {
   const direct = explicitInternalPathFromRow(row);
   if (direct) return direct;
+
+  for (const k of ["metadata", "data"] as const) {
+    const nested = linkFromJsonField(row[k]);
+    if (nested) return nested;
+  }
+
+  const tKey = (typeHint ?? "").toLowerCase();
+  if (tKey === "question_answered") {
+    const roomId = pickId(row, ["room_id", "question_room_id"]);
+    const threadId = pickId(row, ["thread_id", "question_thread_id"]);
+    if (roomId) {
+      const qs = threadId ? `?thread=${encodeURIComponent(threadId)}` : "";
+      return role === "mentor" ? `/mentor/question-room/${roomId}${qs}` : `/question-room/${roomId}${qs}`;
+    }
+    return role === "mentor" ? "/mentor/question-room" : "/question-room";
+  }
+  if (tKey === "new_application") {
+    const postId = pickId(row, ["post_id", "custom_request_post_id", "request_id"]);
+    if (postId) return `/custom-request/${postId}/applications/waiting`;
+    return "/custom-request/posts";
+  }
+  if (tKey === "new_order_message") {
+    const orderId = pickId(row, ["order_id", "custom_order_id", "custom_request_order_id", "request_order_id"]);
+    if (orderId) return `/custom-request/orders/${orderId}`;
+    return "/custom-request";
+  }
 
   const t = [
     typeHint ?? "",
@@ -144,8 +183,14 @@ export function resolveNotificationHref(row: Row, role: AppRole, typeHint: strin
 export function typeBadgeLabel(typeKey: string | null): { label: string; variant: string } {
   if (!typeKey) return { label: "기타", variant: "slate" };
   const s = typeKey.toLowerCase();
-  if (/(qna|question|thread|answer|room|답변|질문)/.test(s)) {
+  if (/(qna|question|thread|answer|room|답변|질문|question_answered)/.test(s)) {
     return { label: "질문방", variant: "emerald" };
+  }
+  if (/(new_application|application|지원)/.test(s)) {
+    return { label: "맞춤의뢰", variant: "violet" };
+  }
+  if (/(new_order_message|order_message|주문방)/.test(s)) {
+    return { label: "주문방", variant: "violet" };
   }
   if (/(subscri|payment|pay|wallet|결제|구독|캐시)/.test(s)) {
     return { label: "구독/결제", variant: "blue" };

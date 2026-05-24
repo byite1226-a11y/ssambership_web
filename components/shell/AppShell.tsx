@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Bell, ChevronDown, MessageCircle, Search, User } from "lucide-react";
+import { ChevronDown, MessageCircle, Search, User } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ShellHeaderInner } from "@/components/shell/ShellHeaderInner";
 import { getMainNavForRole } from "@/lib/shell/mainNavItems";
 import { shellUserHeaderDisplay } from "@/lib/shell/userHeaderDisplay";
+import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
 import type { AppRole, UserRow } from "@/lib/types/user";
 
 type ShellArea = "public" | "student" | "mentor" | "admin";
@@ -14,14 +16,36 @@ type AppShellProps = {
   children: ReactNode;
   sessionRole?: AppRole | null;
   userProfile?: UserRow | null;
+  notificationBell?: {
+    userId: string;
+    role: AppRole;
+    unreadCount: number;
+    items: NotificationBellItem[];
+  } | null;
 };
 
 const iconActionClass =
   "inline-flex h-9 w-9 shrink-0 items-center justify-center text-slate-500 transition hover:text-slate-800";
 
-type HeaderActionsProps = { sessionRole: AppRole | null; userProfile?: UserRow | null };
+type HeaderActionsProps = {
+  sessionRole: AppRole | null;
+  userProfile?: UserRow | null;
+  notificationBell?: AppShellProps["notificationBell"];
+};
 
-function HeaderActionsMobile({ sessionRole, userProfile }: HeaderActionsProps) {
+function ShellNotificationBell(props: { bell: NonNullable<AppShellProps["notificationBell"]> }) {
+  return (
+    <NotificationBell
+      userId={props.bell.userId}
+      role={props.bell.role}
+      initialUnreadCount={props.bell.unreadCount}
+      initialItems={props.bell.items}
+      iconClassName={iconActionClass}
+    />
+  );
+}
+
+function HeaderActionsMobile({ sessionRole, userProfile, notificationBell }: HeaderActionsProps) {
   if (sessionRole == null || sessionRole === "admin") {
     return null;
   }
@@ -34,9 +58,7 @@ function HeaderActionsMobile({ sessionRole, userProfile }: HeaderActionsProps) {
       <Link href="/mentors" className={iconActionClass} aria-label="멘토 찾기" title="멘토 찾기">
         <Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
       </Link>
-      <Link href="/notifications" className={iconActionClass} aria-label="알림" title="알림">
-        <Bell className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-      </Link>
+      {notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
       <Link href={messageHref} className={iconActionClass} aria-label="메시지" title="메시지">
         <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
       </Link>
@@ -52,7 +74,7 @@ function HeaderActionsMobile({ sessionRole, userProfile }: HeaderActionsProps) {
   );
 }
 
-function HeaderActionsDesktop({ sessionRole, userProfile }: HeaderActionsProps) {
+function HeaderActionsDesktop({ sessionRole, userProfile, notificationBell }: HeaderActionsProps) {
   if (sessionRole == null) {
     return (
       <div className="flex items-center gap-4">
@@ -97,9 +119,7 @@ function HeaderActionsDesktop({ sessionRole, userProfile }: HeaderActionsProps) 
       <Link href="/mentors" className={iconActionClass} aria-label="멘토 찾기" title="멘토 찾기">
         <Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
       </Link>
-      <Link href="/notifications" className={iconActionClass} aria-label="알림" title="알림">
-        <Bell className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-      </Link>
+      {notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
       <Link href={messageHref} className={iconActionClass} aria-label="메시지" title="메시지">
         <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
       </Link>
@@ -137,7 +157,13 @@ function HeaderActionsDesktop({ sessionRole, userProfile }: HeaderActionsProps) 
   );
 }
 
-export function AppShell({ area, children, sessionRole = null, userProfile = null }: AppShellProps) {
+export function AppShell({
+  area,
+  children,
+  sessionRole = null,
+  userProfile = null,
+  notificationBell = null,
+}: AppShellProps) {
   const mainNav = getMainNavForRole(sessionRole);
   const role = sessionRole ?? null;
 
@@ -149,8 +175,8 @@ export function AppShell({ area, children, sessionRole = null, userProfile = nul
             items={mainNav}
             sessionRole={role}
             logo={<BrandLogo variant="shell" />}
-            actions={<HeaderActionsDesktop sessionRole={role} userProfile={userProfile} />}
-            mobileActions={<HeaderActionsMobile sessionRole={role} userProfile={userProfile} />}
+            actions={<HeaderActionsDesktop sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
+            mobileActions={<HeaderActionsMobile sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
           />
         </div>
       </header>

@@ -77,3 +77,47 @@ export async function markNotificationReadFormAction(formData: FormData): Promis
     revalidatePath("/notifications");
   }
 }
+
+/** 클라이언트(드롭다운)에서 읽음 처리 */
+export async function markNotificationReadByIdAction(notificationId: string): Promise<{ ok: boolean }> {
+  const id = String(notificationId ?? "").trim();
+  if (!id) return { ok: false };
+
+  const { user } = await getServerUserWithProfile();
+  if (!user) return { ok: false };
+
+  const supabase = await createClient();
+  const userColumn = await resolveRecipientColumn(supabase, user.id);
+  if (!userColumn) return { ok: false };
+
+  const { column: readCol } = await pickExistingColumn(supabase, TABLE, READ_FK);
+  if (!readCol) return { ok: false };
+
+  const { data: row, error: fe } = await supabase
+    .from(TABLE)
+    .select("*")
+    .eq("id", id)
+    .eq(userColumn, user.id)
+    .maybeSingle();
+
+  if (fe || !row) return { ok: false };
+
+  const r = row as Row;
+  if (isNotificationReadRow(r, readCol)) {
+    return { ok: true };
+  }
+
+  const patch: Record<string, unknown> = {};
+  if (readCol === "is_read" || readCol === "read" || readCol === "acknowledged") {
+    patch[readCol] = true;
+  } else {
+    patch[readCol] = new Date().toISOString();
+  }
+
+  const { error: ue } = await supabase.from(TABLE).update(patch).eq("id", id).eq(userColumn, user.id);
+  if (!ue) {
+    revalidatePath("/notifications");
+    return { ok: true };
+  }
+  return { ok: false };
+}

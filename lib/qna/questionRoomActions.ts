@@ -18,7 +18,11 @@ import {
   readThreadTitleFromForm,
   saveConnectionNote,
 } from "@/lib/qna/questionRoomMutations";
-import { markQuestionThreadAnsweredForMentor } from "@/lib/qna/questionRoomThreadService";
+import { markQuestionThreadAnsweredForMentor, resolveMentorIdForRoom } from "@/lib/qna/questionRoomThreadService";
+import {
+  fetchUserDisplayName,
+  insertNotificationBestEffort,
+} from "@/lib/notifications/notificationInsert";
 
 /**
  * formatActionError 결과에도 Postgrest/HTTP/긴 raw가 남을 수 있으므로, URL 쿼리(사용자 노출)엔 이 함수를 쓴다.
@@ -299,6 +303,21 @@ export async function createQuestionMessageAction(formData: FormData) {
     const answered = await markQuestionThreadAnsweredForMentor(supabase, user.id, roomId, threadId);
     if (!answered.ok) {
       console.error("[createQuestionMessageAction] mark answered", answered.error);
+    } else {
+      const pair = await resolveMentorIdForRoom(supabase, roomId);
+      const studentId = pair.studentId;
+      if (studentId) {
+        const mentorName = await fetchUserDisplayName(supabase, user.id);
+        const link = `/question-room/${encodeURIComponent(roomId)}?thread=${encodeURIComponent(threadId)}`;
+        await insertNotificationBestEffort({
+          recipientUserId: studentId,
+          type: "question_answered",
+          title: "새 답변이 도착했어요",
+          body: `${mentorName}님이 답변을 남겼습니다.`,
+          link,
+          metadata: { room_id: roomId, thread_id: threadId },
+        });
+      }
     }
   }
 
