@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
-import { type RealtimeChannel } from "@supabase/supabase-js";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { createClient } from "@/lib/supabase/client";
 import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
@@ -49,48 +48,41 @@ export function NotificationBell(props: Props) {
   useEffect(() => {
     if (!userId) return;
 
+    let removed = false;
     const channelName = `notifications-bell:${userId}`;
-    let channel: RealtimeChannel | null = null;
 
-    const setup = async () => {
-      channel = supabase.channel(channelName, {
-        config: { broadcast: { self: false } },
-      });
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes" as const,
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          if (!removed) setUnreadCount((prev) => prev + 1);
+        }
+      )
+      .on(
+        "postgres_changes" as const,
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          if (!removed) refreshSnapshotRef.current?.();
+        }
+      );
 
-      channel
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${userId}`,
-          },
-          () => {
-            setUnreadCount((prev) => prev + 1);
-          }
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${userId}`,
-          },
-          () => {
-            refreshSnapshotRef.current?.();
-          }
-        )
-        .subscribe();
-    };
-
-    setup();
+    channel.subscribe();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      removed = true;
+      supabase.removeChannel(channel);
     };
   }, [userId, supabase]);
 
