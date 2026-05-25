@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { createClient } from "@/lib/supabase/client";
 import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
@@ -36,39 +37,59 @@ export function NotificationBell(props: Props) {
     }
   }, []);
 
+  const refreshSnapshotRef = useRef(refreshSnapshot);
+  refreshSnapshotRef.current = refreshSnapshot;
+
   useEffect(() => {
     setUnreadCount(props.initialUnreadCount);
     setItems(props.initialItems);
   }, [props.initialUnreadCount, props.initialItems]);
 
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
     const supabase = createClient();
-    const channel = supabase
-      .channel(`notifications-bell:${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-        () => {
-          setUnreadCount((c) => c + 1);
-          void refreshSnapshot();
+    const channelName = `notifications-bell:${userId}`;
+    const channel: RealtimeChannel = supabase.channel(channelName);
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      () => {
+        setUnreadCount((c) => c + 1);
+        void refreshSnapshotRef.current();
+      }
+    );
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const next = payload.new as { is_read?: boolean; read?: boolean } | null;
+        if (next?.is_read === true || next?.read === true) {
+          void refreshSnapshotRef.current();
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-        (payload) => {
-          const next = payload.new as { is_read?: boolean; read?: boolean } | null;
-          if (next?.is_read === true || next?.read === true) {
-            void refreshSnapshot();
-          }
-        }
-      )
-      .subscribe();
+      }
+    );
+
+    channel.subscribe();
 
     return () => {
-      void supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
-  }, [userId, refreshSnapshot]);
+  }, [userId]);
 
   useEffect(() => {
     if (!open) return;
