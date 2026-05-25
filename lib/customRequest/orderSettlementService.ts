@@ -242,6 +242,57 @@ export async function recordCustomOrderSettlementCreatedEvent(
 /**
  * 주문 완료 갱신 실패 시, 방금 만든 정산 행을 best-effort 제거(고아 방지). service role.
  */
+export type AcceptDeliverableAtomicRpcResult =
+  | {
+      ok: true;
+      settlementCreated: boolean;
+      settlementId?: string;
+      gross?: number;
+      feeRate?: number;
+      reason?: string;
+    }
+  | { ok: false; error: string };
+
+/** 납품 수락 + 정산 예정 — DB 트랜잭션 RPC (service_role). */
+export async function acceptCustomOrderDeliverableAtomic(
+  orderId: string,
+  studentId: string,
+  requirePayment: boolean
+): Promise<AcceptDeliverableAtomicRpcResult> {
+  try {
+    const admin = createServiceRoleClient();
+    const { data, error } = await admin.rpc("accept_custom_order_deliverable_atomic", {
+      p_order_id: orderId,
+      p_student_id: studentId,
+      p_require_payment: requirePayment,
+    });
+    if (error) {
+      console.error("[acceptCustomOrderDeliverableAtomic]", orderId, error.message);
+      return { ok: false, error: error.message };
+    }
+    const raw = data as Record<string, unknown> | null;
+    if (!raw || raw.ok !== true) {
+      const msg =
+        typeof raw?.message === "string" && raw.message.trim()
+          ? raw.message.trim()
+          : "납품 수락 처리에 실패했습니다.";
+      return { ok: false, error: msg };
+    }
+    return {
+      ok: true,
+      settlementCreated: raw.settlement_created === true,
+      settlementId: typeof raw.settlement_id === "string" ? raw.settlement_id : undefined,
+      gross: typeof raw.gross === "number" ? raw.gross : undefined,
+      feeRate: typeof raw.fee_rate === "number" ? raw.fee_rate : undefined,
+      reason: typeof raw.reason === "string" ? raw.reason : undefined,
+    };
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    console.error("[acceptCustomOrderDeliverableAtomic] unavailable", orderId, m);
+    return { ok: false, error: "납품 수락을 처리할 수 없습니다. 서버 설정을 확인해 주세요." };
+  }
+}
+
 export async function deleteCustomOrderSettlementItemBestEffort(_supabase: SupabaseClient, orderId: string): Promise<void> {
   try {
     const admin = createServiceRoleClient();
