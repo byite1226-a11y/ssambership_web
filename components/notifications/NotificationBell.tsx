@@ -48,8 +48,15 @@ export function NotificationBell(props: Props) {
   useEffect(() => {
     if (!userId) return;
 
-    let removed = false;
     const channelName = `notifications-bell:${userId}`;
+
+    // 동일 이름 채널이 이미 존재하면 먼저 제거 (topic은 realtime: 접두사 포함)
+    const existing = supabase.getChannels().find(
+      (ch) => ch.topic === `realtime:${channelName}`
+    );
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
 
     const channel = supabase
       .channel(channelName)
@@ -62,7 +69,7 @@ export function NotificationBell(props: Props) {
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          if (!removed) setUnreadCount((prev) => prev + 1);
+          setUnreadCount((prev) => prev + 1);
         }
       )
       .on(
@@ -74,14 +81,13 @@ export function NotificationBell(props: Props) {
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          if (!removed) refreshSnapshotRef.current?.();
+          refreshSnapshotRef.current?.();
         }
       );
 
     channel.subscribe();
 
     return () => {
-      removed = true;
       supabase.removeChannel(channel);
     };
   }, [userId, supabase]);
