@@ -33,6 +33,7 @@ import {
 } from "@/lib/customRequest/orderDeliverableFiles";
 import { isCustomOrderPaymentConfirmed } from "@/lib/customRequest/orderPaymentPolicy";
 import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
+import { patchCustomOrderOrderStatus } from "@/lib/customRequest/orderStatusColumnPatch";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 
@@ -392,11 +393,23 @@ export async function markMentorOrderDeliveredForReviewAction(formData: FormData
     redirect(`${mentorOrderWaitingReviewPath(orderId)}?ok=${encodeURIComponent("이미 완료된 주문입니다.")}`);
   }
 
+  const orderStatusPatch = await patchCustomOrderOrderStatus(
+    supabase,
+    table,
+    orderId,
+    { column: menCol, userId: user.id },
+    "delivered"
+  );
+  if (!orderStatusPatch.ok) {
+    redirectFilesWithError(orderId, orderStatusPatch.error);
+  }
+
   const stCol = primaryOrderStatusColumnKey(row);
-  if (!stCol) redirectFilesWithError(orderId, "주문 상태 컬럼을 찾을 수 없습니다.");
-  const patch: Record<string, unknown> = { [stCol]: "delivered" };
-  const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
-  if (ue) redirectFilesWithError(orderId, ue.message || "주문 상태를 갱신하지 못했습니다.");
+  if (stCol) {
+    const patch: Record<string, unknown> = { [stCol]: "delivered" };
+    const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
+    if (ue) redirectFilesWithError(orderId, ue.message || "주문 상태를 갱신하지 못했습니다.");
+  }
 
   await recordOrderEventBestEffort(supabase, orderId, "deliverable_submitted", user.id, {
     marked_delivered: true,
@@ -491,7 +504,11 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
   if (norm === ORDER_INSERT_STATUS_PENDING) {
     redirectWithError(orderId, "작업 시작 후에만 납품을 등록할 수 있습니다(상태: pending).");
   }
-  if (norm !== ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS && norm !== "delivered") {
+  if (
+    norm !== ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS &&
+    norm !== "delivered" &&
+    norm !== "revision_requested"
+  ) {
     redirectWithError(orderId, `이 상태(${norm})에서는 납품을 등록할 수 없습니다.`);
   }
 
@@ -603,16 +620,30 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
   const eventMeta = buildDeliverableSubmittedEventMetadataFromRow(inserted, nextVersion);
   await recordOrderEventBestEffort(supabase, orderId, "deliverable_submitted", user.id, eventMeta);
 
-  if (norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS) {
-    const stCol = primaryOrderStatusColumnKey(row);
-    if (!stCol) {
-      redirectWithError(orderId, "주문 상태 컬럼을 찾을 수 없습니다. 납품은 저장되었으나 운영에 문의가 필요할 수 있습니다.");
+  if (
+    norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS ||
+    norm === "revision_requested" ||
+    norm === "delivered"
+  ) {
+    const orderStatusPatch = await patchCustomOrderOrderStatus(
+      supabase,
+      table,
+      orderId,
+      { column: menCol, userId: user.id },
+      "delivered"
+    );
+    if (!orderStatusPatch.ok) {
+      console.error("[submitMentorOrderDeliverableAction] order_status update", orderId, orderStatusPatch.error);
+      redirectWithError(orderId, orderStatusPatch.error);
     }
-    const patch: Record<string, unknown> = { [stCol]: "delivered" };
-    const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
-    if (ue) {
-      console.error("[submitMentorOrderDeliverableAction] order status update failed", { orderId, ue: ue.message });
-      redirectWithError(orderId, ue.message || "주문 상태를 갱신하지 못했습니다.");
+    const stCol = primaryOrderStatusColumnKey(row);
+    if (stCol) {
+      const patch: Record<string, unknown> = { [stCol]: "delivered" };
+      const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
+      if (ue) {
+        console.error("[submitMentorOrderDeliverableAction] order status update failed", { orderId, ue: ue.message });
+        redirectWithError(orderId, ue.message || "주문 상태를 갱신하지 못했습니다.");
+      }
     }
   }
 

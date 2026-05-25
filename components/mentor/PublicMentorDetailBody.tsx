@@ -80,7 +80,7 @@ export function PublicMentorDetailBody(props: {
   reviewEligibility?: ReviewEligibilityResult | null;
   isLoggedIn?: boolean;
   initialFavorited?: boolean;
-  freeQuestionRemaining?: number;
+  freeQuestionRemaining?: number | null;
 }) {
   const { mentorId, display, bundle, viewer, reviewEligibility } = props;
   const isLoggedIn = props.isLoggedIn ?? Boolean(viewer);
@@ -291,7 +291,7 @@ export function PublicMentorDetailBody(props: {
             mentorId={mentorId}
             subscribeHref={subscribeHref}
             freeQuestionHref={freeQuestionHref}
-            freeQuestionRemaining={props.freeQuestionRemaining ?? 15}
+            freeQuestionRemaining={props.freeQuestionRemaining}
           />
         </div>
 
@@ -303,7 +303,7 @@ export function PublicMentorDetailBody(props: {
             plansProbe={bundle.plans.probe}
             fillProbe={fillProbe}
             isLoggedIn={isLoggedIn}
-            freeQuestionRemaining={props.freeQuestionRemaining ?? 15}
+            freeQuestionRemaining={props.freeQuestionRemaining}
           />
         </div>
       </div>

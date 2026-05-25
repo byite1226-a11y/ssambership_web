@@ -1,15 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { findActiveSubscriptionForPair } from "@/lib/subscribe/subscribeCheckoutService";
+import { assertFreeQuestionAllowedAndRecord } from "@/lib/qna/freeQuestionUsage";
 import { partyUserIdFromRoomRow } from "@/lib/qna/questionRoomUiLabels";
 import { WEEKLY_QUESTION_LIMIT_MESSAGE } from "@/lib/qna/questionThreadStatus";
 import { fetchWeeklyQuestionUsage } from "@/lib/qna/weeklyQuestionUsage";
+import { findActiveSubscriptionForPair } from "@/lib/subscribe/subscribeCheckoutService";
 
 export async function assertThreadCreationSubscriptionAllowed(
   supabase: SupabaseClient,
   roomId: string,
   actor: "student" | "mentor",
   options?: { isNewThread?: boolean }
-): Promise<{ ok: true } | { ok: false; userMessage: string }> {
+): Promise<{ ok: true; usedFreeQuota?: boolean } | { ok: false; userMessage: string }> {
   const { data, error } = await supabase.from("mentor_student_rooms").select("*").eq("id", roomId).maybeSingle();
   if (error) {
     console.error("[assertThreadCreationSubscriptionAllowed] mentor_student_rooms", { roomId, message: error.message });
@@ -27,6 +28,13 @@ export async function assertThreadCreationSubscriptionAllowed(
 
   const active = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
   if (!active) {
+    if (actor === "student" && options?.isNewThread) {
+      const free = await assertFreeQuestionAllowedAndRecord(supabase, studentId, mentorId);
+      if (!free.ok) {
+        return { ok: false, userMessage: free.userMessage };
+      }
+      return { ok: true, usedFreeQuota: true };
+    }
     const userMessage =
       actor === "student"
         ? "활성 구독을 찾을 수 없습니다. 멘토 구독 후 질문을 작성해 주세요."

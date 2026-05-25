@@ -21,7 +21,7 @@ export function MentorDetailSubscribeSidebar(props: {
   plansProbe: string;
   fillProbe: string;
   isLoggedIn: boolean;
-  freeQuestionRemaining?: number;
+  freeQuestionRemaining?: number | null;
 }) {
   const [selectedTier, setSelectedTier] = useState<SubscribePlanTier>("standard");
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(props.mentorId)}&plan=${selectedTier}`;
@@ -33,7 +33,9 @@ export function MentorDetailSubscribeSidebar(props: {
   const freeLabel =
     props.freeQuestionRemaining != null
       ? `무료 질문권 사용하기 [${props.freeQuestionRemaining}]`
-      : "무료 질문권 사용하기";
+      : props.isLoggedIn
+        ? "무료 질문권 사용하기"
+        : "무료 질문권 — 로그인 후 확인";
 
   return (
     <aside className="w-full min-w-0 lg:sticky lg:top-24 lg:self-start">

@@ -5,6 +5,7 @@ import { createQuestionThread } from "@/lib/qna/questionRoomMutations";
 import { updateQuestionThreadStatus } from "@/lib/qna/questionThreadMutations";
 import { readQuestionThreadWorkflowStatus, WEEKLY_QUESTION_LIMIT_MESSAGE } from "@/lib/qna/questionThreadStatus";
 import { fetchWeeklyQuestionUsage } from "@/lib/qna/weeklyQuestionUsage";
+import { assertFreeQuestionAllowed, recordFreeQuestionUsage } from "@/lib/qna/freeQuestionUsage";
 import { findActiveSubscriptionForPair } from "@/lib/subscribe/subscribeCheckoutService";
 import { threadRowBelongsToMentorStudentRoom } from "@/lib/qna/questionThreadRoomRef";
 
@@ -28,7 +29,10 @@ export async function assertStudentCanCreateThread(
   supabase: SupabaseClient,
   studentId: string,
   roomId: string
-): Promise<{ ok: true; mentorId: string } | { ok: false; status: 403 | 404 | 429; error: string }> {
+): Promise<
+  | { ok: true; mentorId: string; useFreeQuota?: boolean }
+  | { ok: false; status: 403 | 404 | 429; error: string }
+> {
   const party = await assertRoomParty(supabase, roomId, studentId, "student");
   if (!party.ok) {
     return { ok: false, status: party.status, error: party.error };
@@ -40,11 +44,11 @@ export async function assertStudentCanCreateThread(
 
   const active = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
   if (!active) {
-    return {
-      ok: false,
-      status: 403,
-      error: "활성 구독을 찾을 수 없습니다. 멘토 구독 후 질문을 작성해 주세요.",
-    };
+    const free = await assertFreeQuestionAllowed(supabase, studentId, mentorId);
+    if (!free.ok) {
+      return { ok: false, status: 403, error: free.userMessage };
+    }
+    return { ok: true, mentorId, useFreeQuota: true };
   }
 
   const { usage, error: usageError } = await fetchWeeklyQuestionUsage(supabase, studentId, mentorId);
@@ -95,6 +99,14 @@ export async function createStudentQuestionThread(
   if (!result.ok) {
     return { ok: false, status: 500, error: result.error };
   }
+
+  if (gate.useFreeQuota) {
+    const recorded = await recordFreeQuestionUsage(supabase, studentId, gate.mentorId);
+    if (!recorded.ok) {
+      return { ok: false, status: 500, error: recorded.userMessage };
+    }
+  }
+
   return { ok: true, threadId: result.threadId };
 }
 

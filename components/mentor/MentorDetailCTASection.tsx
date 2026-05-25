@@ -14,12 +14,12 @@ export function MentorDetailCTASection(props: {
   mentorId: string;
   subscribeHref: string;
   freeQuestionHref: string;
-  freeQuestionRemaining?: number;
+  freeQuestionRemaining?: number | null;
 }) {
   const freeLabel =
     props.freeQuestionRemaining != null
       ? `무료 질문권 사용하기 [${props.freeQuestionRemaining}]`
-      : "무료 질문권 사용하기";
+      : "무료 질문권 — 로그인 후 확인";
 
   return (
     <section className="overflow-hidden rounded-2xl border border-[#1A56DB]/20 bg-gradient-to-br from-blue-50 via-sky-50/80 to-white p-6 sm:p-8">

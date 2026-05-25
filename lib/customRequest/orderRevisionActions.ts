@@ -14,6 +14,7 @@ import {
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
 import { hasDeliverableRowsForOrder } from "@/lib/customRequest/orderStudentActions";
 import { insertOrderRevisionRequest, recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
+import { patchCustomOrderOrderStatus } from "@/lib/customRequest/orderStatusColumnPatch";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 
@@ -99,6 +100,19 @@ export async function submitCustomOrderRevisionRequestAction(formData: FormData)
   if (ins.error) {
     redirectWithError(orderId, "수정 요청 저장에 실패했습니다. " + ins.error);
   }
+
+  const statusPatch = await patchCustomOrderOrderStatus(
+    supabase,
+    table,
+    orderId,
+    { column: stuCol, userId: user.id },
+    "revision_requested",
+    { requireOrderStatus: "delivered" }
+  );
+  if (!statusPatch.ok) {
+    redirectWithError(orderId, statusPatch.error);
+  }
+
   await recordOrderEventBestEffort(supabase, orderId, "revision_requested", user.id, { noteLength: note.length });
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");

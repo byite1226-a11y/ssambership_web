@@ -5,6 +5,7 @@ import { loadFavoriteMentorIdsForUser } from "@/lib/mentor/mentorFavorites";
 import { loadPublicMentorBundle } from "@/lib/mentor/publicMentorBundle";
 import { createClient } from "@/lib/supabase/server";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { loadFreeQuestionRemainingForMentor } from "@/lib/qna/freeQuestionUsage";
 import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
 
 type Props = {
@@ -28,9 +29,13 @@ export default async function MentorDetailByIdPage(props: Props) {
   }
 
   let initialFavorited = false;
+  let freeQuestionRemaining: number | null = null;
   if (user) {
     const fav = await loadFavoriteMentorIdsForUser(supabase, user.id);
     initialFavorited = fav.ids.has(mentorId);
+    if (profile?.role === "student") {
+      freeQuestionRemaining = await loadFreeQuestionRemainingForMentor(supabase, user.id, mentorId);
+    }
   }
 
   if (bundle.kind === "not_found") {
@@ -63,7 +68,7 @@ export default async function MentorDetailByIdPage(props: Props) {
         reviewEligibility={reviewEligibility}
         isLoggedIn={Boolean(user)}
         initialFavorited={initialFavorited}
-        freeQuestionRemaining={15}
+        freeQuestionRemaining={freeQuestionRemaining}
       />
     </div>
   );
