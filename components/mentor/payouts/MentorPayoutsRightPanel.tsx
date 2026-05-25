@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE,
+  MENTOR_SUBSCRIPTION_PLATFORM_SHARE,
+} from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutMonthlyCard, MentorPayoutScheduleInfo } from "@/lib/mentor/mentorPayoutsTypes";
 import { MentorPayoutsMonthlyBarChart } from "./MentorPayoutsCharts";
 import { formatCashKrw } from "./payoutUi";
@@ -59,7 +63,10 @@ export function MentorPayoutsRightPanel(props: Props) {
         <h3 className="text-sm font-extrabold text-slate-900">안내</h3>
         <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-600">
           <li>정산은 매월 10일에 등록된 계좌로 지급됩니다.</li>
-          <li>수수료는 구독 플랫폼 30%, 맞춤의뢰 플랫폼 20%가 기본 적용됩니다.</li>
+          <li>
+            수수료는 구독 플랫폼 {Math.round(MENTOR_SUBSCRIPTION_PLATFORM_SHARE * 100)}%, 맞춤의뢰 플랫폼{" "}
+            {Math.round(MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE * 100)}%가 기본 적용됩니다.
+          </li>
           <li>환불/취소 발생 시 익월 정산에 반영될 수 있습니다.</li>
         </ul>
         <Link href="/support/disputes" className="mt-3 inline-flex text-xs font-bold text-[#1A56DB] hover:underline">

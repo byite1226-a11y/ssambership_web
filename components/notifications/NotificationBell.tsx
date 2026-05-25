@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { createClient } from "@/lib/supabase/client";
-import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
+import {
+  mapNotificationRowToBellItem,
+  type NotificationBellItem,
+} from "@/lib/notifications/notificationBellQueries";
 import type { AppRole } from "@/lib/types/user";
 
 type Props = {
@@ -17,7 +20,7 @@ type Props = {
 };
 
 export function NotificationBell(props: Props) {
-  const { userId, iconClassName } = props;
+  const { userId, iconClassName, role } = props;
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(props.initialUnreadCount);
@@ -68,8 +71,15 @@ export function NotificationBell(props: Props) {
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        () => {
+        (payload) => {
           setUnreadCount((prev) => prev + 1);
+          const row = payload.new as Record<string, unknown> | undefined;
+          if (row) {
+            const item = mapNotificationRowToBellItem(row, role);
+            if (item) {
+              setItems((prev) => [item, ...prev.filter((x) => x.id !== item.id)].slice(0, 5));
+            }
+          }
         }
       )
       .on(
@@ -90,7 +100,7 @@ export function NotificationBell(props: Props) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, supabase]);
+  }, [userId, supabase, role]);
 
   useEffect(() => {
     if (!open) return;

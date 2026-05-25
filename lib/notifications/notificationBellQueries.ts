@@ -36,6 +36,24 @@ function bodyLine(row: Row): string {
   return "";
 }
 
+/** Realtime INSERT payload 등 클라이언트에서 행 → 드롭다운 항목 변환 */
+export function mapNotificationRowToBellItem(row: Row, role: AppRole): NotificationBellItem | null {
+  const id = row.id;
+  if (id == null || String(id).trim() === "") {
+    return null;
+  }
+  const type = typeRaw(row, null);
+  return {
+    id: String(id),
+    type,
+    title: notificationTitleLine(row),
+    body: bodyLine(row),
+    href: resolveNotificationHref(row, role, type),
+    createdAt: notificationTimeIso(row),
+    isRead: false,
+  };
+}
+
 function mapRowToBellItem(row: Row, role: AppRole, readCol: string | null, typeCol: string | null): NotificationBellItem {
   const type = typeRaw(row, typeCol);
   return {
