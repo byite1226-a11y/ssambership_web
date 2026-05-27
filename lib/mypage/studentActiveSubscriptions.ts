@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic, loadMentorProfilesForDirectory } from "@/lib/auth/mentorPublicRead";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
 import {
   isSubscribePlanTier,
@@ -103,7 +103,8 @@ async function fetchUsageCountersBySubscriptionId(
     return out;
   }
 
-  for (const row of ((data ?? null) as unknown as Row[] | null) ?? []) {
+  const usageRows = rowsFromSupabaseData(data) as Row[];
+  for (const row of usageRows) {
     const sid = row[subCol];
     if (typeof sid === "string" && sid.trim()) out.set(sid.trim(), row);
   }
@@ -125,7 +126,7 @@ export async function loadActiveSubscriptionsForStudent(
     return { items: [], error: error.message };
   }
 
-  const rows = ((data ?? null) as unknown as Row[] | null) ?? [];
+  const rows = rowsFromSupabaseData(data) as Row[];
   const mentorIds = [...new Set(rows.map((r) => String(r.mentor_id ?? "").trim()).filter(Boolean))];
   const subscriptionIds = rows.map((r) => String(r.id ?? "").trim()).filter(Boolean);
 

@@ -272,10 +272,11 @@ export function QuestionRoomWorkspace(props: {
               props.threads.rows.map((t) => {
                 const id = String(t.id);
                 const isActive = props.threadId === id || (!props.threadId && props.threads.rows[0]?.id === t.id);
+                const href = props.roomId ? threadInRoomPath(roomBase, props.roomId, id) : roomBase;
                 return (
                   <Link
                     key={id}
-                    href={threadInRoomPath(roomBase, props.roomId!, id)}
+                    href={href}
                     className={`w-full flex flex-col gap-1 px-6 py-5 transition-all text-left border-b border-slate-50 relative ${
                       isActive ? "bg-slate-50 shadow-[inset_3px_0_0_0_#2563eb]" : "hover:bg-slate-50/80"
                     }`}

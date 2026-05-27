@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchMentorProfileForPublicMentor, getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchMentorMediaSample } from "@/lib/mentor/mentorProfileQueries";
 import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import type { UserRow } from "@/lib/types/user";
 
 type Row = Record<string, unknown>;
@@ -78,7 +78,7 @@ export async function fetchReviewsSummary(
         if (vis.isBlinded) rateQ = rateQ.eq(vis.isBlinded, false);
         const { data, error: e2 } = await rateQ;
         if (!e2 && data?.length) {
-          const rows = data as unknown as Row[];
+          const rows = rowsFromSupabaseData(data) as Row[];
           const nums = rows
             .map((r) => r[ratingCol])
             .filter((v): v is number => typeof v === "number");

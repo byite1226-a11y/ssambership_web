@@ -229,7 +229,8 @@ export function orderStatusBadgeLabelForNorm(norm: string): string {
     return "—";
   }
   if (Object.prototype.hasOwnProperty.call(ORDER_STATUS_LABEL_MAP, s)) {
-    return ORDER_STATUS_LABEL_MAP[s]!;
+    const label = ORDER_STATUS_LABEL_MAP[s];
+    if (label) return label;
   }
   return "준비 중";
 }
@@ -288,7 +289,8 @@ export function paymentStatusBadgeLabelForRaw(raw: string): string {
     return "—";
   }
   if (Object.prototype.hasOwnProperty.call(PAYMENT_STATUS_LABEL_MAP, s)) {
-    return PAYMENT_STATUS_LABEL_MAP[s]!;
+    const label = PAYMENT_STATUS_LABEL_MAP[s];
+    if (label) return label;
   }
   return "준비 중";
 }

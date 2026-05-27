@@ -60,7 +60,8 @@ export function MentorReviewList(props: { mentorId: string }) {
         );
         const json = (await res.json()) as ListResponse;
         if (!json.ok || !json.items) return;
-        setItems((prev) => (append ? [...prev, ...json.items!] : json.items!));
+        const items = json.items;
+        setItems((prev) => (append ? [...prev, ...items] : items));
         setTotal(json.total ?? 0);
         setAvgRating(json.avgRating ?? null);
         if (json.distribution) {

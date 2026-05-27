@@ -104,6 +104,12 @@ export async function recordFreeQuestionUsage(
     mentor_id: mentorId,
   });
   if (insErr) {
+    if (insErr.code === "P0001") {
+      return { ok: false, userMessage: "이 멘토에게 사용할 수 있는 무료 질문권을 모두 사용했습니다." };
+    }
+    if (insErr.code === "P0002") {
+      return { ok: false, userMessage: "무료 질문권을 모두 사용했습니다." };
+    }
     console.error("[recordFreeQuestionUsage] insert", insErr.message);
     return { ok: false, userMessage: "무료 질문권 차감에 실패했습니다. 잠시 후 다시 시도해 주세요." };
   }

@@ -54,17 +54,18 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
     backToApplications(postId, MSG_NO_APP);
     return;
   }
+  const appRow = app.row;
   const postMatch = verifyApplicationForPost(app.row, postId);
   if (!postMatch.ok) {
     backToApplications(postId, "이 지원서는 이 의뢰에 해당하지 않아요.");
   }
-  const mentor = pickMentorIdFromApplication(app.row!);
+  const mentor = pickMentorIdFromApplication(appRow);
   if (!mentor) {
     backToApplications(postId, "지원서에서 멘토를 확인할 수 없어요. 잠시 후 다시 시도해 주세요.");
     return;
   }
 
-  const price = getApplicationPriceAmount(app.row!);
+  const price = getApplicationPriceAmount(appRow);
   if (price === null) {
     backToApplications(postId, MSG_NO_PRICE);
     return;

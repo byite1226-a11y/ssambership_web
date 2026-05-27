@@ -124,7 +124,10 @@ export function pickLatestRevisionRequest(
   }
 
   candidates.sort((a, b) => b.atMs - a.atMs);
-  const best = candidates[0]!;
+  const best = candidates[0];
+  if (!best) {
+    return { message: "수정 요청 내용이 없습니다.", requestedAtLabel: "—" };
+  }
   return {
     message: best.message,
     requestedAtLabel: best.atRaw != null ? formatOrderRoomDateTime(best.atRaw) : "—",

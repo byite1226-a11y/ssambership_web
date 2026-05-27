@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 import {
   SUBSCRIPTIONS_ORDER_COLUMN,
@@ -92,14 +92,14 @@ async function fetchSubscriptionRowsForStudent(
         }
         return {
           table: SUBSCRIPTIONS_TABLE,
-          rows: ((o2.data ?? null) as unknown as Row[] | null) ?? [],
+          rows: rowsFromSupabaseData(o2.data) as Row[],
           error: null,
           probe: `${SUBSCRIPTIONS_TABLE}.student_id (정렬 생략)`,
         };
       }
       return {
         table: SUBSCRIPTIONS_TABLE,
-        rows: ((o1.data ?? null) as unknown as Row[] | null) ?? [],
+        rows: rowsFromSupabaseData(o1.data) as Row[],
         error: null,
         probe: `${SUBSCRIPTIONS_TABLE}.student_id`,
       };

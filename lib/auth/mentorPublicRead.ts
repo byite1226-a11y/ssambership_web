@@ -1,6 +1,7 @@
 import type { UserRow } from "@/lib/types/user";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
+import { rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import type { AppRole } from "@/lib/types/user";
 
@@ -78,7 +79,7 @@ export async function loadMentorDirectoryUserRows(
     });
     return { users: [], error: error.message, usedRpc: true, probe: "mentor_directory_list: " + error.message };
   }
-  const rows = (data as unknown as Record<string, unknown>[]) ?? [];
+  const rows = rowsFromSupabaseData(data);
   return {
     users: rows.map((r) => mapRpcUserToUserRow(r)),
     error: null,
@@ -121,7 +122,8 @@ export async function loadMentorProfilesForDirectory(
     });
     return { byUser, error: error.message, probe: "mentor_profiles_for_directory: " + error.message };
   }
-  for (const row of (data as unknown as ProfileRow[] | null) ?? []) {
+  const profileRows = rowsFromSupabaseData(data) as ProfileRow[];
+  for (const row of profileRows) {
     const uid = row.user_id != null ? String(row.user_id) : null;
     if (uid) byUser.set(uid, row);
   }
@@ -142,7 +144,7 @@ export async function getMentorUserPublic(
   if (error) {
     return { data: null, error: new Error(error.message) };
   }
-  const arr = (data as unknown as Record<string, unknown>[]) ?? null;
+  const arr = rowsFromSupabaseData(data);
   const one = arr?.[0];
   if (one) {
     return { data: mapRpcUserToUserRow(one), error: null };

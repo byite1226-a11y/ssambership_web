@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 import {
@@ -51,7 +51,7 @@ export async function findActiveSubscriptionForPair(
         .order(SUBSCRIPTIONS_ORDER_COLUMN, { ascending: false })
         .limit(20);
       if (error) continue;
-      const rows = ((data ?? null) as unknown as Row[] | null) ?? [];
+      const rows = rowsFromSupabaseData(data) as Row[];
       for (const r of rows) {
         if (isRowSubscriptionActive(r)) {
           return { table: SUBSCRIPTIONS_TABLE, row: r };

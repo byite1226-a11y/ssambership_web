@@ -5,7 +5,7 @@ import type { MentorsListFilters, MentorsListSort } from "@/lib/mentor/mentorsLi
 import { MENTORS_PAGE_SIZE } from "@/lib/mentor/mentorsListSearchParams";
 import { mentorIsVerified } from "@/lib/mentor/mentorPublicProfileDisplay";
 import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
 import {
@@ -102,7 +102,8 @@ async function batchReviewStats(
     const { data, error } = await supabase.from(table).select("*").in(mid, mentorIds);
     if (error) continue;
     const map = new Map<string, { count: number | null; avg: number | null }>();
-    for (const row of (data as unknown as Row[]) ?? []) {
+    const summaryRows = rowsFromSupabaseData(data) as Row[];
+    for (const row of summaryRows) {
       const id = String(row[mid]);
       const cnt =
         typeof row.review_count === "number"
@@ -144,7 +145,8 @@ async function batchReviewStats(
     const { data, error } = await batchQ;
     if (error) continue;
     const acc = new Map<string, { c: number; rs: number; rn: number }>();
-    for (const row of (data as unknown as Row[]) ?? []) {
+    const reviewRows = rowsFromSupabaseData(data) as Row[];
+    for (const row of reviewRows) {
       const id = String(row[mid]);
       const s = acc.get(id) ?? { c: 0, rs: 0, rn: 0 };
       s.c += 1;
@@ -188,7 +190,7 @@ async function batchPlanLabels(
       lastProbe = `${table}.${fk}: ${error.message}`;
       continue;
     }
-    const rows = (data as unknown as Row[]) ?? [];
+    const rows = rowsFromSupabaseData(data) as Row[];
     const rowsByMentor = new Map<string, Row[]>();
     for (const row of rows) {
       const mid = String(row[fk]);
@@ -203,7 +205,8 @@ async function batchPlanLabels(
       const standardPrice = byTier.standard ? parsePriceNumber(byTier.standard) : null;
       let minPrice: number | null = null;
       for (const tier of ["limited", "standard", "premium"] as const) {
-        const p = byTier[tier] ? parsePriceNumber(byTier[tier]!) : null;
+        const planRow = byTier[tier];
+        const p = planRow ? parsePriceNumber(planRow) : null;
         if (p != null) minPrice = minPrice == null ? p : Math.min(minPrice, p);
       }
       const label =

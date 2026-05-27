@@ -48,7 +48,7 @@ async function runDisputeUpdate(
   const run = (client: SupabaseClient) => {
     let q = client.from(table).update(patch).eq("id", disputeId);
     if (statusIn?.length && table === "disputes") {
-      q = q.in("status", statusIn as unknown as string[]);
+      q = q.in("status", [...statusIn]);
     }
     return q.select("id");
   };

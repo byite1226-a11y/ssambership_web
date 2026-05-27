@@ -86,7 +86,7 @@ export function mentorSignupFieldErrors(f: MentorSignupFields): SignupFieldError
 
 function firstError(errors: SignupFieldErrors): string | null {
   const values = Object.values(errors);
-  return values.length > 0 ? values[0]! : null;
+  return values[0] ?? null;
 }
 
 /** 학생 가입: 계정 + 프로필 + 필수 약관 */

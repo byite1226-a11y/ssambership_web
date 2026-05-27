@@ -122,7 +122,8 @@ export function mentorPostStatusLabelForUi(token: string): string {
     return "상태 확인 필요";
   }
   if (Object.prototype.hasOwnProperty.call(MENTOR_POST_STATUS, t)) {
-    return MENTOR_POST_STATUS[t]!.label;
+    const status = MENTOR_POST_STATUS[t];
+    if (status) return status.label;
   }
   return "상태 확인 필요";
 }
@@ -133,7 +134,8 @@ export function mentorPostStatusUiTone(token: string): MentorPostStatusUiTone {
     return "gray";
   }
   if (Object.prototype.hasOwnProperty.call(MENTOR_POST_STATUS, t)) {
-    return MENTOR_POST_STATUS[t]!.tone;
+    const status = MENTOR_POST_STATUS[t];
+    if (status) return status.tone;
   }
   return "gray";
 }

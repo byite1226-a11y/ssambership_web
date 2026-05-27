@@ -99,7 +99,8 @@ export function PlanComparisonCards(props: {
     return (
       <div className="w-full min-w-0 space-y-2.5" role="radiogroup" aria-label="구독 요금제 선택">
         {RADIO_RAIL_ORDER.map((tierId) => {
-          const t = TIERS.find((x) => x.id === tierId)!;
+          const t = TIERS.find((x) => x.id === tierId);
+          if (!t) return null;
           const catalog = getSubscribeCatalogPlan(tierId);
           const row = byTier[tierId];
           const selected = selectedTier === tierId;

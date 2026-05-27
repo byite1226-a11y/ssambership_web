@@ -157,7 +157,8 @@ export function QuestionRoomStudentDesignWorkspace(props: {
       });
       const json = (await res.json()) as { ok?: boolean; usage?: WeeklyUsageSnapshot };
       if (res.ok && json.ok && json.usage) {
-        setUsageByMentorId((prev) => ({ ...prev, [mid]: json.usage! }));
+        const usage = json.usage;
+        setUsageByMentorId((prev) => ({ ...prev, [mid]: usage }));
         if (mid === mentorId) setWeeklyUsage(json.usage);
       }
     } catch {

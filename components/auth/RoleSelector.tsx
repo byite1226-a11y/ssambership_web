@@ -142,7 +142,8 @@ export function RoleSelector({ value, onChange, disabled }: RoleSelectorProps) {
                 </span>
                 <ul className="mt-4 grid list-none grid-cols-1 gap-2.5 sm:mt-4 sm:grid-cols-3 sm:gap-2 md:gap-2.5" role="list">
                   {c.benefits.map((b, i) => {
-                    const Icon = icons[i]!;
+                    const Icon = icons[i] ?? icons[0];
+                    if (!Icon) return null;
                     return (
                       <li
                         key={b}
