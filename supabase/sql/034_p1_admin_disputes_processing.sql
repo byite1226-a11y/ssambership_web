@@ -1,3 +1,4 @@
+-- [의존 순서] 이 파일은 004_p0_cash_disputes_admin_draft.sql 이후 적용할 것
 -- [번호 충돌] 접두 034 — 동일 번호: 034_mentor_favorites.sql (이 파일: disputes 운영 컬럼)
 -- =============================================================================
 -- 034_p1_admin_disputes_processing.sql

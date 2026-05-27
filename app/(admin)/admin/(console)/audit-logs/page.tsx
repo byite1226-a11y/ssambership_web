@@ -10,6 +10,10 @@ export default async function AdminAuditLogsPage() {
 
   const supabase = await createClient();
   let adminBypass: ReturnType<typeof createServiceRoleClient> | undefined;
+  // [보안 주석] service_role로 RLS 우회
+  // 이 페이지는 (admin)/layout.tsx + (admin)/(console)/layout.tsx
+  // 이중 requireRole("admin") 가드로 보호됨.
+  // service_role 사용은 관리자 업무상 의도된 것임.
   try {
     adminBypass = createServiceRoleClient();
   } catch {

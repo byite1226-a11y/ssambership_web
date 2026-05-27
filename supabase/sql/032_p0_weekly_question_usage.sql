@@ -1,3 +1,4 @@
+-- [의존 순서] 이 파일은 002_p0_subscriptions_questions_draft.sql 이후 적용할 것
 -- [번호 충돌] 접두 032 — 동일 번호: 032_p1_admin_content_reports.sql (이 파일: 주간 질문 한도 P0)
 -- P0: 주간 질문 한도 (월~일, confirmed 만 소비) + usage RPC
 

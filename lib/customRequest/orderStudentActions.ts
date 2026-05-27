@@ -18,6 +18,7 @@ import {
 import { firstReadableCustomTable, ORDER_TO_DELIVERABLE_FK_CANDIDATES } from "@/lib/customRequest/customRequestQueries";
 import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { splitPlatformAndMentorForGross } from "@/lib/customRequest/orderSettlementAmounts";
+import { MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE } from "@/lib/mentor/mentorPayoutsConstants";
 import {
   acceptCustomOrderDeliverableAtomic,
   recordCustomOrderSettlementCreatedEvent,
@@ -163,7 +164,7 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
   });
 
   if (atomic.settlementCreated && atomic.settlementId && atomic.gross != null) {
-    const feeRate = atomic.feeRate ?? 0.2;
+    const feeRate = atomic.feeRate ?? MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE;
     const { platformFee, mentorAmount } = splitPlatformAndMentorForGross(atomic.gross, feeRate);
     await recordCustomOrderSettlementCreatedEvent(supabase, orderId, user.id, {
       settlementId: atomic.settlementId,

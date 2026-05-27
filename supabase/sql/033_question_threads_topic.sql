@@ -1,3 +1,4 @@
+-- [의존 순서] 이 파일은 002_p0_subscriptions_questions_draft.sql 이후 적용할 것
 -- [번호 충돌] 접두 033 — 동일 번호: 033_p1_admin_reviews_moderation.sql (이 파일: question_threads.topic)
 -- 질문 스레드 과목 태그 (제목과 분리)
 alter table public.question_threads add column if not exists topic text;

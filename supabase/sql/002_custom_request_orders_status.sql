@@ -1,3 +1,4 @@
+-- [의존 순서] 이 파일은 003_p0_custom_request_draft.sql 이후 적용할 것
 -- [번호 충돌] 접두 002 — 동일 번호: 002_p0_subscriptions_questions_draft.sql, 002_app_core_schema_draft.sql
 --   (이 파일: orderSchemaGate 마커만. DDL은 003_p0_custom_request_draft.sql)
 -- Marker for app/src E2E: enables lib/customRequest/orderSchemaGate (mentor "작업 시작" 등).

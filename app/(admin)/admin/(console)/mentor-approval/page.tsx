@@ -25,6 +25,10 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
 
   const supabase = await createClient();
   const list = await loadMentorApprovalsList(supabase, 50);
+  // [보안 주석] service_role로 RLS 우회
+  // 이 페이지는 (admin)/layout.tsx + (admin)/(console)/layout.tsx
+  // 이중 requireRole("admin") 가드로 보호됨.
+  // service_role 사용은 관리자 업무상 의도된 것임.
   const readDb = mentorProfilesAdminReadClient(supabase);
   const userIds = list.rows.map((r) => String((r as Record<string, unknown>).user_id ?? "").trim()).filter(Boolean);
   const userMap = await fetchAdminUsersDisplayByIds(readDb, userIds);

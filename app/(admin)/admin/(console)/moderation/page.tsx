@@ -20,6 +20,10 @@ export default async function AdminModerationPage(props: PageProps) {
 
   const supabase = await createClient();
   const list = await loadAdminReportsList(supabase, 50);
+  // [보안 주석] service_role로 RLS 우회
+  // 이 페이지는 (admin)/layout.tsx + (admin)/(console)/layout.tsx
+  // 이중 requireRole("admin") 가드로 보호됨.
+  // service_role 사용은 관리자 업무상 의도된 것임.
   const readDb = mentorProfilesAdminReadClient(supabase);
   const reporterIds = list.rows
     .map((r) => String((r as Record<string, unknown>).reporter_id ?? (r as Record<string, unknown>).user_id ?? "").trim())
