@@ -19,10 +19,10 @@ language sql
 immutable
 as $$
   select lower(trim(coalesce(
-    nullif(trim(o.status), ''),
-    nullif(trim(o.state), ''),
-    nullif(trim(o.order_status), ''),
-    nullif(trim(o.stage), ''),
+    nullif(trim((o).status), ''),
+    nullif(trim((o).state), ''),
+    nullif(trim((o).order_status), ''),
+    nullif(trim((o).stage), ''),
     ''
   )));
 $$;
@@ -36,18 +36,18 @@ language sql
 stable
 as $$
   select coalesce(
-    public._positive_int_from_numeric(o.agreed_price),
-    public._positive_int_from_numeric(o.final_price),
-    public._positive_int_from_numeric(o.quote_price),
-    public._positive_int_from_numeric(o.price),
-    public._positive_int_from_numeric(o.paid_amount),
-    public._positive_int_from_numeric(o.amount),
-    public._positive_int_from_numeric(o.total),
-    public._positive_int_from_numeric(o.total_amount),
-    public._positive_int_from_numeric(app.proposed_price),
-    public._positive_int_from_numeric(app.bid_amount),
-    public._positive_int_from_numeric(app.quote_price),
-    public._positive_int_from_numeric(app.price)
+    public._positive_int_from_numeric((o).agreed_price),
+    public._positive_int_from_numeric((o).final_price),
+    public._positive_int_from_numeric((o).quote_price),
+    public._positive_int_from_numeric((o).price),
+    public._positive_int_from_numeric((o).paid_amount),
+    public._positive_int_from_numeric((o).amount),
+    public._positive_int_from_numeric((o).total),
+    public._positive_int_from_numeric((o).total_amount),
+    public._positive_int_from_numeric((app).proposed_price),
+    public._positive_int_from_numeric((app).bid_amount),
+    public._positive_int_from_numeric((app).quote_price),
+    public._positive_int_from_numeric((app).price)
   );
 $$;
 
