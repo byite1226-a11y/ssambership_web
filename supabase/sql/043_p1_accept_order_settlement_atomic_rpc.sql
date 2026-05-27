@@ -27,6 +27,7 @@ as $$
   )));
 $$;
 
+-- 금액 컬럼 출처: 003_p0_custom_request_draft.sql (custom_request_orders / custom_request_applications)
 create or replace function public._pick_custom_order_gross_won(
   o public.custom_request_orders,
   app public.custom_request_applications
@@ -37,16 +38,11 @@ stable
 as $$
   select coalesce(
     public._positive_int_from_numeric((o).agreed_price),
-    public._positive_int_from_numeric((o).final_price),
-    public._positive_int_from_numeric((o).quote_price),
+    public._positive_int_from_numeric((o).proposed_price),
     public._positive_int_from_numeric((o).price),
-    public._positive_int_from_numeric((o).paid_amount),
     public._positive_int_from_numeric((o).amount),
-    public._positive_int_from_numeric((o).total),
-    public._positive_int_from_numeric((o).total_amount),
     public._positive_int_from_numeric((app).proposed_price),
     public._positive_int_from_numeric((app).bid_amount),
-    public._positive_int_from_numeric((app).quote_price),
     public._positive_int_from_numeric((app).price)
   );
 $$;
