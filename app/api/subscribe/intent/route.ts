@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createSubscriptionPaymentIntent } from "@/lib/subscribe/subscribeCheckoutService";
+import {
+  createSubscriptionPaymentIntent,
+  isSubscribeCheckoutPendingBypassAllowed,
+} from "@/lib/subscribe/subscribeCheckoutService";
 import { getStudentSupabaseForSubscribe } from "@/lib/subscribe/subscribeCheckoutSession";
 import { isSubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 
@@ -41,9 +44,7 @@ export async function POST(request: Request) {
       r.code === "dup" ? 409 : r.code === "mentor" || r.code === "plan" ? 400 : 500;
     return NextResponse.json({ ok: false, error: r.error, code: r.code }, { status });
   }
-  const allowImmediateComplete =
-    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "true" ||
-    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "1";
+  const allowImmediateComplete = isSubscribeCheckoutPendingBypassAllowed();
 
   return NextResponse.json({
     ok: true,

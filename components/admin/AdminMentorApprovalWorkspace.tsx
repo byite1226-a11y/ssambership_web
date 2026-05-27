@@ -14,6 +14,8 @@ type UserDisplay = { nickname: string | null; full_name: string | null };
 type Props = {
   rows: Row[];
   userById: Record<string, UserDisplay>;
+  /** 서버에서 createSignedUrl(300s)로 발급한 학생증 미리보기 URL */
+  studentIdImageSignedUrlByUserId?: Record<string, string | null>;
   statusFilter: string;
   statusColumn: string | null;
 };
@@ -60,9 +62,7 @@ export function AdminMentorApprovalWorkspace(props: Props) {
   const mentorUserId = selected ? String(selected.user_id ?? selected.id ?? "") : "";
   const user = mentorUserId ? props.userById[mentorUserId] : undefined;
   const img =
-    (typeof selected?.student_id_image_url === "string" && selected.student_id_image_url) ||
-    (typeof selected?.id_card_url === "string" && selected.id_card_url) ||
-    null;
+    (mentorUserId && props.studentIdImageSignedUrlByUserId?.[mentorUserId]) || null;
 
   return (
     <div className="space-y-4">

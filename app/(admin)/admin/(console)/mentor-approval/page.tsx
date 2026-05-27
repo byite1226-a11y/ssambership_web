@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchAdminUsersDisplayByIds, loadMentorApprovalsList } from "@/lib/admin/adminQueries";
 import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
+import { resolveStudentIdImageSignedUrl } from "@/lib/storage/studentIdImageStorage";
 
 type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -32,6 +33,19 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
     userById[k] = v;
   });
 
+  const studentIdImageSignedUrlByUserId: Record<string, string | null> = {};
+  for (const r of list.rows) {
+    const uid = String((r as Record<string, unknown>).user_id ?? "").trim();
+    if (!uid) continue;
+    const stored =
+      (typeof (r as Record<string, unknown>).student_id_image_url === "string" &&
+        (r as Record<string, unknown>).student_id_image_url) ||
+      (typeof (r as Record<string, unknown>).id_card_url === "string" &&
+        (r as Record<string, unknown>).id_card_url) ||
+      null;
+    studentIdImageSignedUrlByUserId[uid] = await resolveStudentIdImageSignedUrl(readDb, String(stored ?? ""));
+  }
+
   return (
     <div className="space-y-4">
       {flashOk ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">{flashOk}</p> : null}
@@ -39,6 +53,7 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
       <AdminMentorApprovalWorkspace
         rows={list.rows as Record<string, unknown>[]}
         userById={userById}
+        studentIdImageSignedUrlByUserId={studentIdImageSignedUrlByUserId}
         statusFilter={filter}
         statusColumn={list.keyHints.status ?? null}
       />

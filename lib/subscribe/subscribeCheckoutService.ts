@@ -421,6 +421,21 @@ type CompleteResult =
  * pending 등 비확정 상태는 SUBSCRIBE_CHECKOUT_ALLOW_PENDING=true 일 때만 허용(로컬·스테이징 전용).
  * PG·웹훅에서 결제 확정 후 동일 함수를 호출하는 것이 출시 기준 흐름.
  */
+export function isSubscribeCheckoutPendingBypassAllowed(): boolean {
+  const on =
+    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "true" ||
+    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "1";
+  if (process.env.NODE_ENV === "production" && on) {
+    throw new Error("SUBSCRIBE_CHECKOUT_ALLOW_PENDING: 프로덕션에서는 허용되지 않습니다");
+  }
+  if (on) {
+    console.warn(
+      "[subscribeCheckout] SUBSCRIBE_CHECKOUT_ALLOW_PENDING=true — 미결제 구독 완료 우회가 허용됩니다(개발·스테이징 전용)."
+    );
+  }
+  return on;
+}
+
 const PLAN_TABLE_CANDIDATES = ["plans", "mentor_plans", "subscription_plans", "mentor_subscription_plans"] as const;
 const PLAN_FK_CANDIDATES = ["mentor_id", "mentor_user_id", "user_id", "owner_id"] as const;
 
@@ -591,10 +606,7 @@ export async function finalizeSubscriptionCheckout(
     }
   }
 
-  const allowPendingComplete =
-    cashWallet === true ||
-    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "true" ||
-    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "1";
+  const allowPendingComplete = cashWallet === true || isSubscribeCheckoutPendingBypassAllowed();
   if (stCol && !allowPendingComplete) {
     const st = String(p[stCol] ?? "").toLowerCase();
     const paidLike =

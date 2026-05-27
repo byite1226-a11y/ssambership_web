@@ -1,8 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  buildStudentIdImageObjectPath,
+  formatStudentIdImageStoredRef,
+  STUDENT_ID_IMAGES_BUCKET,
+} from "@/lib/storage/studentIdImageStorage";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import type { AppRole } from "@/lib/types/user";
-
-const BUCKET = "student-id-images";
 
 type SyncInput = {
   userId: string;
@@ -94,37 +97,34 @@ export async function syncAfterSignUpWithSession(i: SyncInput): Promise<SyncResu
     }
 
     if (i.studentIdFile) {
-      const path = `${i.userId}/${Date.now()}-${i.studentIdFile.name.replace(/[^\w.가-힣-]+/g, "_")}`;
+      const objectPath = buildStudentIdImageObjectPath(i.userId, i.studentIdFile.name);
+      const storedRef = formatStudentIdImageStoredRef(objectPath);
 
       try {
         const { error: upErr } = await supabase.storage
-          .from(BUCKET)
-          .upload(path, i.studentIdFile, { cacheControl: "3600", upsert: true });
+          .from(STUDENT_ID_IMAGES_BUCKET)
+          .upload(objectPath, i.studentIdFile, { cacheControl: "3600", upsert: true });
         if (upErr) {
           throw upErr;
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         warnings.push(
-          `[학생증 업로드] ${mapDataErrorMessage(msg)} — TODO: Storage bucket 'student-id-images' 생성·정책 확인`
+          `[학생증 업로드] ${mapDataErrorMessage(msg)} — Storage bucket '${STUDENT_ID_IMAGES_BUCKET}' 생성·정책 확인`
         );
       }
 
       try {
-        const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        const publicUrl = pub?.publicUrl;
-        if (publicUrl) {
-          const { error: mErr } = await supabase
-            .from("mentor_profiles")
-            .update({ student_id_image_url: publicUrl, updated_at: now })
-            .eq("user_id", i.userId);
-          if (mErr) {
-            throw mErr;
-          }
+        const { error: mErr } = await supabase
+          .from("mentor_profiles")
+          .update({ student_id_image_url: storedRef, updated_at: now })
+          .eq("user_id", i.userId);
+        if (mErr) {
+          throw mErr;
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        warnings.push(`[이미지 URL 반영] ${mapDataErrorMessage(msg)}`);
+        warnings.push(`[학생증 경로 반영] ${mapDataErrorMessage(msg)}`);
       }
     }
   }

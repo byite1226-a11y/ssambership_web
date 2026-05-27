@@ -44,14 +44,18 @@ const MSG_TEST_TOPUP_DISABLED = "테스트 충전은 현재 비활성화되어 �
 export async function testWalletCashTopupAction(formData: FormData): Promise<void> {
   const { user } = await requireRole("student");
 
+  if (process.env.NODE_ENV === "production") {
+    if (process.env.CASH_TOPUP_ALLOW_TEST_CHARGE === "true") {
+      throw new Error("CASH_TOPUP_ALLOW_TEST_CHARGE: 프로덕션에서는 허용되지 않습니다");
+    }
+    redirect("/wallet/charge?error=" + encodeURIComponent(MSG_TEST_TOPUP_DISABLED));
+  }
   if (process.env.CASH_TOPUP_ALLOW_TEST_CHARGE !== "true") {
     redirect("/wallet/charge?error=" + encodeURIComponent(MSG_TEST_TOPUP_DISABLED));
   }
-  if (process.env.NODE_ENV === "production" && process.env.CASH_TOPUP_ALLOW_TEST_CHARGE === "true") {
-    console.warn(
-      "[walletTopup] CASH_TOPUP_ALLOW_TEST_CHARGE is true in production — test cash top-up is enabled. Disable for public production unless intentionally controlled."
-    );
-  }
+  console.warn(
+    "[walletTopup] CASH_TOPUP_ALLOW_TEST_CHARGE=true — 테스트 충전이 활성화되어 있습니다(개발·스테이징 전용)."
+  );
 
   const idem = textFromForm(formData.get("idempotencyKey")) || `cash_topup_${user.id}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   const wonStr = textFromForm(formData.get("amountKrw"));

@@ -10,9 +10,15 @@ type Row = Record<string, unknown>;
  */
 export function allowsUnpaidCustomOrderAccept(): boolean {
   const on = process.env.CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT === "true";
-  if (on && process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production") {
+    if (on) {
+      throw new Error("CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT: 프로덕션에서는 허용되지 않습니다");
+    }
+    return false;
+  }
+  if (on) {
     console.warn(
-      "[orderPaymentPolicy] 경고: CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT=true 입니다. production에서 비결제 수락/정산이 열려 있을 수 있으니 배포·환경을 반드시 확인하세요."
+      "[orderPaymentPolicy] CUSTOM_ORDER_ALLOW_UNPAID_ACCEPT=true — 비결제 수락/정산이 허용됩니다(개발·스테이징 전용)."
     );
   }
   return on;
