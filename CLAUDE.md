@@ -140,5 +140,6 @@
 ```
 NEXT_PUBLIC_TOSS_CLIENT_KEY=test_ck_...
 TOSS_SECRET_KEY=test_sk_...
+TOSS_WEBHOOK_SECRET=    # Toss 대시보드 > 웹훅 설정에서 발급 (TOSS_SECRET_KEY와 별도)
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```

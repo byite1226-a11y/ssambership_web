@@ -2,17 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
-import { cashKrwForPayKrw, isAllowedChargePayKrw } from "@/lib/cash/chargePackages";
-
-function parseUserIdFromCashOrderId(orderId: string): string | null {
-  const m = /^cash-(.+)-(\d+)$/.exec(orderId);
-  return m?.[1] ?? null;
-}
-
-function krwWonToCents(won: number): number {
-  if (!Number.isFinite(won) || won <= 0 || won > 10_000_000) return 0;
-  return Math.round(won) * 100;
-}
+import { isAllowedChargePayKrw } from "@/lib/cash/chargePackages";
+import { recordCashTopupFromTossOrder } from "@/lib/toss/cashTopupFromPayment";
 
 export async function POST(req: NextRequest) {
   const { paymentKey, orderId, amount } = await req.json();
@@ -60,38 +51,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_package", message: "허용되지 않은 충전 금액입니다." }, { status: 400 });
   }
 
-  const cashKrw = cashKrwForPayKrw(confirmedWon);
-  if (cashKrw == null) {
-    return NextResponse.json({ error: "invalid_package", message: "허용되지 않은 충전 금액입니다." }, { status: 400 });
-  }
-
-  const userIdRaw = parseUserIdFromCashOrderId(orderId);
-  if (!userIdRaw) {
-    return NextResponse.json({ error: "invalid_order" }, { status: 400 });
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || user.id !== userIdRaw) {
+  const userIdFromOrder = orderId.match(/^cash-(.+)-(\d+)$/)?.[1];
+  if (!user || !userIdFromOrder || user.id !== userIdFromOrder) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  const { data: existing } = await supabase
-    .from("cash_ledger")
-    .select("id")
-    .eq("idempotency_key", orderId)
-    .maybeSingle();
-
-  if (existing) {
-    return NextResponse.json({ ok: true, duplicate: true, amount: cashKrw, payAmount: confirmedWon });
-  }
-
-  const amountCents = krwWonToCents(cashKrw);
-  if (amountCents <= 0) {
-    return NextResponse.json({ error: "invalid_amount" }, { status: 400 });
   }
 
   let admin: ReturnType<typeof createServiceRoleClient>;
@@ -105,23 +72,29 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { error: rpcError } = await admin.rpc("record_cash_topup", {
-    p_user_id: user.id,
-    p_amount_cents: amountCents,
-    p_idempotency_key: orderId,
+  const topup = await recordCashTopupFromTossOrder({
+    admin,
+    orderId,
+    payAmountWon: confirmedWon,
   });
 
-  if (rpcError) {
-    console.error("[toss/confirm] cash_ledger insert failed", rpcError.message);
-    return NextResponse.json(
-      { error: "ledger_failed", message: "충전 기록에 실패했습니다." },
-      { status: 500 }
-    );
+  if (!topup.ok) {
+    const status = topup.code === "invalid_order" || topup.code === "invalid_package" ? 400 : 500;
+    return NextResponse.json({ error: topup.code, message: topup.message }, { status });
+  }
+
+  if (topup.duplicate) {
+    return NextResponse.json({ ok: true, duplicate: true, amount: topup.amount, payAmount: topup.payAmount });
   }
 
   revalidatePath("/wallet");
   revalidatePath("/wallet/charge");
   revalidatePath("/wallet/ledger");
 
-  return NextResponse.json({ ok: true, amount: cashKrw, payAmount: confirmedWon, method: tossData.method ?? "카드" });
+  return NextResponse.json({
+    ok: true,
+    amount: topup.amount,
+    payAmount: topup.payAmount,
+    method: tossData.method ?? "카드",
+  });
 }
