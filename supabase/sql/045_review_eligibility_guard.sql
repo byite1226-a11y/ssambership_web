@@ -1,7 +1,7 @@
 -- =============================================================================
 -- 045_review_eligibility_guard.sql
 -- 목적: reviews INSERT RLS — 동일 멘토에 결제 완료 구독 2회 이상일 때만 허용
--- 선행: 042_reviews_system.sql, 002_p0_subscriptions_questions_draft.sql (payments/subscriptions)
+-- 선행: 004_p0_cash_disputes_admin_draft.sql (reviews.author_id), 002_p0 (subscriptions.student_id)
 -- 적용: Supabase SQL Editor 수동 적용
 -- =============================================================================
 
@@ -72,6 +72,6 @@ create policy "reviews_insert_student" on public.reviews
   for insert
   to authenticated
   with check (
-    (select auth.uid()) = student_id
+    (select auth.uid()) = author_id
     and public.check_review_eligibility(mentor_id, (select auth.uid()))
   );
