@@ -1,3 +1,4 @@
+-- [번호 충돌] 접두 032 — 동일 번호: 032_p0_weekly_question_usage.sql (이 파일: content_reports P1)
 -- P1: 콘텐츠 신고(content_reports) — 관리자 콘솔 /admin/reports
 -- 선행: 001 public.users, public.set_updated_at(), public.is_admin() 권장(003/004 등)
 -- Idempotent

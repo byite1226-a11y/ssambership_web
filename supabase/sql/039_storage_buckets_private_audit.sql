@@ -1,3 +1,4 @@
+-- [번호 충돌] 접두 039 — 동일 번호: 039_p1_custom_request_compat.sql (이 파일: storage buckets private)
 -- --------------------------------------------------------------------------
 -- Storage 버킷 비공개 점검 (쌤버십 필수 3종 + 미디어 버킷)
 -- 실행 후: SELECT id, name, public FROM storage.buckets ORDER BY id;

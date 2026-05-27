@@ -1,3 +1,4 @@
+-- [번호 충돌] 접두 034 — 동일 번호: 034_p1_admin_disputes_processing.sql (이 파일: favorites)
 -- 멘토 찜하기 (학생·로그인 사용자)
 create table if not exists public.favorites (
   id uuid primary key default gen_random_uuid(),

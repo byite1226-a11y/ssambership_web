@@ -1,3 +1,4 @@
+-- [번호 충돌] 접두 032 — 동일 번호: 032_p1_admin_content_reports.sql (이 파일: 주간 질문 한도 P0)
 -- P0: 주간 질문 한도 (월~일, confirmed 만 소비) + usage RPC
 
 alter table public.question_threads drop constraint if exists question_threads_status_check;

@@ -19,6 +19,7 @@ import {
 } from "@/lib/home/mentorDashboardQueries";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsService";
+import { MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE } from "@/lib/mentor/mentorPayoutsConstants";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import {
@@ -157,7 +158,7 @@ function estimateInProgressRevenue(orders: Row[], disputeSet: ReadonlySet<string
       const v = row[k];
       const n = typeof v === "number" ? v : Number(v);
       if (Number.isFinite(n) && n > 0) {
-        sum += Math.floor(n * 0.8);
+        sum += Math.floor(n * (1 - MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE));
         break;
       }
     }

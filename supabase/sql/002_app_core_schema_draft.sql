@@ -1,3 +1,5 @@
+-- [번호 충돌] 접두 002 — 동일 번호: 002_p0_subscriptions_questions_draft.sql, 002_custom_request_orders_status.sql
+--   (이 파일: 인벤토리 초안 DRAFT. 적용 이력 불명 시 번호 변경 없이 참고용으로만 유지)
 -- ============================================================================
 -- DRAFT — Supabase SQL Editor에 바로 적용하지 마세요. 팀 검토·정합성 확인 후 적용.
 -- 001_initial_auth_profile.sql 의 public.users, mentor_profiles, verification_logs
