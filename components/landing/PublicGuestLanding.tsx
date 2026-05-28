@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, CreditCard, MessageCircle, Search, TrendingUp } from "lucide-react";
-import { FREE_QUESTION_POLICY_SHORT } from "@/lib/mentor/freeQuestionPolicy";
 import type { LandingPublicStats } from "@/lib/landing/landingPageQueries";
 import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 
@@ -11,12 +11,9 @@ function formatLandingStatCount(n: number | null): string {
 
 function buildStats(stats: LandingPublicStats) {
   return [
-    { value: formatLandingStatCount(stats.mentorCount), label: "전국 멘토" },
-    { value: formatLandingStatCount(stats.questionCount), label: "누적 질문" },
-    {
-      value: stats.satisfactionPercent != null ? `${stats.satisfactionPercent}%` : "—",
-      label: "학생 만족도",
-    },
+    { value: formatLandingStatCount(stats.mentorCount), label: "멘토(등록)" },
+    { value: formatLandingStatCount(stats.shortformCount), label: "숏폼 글" },
+    { value: formatLandingStatCount(stats.boardCount), label: "게시판 글" },
   ] as const;
 }
 
@@ -51,87 +48,60 @@ const STEPS = [
   { icon: TrendingUp, title: "성장하기", description: "누적 질문과 연결노트로 장기 성장해요" },
 ] as const;
 
-function QuestionRoomMockup() {
-  return (
-    <div
-      className="relative mx-auto w-full max-w-md rounded-2xl border border-white/10 bg-white/95 p-4 shadow-2xl shadow-black/20 backdrop-blur sm:p-5"
-      aria-hidden
-    >
-      <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-full bg-slate-200" />
-          <div>
-            <p className="text-[11px] font-black text-slate-900">김멘토</p>
-            <p className="text-[9px] font-medium text-slate-500">서울대 · 수학과</p>
-          </div>
-        </div>
-        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">온라인</span>
-      </div>
-      <div className="space-y-2">
-        <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-          <p className="text-[10px] font-black text-[#1A56DB]">질문 2</p>
-          <p className="mt-1 text-[11px] font-bold text-slate-800">미적분 극한 문제 풀이</p>
-          <span className="mt-2 inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[8px] font-bold text-amber-800">
-            답변대기
-          </span>
-        </div>
-        <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#1A56DB] px-3 py-2 text-[10px] font-medium text-white">
-          멘토님, 이 풀이 과정에서 막혔어요!
-        </div>
-        <div className="max-w-[85%] rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-3 py-2 text-[10px] text-slate-700">
-          극한 정의를 먼저 적어 보면 좋아요.
-        </div>
-      </div>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-        {["연결노트", "단원 정리", "오답 노트"].map((t) => (
-          <span
-            key={t}
-            className="shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-600"
-          >
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
 export function PublicGuestLanding(props: { stats: LandingPublicStats }) {
   const STATS = buildStats(props.stats);
   return (
     <div className="w-full">
       {/* Section 1 — Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1A56DB] to-[#0F172A] text-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.12),transparent_50%)]" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-8 lg:py-24">
+      <section className="bg-white">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 sm:py-18 lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-8 lg:py-24">
           <div className="min-w-0 text-center lg:text-left">
-            <h1 className="whitespace-pre-line text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:text-[44px] lg:leading-[1.15]">
-              {"대학생 멘토와 함께\n질문을 누적하며 성장하세요"}
+            <p className="text-xs font-semibold tracking-wide text-slate-500 sm:text-sm">
+              검증된 대학생 멘토와 1:1로 연결되어
+            </p>
+            <h1 className="mt-3 text-4xl font-black leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-[56px] lg:leading-[1.1]">
+              공부는 혼자,
+              <br />
+              <span className="text-[#1A56DB]">성장은 함께</span>
             </h1>
-            <p className="mt-5 whitespace-pre-line text-sm font-medium leading-relaxed text-blue-100/90 sm:text-base">
-              {
-                "같은 멘토에게 질문을 쌓고, 연결노트로 장기 학습 관리를 받는\n구독형 질문 멘토링 플랫폼"
-              }
+            <p className="mt-5 whitespace-pre-line text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+              {"검증된 대학생 멘토와 1:1로 연결되어\n질문하고, 배우고, 함께 성장하세요."}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <Link
                 href="/mentors"
-                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#1A56DB] px-6 text-sm font-extrabold text-white shadow-lg ring-2 ring-white/25 transition hover:bg-[#1648c0]"
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#1A56DB] px-6 text-sm font-extrabold text-white shadow-lg transition hover:bg-[#1648c0]"
               >
                 멘토 찾기
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex min-h-[48px] items-center justify-center rounded-xl border-2 border-white bg-transparent px-6 text-sm font-extrabold text-white transition hover:bg-white/10"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-[#1A56DB] bg-transparent px-6 text-sm font-extrabold text-[#1A56DB] transition hover:bg-blue-50"
               >
-                무료로 시작하기
+                무료 체험 시작하기
               </Link>
             </div>
           </div>
           <div className="flex justify-center lg:justify-end">
-            <QuestionRoomMockup />
+            <div className="relative w-full max-w-[560px]">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-xl">
+                <Image
+                  src="/landing/hero-student-mentoring.png"
+                  alt="학생이 공부하며 멘토링을 받는 모습"
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 560px"
+                />
+              </div>
+              <div className="absolute right-3 top-3 rounded-2xl border border-[#1A56DB]/40 bg-white/95 px-4 py-3 shadow-lg backdrop-blur sm:right-5 sm:top-5">
+                <p className="text-xs font-bold text-slate-800 sm:text-sm">🔵 새 답변 도착!</p>
+              </div>
+              <div className="absolute bottom-3 left-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-lg sm:bottom-5 sm:left-5">
+                <p className="text-xs font-bold text-slate-800 sm:text-sm">📄 학습 노트 업데이트</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -259,16 +229,33 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats }) {
 
       {/* Section 6 — CTA */}
       <section className="bg-[#1A56DB] py-14 sm:py-16">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <h2 className="text-2xl font-black text-white sm:text-3xl">지금 시작해 보세요</h2>
-          <p className="mt-3 text-sm font-medium text-blue-100">{FREE_QUESTION_POLICY_SHORT}</p>
-          <Link
-            href="/mentors"
-            className="mt-8 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-extrabold text-[#1A56DB] shadow-lg transition hover:bg-blue-50"
-          >
-            멘토 찾기
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div>
+            <h2 className="text-2xl font-black text-white sm:text-3xl">회원가입하면 무료 질문권 15개 지급!</h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-blue-100 sm:text-base">
+              <span className="block">한 멘토에게는 최대 3개까지 사용 가능</span>
+              <span className="block">무료 질문권은 가입 후 7일 후에 소멸됩니다</span>
+            </p>
+          </div>
+          <div className="w-full rounded-2xl bg-white/10 p-5 backdrop-blur-sm lg:w-auto lg:min-w-[440px]">
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-white">
+                🎁 무료 질문권 15개 지급 <span className="text-blue-100">— 가입 즉시 제공</span>
+              </p>
+              <p className="text-sm font-semibold text-white">
+                💬 한 멘토당 최대 3개 <span className="text-blue-100">— 여러 멘토에게 나눠 사용 가능</span>
+              </p>
+              <p className="text-sm font-semibold text-white">
+                ⏰ 7일 이내 사용 <span className="text-blue-100">— 가입 7일 후 미사용 질문권 소멸</span>
+              </p>
+            </div>
+            <Link
+              href="/signup"
+              className="mt-5 inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-white px-8 text-sm font-extrabold text-[#1A56DB] shadow-lg transition hover:bg-blue-50"
+            >
+              무료로 시작하기
+            </Link>
+          </div>
         </div>
       </section>
     </div>

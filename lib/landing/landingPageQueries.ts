@@ -32,37 +32,27 @@ export type TrustMetric = {
 
 export type LandingPublicStats = {
   mentorCount: number | null;
-  questionCount: number | null;
-  satisfactionPercent: number | null;
+  shortformCount: number | null;
+  boardCount: number | null;
   mentorProbe: string;
-  questionProbe: string;
-  satisfactionProbe: string;
+  shortformProbe: string;
+  boardProbe: string;
 };
 
 async function fetchLandingPublicStats(supabase: SupabaseClient): Promise<LandingPublicStats> {
-  const [mentors, questions, reviews] = await Promise.all([
+  const [mentors, shortforms, boards] = await Promise.all([
     supabase.from("mentor_profiles").select("*", { count: "exact", head: true }),
-    supabase.from("question_threads").select("*", { count: "exact", head: true }),
-    supabase.from("reviews").select("rating").limit(500),
+    supabase.from("shortform_posts").select("*", { count: "exact", head: true }),
+    supabase.from("community_posts").select("*", { count: "exact", head: true }),
   ]);
-
-  let satisfactionPercent: number | null = null;
-  if (!reviews.error && reviews.data?.length) {
-    const ratings = (reviews.data as { rating?: number }[])
-      .map((r) => r.rating)
-      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
-    if (ratings.length) {
-      satisfactionPercent = Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length / 5) * 100);
-    }
-  }
 
   return {
     mentorCount: mentors.error ? null : mentors.count,
-    questionCount: questions.error ? null : questions.count,
-    satisfactionPercent,
+    shortformCount: shortforms.error ? null : shortforms.count,
+    boardCount: boards.error ? null : boards.count,
     mentorProbe: mentors.error ? mentors.error.message : "mentor_profiles count",
-    questionProbe: questions.error ? questions.error.message : "question_threads count",
-    satisfactionProbe: reviews.error ? reviews.error.message : `reviews avg (${reviews.data?.length ?? 0} rows)`,
+    shortformProbe: shortforms.error ? shortforms.error.message : "shortform_posts count",
+    boardProbe: boards.error ? boards.error.message : "community_posts count",
   };
 }
 
