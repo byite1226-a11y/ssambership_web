@@ -4,14 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { PlanComparisonCards } from "@/components/subscribe/PlanComparisonCards";
 import type { PlansByTier, SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
-import { FREE_QUESTION_POLICY_SHORT } from "@/lib/mentor/freeQuestionPolicy";
 
 const BENEFITS = [
   "연결노트 제공 — 내 공부 흐름을 한눈에 정리",
   "1:1 맞춤 답변 — 전공 멘토의 상세한 답변",
   "구독 해지 후에도 이전 질문·답변 전체 열람 가능",
-  "우선 답변 혜택 — 일반 질문보다 빠른 답변 제공",
-  "멘토 자료 제공 — 핵심 요약 노트 및 자료 제공",
 ] as const;
 
 export function MentorDetailSubscribeSidebar(props: {
@@ -83,9 +80,6 @@ export function MentorDetailSubscribeSidebar(props: {
           </ul>
         </div>
 
-        <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-[10px] font-semibold leading-relaxed text-amber-950">
-          {FREE_QUESTION_POLICY_SHORT}
-        </p>
         <p className="mt-2 text-[10px] font-medium text-slate-500">
           추가 질문은 구독을 통해서 이용할 수 있습니다.
         </p>
