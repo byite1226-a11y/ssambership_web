@@ -84,7 +84,7 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats }) {
             </div>
           </div>
           <div className="flex justify-center lg:justify-end">
-            <div className="relative w-full max-w-[560px]">
+            <div className="relative w-full max-w-[660px]">
               <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-xl">
                 <Image
                   src="/landing/hero-student-mentoring.png"
@@ -92,14 +92,17 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats }) {
                   fill
                   priority
                   className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 560px"
+                  sizes="(max-width: 1024px) 100vw, 660px"
                 />
               </div>
-              <div className="absolute right-3 top-3 rounded-2xl border border-[#1A56DB]/40 bg-white/95 px-4 py-3 shadow-lg backdrop-blur sm:right-5 sm:top-5">
+              <div className="animate-float absolute right-2 top-2 rounded-2xl border border-[#1A56DB]/40 bg-white/95 px-4 py-3 shadow-lg backdrop-blur sm:right-6 sm:top-5">
                 <p className="text-xs font-bold text-slate-800 sm:text-sm">🔵 새 답변 도착!</p>
               </div>
-              <div className="absolute bottom-3 left-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-lg sm:bottom-5 sm:left-5">
+              <div className="animate-float-slow absolute bottom-3 left-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-lg sm:bottom-6 sm:left-6">
                 <p className="text-xs font-bold text-slate-800 sm:text-sm">📄 학습 노트 업데이트</p>
+              </div>
+              <div className="animate-float-mid absolute bottom-[40%] left-2 rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-lg sm:bottom-[36%] sm:left-8">
+                <p className="text-xs font-bold text-slate-800 sm:text-sm">✅ 멘토 연결 완료</p>
               </div>
             </div>
           </div>
