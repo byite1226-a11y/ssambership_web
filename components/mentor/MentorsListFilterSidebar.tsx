@@ -18,16 +18,6 @@ export function MentorsListFilterSidebar(props: {
   idPrefix?: string;
 }) {
   const id = props.idPrefix ?? "mentors";
-  const [customMin, setCustomMin] = useState(
-    props.filters.priceBand === "custom" && props.filters.priceMin != null
-      ? String(props.filters.priceMin)
-      : "",
-  );
-  const [customMax, setCustomMax] = useState(
-    props.filters.priceBand === "custom" && props.filters.priceMax != null
-      ? String(props.filters.priceMax)
-      : "",
-  );
   const [extraSort, setExtraSort] = useState(
     props.filters.sort === "rating" || props.filters.sort === "response" ? props.filters.sort : "",
   );
@@ -157,32 +147,6 @@ export function MentorsListFilterSidebar(props: {
                     {o.label}
                   </label>
                 ))}
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="text-[10px] font-bold text-slate-500">
-                  최소(캐시)
-                  <input
-                    name="priceMin"
-                    type="number"
-                    min={0}
-                    step={1000}
-                    defaultValue={customMin}
-                    onChange={(e) => setCustomMin(e.target.value)}
-                    className="mt-1 w-full rounded-lg border px-2 py-1.5 text-xs"
-                  />
-                </label>
-                <label className="text-[10px] font-bold text-slate-500">
-                  최대(캐시)
-                  <input
-                    name="priceMax"
-                    type="number"
-                    min={0}
-                    step={1000}
-                    defaultValue={customMax}
-                    onChange={(e) => setCustomMax(e.target.value)}
-                    className="mt-1 w-full rounded-lg border px-2 py-1.5 text-xs"
-                  />
-                </label>
               </div>
             </div>
           </fieldset>

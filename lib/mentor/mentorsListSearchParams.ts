@@ -28,7 +28,7 @@ export type MentorTypeFilter =
   | "문과대"
   | "SKY";
 
-export type MentorPriceBandFilter = "30to50" | "50to100" | "over100" | "custom";
+export type MentorPriceBandFilter = "3to5" | "5to10" | "10to20" | "over20";
 
 export type MentorSchoolFilter = "" | "서울대" | "연대" | "고대" | "기타";
 
@@ -42,8 +42,6 @@ export type MentorsListFilters = {
   grades: MentorGradeFilter[];
   mentorTypes: MentorTypeFilter[];
   priceBand: MentorPriceBandFilter | null;
-  priceMin: number | null;
-  priceMax: number | null;
   sort: MentorsListSort;
   view: MentorsListView;
   page: number;
@@ -62,8 +60,6 @@ export function defaultMentorsListFilters(overrides?: Partial<MentorsListFilters
     grades: [],
     mentorTypes: [],
     priceBand: null,
-    priceMin: null,
-    priceMax: null,
     sort: "popular",
     view: "list",
     page: 1,
@@ -102,10 +98,10 @@ export const MENTOR_PRICE_BAND_OPTIONS: {
   min: number | null;
   max: number | null;
 }[] = [
-  { id: "30to50", label: "3~5만원", min: 30_000, max: 50_000 },
-  { id: "50to100", label: "5~10만원", min: 50_000, max: 100_000 },
-  { id: "over100", label: "10만원 이상", min: 100_000, max: null },
-  { id: "custom", label: "직접 입력", min: null, max: null },
+  { id: "3to5", label: "3~5만", min: 55_000, max: 99_999 },
+  { id: "5to10", label: "5~10만", min: 100_000, max: 149_999 },
+  { id: "10to20", label: "10~20만", min: 150_000, max: 249_999 },
+  { id: "over20", label: "20만 이상", min: 249_900, max: null },
 ];
 
 export const MENTOR_SCHOOL_OPTIONS: { id: MentorSchoolFilter; label: string }[] = [
@@ -156,11 +152,10 @@ function parseListParam(v: string, allowed: readonly string[]): string[] {
     .filter((s) => allowed.includes(s));
 }
 
-function pickPriceBand(v: string, priceMin: number | null, priceMax: number | null): MentorPriceBandFilter | null {
+function pickPriceBand(v: string): MentorPriceBandFilter | null {
   if (v && MENTOR_PRICE_BAND_OPTIONS.some((o) => o.id === v)) {
     return v as MentorPriceBandFilter;
   }
-  if (priceMin != null || priceMax != null) return "custom";
   return null;
 }
 
@@ -179,19 +174,7 @@ export function parseMentorsListFilters(sp: Record<string, string | string[] | u
 
   const school = pickSchool(one("school") || one("university"));
   const verifiedOnly = one("verified") === "1" || one("verification") === "verified";
-  const priceMin = parseIntParam(one("priceMin"));
-  const priceMax = parseIntParam(one("priceMax"));
-  const priceBand = pickPriceBand(one("priceBand"), priceMin, priceMax);
-
-  let resolvedMin = priceMin;
-  let resolvedMax = priceMax;
-  if (priceBand && priceBand !== "custom") {
-    const band = MENTOR_PRICE_BAND_OPTIONS.find((b) => b.id === priceBand);
-    if (band) {
-      resolvedMin = band.min;
-      resolvedMax = band.max;
-    }
-  }
+  const priceBand = pickPriceBand(one("priceBand"));
 
   const viewRaw = one("view");
   const view: MentorsListView = viewRaw === "grid" ? "grid" : "list";
@@ -206,8 +189,6 @@ export function parseMentorsListFilters(sp: Record<string, string | string[] | u
     grades: parseListParam(many(sp, "grades"), MENTOR_GRADE_OPTIONS.map((g) => g.id)) as MentorGradeFilter[],
     mentorTypes: parseListParam(many(sp, "mentorTypes"), MENTOR_TYPE_OPTIONS.map((t) => t.id)) as MentorTypeFilter[],
     priceBand,
-    priceMin: resolvedMin,
-    priceMax: resolvedMax,
     sort: pickSort(one("sort")),
     view,
     page: Math.max(1, parseIntParam(one("page")) ?? 1),
@@ -245,8 +226,6 @@ export function filtersToHrefRecord(f: MentorsListFilters): Record<string, strin
   if (f.grades.length) o.grades = f.grades.join(",");
   if (f.mentorTypes.length) o.mentorTypes = f.mentorTypes.join(",");
   if (f.priceBand) o.priceBand = f.priceBand;
-  if (f.priceMin != null) o.priceMin = String(f.priceMin);
-  if (f.priceMax != null) o.priceMax = String(f.priceMax);
   if (f.sort && f.sort !== "popular") o.sort = f.sort;
   if (f.view === "grid") o.view = "grid";
   if (f.page > 1) o.page = String(f.page);

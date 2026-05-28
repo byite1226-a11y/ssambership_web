@@ -310,10 +310,13 @@ function cardMatchesFilters(f: MentorsListFilters, card: MentorPublicListCard): 
   if (!gradeMatchesFilter(f.grades, blob)) return false;
   if (!mentorTypeMatchesFilter(f.mentorTypes, blob)) return false;
 
-  const priceMin = f.priceMin != null && f.priceMin > 0 ? f.priceMin : null;
-  const priceMax = f.priceMax != null && f.priceMax < 500_000 ? f.priceMax : null;
-  if (priceMin != null && card.minPriceKrw != null && card.minPriceKrw < priceMin) return false;
-  if (priceMax != null && card.minPriceKrw != null && card.minPriceKrw > priceMax) return false;
+  const price = card.minPriceKrw;
+  if (f.priceBand && price != null) {
+    if (f.priceBand === "3to5" && !(price >= 55_000 && price < 100_000)) return false;
+    if (f.priceBand === "5to10" && !(price >= 100_000 && price < 150_000)) return false;
+    if (f.priceBand === "10to20" && !(price >= 150_000 && price < 250_000)) return false;
+    if (f.priceBand === "over20" && !(price >= 249_900)) return false;
+  }
   return true;
 }
 

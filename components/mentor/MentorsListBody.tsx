@@ -21,9 +21,7 @@ function mentorsListFiltersApplied(filters: MentorsListFilters): boolean {
       filters.verifiedOnly ||
       filters.grades.length > 0 ||
       filters.mentorTypes.length > 0 ||
-      filters.priceBand ||
-      filters.priceMin != null ||
-      filters.priceMax != null
+      filters.priceBand
   );
 }
 

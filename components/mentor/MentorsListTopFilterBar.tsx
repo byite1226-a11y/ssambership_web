@@ -34,12 +34,6 @@ export function MentorsListTopFilterBar(props: {
               <input type="hidden" name="mentorTypes" value={props.filters.mentorTypes.join(",")} />
             ) : null}
             {props.filters.priceBand ? <input type="hidden" name="priceBand" value={props.filters.priceBand} /> : null}
-            {props.filters.priceMin != null ? (
-              <input type="hidden" name="priceMin" value={props.filters.priceMin} />
-            ) : null}
-            {props.filters.priceMax != null ? (
-              <input type="hidden" name="priceMax" value={props.filters.priceMax} />
-            ) : null}
             {props.filters.subject ? <input type="hidden" name="subject" value={props.filters.subject} /> : null}
             <input
               type="search"
