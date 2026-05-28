@@ -16,11 +16,9 @@ export type MentorSubjectFilter =
   | "국어"
   | "과학"
   | "사회"
-  | "논술"
-  | "코딩"
-  | "기타";
+  | "논술";
 
-export type MentorGradeFilter = "중등" | "고등" | "N수" | "공통";
+export type MentorGradeFilter = "중등" | "고등" | "N수";
 
 export type MentorTypeFilter =
   | "메디컬계열"
@@ -30,7 +28,7 @@ export type MentorTypeFilter =
   | "문과대"
   | "SKY";
 
-export type MentorPriceBandFilter = "under30" | "30to50" | "50to100" | "over100" | "custom";
+export type MentorPriceBandFilter = "30to50" | "50to100" | "over100" | "custom";
 
 export type MentorSchoolFilter = "" | "서울대" | "연대" | "고대" | "기타";
 
@@ -81,15 +79,12 @@ export const MENTOR_SUBJECT_OPTIONS: { id: MentorSubjectFilter; label: string }[
   { id: "과학", label: "과학" },
   { id: "사회", label: "사회" },
   { id: "논술", label: "논술" },
-  { id: "코딩", label: "코딩" },
-  { id: "기타", label: "기타" },
 ];
 
 export const MENTOR_GRADE_OPTIONS: { id: MentorGradeFilter; label: string }[] = [
   { id: "중등", label: "중등" },
   { id: "고등", label: "고등" },
   { id: "N수", label: "N수" },
-  { id: "공통", label: "공통" },
 ];
 
 export const MENTOR_TYPE_OPTIONS: { id: MentorTypeFilter; label: string }[] = [
@@ -107,7 +102,6 @@ export const MENTOR_PRICE_BAND_OPTIONS: {
   min: number | null;
   max: number | null;
 }[] = [
-  { id: "under30", label: "3만원 이하", min: null, max: 30_000 },
   { id: "30to50", label: "3~5만원", min: 30_000, max: 50_000 },
   { id: "50to100", label: "5~10만원", min: 50_000, max: 100_000 },
   { id: "over100", label: "10만원 이상", min: 100_000, max: null },
@@ -140,7 +134,7 @@ function pickSort(v: string | undefined): MentorsListSort {
 
 function pickSubject(v: string): MentorSubjectFilter {
   const found = MENTOR_SUBJECT_OPTIONS.find((o) => o.id === v);
-  return found ? found.id : v ? (v as MentorSubjectFilter) : "";
+  return found ? found.id : "";
 }
 
 function pickSchool(v: string): MentorSchoolFilter {

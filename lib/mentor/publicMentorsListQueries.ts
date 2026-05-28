@@ -269,10 +269,6 @@ function schoolMatchesPreset(school: string, university: string): boolean {
 function subjectMatchesPreset(subject: string, subjectsText: string): boolean {
   if (!subject) return true;
   const blob = subjectsText.toLowerCase();
-  if (subject === "기타") {
-    const presets = ["수학", "영어", "국어", "과학", "사회", "논술", "코딩"];
-    return !presets.some((p) => blob.includes(p));
-  }
   return blob.includes(subject.toLowerCase());
 }
 
@@ -282,7 +278,6 @@ function gradeMatchesFilter(grades: MentorGradeFilter[], blob: string): boolean 
     if (g === "중등") return /중등|중학|중1|중2|중3/.test(blob);
     if (g === "고등") return /고등|고1|고2|고3|내신|수능/.test(blob);
     if (g === "N수") return /n수|재수|검정/.test(blob);
-    if (g === "공통") return /공통|전학년|전 과목/.test(blob);
     return false;
   });
 }
