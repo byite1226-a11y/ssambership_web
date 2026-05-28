@@ -1,8 +1,9 @@
 import Link from "next/link";
-import type { CommunityHashtagRow } from "@/lib/community/communityBoardQueries";
 import type { CommunityNavActive } from "@/components/community/CommunityNavTypes";
 
 const PRIMARY = "#1A56DB";
+
+const DEFAULT_HASHTAGS = ["학습루틴", "면접", "포트폴리오", "자격증", "취업"] as const;
 
 function NavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
@@ -19,12 +20,8 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
   );
 }
 
-export function CommunityLeftSidebar(props: {
-  active: CommunityNavActive;
-  hashtags?: CommunityHashtagRow[];
-}) {
+export function CommunityLeftSidebar(props: { active: CommunityNavActive }) {
   const a = props.active;
-  const tags = props.hashtags ?? [];
 
   return (
     <aside className="w-full space-y-4 lg:w-[200px]" aria-label="커뮤니티 메뉴">
@@ -33,19 +30,21 @@ export function CommunityLeftSidebar(props: {
         <NavLink href="/community/shortform" label="숏폼" active={a === "shortform"} />
         <NavLink href="/community/board" label="게시판" active={a === "board"} />
         <NavLink href="/community/me" label="내 활동" active={a === "me"} />
+        <NavLink href="/community/me?tab=posts" label="내 게시글" active={a === "my-posts"} />
+        <NavLink href="/community/me?tab=scraps" label="스크랩" active={a === "scraps"} />
+        <NavLink href="/community/me?tab=follows" label="팔로우" active={a === "follows"} />
       </nav>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="text-xs font-extrabold uppercase tracking-wide text-slate-400">인기 해시태그</h3>
-        <ul className="mt-2 space-y-2">
-          {tags.map((t) => (
-            <li key={t.tag}>
+        <ul className="mt-2 flex flex-wrap gap-2">
+          {DEFAULT_HASHTAGS.map((tag) => (
+            <li key={tag}>
               <Link
-                href={`/community?tag=${encodeURIComponent(t.tag)}`}
-                className="flex justify-between text-xs font-semibold text-slate-700 hover:text-[#1A56DB]"
+                href={`/community/board?tag=${encodeURIComponent(tag)}`}
+                className="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-blue-50 hover:text-[#1A56DB]"
               >
-                <span>#{t.tag}</span>
-                <span className="text-slate-400">{t.count.toLocaleString("ko-KR")}</span>
+                #{tag}
               </Link>
             </li>
           ))}

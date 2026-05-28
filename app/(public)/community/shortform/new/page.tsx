@@ -3,8 +3,7 @@ import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShel
 import { CommunityShortformUploadForm } from "@/components/community/CommunityShortformUploadForm";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
-import { listPopularHashtags } from "@/lib/community/communityBoardQueries";
-import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
+import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -18,20 +17,10 @@ export default async function CommunityShortformNewPage(props: Props) {
   const draftSaved = sp.draft === "1";
 
   const supabase = await createClient();
-  const [tags, mentors, sidebarStats] = await Promise.all([
-    listPopularHashtags(supabase, 6),
-    loadCommunityPopularMentors(supabase),
-    communitySidebarStatsForUser(supabase, user.id),
-  ]);
+  const weeklyMentor = await loadCommunityWeeklyTopMentor(supabase);
 
   return (
-    <CommunityLayoutShell
-      activeNav="shortform"
-      rightAsidePromo="shortform"
-      sidebarStats={sidebarStats}
-      hashtags={tags.rows}
-      popularMentors={mentors}
-    >
+    <CommunityLayoutShell activeNav="shortform" weeklyTopMentor={weeklyMentor}>
       <CommunityShortformUploadForm errorCode={errorCode} draftSaved={draftSaved} />
     </CommunityLayoutShell>
   );

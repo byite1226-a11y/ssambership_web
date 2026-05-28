@@ -3,8 +3,7 @@ import { CommunityComposeForm } from "@/components/community/CommunityComposeFor
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
-import { listPopularHashtags } from "@/lib/community/communityBoardQueries";
-import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
+import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -19,20 +18,10 @@ export default async function CommunityNewPage(props: Props) {
   const draftSaved = sp.draft === "1";
 
   const supabase = await createClient();
-  const [tags, mentors, sidebarStats] = await Promise.all([
-    listPopularHashtags(supabase, 6),
-    loadCommunityPopularMentors(supabase),
-    communitySidebarStatsForUser(supabase, user.id),
-  ]);
+  const weeklyMentor = await loadCommunityWeeklyTopMentor(supabase);
 
   return (
-    <CommunityLayoutShell
-      activeNav="none"
-      rightAsidePromo="board"
-      sidebarStats={sidebarStats}
-      hashtags={tags.rows}
-      popularMentors={mentors}
-    >
+    <CommunityLayoutShell activeNav="none" weeklyTopMentor={weeklyMentor}>
       <header className="mb-2">
         <h1 className="text-xl font-black text-slate-900">{"\uC0C8 \uAE00 \uC791\uC131"}</h1>
         <p className="mt-1 text-sm text-slate-600">{"\uAC8C\uC2DC\uAE00 \uB610\uB294 숏폼\uC744 \uC62C\uB824 \uACF5\uC720\uD574 \uBCF4\uC138\uC694."}</p>

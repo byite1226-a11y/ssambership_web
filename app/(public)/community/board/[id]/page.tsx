@@ -6,11 +6,10 @@ import {
   getCommunityBoardPost,
   getPostReactionFlags,
   loadBoardComments,
-  listPopularHashtags,
 } from "@/lib/community/communityBoardQueries";
 import { isCommunityPostUuid } from "@/lib/community/communityQueries";
 import { incrementPostView } from "@/lib/community/communityBoardMutations";
-import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
+import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -52,20 +51,10 @@ export default async function CommunityBoardDetailPage(props: Props) {
 
   const reactions = post ? await getPostReactionFlags(supabase, id, user?.id ?? null) : { liked: false, scrapped: false };
 
-  const [tags, mentors, sidebarStats] = await Promise.all([
-    listPopularHashtags(supabase, 6),
-    loadCommunityPopularMentors(supabase),
-    communitySidebarStatsForUser(supabase, user?.id ?? null),
-  ]);
+  const weeklyMentor = await loadCommunityWeeklyTopMentor(supabase);
 
   return (
-    <CommunityLayoutShell
-      activeNav="board"
-      rightAsidePromo="board"
-      sidebarStats={sidebarStats}
-      hashtags={tags.rows}
-      popularMentors={mentors}
-    >
+    <CommunityLayoutShell activeNav="board" weeklyTopMentor={weeklyMentor}>
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         {loadError ? <p className="text-sm font-semibold text-red-800">{loadError}</p> : null}
         {missing ? (

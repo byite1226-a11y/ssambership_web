@@ -25,6 +25,14 @@ export async function loadCommunityPopularMentors(
   }));
 }
 
+/** 우측 사이드바 주간 인기 멘토 — 상위 1명 */
+export async function loadCommunityWeeklyTopMentor(
+  supabase: SupabaseClient
+): Promise<CommunityPopularMentor | null> {
+  const mentors = await loadCommunityPopularMentors(supabase);
+  return mentors[0] ?? null;
+}
+
 export async function communitySidebarStatsForUser(
   supabase: SupabaseClient,
   userId: string | null

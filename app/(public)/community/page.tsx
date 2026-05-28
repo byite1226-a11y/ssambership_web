@@ -1,55 +1,44 @@
-import { Suspense } from "react";
-import { CommunityHomeFeed } from "@/components/community/CommunityHomeFeed";
+import { CommunityHomeSections } from "@/components/community/CommunityHomeSections";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
-import type { CommunityPostCategorySlug } from "@/lib/community/communityBoardConstants";
-import { listCommunityBoardPosts, listPopularHashtags, listWeeklyPopularPosts } from "@/lib/community/communityBoardQueries";
-import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
+import { listCommunityBoardPosts, listBoardPostsThisWeek } from "@/lib/community/communityBoardQueries";
+import { listShortformFeed } from "@/lib/community/communityShortformQueries";
+import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 
-type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
-
-export default async function CommunityLandingPage(props: Props) {
-  const sp = (await props.searchParams) ?? {};
-  const catRaw = sp.category;
-  const category = (typeof catRaw === "string" ? catRaw : "all") as CommunityPostCategorySlug;
-
-  const { user } = await getServerUserWithProfile();
+export default async function CommunityLandingPage() {
+  const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
 
-  const [feed, tags, popular, mentors, sidebarStats] = await Promise.all([
-    listCommunityBoardPosts(supabase, { category, limit: 12 }),
-    listPopularHashtags(supabase, 6),
-    listWeeklyPopularPosts(supabase, 3),
-    loadCommunityPopularMentors(supabase),
-    communitySidebarStatsForUser(supabase, user?.id ?? null),
+  const [shortform, popular, weekly, weeklyMentor] = await Promise.all([
+    listShortformFeed(supabase, { limit: 5 }),
+    listCommunityBoardPosts(supabase, { limit: 5 }),
+    listBoardPostsThisWeek(supabase, 3),
+    loadCommunityWeeklyTopMentor(supabase),
   ]);
 
-  if (feed.error) console.error("[community] feed", feed.error);
+  if (shortform.error) console.error("[community] shortform", shortform.error);
+  if (popular.error) console.error("[community] popular posts", popular.error);
+  if (weekly.error) console.error("[community] weekly posts", weekly.error);
 
   return (
-    <CommunityLayoutShell
-      activeNav="home"
-      rightAsidePromo="home"
-      sidebarStats={sidebarStats}
-      hashtags={tags.rows}
-      popularPosts={popular.posts}
-      popularMentors={mentors}
-    >
+    <CommunityLayoutShell activeNav="home" weeklyTopMentor={weeklyMentor}>
       <header className="px-1 py-2">
         <h1 className="text-xl font-black text-slate-900">쌤버십 커뮤니티</h1>
         <p className="mt-1 text-sm leading-relaxed text-slate-700">
           학습법, 내신, 진로 이야기를 나누고 멘토와 연결해 보세요.
         </p>
       </header>
-      <Suspense fallback={<p className="text-sm text-slate-500">불러오는 중…</p>}>
-        <CommunityHomeFeed
-          initialPosts={feed.posts}
-          initialCursor={feed.nextCursor}
-          initialCategory={category}
-          basePath="/community"
-        />
-      </Suspense>
+      <CommunityHomeSections
+        shortforms={shortform.items}
+        shortformError={shortform.error}
+        popularPosts={popular.posts}
+        boardError={popular.error}
+        weeklyPosts={weekly.posts}
+        weeklyError={weekly.error}
+        viewerRole={profile?.role}
+        loggedIn={Boolean(user)}
+      />
     </CommunityLayoutShell>
   );
 }

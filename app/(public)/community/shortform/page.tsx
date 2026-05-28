@@ -1,38 +1,32 @@
 import Link from "next/link";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityShortformCategoryTabs } from "@/components/community/CommunityShortformCategoryTabs";
+import { CommunityShortformTabs, parseShortformTab } from "@/components/community/CommunityShortformTabs";
 import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { listShortformFeed } from "@/lib/community/communityShortformQueries";
 import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
-import { listPopularHashtags } from "@/lib/community/communityBoardQueries";
-import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
+import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function CommunityShortformPage(props: Props) {
   const sp = (await props.searchParams) ?? {};
   const category = (typeof sp.category === "string" ? sp.category : "all") as ShortformCategorySlug;
+  const sortTab = parseShortformTab(typeof sp.tab === "string" ? sp.tab : undefined);
   const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
-  const [{ items, error }, tags, mentors, sidebarStats] = await Promise.all([
+
+  const [{ items, error }, weeklyMentor] = await Promise.all([
     listShortformFeed(supabase, { category, limit: 48 }),
-    listPopularHashtags(supabase, 6),
-    loadCommunityPopularMentors(supabase),
-    communitySidebarStatsForUser(supabase, user?.id ?? null),
+    loadCommunityWeeklyTopMentor(supabase),
   ]);
 
   const isMentor = profile?.role === "mentor";
 
   return (
-    <CommunityLayoutShell
-      activeNav="shortform"
-      rightAsidePromo="shortform"
-      sidebarStats={sidebarStats}
-      hashtags={tags.rows}
-      popularMentors={mentors}
-    >
+    <CommunityLayoutShell activeNav="shortform" weeklyTopMentor={weeklyMentor}>
       <header className="flex flex-wrap items-center justify-between gap-3 px-1 py-2">
         <div>
           <h1 className="text-xl font-black text-slate-900">숏폼</h1>
@@ -48,6 +42,7 @@ export default async function CommunityShortformPage(props: Props) {
         ) : null}
       </header>
 
+      <CommunityShortformTabs active={sortTab} />
       <CommunityShortformCategoryTabs active={category} />
 
       {error ? (

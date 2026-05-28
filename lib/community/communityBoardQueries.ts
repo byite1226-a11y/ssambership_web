@@ -231,6 +231,31 @@ export async function listPopularHashtags(
   return { rows, error: null };
 }
 
+/** 이번 주(7일) 이내 게시글 — 최신순 */
+export async function listBoardPostsThisWeek(
+  supabase: SupabaseClient,
+  limit: number
+): Promise<{ posts: CommunityBoardPostCard[]; error: string | null }> {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  let q = supabase
+    .from("community_posts")
+    .select("*")
+    .gte("created_at", weekAgo)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  const { data, error } = await q;
+  if (error) {
+    if (/relation|does not exist|status/i.test(error.message)) {
+      const fb = await supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(limit);
+      if (fb.error) return { posts: [], error: fb.error.message };
+      return { posts: ((fb.data as Row[]) ?? []).map((r) => mapRowToBoardCard(r)), error: null };
+    }
+    return { posts: [], error: error.message };
+  }
+  return { posts: ((data as Row[]) ?? []).map((r) => mapRowToBoardCard(r)), error: null };
+}
+
 export async function listWeeklyPopularPosts(
   supabase: SupabaseClient,
   limit: number

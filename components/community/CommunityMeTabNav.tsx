@@ -2,11 +2,11 @@ import Link from "next/link";
 import type { CommunityMeTab } from "@/lib/community/communityMeTab";
 import { communityMePath } from "@/lib/community/communityMeTab";
 
-const TABS: { id: CommunityMeTab; label: string; subdued?: boolean }[] = [
+const TABS: { id: CommunityMeTab; label: string }[] = [
   { id: "overview", label: "전체" },
   { id: "posts", label: "내 게시글" },
-  { id: "scraps", label: "스크랩", subdued: true },
-  { id: "follows", label: "팔로우", subdued: true },
+  { id: "scraps", label: "스크랩" },
+  { id: "follows", label: "팔로우" },
 ];
 
 export function CommunityMeTabNav(props: { active: CommunityMeTab }) {
@@ -23,20 +23,16 @@ export function CommunityMeTabNav(props: { active: CommunityMeTab }) {
         {TABS.map((t) => {
           const on = props.active === t.id;
           const href = communityMePath(t.id);
-          const subdued = t.subdued;
           return (
             <Link
               key={t.id}
               href={href}
               scroll={false}
-              title={subdued ? "데이터 연결 준비 중 — 탭은 열 수 있어요" : undefined}
               className={[
                 "shrink-0 rounded-full px-4 py-2 text-sm font-extrabold transition",
                 on
                   ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-500/30"
-                  : subdued
-                    ? "border border-dashed border-slate-300/80 bg-white text-slate-500 shadow-sm hover:bg-slate-50"
-                    : "border border-slate-200/80 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50",
+                  : "border border-slate-200/80 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50",
               ].join(" ")}
               role="tab"
               aria-selected={on}

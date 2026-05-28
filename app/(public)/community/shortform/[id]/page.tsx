@@ -4,8 +4,7 @@ import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { isCommunityPostUuid, loadCommunityComments } from "@/lib/community/communityQueries";
 import { getShortformDetail, incrementShortformView } from "@/lib/community/communityShortformQueries";
-import { listPopularHashtags } from "@/lib/community/communityBoardQueries";
-import { communitySidebarStatsForUser, loadCommunityPopularMentors } from "@/lib/community/communitySidebarData";
+import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 import Link from "next/link";
 import { VideoOff } from "lucide-react";
 
@@ -30,20 +29,10 @@ export default async function CommunityShortformDetailPage(props: Props) {
 
   const { rows: comments } = item ? await loadCommunityComments(supabase, "shortform", id) : { rows: [] };
   const returnPath = `/community/shortform/${id}`;
-  const [tags, mentors, sidebarStats] = await Promise.all([
-    listPopularHashtags(supabase, 6),
-    loadCommunityPopularMentors(supabase),
-    communitySidebarStatsForUser(supabase, user?.id ?? null),
-  ]);
+  const weeklyMentor = await loadCommunityWeeklyTopMentor(supabase);
 
   return (
-    <CommunityLayoutShell
-      activeNav="shortform"
-      rightAsidePromo="shortform"
-      sidebarStats={sidebarStats}
-      hashtags={tags.rows}
-      popularMentors={mentors}
-    >
+    <CommunityLayoutShell activeNav="shortform" weeklyTopMentor={weeklyMentor}>
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         {loadError ? <p className="text-sm font-semibold text-red-800">{loadError}</p> : null}
         {!item && !loadError ? (
