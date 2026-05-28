@@ -69,7 +69,7 @@ export function MentorsListBody(props: {
       />
 
       <div className="mt-6 flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:items-start">
-        <aside className="hidden xl:col-span-2 xl:block xl:sticky xl:top-6 xl:self-start">
+        <aside className="hidden xl:col-span-2 xl:block">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-[14px] font-black text-slate-900">필터</h2>
             <div className="mt-3">
@@ -160,7 +160,7 @@ export function MentorsListBody(props: {
           )}
         </main>
 
-        <aside className="min-w-0 xl:col-span-3 xl:sticky xl:top-6 xl:self-start">
+        <aside className="min-w-0 xl:col-span-3">
           <MentorsListSidebar favoriteCards={favoriteCards} />
         </aside>
       </div>

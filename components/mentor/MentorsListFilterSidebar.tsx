@@ -31,6 +31,9 @@ export function MentorsListFilterSidebar(props: {
   const [extraSort, setExtraSort] = useState(
     props.filters.sort === "rating" || props.filters.sort === "response" ? props.filters.sort : "",
   );
+  const [subjectOpen, setSubjectOpen] = useState(true);
+  const [gradesOpen, setGradesOpen] = useState(true);
+  const [priceOpen, setPriceOpen] = useState(false);
 
   const sortValue = extraSort || (props.filters.sort !== "popular" ? props.filters.sort : "");
   const filterKey = JSON.stringify(filtersToHrefRecord(props.filters));
@@ -44,8 +47,21 @@ export function MentorsListFilterSidebar(props: {
           {sortValue ? <input type="hidden" name="sort" value={sortValue} /> : null}
 
           <fieldset>
-            <legend className="text-[12px] font-black text-slate-900">과목</legend>
-            <div className="mt-2 space-y-2">
+            <button
+              type="button"
+              onClick={() => setSubjectOpen((v) => !v)}
+              className="flex w-full items-center justify-between text-left"
+              aria-expanded={subjectOpen}
+            >
+              <span className="text-[12px] font-black text-slate-900">과목</span>
+              <span className="text-xs font-black text-slate-500">{subjectOpen ? "▲" : "▼"}</span>
+            </button>
+            <div
+              className={`mt-2 overflow-hidden transition-all duration-200 ease-in-out ${
+                subjectOpen ? "max-h-[420px] opacity-100" : "max-h-0 opacity-0"
+              }`}
+            >
+              <div className="space-y-2">
               <label className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700">
                 <input
                   type="radio"
@@ -71,12 +87,26 @@ export function MentorsListFilterSidebar(props: {
                   {o.label}
                 </label>
               ))}
+              </div>
             </div>
           </fieldset>
 
           <fieldset>
-            <legend className="text-[12px] font-black text-slate-900">대상 학년</legend>
-            <div className="mt-2 space-y-2">
+            <button
+              type="button"
+              onClick={() => setGradesOpen((v) => !v)}
+              className="flex w-full items-center justify-between text-left"
+              aria-expanded={gradesOpen}
+            >
+              <span className="text-[12px] font-black text-slate-900">대상 학년</span>
+              <span className="text-xs font-black text-slate-500">{gradesOpen ? "▲" : "▼"}</span>
+            </button>
+            <div
+              className={`mt-2 overflow-hidden transition-all duration-200 ease-in-out ${
+                gradesOpen ? "max-h-[420px] opacity-100" : "max-h-0 opacity-0"
+              }`}
+            >
+              <div className="space-y-2">
               {MENTOR_GRADE_OPTIONS.map((o) => (
                 <label
                   key={o.id}
@@ -92,29 +122,43 @@ export function MentorsListFilterSidebar(props: {
                   {o.label}
                 </label>
               ))}
+              </div>
             </div>
           </fieldset>
 
           <fieldset>
-            <legend className="text-[12px] font-black text-slate-900">구독 요금</legend>
-            <div className="mt-2 space-y-2">
-              {MENTOR_PRICE_BAND_OPTIONS.map((o) => (
-                <label
-                  key={o.id}
-                  className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700"
-                >
-                  <input
-                    type="radio"
-                    name="priceBand"
-                    value={o.id}
-                    defaultChecked={props.filters.priceBand === o.id}
-                    className="accent-[#1A56DB]"
-                  />
-                  {o.label}
-                </label>
-              ))}
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setPriceOpen((v) => !v)}
+              className="flex w-full items-center justify-between text-left"
+              aria-expanded={priceOpen}
+            >
+              <span className="text-[12px] font-black text-slate-900">구독 요금</span>
+              <span className="text-xs font-black text-slate-500">{priceOpen ? "▲" : "▼"}</span>
+            </button>
+            <div
+              className={`mt-2 overflow-hidden transition-all duration-200 ease-in-out ${
+                priceOpen ? "max-h-[560px] opacity-100" : "max-h-0 opacity-0"
+              }`}
+            >
+              <div className="space-y-2">
+                {MENTOR_PRICE_BAND_OPTIONS.map((o) => (
+                  <label
+                    key={o.id}
+                    className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700"
+                  >
+                    <input
+                      type="radio"
+                      name="priceBand"
+                      value={o.id}
+                      defaultChecked={props.filters.priceBand === o.id}
+                      className="accent-[#1A56DB]"
+                    />
+                    {o.label}
+                  </label>
+                ))}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 <label className="text-[10px] font-bold text-slate-500">
                   최소(캐시)
                   <input
@@ -140,6 +184,7 @@ export function MentorsListFilterSidebar(props: {
                   />
                 </label>
               </div>
+            </div>
           </fieldset>
 
           <fieldset>
@@ -203,7 +248,7 @@ export function MentorsListFilterSidebar(props: {
           </fieldset>
         </div>
 
-        <div className="sticky bottom-0 mt-4 space-y-2 border-t border-slate-100 bg-white pt-4">
+        <div className="mt-4 space-y-2 border-t border-slate-100 bg-white pt-4">
           <button
             type="submit"
             className="min-h-[44px] w-full whitespace-nowrap rounded-xl bg-[#1A56DB] px-4 text-sm font-extrabold text-white hover:bg-[#1648c0]"

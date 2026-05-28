@@ -65,17 +65,6 @@ export function MentorsListSidebar(props: {
           찜 보기 &gt;
         </Link>
       </div>
-
-      <div className="overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-600 to-indigo-700 p-5 text-white shadow-md">
-        <p className="text-[10px] font-extrabold uppercase tracking-wide text-white/80">이벤트</p>
-        <h3 className="mt-1 text-base font-black leading-snug">친구 초대하고 무제한 질문 이용권 받자!</h3>
-        <p className="mt-2 text-xs font-medium leading-relaxed text-violet-100">
-          친구가 가입하면 양쪽 모두 보너스 질문권을 드려요. (준비 중)
-        </p>
-        <span className="mt-4 inline-flex rounded-lg bg-white/20 px-3 py-1.5 text-[11px] font-bold">
-          곧 오픈
-        </span>
-      </div>
     </div>
   );
 }

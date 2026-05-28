@@ -8,7 +8,6 @@ import { MentorsListQuickLinks } from "@/components/mentor/MentorsListQuickLinks
 import type { MentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
 import {
   MENTOR_SORT_OPTIONS,
-  MENTOR_SUBJECT_OPTIONS,
   filtersToHrefRecord,
   mentorsListHref,
 } from "@/lib/mentor/mentorsListSearchParams";
@@ -65,24 +64,6 @@ export function MentorsListTopFilterBar(props: {
             </button>
           </form>
           <MentorsListQuickLinks favoriteCount={props.favoriteCount} />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {MENTOR_SUBJECT_OPTIONS.map((o) => {
-            const active = props.filters.subject === o.id;
-            const href = mentorsListHref(hrefBase, { subject: o.id || null, page: null });
-            return (
-              <Link
-                key={o.id || "all-subject"}
-                href={href}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-black transition ${
-                  active ? "bg-[#1A56DB] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {o.label}
-              </Link>
-            );
-          })}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
