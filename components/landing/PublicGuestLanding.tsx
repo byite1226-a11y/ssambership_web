@@ -240,7 +240,7 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats }) {
               <span className="block">무료 질문권은 가입 후 7일 후에 소멸됩니다</span>
             </p>
           </div>
-          <div className="w-full rounded-2xl bg-white/10 p-5 backdrop-blur-sm lg:w-auto lg:min-w-[440px]">
+          <div className="w-full rounded-2xl border border-blue-300/50 bg-sky-400/25 p-5 backdrop-blur-sm lg:w-auto lg:min-w-[440px]">
             <div className="space-y-3">
               <p className="text-sm font-semibold text-white">
                 🎁 무료 질문권 15개 지급 <span className="text-blue-100">— 가입 즉시 제공</span>
