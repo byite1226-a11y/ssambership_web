@@ -213,8 +213,8 @@ export function RoleLoginForm({
         <input
           id={emailId}
           type="email"
-          name="email"
-          autoComplete="email"
+          name={`${role}-email`}
+          autoComplete={`${role} email`}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -230,8 +230,8 @@ export function RoleLoginForm({
         <input
           id={passwordId}
           type="password"
-          name="password"
-          autoComplete="current-password"
+          name={`${role}-password`}
+          autoComplete={`${role} current-password`}
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
