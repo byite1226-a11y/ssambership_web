@@ -1,16 +1,6 @@
 import Link from "next/link";
-import {
-  CircleDollarSign,
-  ClipboardList,
-  FileText,
-  HelpCircle,
-  Inbox,
-  Star,
-  UserCog,
-  Users,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
+import { Inbox, Star, UserCog, Users } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { loadMentorHubDashboardData } from "@/lib/mentor/dashboard/mentorHubDashboardQueries";
@@ -24,6 +14,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const PRIMARY = "#1A56DB";
+const MONTHS_BACK = 3;
 
 const SAFE_KPI_FALLBACK: MentorHubDashboardData["kpis"] = {
   newQuestions: 0,
@@ -36,6 +27,7 @@ const SAFE_KPI_FALLBACK: MentorHubDashboardData["kpis"] = {
   reviewCount: 0,
 };
 
+type MonthlyBar = { key: string; label: string; amount: number; isCurrent: boolean };
 type VerificationToken = { label: string; tone: "ok" | "pending" | "none" };
 
 function verificationLabel(status: string | null): VerificationToken {
@@ -51,10 +43,60 @@ function initialOf(name: string): string {
   return t ? t.charAt(0).toUpperCase() : "M";
 }
 
+function monthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** 최근 MONTHS_BACK개월 정산 합계(맞춤의뢰 mentor_amount). 실패 시 0 배열. */
+async function loadRecentMonthlyEarnings(
+  supabase: SupabaseClient,
+  mentorId: string,
+): Promise<MonthlyBar[]> {
+  const now = new Date();
+  const buckets = new Map<string, number>();
+  for (let i = MONTHS_BACK - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    buckets.set(monthKey(d), 0);
+  }
+  const start = new Date(now.getFullYear(), now.getMonth() - (MONTHS_BACK - 1), 1);
+
+  try {
+    const { data, error } = await supabase
+      .from("custom_order_settlement_items")
+      .select("created_at, mentor_amount")
+      .eq("mentor_id", mentorId)
+      .gte("created_at", start.toISOString());
+    if (!error && Array.isArray(data)) {
+      for (const row of data as Array<{ created_at?: unknown; mentor_amount?: unknown }>) {
+        const at = row.created_at;
+        if (typeof at !== "string") continue;
+        const d = new Date(at);
+        if (Number.isNaN(d.getTime())) continue;
+        const key = monthKey(d);
+        if (!buckets.has(key)) continue;
+        const amt = typeof row.mentor_amount === "number" ? row.mentor_amount : Number(row.mentor_amount ?? 0);
+        if (Number.isFinite(amt) && amt > 0) {
+          buckets.set(key, (buckets.get(key) ?? 0) + amt);
+        }
+      }
+    }
+  } catch {
+    /* 빈 차트로 폴백 */
+  }
+
+  const currentKey = monthKey(now);
+  return Array.from(buckets.entries()).map(([key, amount]) => ({
+    key,
+    label: `${parseInt(key.slice(5), 10)}월`,
+    amount,
+    isCurrent: key === currentKey,
+  }));
+}
+
 /**
- * 멘토 마이페이지 = 통합 홈(이전 `/mentor/dashboard` 흡수).
- * UX 원칙: 프로필·KPI·진행 의뢰·빠른 이동·수익을 한 페이지에서 한눈에.
- * 모든 DB 영역은 try/catch + 안전한 fallback이라 깨지지 않음.
+ * 멘토 마이페이지 — 단순화된 정보 구조.
+ * 섹션: 프로필 / 수익 하이라이트(차트) / 핵심 KPI 2 / 진행 의뢰 / 프로필 CTA.
+ * 빠른 이동은 상단 네비와 중복이라 제거.
  */
 export default async function MentorMypagePage() {
   const { user, profile } = await requireRole("mentor");
@@ -79,23 +121,21 @@ export default async function MentorMypagePage() {
       verificationStatus = typeof v === "string" ? v : null;
     }
   } catch {
-    /* fallback: 미인증 표시 */
+    /* fallback: 미인증 */
   }
 
-  const displayName =
-    profile?.nickname?.trim() ||
-    profile?.full_name?.trim() ||
-    "멘토";
+  const monthly = await loadRecentMonthlyEarnings(supabase, user.id);
+
+  const displayName = profile?.nickname?.trim() || profile?.full_name?.trim() || "멘토";
   const verification = verificationLabel(verificationStatus);
   const kpis = hub?.kpis ?? SAFE_KPI_FALLBACK;
-  const ratingAvg = hub?.rating?.avg ?? null;
-  const reviewCount = hub?.rating?.count ?? 0;
-  const newQuestions = kpis.newQuestions;
+  const ratingAvg = hub?.rating?.avg ?? kpis.avgRating ?? null;
+  const reviewCount = hub?.rating?.count ?? kpis.reviewCount;
   const activeOrdersTop = (hub?.activeOrders ?? []).slice(0, 3);
   const revenue = hub?.revenuePanel;
 
   return (
-    <main className="mx-auto w-full max-w-[1280px] space-y-8 px-4 py-6 sm:px-6 sm:py-8">
+    <main className="mx-auto w-full max-w-[1200px] space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:space-y-10">
       <ProfileHeader
         displayName={displayName}
         verification={verification}
@@ -103,30 +143,18 @@ export default async function MentorMypagePage() {
         reviewCount={reviewCount}
       />
 
-      <section>
-        <KpiRow kpis={kpis} />
-      </section>
+      <RevenueHighlight revenue={revenue} monthly={monthly} />
 
-      <section>
-        <SectionHeading title="진행 중 의뢰" linkLabel="전체보기" linkHref="/mentor/custom-request/orders" />
-        <div className="mt-3">
-          <ActiveOrdersCardList orders={activeOrdersTop} />
-        </div>
-      </section>
+      <CoreKpis activeSubscribers={kpis.activeSubscribers} ratingAvg={ratingAvg} reviewCount={reviewCount} />
 
-      <section>
-        <SectionHeading title="빠른 이동" />
-        <div className="mt-3">
-          <QuickLinksGrid newQuestions={newQuestions} />
-        </div>
-      </section>
+      <ActiveOrdersSection orders={activeOrdersTop} />
 
-      <RevenueSummary revenue={revenue} />
+      <ProfileCtaBanner />
     </main>
   );
 }
 
-/* ───────────────── Profile Header ───────────────── */
+/* ─────────── Profile Header ─────────── */
 
 function ProfileHeader(props: {
   displayName: string;
@@ -136,7 +164,7 @@ function ProfileHeader(props: {
 }) {
   const { displayName, verification, ratingAvg, reviewCount } = props;
   const initial = initialOf(displayName);
-  const verifToneClass =
+  const tone =
     verification.tone === "ok"
       ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
       : verification.tone === "pending"
@@ -145,39 +173,30 @@ function ProfileHeader(props: {
 
   return (
     <header className="rounded-2xl border-b border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm sm:p-8">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4 sm:gap-5">
-          <div
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-black text-white shadow-md sm:h-20 sm:w-20 sm:text-3xl"
-            style={{ backgroundColor: PRIMARY }}
-            aria-hidden
-          >
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-slate-500">멘토 마이페이지</p>
-            <h1 className="mt-1 truncate text-2xl font-black text-slate-900 sm:text-3xl">{displayName}님</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${verifToneClass}`}>
-                {verification.label}
-              </span>
-              <StarRating value={ratingAvg} count={reviewCount} />
-            </div>
+      <div className="flex items-center gap-5">
+        <div
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-black text-white shadow-md sm:h-20 sm:w-20 sm:text-3xl"
+          style={{ backgroundColor: PRIMARY }}
+          aria-hidden
+        >
+          {initial}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-slate-500">멘토 마이페이지</p>
+          <h1 className="mt-1 truncate text-2xl font-black text-slate-900 sm:text-3xl">{displayName}님</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${tone}`}>
+              {verification.label}
+            </span>
+            <StarLine value={ratingAvg} count={reviewCount} />
           </div>
         </div>
-        <Link
-          href="/mentor/profile/edit"
-          className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-blue-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition hover:border-[#1A56DB] hover:bg-blue-50"
-        >
-          <UserCog className="h-4 w-4" style={{ color: PRIMARY }} />
-          프로필 관리
-        </Link>
       </div>
     </header>
   );
 }
 
-function StarRating({ value, count }: { value: number | null; count: number }) {
+function StarLine({ value, count }: { value: number | null; count: number }) {
   if (value == null) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
@@ -203,138 +222,186 @@ function StarRating({ value, count }: { value: number | null; count: number }) {
   );
 }
 
-/* ───────────────── Section Heading ───────────────── */
+/* ─────────── Revenue Highlight (3개월 막대차트) ─────────── */
 
-function SectionHeading({
-  title,
-  linkLabel,
-  linkHref,
+function RevenueHighlight({
+  revenue,
+  monthly,
 }: {
-  title: string;
-  linkLabel?: string;
-  linkHref?: string;
+  revenue: MentorHubDashboardData["revenuePanel"] | undefined;
+  monthly: MonthlyBar[];
 }) {
   return (
-    <div className="flex items-baseline justify-between">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      {linkLabel && linkHref ? (
-        <Link href={linkHref} className="text-sm font-bold text-slate-500 hover:text-[#1A56DB]">
-          {linkLabel} <span aria-hidden>›</span>
+    <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">이번 달 수익</h2>
+          <p className="mt-1 text-xs text-slate-500">{revenue?.monthLabel ?? "이번 달"} 기준</p>
+        </div>
+        <Link
+          href="/mentor/payouts"
+          className="inline-flex items-center gap-1 text-sm font-bold text-[#1A56DB] hover:underline"
+        >
+          정산 상세 보기 <span aria-hidden>→</span>
         </Link>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_280px] lg:items-end">
+        <div>
+          <p className="text-xs font-bold text-slate-500">총 예상 수익</p>
+          <p
+            className="mt-1 text-4xl font-black tabular-nums sm:text-5xl"
+            style={{ color: PRIMARY }}
+          >
+            {formatCashKrw(revenue?.totalExpected ?? 0)}
+          </p>
+          <div className="mt-5 flex items-end gap-5 sm:gap-7">
+            <div>
+              <p className="text-xs font-bold text-slate-500">진행 중</p>
+              <p className="mt-1 text-lg font-black tabular-nums text-slate-900">
+                {formatCashKrw(revenue?.inProgress ?? 0)}
+              </p>
+            </div>
+            <div className="h-10 w-px self-end bg-slate-100" />
+            <div>
+              <p className="text-xs font-bold text-slate-500">완료(정산 예정)</p>
+              <p className="mt-1 text-lg font-black tabular-nums text-slate-900">
+                {formatCashKrw(revenue?.completedPending ?? 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <MonthlyBarChart monthly={monthly} />
+      </div>
+    </section>
+  );
+}
+
+function MonthlyBarChart({ monthly }: { monthly: MonthlyBar[] }) {
+  const max = Math.max(1, ...monthly.map((m) => m.amount));
+  const hasAny = monthly.some((m) => m.amount > 0);
+  return (
+    <div className="w-full">
+      <p className="text-xs font-bold text-slate-500">최근 3개월</p>
+      <div
+        className="mt-2 flex items-end justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3"
+        style={{ height: "140px" }}
+        aria-label="최근 3개월 정산 수익 비교"
+      >
+        {monthly.map((m) => {
+          const pct = max > 0 ? (m.amount / max) * 100 : 0;
+          const heightPct = m.amount > 0 ? Math.max(pct, 8) : 4;
+          return (
+            <div key={m.key} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+              <span
+                className={`text-[10px] font-bold tabular-nums ${m.isCurrent ? "text-[#1A56DB]" : "text-slate-500"}`}
+              >
+                {m.amount > 0
+                  ? new Intl.NumberFormat("ko-KR", { notation: "compact" }).format(m.amount)
+                  : "—"}
+              </span>
+              <div
+                className={`w-full max-w-[44px] rounded-t-md transition ${
+                  m.isCurrent ? "bg-[#1A56DB]" : "bg-slate-300"
+                } ${m.amount === 0 ? "opacity-60" : ""}`}
+                style={{ height: `${heightPct}%` }}
+                aria-hidden
+              />
+              <span className={`text-[10px] font-bold ${m.isCurrent ? "text-[#1A56DB]" : "text-slate-500"}`}>
+                {m.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {!hasAny ? (
+        <p className="mt-2 text-[11px] text-slate-400">아직 정산 기록이 없어요</p>
       ) : null}
     </div>
   );
 }
 
-/* ───────────────── KPI Row ───────────────── */
+/* ─────────── Core KPIs (2 only — 네비와 미중복) ─────────── */
 
-function KpiRow({ kpis }: { kpis: MentorHubDashboardData["kpis"] }) {
+function CoreKpis({
+  activeSubscribers,
+  ratingAvg,
+  reviewCount,
+}: {
+  activeSubscribers: number;
+  ratingAvg: number | null;
+  reviewCount: number;
+}) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
-      <KpiCard
-        icon={HelpCircle}
-        label="새 질문"
-        value={`${kpis.newQuestions}건`}
-        sub="답변 대기"
-        tone="danger"
-        highlightOn={kpis.newQuestions > 0}
-      />
-      <KpiCard
-        icon={Users}
-        label="구독 학생"
-        value={`${kpis.activeSubscribers}명`}
-        sub="활성 구독자"
-      />
-      <KpiCard
-        icon={FileText}
-        label="새 의뢰"
-        value={`${kpis.newRequestsOpen}건`}
-        sub={`오늘 +${kpis.newRequestsToday}건`}
-      />
-      <KpiCard
-        icon={CircleDollarSign}
-        label="이번 달 수익"
-        value={formatCashKrw(kpis.monthlyRevenue)}
-        sub={
-          kpis.monthlyRevenueMomPct != null
-            ? `전월 대비 ${kpis.monthlyRevenueMomPct > 0 ? "+" : ""}${kpis.monthlyRevenueMomPct.toFixed(1)}%`
-            : "기준 비교 없음"
-        }
-        tone="primary"
-      />
-      <KpiCard
-        icon={Star}
-        label="평점"
-        value={kpis.avgRating != null ? kpis.avgRating.toFixed(1) : "—"}
-        sub={`리뷰 ${kpis.reviewCount}개`}
-      />
+    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#1A56DB]">
+            <Users className="h-5 w-5" />
+          </span>
+          <p className="text-sm font-bold text-slate-600">구독 학생</p>
+        </div>
+        <p className="mt-4 text-3xl font-black tabular-nums text-slate-900">
+          {activeSubscribers}
+          <span className="ml-1 text-base font-bold text-slate-500">명</span>
+        </p>
+        <p className="mt-1 text-xs text-slate-500">현재 나와 연결된 활성 구독 학생 수</p>
+      </article>
+      <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+            <Star className="h-5 w-5" />
+          </span>
+          <p className="text-sm font-bold text-slate-600">평점</p>
+        </div>
+        <p className="mt-4 text-3xl font-black tabular-nums text-slate-900">
+          {ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
+          <span className="ml-1 text-base font-bold text-slate-500">/ 5.0</span>
+        </p>
+        <p className="mt-1 text-xs text-slate-500">총 후기 {reviewCount}개의 평균</p>
+      </article>
+    </section>
+  );
+}
+
+/* ─────────── Active Orders ─────────── */
+
+function ActiveOrdersSection({ orders }: { orders: MentorHubOrderRow[] }) {
+  return (
+    <section>
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">진행 중 의뢰</h2>
+        <Link
+          href="/mentor/custom-request/orders"
+          className="text-sm font-bold text-slate-500 hover:text-[#1A56DB]"
+        >
+          전체보기 <span aria-hidden>›</span>
+        </Link>
+      </div>
+      <div className="mt-4">{orders.length === 0 ? <EmptyOrders /> : <OrderList orders={orders} />}</div>
+    </section>
+  );
+}
+
+function EmptyOrders() {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-14 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-50">
+        <Inbox className="h-7 w-7 text-slate-300" aria-hidden />
+      </span>
+      <p className="mt-3 text-sm font-bold text-slate-700">진행 중인 의뢰가 없어요</p>
+      <p className="mt-1 text-xs text-slate-500">새 의뢰가 들어오면 여기에서 바로 관리할 수 있어요.</p>
     </div>
   );
 }
 
-function KpiCard(props: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  sub: string;
-  tone?: "default" | "primary" | "danger";
-  highlightOn?: boolean;
-}) {
-  const Icon = props.icon;
-  const tone = props.tone ?? "default";
-  const isDangerOn = tone === "danger" && props.highlightOn;
-  const valueColor =
-    tone === "primary" ? "text-[#1A56DB]" : isDangerOn ? "text-red-600" : "text-slate-900";
-  const iconWrapColor =
-    tone === "primary"
-      ? "bg-blue-50 text-[#1A56DB]"
-      : isDangerOn
-        ? "bg-red-50 text-red-600"
-        : "bg-slate-100 text-slate-500";
+function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
   return (
-    <article className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5">
-      <div className="flex items-center justify-between">
-        <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${iconWrapColor}`}>
-          <Icon className="h-5 w-5" />
-        </span>
-        {isDangerOn ? (
-          <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700 ring-1 ring-red-200">
-            대기
-          </span>
-        ) : null}
-      </div>
-      <p className={`mt-3 text-2xl font-black tabular-nums ${valueColor}`}>{props.value}</p>
-      <p className="mt-1 text-xs font-medium text-slate-500">{props.label}</p>
-      <p className="mt-0.5 text-[11px] text-slate-400">{props.sub}</p>
-    </article>
-  );
-}
-
-/* ───────────────── Active Orders Card List ───────────────── */
-
-function ActiveOrdersCardList({ orders }: { orders: MentorHubOrderRow[] }) {
-  if (orders.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-50">
-          <Inbox className="h-7 w-7 text-slate-300" aria-hidden />
-        </span>
-        <p className="mt-3 text-sm font-bold text-slate-700">진행 중인 의뢰가 없어요</p>
-        <p className="mt-1 text-xs text-slate-500">새 의뢰가 들어오면 여기에서 바로 관리할 수 있어요.</p>
-        <Link
-          href="/mentor/custom-request/posts"
-          className="mt-4 inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold text-[#1A56DB] hover:underline"
-        >
-          공개 의뢰 둘러보기 →
-        </Link>
-      </div>
-    );
-  }
-  return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {orders.map((order) => (
         <li key={order.id}>
-          <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-5">
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-blue-200 hover:shadow-md">
             <div className="flex items-start gap-4">
               <span
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-black text-[#1A56DB]"
@@ -394,134 +461,25 @@ function ActiveOrdersCardList({ orders }: { orders: MentorHubOrderRow[] }) {
   );
 }
 
-/* ───────────────── Quick Links 2x2 ───────────────── */
+/* ─────────── Bottom CTA Banner ─────────── */
 
-function QuickLinksGrid({ newQuestions }: { newQuestions: number }) {
+function ProfileCtaBanner() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <QuickLinkCard
-        href="/mentor/question-room"
-        icon={HelpCircle}
-        title="질문방"
-        desc="학생 질문 응답·노트 관리"
-        badge={newQuestions > 0 ? `답변 대기 ${newQuestions}건` : null}
-        iconBg="bg-blue-50"
-        iconColor="text-[#1A56DB]"
-      />
-      <QuickLinkCard
-        href="/mentor/custom-request/dashboard"
-        icon={ClipboardList}
-        title="맞춤의뢰"
-        desc="진행 중 의뢰·납품 관리"
-        iconBg="bg-emerald-50"
-        iconColor="text-emerald-600"
-      />
-      <QuickLinkCard
-        href="/mentor/payouts"
-        icon={Wallet}
-        title="정산 / 수익"
-        desc="월간 정산 내역과 지급 일정"
-        iconBg="bg-amber-50"
-        iconColor="text-amber-600"
-      />
-      <QuickLinkCard
-        href="/mentor/profile/edit"
-        icon={UserCog}
-        title="프로필 관리"
-        desc="자기소개·전공·증빙서류 수정"
-        iconBg="bg-slate-100"
-        iconColor="text-slate-600"
-      />
-    </div>
-  );
-}
-
-function QuickLinkCard(props: {
-  href: string;
-  icon: LucideIcon;
-  title: string;
-  desc: string;
-  badge?: string | null;
-  iconBg: string;
-  iconColor: string;
-}) {
-  const Icon = props.icon;
-  return (
-    <Link
-      href={props.href}
-      className="group flex items-start gap-4 rounded-xl border-2 border-slate-100 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md sm:p-6"
-    >
-      <span
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${props.iconBg} ${props.iconColor}`}
-      >
-        <Icon className="h-6 w-6" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-base font-bold text-slate-900 sm:text-lg">{props.title}</p>
-          {props.badge ? (
-            <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700 ring-1 ring-red-200">
-              {props.badge}
-            </span>
-          ) : null}
-        </div>
-        <p className="mt-1 text-sm text-slate-600">{props.desc}</p>
-        <p className="mt-3 text-xs font-bold text-slate-400 group-hover:text-[#1A56DB]">바로 이동 →</p>
-      </div>
-    </Link>
-  );
-}
-
-/* ───────────────── Revenue Summary ───────────────── */
-
-function RevenueSummary({
-  revenue,
-}: {
-  revenue: MentorHubDashboardData["revenuePanel"] | undefined;
-}) {
-  return (
-    <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">수익 현황</h2>
-          <p className="mt-1 text-xs text-slate-500">{revenue?.monthLabel ?? "이번 달"} 기준</p>
-        </div>
-        <Link
-          href="/mentor/payouts"
-          className="inline-flex items-center gap-1 text-sm font-bold text-[#1A56DB] hover:underline"
-        >
-          정산 상세 보기 <span aria-hidden>→</span>
-        </Link>
-      </div>
-      <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3 sm:items-end">
-        {/* Primary: 총 예상 수익 — 크게 */}
-        <div className="sm:col-span-1">
-          <p className="text-xs font-bold text-slate-500">총 예상 수익</p>
-          <p
-            className="mt-1 text-3xl font-black tabular-nums sm:text-4xl"
-            style={{ color: PRIMARY }}
-          >
-            {formatCashKrw(revenue?.totalExpected ?? 0)}
-          </p>
-        </div>
-        {/* Secondary: 진행 중 / 완료 — 보조 */}
-        <div className="flex items-end gap-6 sm:col-span-2 sm:justify-end">
-          <SecondaryAmount label="진행 중" amount={revenue?.inProgress ?? 0} />
-          <div className="hidden h-10 w-px bg-slate-100 sm:block" />
-          <SecondaryAmount label="완료(정산 예정)" amount={revenue?.completedPending ?? 0} />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function SecondaryAmount({ label, amount }: { label: string; amount: number }) {
-  return (
-    <div>
-      <p className="text-xs font-bold text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-black tabular-nums text-slate-900 sm:text-xl">
-        {formatCashKrw(amount)}
+    <section className="rounded-2xl border border-blue-100 bg-blue-50/60 px-6 py-10 text-center sm:px-10">
+      <p className="text-base font-bold text-slate-900 sm:text-lg">
+        프로필을 완성하면 더 많은 학생이 찾아와요!
       </p>
-    </div>
+      <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+        자기소개·전공·증빙서류를 업데이트하면 학생들의 신뢰도가 올라가요.
+      </p>
+      <Link
+        href="/mentor/profile/edit"
+        className="mt-5 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-extrabold text-white shadow-md transition hover:shadow-lg"
+        style={{ backgroundColor: PRIMARY }}
+      >
+        <UserCog className="h-4 w-4" />
+        프로필 관리하기
+      </Link>
+    </section>
   );
 }
