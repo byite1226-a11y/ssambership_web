@@ -9,7 +9,7 @@ import { requireRole } from "@/lib/auth/routeGuard";
 export default async function MentorLayout({ children }: { children: ReactNode }) {
   const pathname = (await headers()).get("x-pathname") ?? "";
   if (mentorBlockedCashPath(pathname)) {
-    redirect("/mentor/dashboard");
+    redirect("/mentor/mypage");
   }
 
   const { user, profile } = await requireRole("mentor");

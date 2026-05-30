@@ -56,10 +56,10 @@ export const mentorHeaderNav: MainNavItem[] = [
   { href: "/mentor/mypage", label: "마이페이지" },
 ];
 
-/** 멘토 사이드바·내부 메뉴 — 대시보드 포함 */
+/** 멘토 사이드바·내부 메뉴 — 마이페이지(통합 홈) 포함 */
 export const mentorMainNav: MainNavItem[] = [
-  { href: "/mentor/dashboard", label: "대시보드" },
-  ...mentorHeaderNav,
+  { href: "/mentor/mypage", label: "마이페이지" },
+  ...mentorHeaderNav.filter((item) => item.href !== "/mentor/mypage"),
 ];
 
 export const adminMainNav: MainNavItem[] = [

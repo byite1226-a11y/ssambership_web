@@ -18,14 +18,14 @@ export function safeInternalNextPath(v: string | null | undefined): string | nul
 
 /**
  * `next`가 없거나 거부될 때 쓰는 **일반 로그인·권한 복귀** 기본 경로.
- * 멘토는 `/mentor/dashboard` (대시보드)를 쓴다.
+ * 멘토는 `/mentor/mypage` (마이페이지 = 통합 홈)를 쓴다.
  *
  * **회원가입 직후** 기본 멘토 목적지는 `getSignUpSuccessPath`에서 `/mentor/profile`로
  * 별도 처리한다(프로필·인증 보강 우선). 가입 플로우는 그 함수만 사용할 것.
  */
 export function getPostLoginPath(role: AppRole): string {
   if (role === "student") return "/home";
-  if (role === "mentor") return "/mentor/dashboard";
+  if (role === "mentor") return "/mentor/mypage";
   if (role === "admin") return "/admin";
   return "/";
 }
@@ -90,7 +90,7 @@ export function resolvePostLoginPath(nextRaw: string | null | undefined, role: A
 /**
  * 회원가입 **성공 + session 있음** 직후 이동.
  * - `next`가 안전한 내부 경로이면 `resolvePostLoginPath(next, role)` (로그인과 동일한 분기 규칙)
- * - 없을 때: 학생 `/home`, 멘토 `/mentor/profile` (로그인 기본 `getPostLoginPath(mentor)`의 `/mentor/dashboard`와 구분)
+ * - 없을 때: 학생 `/home`, 멘토 `/mentor/profile` (로그인 기본 `getPostLoginPath(mentor)`의 `/mentor/mypage`와 구분)
  */
 export function getSignUpSuccessPath(role: Extract<AppRole, "student" | "mentor">, nextRaw: string | null | undefined): string {
   const s = safeInternalNextPath(nextRaw);

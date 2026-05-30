@@ -23,7 +23,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
       : null;
 
   if (sessionRole === "mentor" && mentorBlockedCashPath(pathname)) {
-    redirect("/mentor/dashboard");
+    redirect("/mentor/mypage");
   }
 
   return (

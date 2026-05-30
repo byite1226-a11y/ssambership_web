@@ -18,7 +18,7 @@ export default async function PublicCashTopUpPage() {
   const supabase = await createClient();
   const { user, profile } = await getServerUserWithProfile();
   if (profile?.role === "mentor") {
-    redirect("/mentor/dashboard");
+    redirect("/mentor/mypage");
   }
   const pkg = await fetchCashTopupPackages(supabase);
   if (pkg.error) {

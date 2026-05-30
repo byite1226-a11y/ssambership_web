@@ -49,7 +49,7 @@ export default async function MentorProfilePage() {
       ctas={[
         { href: "/mentor/profile/edit", label: "프로필 편집", tone: "blue" },
         { href: `/mentors/${user.id}`, label: "공개 프로필 보기", tone: "slate" },
-        { href: "/mentor/dashboard", label: "멘토 홈", tone: "slate" },
+        { href: "/mentor/mypage", label: "멘토 홈", tone: "slate" },
       ]}
       sections={[]}
     >

@@ -25,7 +25,7 @@ export default async function MentorChannelPage() {
       description="등록한 대표 콘텐츠를 유형별로 모아 보여 줍니다. 새 자료는 프로필·연결 메뉴에서 준비할 수 있어요."
       ctas={[
         { href: "/mentor/profile/edit", label: "프로필·연결 편집", tone: "slate" },
-        { href: "/mentor/dashboard", label: "대시보드", tone: "green" },
+        { href: "/mentor/mypage", label: "마이페이지", tone: "green" },
       ]}
       sections={[
         {
