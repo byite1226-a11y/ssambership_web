@@ -53,6 +53,7 @@ export const mentorHeaderNav: MainNavItem[] = [
   { href: "/community", label: "커뮤니티" },
   { href: "/wallet/charge", label: "캐시충전" },
   { href: "/mentor/payouts", label: "정산" },
+  { href: "/mentor/mypage", label: "마이페이지" },
 ];
 
 /** 멘토 사이드바·내부 메뉴 — 대시보드 포함 */
