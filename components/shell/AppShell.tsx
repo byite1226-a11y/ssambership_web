@@ -174,7 +174,7 @@ export function AppShell({
           <ShellHeaderInner
             items={mainNav}
             sessionRole={role}
-            logo={<BrandLogo variant="shell" />}
+            logo={<BrandLogo variant="shell" href="/" />}
             actions={<HeaderActionsDesktop sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
             mobileActions={<HeaderActionsMobile sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
           />
