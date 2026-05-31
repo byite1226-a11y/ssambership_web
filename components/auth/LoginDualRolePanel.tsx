@@ -20,6 +20,10 @@ function LoginRoleCard(props: {
   initialNext: string | null;
   active: boolean;
   onActivate: () => void;
+  email: string;
+  password: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
 }) {
   const { role, initialNext, active, onActivate } = props;
   const copy = loginLandingCopy[role];
@@ -80,6 +84,10 @@ function LoginRoleCard(props: {
             submitLabel="로그인"
             initialNext={initialNext}
             hideRolePickerLink
+            email={props.email}
+            password={props.password}
+            onEmailChange={props.onEmailChange}
+            onPasswordChange={props.onPasswordChange}
           />
         </Suspense>
 
@@ -104,6 +112,10 @@ function LoginRoleCard(props: {
 
 export function LoginDualRolePanel(props: { initialNext: string | null }) {
   const [activeRole, setActiveRole] = useState<AuthLoginRole>("student");
+  const [studentEmail, setStudentEmail] = useState("");
+  const [studentPassword, setStudentPassword] = useState("");
+  const [mentorEmail, setMentorEmail] = useState("");
+  const [mentorPassword, setMentorPassword] = useState("");
 
   return (
     <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2 lg:gap-8">
@@ -112,12 +124,20 @@ export function LoginDualRolePanel(props: { initialNext: string | null }) {
         initialNext={props.initialNext}
         active={activeRole === "student"}
         onActivate={() => setActiveRole("student")}
+        email={studentEmail}
+        password={studentPassword}
+        onEmailChange={setStudentEmail}
+        onPasswordChange={setStudentPassword}
       />
       <LoginRoleCard
         role="mentor"
         initialNext={props.initialNext}
         active={activeRole === "mentor"}
         onActivate={() => setActiveRole("mentor")}
+        email={mentorEmail}
+        password={mentorPassword}
+        onEmailChange={setMentorEmail}
+        onPasswordChange={setMentorPassword}
       />
     </div>
   );

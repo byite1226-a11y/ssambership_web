@@ -40,6 +40,11 @@ type RoleLoginFormProps = {
   /** «유형 선택» 링크: `next` 유지하려면 `/login?next=...` */
   rolePickerHref?: string;
   hideRolePickerLink?: boolean;
+  /** 제어형 입력(듀얼 패널에서 카드별 state 분리용). 미전달 시 내부 state 사용 */
+  email?: string;
+  password?: string;
+  onEmailChange?: (value: string) => void;
+  onPasswordChange?: (value: string) => void;
 };
 
 export function RoleLoginForm({
@@ -50,11 +55,20 @@ export function RoleLoginForm({
   initialNext,
   rolePickerHref = "/login",
   hideRolePickerLink = false,
+  email: emailProp,
+  password: passwordProp,
+  onEmailChange,
+  onPasswordChange,
 }: RoleLoginFormProps) {
   const searchParams = useSearchParams();
   const signupFollowUp = searchParams.get("message") === "signup-check-email";
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [emailState, setEmailState] = useState("");
+  const [passwordState, setPasswordState] = useState("");
+  const email = emailProp ?? emailState;
+  const password = passwordProp ?? passwordState;
+  const setEmail = (value: string) => (onEmailChange ? onEmailChange(value) : setEmailState(value));
+  const setPassword = (value: string) =>
+    onPasswordChange ? onPasswordChange(value) : setPasswordState(value);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -217,7 +231,7 @@ export function RoleLoginForm({
           autoComplete={`${role} email`}
           required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(event) => setEmail(event.target.value)}
           className={inputByRole[role] + " mt-2 block"}
           placeholder="name@example.com"
           disabled={loading}
@@ -234,7 +248,7 @@ export function RoleLoginForm({
           autoComplete={`${role} current-password`}
           required
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(event) => setPassword(event.target.value)}
           className={inputByRole[role] + " mt-2 block"}
           disabled={loading}
         />

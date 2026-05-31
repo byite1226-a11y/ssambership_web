@@ -49,16 +49,16 @@ const STEPS = [
 ] as const;
 
 type HeroCta = { href: string; label: string };
-type HeroCtaSet = { primary: HeroCta; secondary: HeroCta };
+type HeroCtas = { primary: HeroCta; secondary: HeroCta };
 
-const DEFAULT_HERO_CTAS: HeroCtaSet = {
+const DEFAULT_HERO_CTAS: HeroCtas = {
   primary: { href: "/mentors", label: "멘토 찾기" },
   secondary: { href: "/signup", label: "무료 체험 시작하기" },
 };
 
-export function PublicGuestLanding(props: { stats: LandingPublicStats; heroCtas?: HeroCtaSet }) {
+export function PublicGuestLanding(props: { stats: LandingPublicStats; heroCtas?: HeroCtas }) {
   const STATS = buildStats(props.stats);
-  const ctas = props.heroCtas ?? DEFAULT_HERO_CTAS;
+  const heroCtas = props.heroCtas ?? DEFAULT_HERO_CTAS;
   return (
     <div className="w-full">
       {/* Section 1 — Hero */}
@@ -78,17 +78,17 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats; heroCtas?
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <Link
-                href={ctas.primary.href}
+                href={heroCtas.primary.href}
                 className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-[#1A56DB] px-6 text-sm font-extrabold text-white shadow-lg transition hover:bg-[#1648c0]"
               >
-                {ctas.primary.label}
+                {heroCtas.primary.label}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href={ctas.secondary.href}
+                href={heroCtas.secondary.href}
                 className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-[#1A56DB] bg-transparent px-6 text-sm font-extrabold text-[#1A56DB] transition hover:bg-blue-50"
               >
-                {ctas.secondary.label}
+                {heroCtas.secondary.label}
               </Link>
             </div>
           </div>
