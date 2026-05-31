@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { QuestionRoomNewNoteModal } from "@/components/qna/QuestionRoomNewNoteModal";
-import { Eye, MessageCircle, Paperclip, Search, Send, User } from "lucide-react";
+import { Eye, MessageCircle, Notebook, Paperclip, Plus, Search, Send, User } from "lucide-react";
 import { sendQuestionMessageAction } from "@/lib/qna/questionRoomActions";
 import {
   formatMinutesAgo,
@@ -29,7 +29,22 @@ import {
 type Row = Record<string, unknown>;
 type SortKey = "newest" | "oldest";
 type StatusFilter = "all" | "waiting" | "done";
-type NoteTab = "all" | "toMentor" | "fromMentor";
+type NoteTab = "all" | "student" | "mentor";
+
+/** "5월 22일 오후 5:07" 형식 (스펙). 잘못된 입력엔 빈 문자열. */
+function formatNoteDateTime(iso: unknown): string {
+  if (iso == null || iso === "") return "";
+  const raw = typeof iso === "string" ? iso : String(iso);
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return "";
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const period = hours < 12 ? "오전" : "오후";
+  const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${month}월 ${day}일 ${period} ${displayHour}:${minutes}`;
+}
 type RightPanelTab = "chat" | "notes";
 
 function messageBody(m: Row): string {
@@ -153,16 +168,15 @@ export function QuestionRoomMentorDesignWorkspace(props: {
   }, [props.threads.rows]);
 
   const noteCards = useMemo(() => {
-    const cards: {
+    type Card = {
       id: string;
-      tag: string;
       body: string;
-      author: string;
-      date: string;
-      tone: string;
-      statusLabel: string;
-      statusDone: boolean;
-    }[] = [];
+      authorName: string;
+      initial: string;
+      byStudent: boolean;
+      dateLabel: string;
+    };
+    const cards: Card[] = [];
     for (const n of props.notes.rows) {
       const body =
         (typeof n.body === "string" && n.body) ||
@@ -171,20 +185,17 @@ export function QuestionRoomMentorDesignWorkspace(props: {
         "";
       if (!body.trim()) continue;
       const authorId = messageAuthorId(n);
-      const isStudent = authorId !== props.currentUserId;
-      const rawStatus = String(n.status ?? n.note_status ?? n.state ?? "").toLowerCase();
-      const noteDone = ["done", "completed", "closed", "finished", "resolved"].some((s) =>
-        rawStatus.includes(s)
-      );
+      // 멘토 화면에서 currentUser는 본인(멘토). 그 외 작성자는 학생으로 간주.
+      const byStudent = authorId !== props.currentUserId;
+      const authorName = byStudent ? (studentName || "학생") : "나";
+      const initial = (authorName.trim().charAt(0) || (byStudent ? "학" : "멘")).toUpperCase();
       cards.push({
         id: String(n.id ?? `${authorId}-${body.slice(0, 8)}`),
-        tag: isStudent ? "멘토에게 요청" : "멘토가 요청",
         body: body.trim(),
-        author: isStudent ? studentName : "나",
-        date: formatMinutesAgo(n.updated_at ?? n.created_at),
-        tone: isStudent ? "toMentor" : "fromMentor",
-        statusLabel: noteDone ? "완료" : "진행중",
-        statusDone: noteDone,
+        authorName,
+        initial,
+        byStudent,
+        dateLabel: formatNoteDateTime(n.updated_at ?? n.created_at),
       });
     }
     return cards;
@@ -192,8 +203,8 @@ export function QuestionRoomMentorDesignWorkspace(props: {
 
   const filteredNoteCards = noteCards.filter((c) => {
     if (noteTab === "all") return true;
-    if (noteTab === "toMentor") return c.tone === "toMentor";
-    return c.tone === "fromMentor";
+    if (noteTab === "student") return c.byStudent;
+    return !c.byStudent;
   });
 
   return (
@@ -506,71 +517,79 @@ export function QuestionRoomMentorDesignWorkspace(props: {
           </div>
             </>
           ) : (
-            <div className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-[12px] font-black text-slate-900">방 전체 연결 노트</p>
-                <button
-                  type="button"
-                  className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] font-black text-slate-700 hover:bg-slate-50"
-                  onClick={() => setNewNoteOpen(true)}
-                >
-                  새 노트 작성
-                </button>
-              </div>
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {(
-                  [
-                    ["all", "전체 노트"],
-                    ["toMentor", "멘토에게 요청"],
-                    ["fromMentor", "멘토가 요청"],
-                  ] as const
-                ).map(([key, label]) => (
+            <div className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto bg-white">
+              {/* 헤더 */}
+              <div className="border-b border-[#f2f3f5] px-5 pt-[18px] pb-[15px]">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-base font-semibold text-[#16181d]">연결 노트</p>
                   <button
-                    key={key}
                     type="button"
-                    onClick={() => setNoteTab(key)}
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-black transition ${
-                      noteTab === key ? "bg-[#1A56DB] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
+                    onClick={() => setNewNoteOpen(true)}
+                    className="inline-flex items-center gap-1 text-[13px] text-[#666b76] hover:text-[#16181d]"
                   >
-                    {label}
+                    <Plus className="h-[15px] w-[15px]" />새 노트
                   </button>
-                ))}
+                </div>
+                <p className="mt-1 text-[12px] text-[#9aa0ab]">학생과 함께 쌓아가는 학습 기록</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      ["all", "전체"],
+                      ["student", "학생"],
+                      ["mentor", "멘토"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setNoteTab(key)}
+                      className={`rounded-full px-2.5 py-1 text-[12px] font-medium transition ${
+                        noteTab === key
+                          ? "bg-[#16181d] text-white"
+                          : "bg-[#f4f5f7] text-[#666b76] hover:bg-[#eaeaee]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {filteredNoteCards.length === 0 ? (
-                <p className="py-6 text-center text-[11px] font-bold text-slate-400">아직 연결 노트가 없어요</p>
-              ) : (
-                <ul className="space-y-2">
-                  {filteredNoteCards.map((card) => (
-                    <li key={card.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[9px] font-black ${
-                          card.tone === "toMentor"
-                            ? "border border-blue-100 bg-blue-50 text-blue-800"
-                            : "border border-violet-100 bg-violet-50 text-violet-800"
-                        }`}
-                      >
-                        {card.tag}
-                      </span>
-                      <p className="mt-2 line-clamp-2 text-[11px] font-medium leading-relaxed text-slate-700">{card.body}</p>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <p className="text-[9px] font-bold text-slate-400">
-                          {card.author} · {card.date}
-                        </p>
+
+              {/* 본문 */}
+              <div className="flex flex-col gap-3 p-4">
+                {filteredNoteCards.length === 0 ? (
+                  <div className="py-9 text-center">
+                    <Notebook className="mx-auto h-7 w-7 text-[#d3d6dc]" aria-hidden />
+                    <p className="mt-2 text-[14px] font-medium text-[#5b616b]">아직 연결 노트가 없어요</p>
+                    <p className="mt-1 text-[13px] text-[#a7acb5]">학생과 함께 학습 기록을 시작해 보세요</p>
+                  </div>
+                ) : (
+                  filteredNoteCards.map((card) => (
+                    <article
+                      key={card.id}
+                      className="rounded-[13px] border border-[#edeef1] px-4 py-[15px]"
+                    >
+                      <div className="mb-[9px] flex items-center gap-[7px]">
                         <span
-                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-black ${
-                            card.statusDone
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                              : "border-amber-200 bg-amber-50 text-amber-800"
+                          className={`flex h-[22px] w-[22px] items-center justify-center rounded-full text-[11px] font-semibold text-white ${
+                            card.byStudent ? "bg-[#3b7de0]" : "bg-[#16181d]"
                           }`}
+                          aria-hidden
                         >
-                          {card.statusLabel}
+                          {card.initial}
+                        </span>
+                        <span className="text-[13px] font-semibold text-[#16181d]">
+                          {card.authorName}
                         </span>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                      <p className="mb-2.5 text-[14px] leading-relaxed text-[#37404a]">
+                        {card.body}
+                      </p>
+                      <p className="text-[12px] text-[#a7acb5]">{card.dateLabel}</p>
+                    </article>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </aside>
