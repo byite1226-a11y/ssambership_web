@@ -37,6 +37,7 @@ export function MentorCard(props: {
   const photo = d.photoUrl?.trim();
   const profileHref = `/mentors/${card.mentorId}`;
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(card.mentorId)}`;
+  const closed = card.subscriptionClosed;
 
   if (layout === "grid") {
     return (
@@ -69,6 +70,11 @@ export function MentorCard(props: {
                   <span className="inline-flex items-center gap-0.5 rounded-md bg-[#1A56DB] px-1.5 py-0.5 text-[10px] font-black text-white">
                     <BadgeCheck className="h-3 w-3" />
                     인증
+                  </span>
+                ) : null}
+                {closed ? (
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-500">
+                    구독 마감
                   </span>
                 ) : null}
               </div>
@@ -147,6 +153,11 @@ export function MentorCard(props: {
                 인증
               </span>
             ) : null}
+            {closed ? (
+              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-500">
+                구독 마감
+              </span>
+            ) : null}
           </div>
           <p className="mt-0.5 text-sm font-medium text-slate-600">{mentorSchoolGradeLine(d)}</p>
 
@@ -189,12 +200,18 @@ export function MentorCard(props: {
               </li>
             ))}
           </ul>
-          <Link
-            href={isLoggedIn ? subscribeHref : `/login?next=${encodeURIComponent(subscribeHref)}`}
-            className="mt-3 flex min-h-[40px] w-full items-center justify-center rounded-xl border border-[#1A56DB] bg-white text-sm font-extrabold text-[#1A56DB] hover:bg-blue-50"
-          >
-            구독하기
-          </Link>
+          {closed ? (
+            <div className="mt-3 flex min-h-[40px] w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-extrabold text-slate-400">
+              구독 마감
+            </div>
+          ) : (
+            <Link
+              href={isLoggedIn ? subscribeHref : `/login?next=${encodeURIComponent(subscribeHref)}`}
+              className="mt-3 flex min-h-[40px] w-full items-center justify-center rounded-xl border border-[#1A56DB] bg-white text-sm font-extrabold text-[#1A56DB] hover:bg-blue-50"
+            >
+              구독하기
+            </Link>
+          )}
         </div>
       </div>
     </article>

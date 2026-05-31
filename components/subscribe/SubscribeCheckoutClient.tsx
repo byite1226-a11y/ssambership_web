@@ -14,6 +14,8 @@ type Props = {
   mentorId: string;
   plans: SubscribePlanOption[];
   currentBalanceCash: number;
+  /** cap 마감으로 구독 불가한 tier 목록 (수치는 학생에 노출 안 함) */
+  closedTiers?: SubscribePlanTier[];
 };
 
 function fmtCash(n: number): string {
@@ -22,8 +24,15 @@ function fmtCash(n: number): string {
 
 export function SubscribeCheckoutClient(props: Props) {
   const { mentorId, plans, currentBalanceCash } = props;
+  const closedTiers = useMemo(() => new Set(props.closedTiers ?? []), [props.closedTiers]);
+  const allClosed = plans.length > 0 && plans.every((p) => closedTiers.has(p.tier));
   const router = useRouter();
-  const defaultTier = plans.find((p) => p.recommend)?.tier ?? plans[0]?.tier ?? "standard";
+  const defaultTier =
+    plans.find((p) => !closedTiers.has(p.tier) && p.recommend)?.tier ??
+    plans.find((p) => !closedTiers.has(p.tier))?.tier ??
+    plans.find((p) => p.recommend)?.tier ??
+    plans[0]?.tier ??
+    "standard";
   const [selectedTier, setSelectedTier] = useState<SubscribePlanTier>(defaultTier);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +50,15 @@ export function SubscribeCheckoutClient(props: Props) {
     );
   }
 
+  const selectedClosed = closedTiers.has(selected.tier);
   const insufficient = currentBalanceCash < selected.cashKrw;
   const amountCents = selected.cashKrw * 100;
 
   async function handleSubscribe() {
+    if (closedTiers.has(selected.tier)) {
+      setError("이 멘토는 현재 구독이 마감되었습니다. 다른 멘토를 찾아보거나 잠시 후 다시 시도해 주세요.");
+      return;
+    }
     if (!selected.planId) {
       setError("플랜 정보가 없어 구독을 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.");
       return;
@@ -100,27 +114,46 @@ export function SubscribeCheckoutClient(props: Props) {
         <p className="mt-1 text-sm text-slate-500">플랜을 고른 뒤 구독하기를 누르면 캐시가 차감됩니다.</p>
       </div>
 
+      {allClosed ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <p className="font-bold">이 멘토는 현재 구독이 마감되었습니다.</p>
+          <p className="mt-1">프로필 열람과 찜하기는 계속 가능해요. 다른 멘토를 찾아보세요.</p>
+          <Link href="/mentors" className="mt-2 inline-block font-bold text-blue-700 hover:underline">
+            멘토 찾기 &rarr;
+          </Link>
+        </div>
+      ) : null}
+
       <ul className="grid gap-4 md:grid-cols-3">
         {plans.map((plan) => {
           const active = selectedTier === plan.tier;
+          const planClosed = closedTiers.has(plan.tier);
           return (
             <li key={plan.tier}>
               <button
                 type="button"
-                disabled={loading}
+                disabled={loading || planClosed}
                 onClick={() => {
+                  if (planClosed) return;
                   setSelectedTier(plan.tier);
                   setError(null);
                 }}
                 className={`relative flex h-full w-full flex-col rounded-2xl border p-5 text-left transition-colors ${
-                  active
-                    ? "border-blue-600 bg-blue-50/80 ring-2 ring-blue-600"
-                    : "border-slate-200 bg-white hover:border-slate-300"
+                  planClosed
+                    ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60"
+                    : active
+                      ? "border-blue-600 bg-blue-50/80 ring-2 ring-blue-600"
+                      : "border-slate-200 bg-white hover:border-slate-300"
                 }`}
               >
-                {plan.recommend ? (
+                {plan.recommend && !planClosed ? (
                   <span className="absolute -top-2.5 right-3 rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
                     추천
+                  </span>
+                ) : null}
+                {planClosed ? (
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-slate-400 px-2.5 py-0.5 text-[10px] font-extrabold tracking-wide text-white">
+                    구독 마감
                   </span>
                 ) : null}
                 <p className="text-sm font-extrabold uppercase tracking-wide text-slate-500">{plan.label}</p>
@@ -153,11 +186,11 @@ export function SubscribeCheckoutClient(props: Props) {
 
       <button
         type="button"
-        disabled={loading || !selected.planId || insufficient}
+        disabled={loading || !selected.planId || insufficient || selectedClosed}
         onClick={() => void handleSubscribe()}
         className="min-h-[52px] w-full max-w-md rounded-xl bg-blue-600 px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? "구독 처리 중..." : `${selected.label} 구독하기`}
+        {loading ? "구독 처리 중..." : selectedClosed ? "구독 마감" : `${selected.label} 구독하기`}
       </button>
       <p className="text-xs text-slate-500">구독하기를 누르면 캐시 잔액에서 즉시 차감됩니다.</p>
     </div>

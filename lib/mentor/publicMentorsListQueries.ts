@@ -7,6 +7,7 @@ import { mentorIsVerified } from "@/lib/mentor/mentorPublicProfileDisplay";
 import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
 import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { loadMentorCapUsageBatch, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
 import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
 import {
   cashKrwForSubscribeTier,
@@ -53,6 +54,8 @@ export type MentorPublicListCard = {
   tierPrices: MentorTierPrice[];
   minPriceKrw: number | null;
   stats: MentorListStats;
+  /** cap 마감 여부 (구체 수치는 학생 미노출 — boolean만) */
+  subscriptionClosed: boolean;
 };
 
 export type PublicMentorsListResult = {
@@ -534,6 +537,8 @@ export async function loadPublicMentorsList(
   probes.push(`plans: ${planBatch.probe}`);
 
   const statsMap = await batchMentorListStats(supabase, ids, revBatch.map);
+  const capMap =
+    ids.length > 0 ? await loadMentorCapUsageBatch(ids) : new Map<string, MentorCapUsage>();
 
   const cards: MentorPublicListCard[] = [];
   for (const u of users) {
@@ -562,6 +567,7 @@ export async function loadPublicMentorsList(
         avgResponseLabel: "—",
         satisfactionLabel: rev.avg != null ? `${Math.round((rev.avg / 5) * 100)}%` : "—",
       },
+      subscriptionClosed: capMap.get(u.id)?.isFull ?? false,
     };
     if (cardMatchesFilters(filters, card)) {
       cards.push(card);

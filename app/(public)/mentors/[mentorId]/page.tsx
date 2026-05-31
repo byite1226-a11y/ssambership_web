@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { loadFreeQuestionRemainingForMentor } from "@/lib/qna/freeQuestionUsage";
 import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
+import { loadMentorCapUsage } from "@/lib/subscribe/mentorCapService";
 
 type Props = {
   params: Promise<{ mentorId: string }>;
@@ -55,6 +56,7 @@ export default async function MentorDetailByIdPage(props: Props) {
   }
 
   const display = buildMentorProfileDisplay(bundle.profileRow, bundle.userRow);
+  const capUsage = await loadMentorCapUsage(mentorId);
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] py-6 sm:py-8">
@@ -69,6 +71,7 @@ export default async function MentorDetailByIdPage(props: Props) {
         isLoggedIn={Boolean(user)}
         initialFavorited={initialFavorited}
         freeQuestionRemaining={freeQuestionRemaining}
+        subscriptionClosed={capUsage.isFull}
       />
     </div>
   );

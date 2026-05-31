@@ -15,6 +15,7 @@ export function MentorDetailCTASection(props: {
   subscribeHref: string;
   freeQuestionHref: string;
   freeQuestionRemaining?: number | null;
+  subscriptionClosed?: boolean;
 }) {
   const freeLabel =
     props.freeQuestionRemaining != null
@@ -31,12 +32,18 @@ export function MentorDetailCTASection(props: {
       </p>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Link
-          href={props.subscribeHref}
-          className="inline-flex min-h-[52px] items-center justify-center rounded-xl bg-[#1A56DB] px-8 text-sm font-extrabold text-white shadow-md transition hover:bg-[#1648c0]"
-        >
-          구독하기
-        </Link>
+        {props.subscriptionClosed ? (
+          <span className="inline-flex min-h-[52px] cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-8 text-sm font-extrabold text-slate-400">
+            구독 마감
+          </span>
+        ) : (
+          <Link
+            href={props.subscribeHref}
+            className="inline-flex min-h-[52px] items-center justify-center rounded-xl bg-[#1A56DB] px-8 text-sm font-extrabold text-white shadow-md transition hover:bg-[#1648c0]"
+          >
+            구독하기
+          </Link>
+        )}
         <Link
           href={props.freeQuestionHref}
           className="inline-flex min-h-[52px] items-center justify-center rounded-xl border-2 border-[#1A56DB] bg-white px-8 text-sm font-extrabold text-[#1A56DB] transition hover:bg-blue-50/50"

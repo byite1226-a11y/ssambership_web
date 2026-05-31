@@ -9,6 +9,7 @@ import type {
   MentorHubOrderRow,
 } from "@/lib/mentor/dashboard/mentorHubDashboardTypes";
 import { MentorRevenueChart, type MonthlyRevenue } from "@/components/mentor/mypage/MentorRevenueChart";
+import { loadMentorCapUsage, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -130,6 +131,7 @@ export default async function MentorMypagePage() {
 
   const monthlyRevenue = await loadRecentMonthlyRevenue(supabase, user.id);
   const currentMonthLabel = monthlyRevenue[monthlyRevenue.length - 1]?.month ?? "이번 달";
+  const capUsage = await loadMentorCapUsage(user.id);
 
   const displayName = profile?.nickname?.trim() || profile?.full_name?.trim() || "멘토";
   const verification = verificationLabel(verificationStatus);
@@ -168,6 +170,7 @@ export default async function MentorMypagePage() {
             ratingAvg={ratingAvg}
             reviewCount={reviewCount}
           />
+          <CapUsageCard usage={capUsage} />
         </aside>
       </div>
     </main>
@@ -346,6 +349,42 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/* ───────────────── Cap 사용량 (구독 수용량) ───────────────── */
+
+function fmtCap(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+
+function CapUsageCard({ usage }: { usage: MentorCapUsage }) {
+  const { usedCap, capLimit, activeCount, pct, isFull } = usage;
+  const warn = pct >= 80;
+  const fillColor = isFull || pct >= 100 ? "#e08a2f" : warn ? "#e08a2f" : "#2563eb";
+
+  return (
+    <article className="rounded-2xl border border-[#edeef1] bg-white px-5 py-[18px]">
+      <div className="flex items-center justify-between">
+        <p className="text-[13px] font-medium text-slate-500">구독 수용량</p>
+        <p className="text-[13px] font-semibold text-slate-700 tabular-nums">
+          {fmtCap(usedCap)} / {fmtCap(capLimit)}
+        </p>
+      </div>
+      <div className="mt-3 h-[9px] w-full overflow-hidden rounded-md bg-slate-100">
+        <div
+          className="h-full rounded-md transition-all"
+          style={{ width: `${Math.min(100, pct)}%`, backgroundColor: fillColor }}
+        />
+      </div>
+      <p className="mt-2 text-[11px] text-slate-400">
+        {isFull ? (
+          <span className="font-semibold text-[#e08a2f]">구독 마감</span>
+        ) : (
+          `${activeCount}명 구독 중 · ${pct}% 사용`
+        )}
+      </p>
+    </article>
   );
 }
 

@@ -19,6 +19,7 @@ export function MentorDetailSubscribeSidebar(props: {
   fillProbe: string;
   isLoggedIn: boolean;
   freeQuestionRemaining?: number | null;
+  subscriptionClosed?: boolean;
 }) {
   const [selectedTier, setSelectedTier] = useState<SubscribePlanTier>("standard");
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(props.mentorId)}&plan=${selectedTier}`;
@@ -52,12 +53,21 @@ export function MentorDetailSubscribeSidebar(props: {
           />
         </div>
 
-        <Link
-          href={props.isLoggedIn ? subscribeHref : loginSubscribe}
-          className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#1A56DB] text-sm font-extrabold text-white shadow-md transition hover:bg-[#1648c0]"
-        >
-          구독하기 →
-        </Link>
+        {props.subscriptionClosed ? (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <p className="text-sm font-extrabold text-slate-500">구독 마감</p>
+            <p className="mt-1 text-[11px] font-medium text-slate-500">
+              이 멘토는 현재 구독을 받지 않습니다. 프로필 열람과 찜은 계속 가능해요.
+            </p>
+          </div>
+        ) : (
+          <Link
+            href={props.isLoggedIn ? subscribeHref : loginSubscribe}
+            className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#1A56DB] text-sm font-extrabold text-white shadow-md transition hover:bg-[#1648c0]"
+          >
+            구독하기 →
+          </Link>
+        )}
 
         <Link
           href={freeHref}

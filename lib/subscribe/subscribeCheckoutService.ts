@@ -12,6 +12,7 @@ import {
   buildSubscriptionsInsertPayload,
 } from "@/lib/subscribe/subscriptionsTable";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { loadMentorCapUsage, wouldExceedCap } from "@/lib/subscribe/mentorCapService";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 
 type Row = Record<string, unknown>;
@@ -343,6 +344,14 @@ export async function createSubscriptionPaymentIntent(
       code: "dup",
     };
   }
+  const capUsage = await loadMentorCapUsage(mentorId);
+  if (wouldExceedCap(capUsage, planTier)) {
+    return {
+      ok: false,
+      error: "이 멘토는 현재 구독이 마감되었습니다. 다른 멘토를 찾아보거나 잠시 후 다시 시도해 주세요.",
+      code: "mentor",
+    };
+  }
   const plans = await fetchPlansForMentor(supabase, mentorId);
   if (plans.error) {
     return { ok: false, error: `플랜 조회 실패: ${plans.error}`, code: "plan" };
@@ -635,6 +644,17 @@ export async function finalizeSubscriptionCheckout(
   const planId = String(
     (planRow as Row).id ?? (planRow as Row).plan_id ?? (planRow as Row).uuid ?? ""
   );
+
+  // cap 재검증(서버): 멘토 used_cap + 신청 플랜 cap_weight > cap_limit 이면 결제 거부.
+  // (DB 트리거 trg_enforce_mentor_cap가 동시성 최종 방어. 여기서는 친절한 메시지로 선차단.)
+  const capUsage = await loadMentorCapUsage(mentorId);
+  if (wouldExceedCap(capUsage, planTier)) {
+    return {
+      ok: false,
+      error: "이 멘토는 현재 구독이 마감되었습니다. 다른 멘토를 찾아보거나 잠시 후 다시 시도해 주세요.",
+      code: "forbidden",
+    };
+  }
 
   let subId: string | null = null;
   const subInsert = await insertSubscriptionRow(

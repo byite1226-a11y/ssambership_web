@@ -11,6 +11,7 @@ import {
   SUBSCRIBE_PLAN_CATALOG,
   planIdFromRow,
 } from "@/lib/subscribe/subscribePlanCatalog";
+import { loadMentorCapUsage, wouldExceedCap } from "@/lib/subscribe/mentorCapService";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
@@ -58,10 +59,15 @@ export default async function StudentSubscribePage(props: Props) {
     );
   }
 
+  const capUsage = await loadMentorCapUsage(data.mentorId);
   const plans: SubscribePlanOption[] = SUBSCRIBE_PLAN_CATALOG.map((catalog) => ({
     ...catalog,
     planId: planIdFromRow(data.byTier[catalog.tier] as Record<string, unknown> | null),
   }));
+  // cap 마감: 학생에겐 구체 수치 노출 금지 — 마감된 tier 목록(boolean)만 전달
+  const closedTiers = SUBSCRIBE_PLAN_CATALOG.filter((c) => wouldExceedCap(capUsage, c.tier)).map(
+    (c) => c.tier,
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 antialiased">
@@ -84,6 +90,7 @@ export default async function StudentSubscribePage(props: Props) {
               mentorId={data.mentorId}
               plans={plans}
               currentBalanceCash={breakdown.totalCash}
+              closedTiers={closedTiers}
             />
           </section>
         </main>
