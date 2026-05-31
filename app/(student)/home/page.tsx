@@ -1,62 +1,6 @@
-import { PageScaffold } from "@/components/shell/PageScaffold";
-import { StudentHomeBody } from "@/components/home/StudentHomeBody";
-import { requireRole } from "@/lib/auth/routeGuard";
-import { createClient } from "@/lib/supabase/server";
-import { loadStudentHomeData, STUDENT_HOME_DATA_MODEL } from "@/lib/home/studentHomeQueries";
+import { redirect } from "next/navigation";
 
-export default async function StudentHomePage() {
-  const { user, profile } = await requireRole("student");
-  const supabase = await createClient();
-  const data = await loadStudentHomeData(supabase, {
-    userId: user.id,
-    profile: profile ?? null,
-    profileError: null,
-  });
-
-  return (
-    <PageScaffold
-      hideFooterPlaceholderCards
-      eyebrow="홈"
-      title="학생 대시보드"
-      description="질문방·구독·캐시·의뢰로 이어지는 흐름을 한 화면에서 점검하세요. 비어 있으면 안내만 보여요."
-      ctas={[
-        { href: "/question-room", label: "질문방", tone: "blue" },
-        { href: "/subscriptions", label: "구독", tone: "slate" },
-        { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
-        { href: "/custom-request/orders", label: "맞춤의뢰 주문", tone: "slate" },
-      ]}
-      sections={[
-        {
-          title: "질문방",
-          body: data.rooms.error
-            ? "질문방 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
-            : `질문방 ${data.rooms.rows?.length ?? 0}곳 · 멘토와 이어진 대화 방이에요`,
-          status: data.rooms.error ? "skeleton" : "connected",
-        },
-        {
-          title: "진행 중인 질문",
-          body: data.threadStats.error
-            ? "진행 중인 질문을 집계하지 못했어요. 잠시 후 다시 시도해 주세요."
-            : `답변을 기다리는 질문 ${data.threadStats.openThreads}건 · ${data.threadStats.roomsSampled}곳에서 모았어요`,
-          status: data.threadStats.error ? "skeleton" : "connected",
-        },
-        {
-          title: "구독·결제",
-          body: `구독: ${data.mypage.subscriptions.detail} · 결제: ${data.mypage.payments.detail}`,
-          status: data.mypage.subscriptions.status === "skeleton" || data.mypage.payments.status === "skeleton" ? "skeleton" : "connected",
-        },
-        {
-          title: "알림",
-          body: data.mypage.notifications.detail,
-          status: data.mypage.notifications.status === "skeleton" ? "skeleton" : "connected",
-        },
-      ]}
-      emptyState="질문방·구독·결제가 아직 없을 때는 아래 버튼으로 이동해 보세요."
-      loadingState="홈 정보를 불러오는 중이에요."
-      errorState="일부 정보를 불러오지 못했을 때는 잠시 후 다시 시도해 주세요."
-      dataPoints={[...STUDENT_HOME_DATA_MODEL]}
-    >
-      <StudentHomeBody data={data} />
-    </PageScaffold>
-  );
+/** (구) 학생 대시보드 폐기 — 마이페이지로 일원화. 기존 링크·북마크는 여기서 흡수해 redirect. */
+export default function StudentHomeRedirectPage() {
+  redirect("/mypage");
 }

@@ -532,10 +532,10 @@ export function QuestionRoomWorkspace(props: {
                   <ChevronLeft className="h-4 w-4 rotate-180 text-slate-300 group-hover:text-slate-500" />
                 </Link>
                 <Link
-                  href={props.variant === "mentor" ? "/mentor/dashboard" : "/home"}
+                  href={props.variant === "mentor" ? "/mentor/mypage" : "/mypage"}
                   className="group flex items-center justify-between rounded-xl bg-slate-50 p-3 transition hover:bg-slate-100"
                 >
-                  <span className="text-[12px] font-bold text-slate-700">{props.variant === "mentor" ? "멘토 대시보드" : "학생 홈"}</span>
+                  <span className="text-[12px] font-bold text-slate-700">마이페이지</span>
                   <Layout className="h-4 w-4 text-slate-300 group-hover:text-slate-500" />
                 </Link>
               </div>

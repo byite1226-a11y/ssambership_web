@@ -176,7 +176,7 @@ export function resolveNotificationHref(row: Row, role: AppRole, typeHint: strin
   if (role === "admin") {
     return "/admin";
   }
-  return role === "mentor" ? "/mentor/mypage" : "/home";
+  return role === "mentor" ? "/mentor/mypage" : "/mypage";
 }
 
 /** 유형 키 → 배지 문구(예시) */

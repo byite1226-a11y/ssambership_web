@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Inbox, Star, Users } from "lucide-react";
+import { Gauge, Inbox, Star, Users } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
@@ -164,13 +164,10 @@ export default async function MentorMypagePage() {
         </div>
 
         {/* 우 컬럼 */}
-        <aside className="flex flex-col gap-5 lg:gap-5">
-          <KpiPair
-            activeSubscribers={kpis.activeSubscribers}
-            ratingAvg={ratingAvg}
-            reviewCount={reviewCount}
-          />
-          <CapUsageCard usage={capUsage} />
+        <aside className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1">
+          <SubscribersStatCard activeSubscribers={kpis.activeSubscribers} />
+          <RatingStatCard ratingAvg={ratingAvg} reviewCount={reviewCount} />
+          <CapStatCard usage={capUsage} />
         </aside>
       </div>
     </main>
@@ -352,100 +349,94 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
   );
 }
 
-/* ───────────────── Cap 사용량 (구독 수용량) ───────────────── */
+/* ───────────────── 우측 통계 카드 (구독 학생 / 평균 평점 / 구독 수용량) ─────────────────
+   3카드 동일 크기·패딩·구조로 통일. 공통 카드 + 상단 아이콘/라벨 row. */
 
 function fmtCap(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-function CapUsageCard({ usage }: { usage: MentorCapUsage }) {
-  const { usedCap, capLimit, activeCount, pct, isFull } = usage;
-  const warn = pct >= 80;
-  const fillColor = isFull || pct >= 100 ? "#e08a2f" : warn ? "#e08a2f" : "#2563eb";
-
-  return (
-    <article className="rounded-2xl border border-[#edeef1] bg-white px-5 py-[18px]">
-      <div className="flex items-center justify-between">
-        <p className="text-[13px] font-medium text-slate-500">구독 수용량</p>
-        <p className="text-[13px] font-semibold text-slate-700 tabular-nums">
-          {fmtCap(usedCap)} / {fmtCap(capLimit)}
-        </p>
-      </div>
-      <div className="mt-3 h-[9px] w-full overflow-hidden rounded-md bg-slate-100">
-        <div
-          className="h-full rounded-md transition-all"
-          style={{ width: `${Math.min(100, pct)}%`, backgroundColor: fillColor }}
-        />
-      </div>
-      <p className="mt-2 text-[11px] text-slate-400">
-        {isFull ? (
-          <span className="font-semibold text-[#e08a2f]">구독 마감</span>
-        ) : (
-          `${activeCount}명 구독 중 · ${pct}% 사용`
-        )}
-      </p>
-    </article>
-  );
-}
-
-/* ───────────────── KPI Pair (구독 학생 / 평균 평점) ───────────────── */
-
-function KpiPair(props: {
-  activeSubscribers: number;
-  ratingAvg: number | null;
-  reviewCount: number;
-}) {
-  return (
-    <>
-      {/* lg 미만에서는 2열 */}
-      <div className="grid grid-cols-2 gap-5 lg:grid-cols-1">
-        <KpiCard
-          icon={<Users className="h-4 w-4" />}
-          label="구독 학생"
-          value={props.activeSubscribers.toLocaleString("ko-KR")}
-          unit="명"
-        />
-        <KpiCard
-          icon={<Star className="h-4 w-4" />}
-          label="평균 평점"
-          value={props.ratingAvg != null ? props.ratingAvg.toFixed(1) : "—"}
-          unit="/ 5.0"
-          dim={props.ratingAvg == null}
-          footnote={props.reviewCount > 0 ? `리뷰 ${props.reviewCount}개 기준` : null}
-        />
-      </div>
-    </>
-  );
-}
-
-function KpiCard(props: {
+function StatCard(props: {
   icon: React.ReactNode;
+  iconClass: string;
   label: string;
-  value: string;
-  unit: string;
-  dim?: boolean;
-  footnote?: string | null;
+  children: React.ReactNode;
 }) {
   return (
-    <article className="rounded-[14px] border border-[#eef0f3] bg-white px-[26px] py-6">
-      <div className="mb-4 flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-50 text-blue-600">
+    <article className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5">
+      <div className="mb-3.5 flex items-center gap-2.5">
+        <span className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${props.iconClass}`}>
           {props.icon}
         </span>
-        <p className="text-[13px] font-medium text-slate-400">{props.label}</p>
+        <p className="text-[13px] font-medium text-slate-500">{props.label}</p>
       </div>
-      <p
-        className={`text-[28px] font-semibold tracking-tight ${
-          props.dim ? "text-slate-300" : "text-[#1e2430]"
-        }`}
-      >
-        {props.value}
-        <span className="ml-1 text-[13px] font-normal text-slate-400">{props.unit}</span>
-      </p>
-      {props.footnote ? (
-        <p className="mt-1 text-[11px] text-slate-400">{props.footnote}</p>
-      ) : null}
+      {props.children}
     </article>
+  );
+}
+
+function SubscribersStatCard({ activeSubscribers }: { activeSubscribers: number }) {
+  return (
+    <StatCard
+      icon={<Users className="h-4 w-4" />}
+      iconClass="bg-[#eef4ff] text-[#2563eb]"
+      label="구독 학생"
+    >
+      <p className="text-[28px] font-bold tracking-tight text-[#1e2430]">
+        {activeSubscribers.toLocaleString("ko-KR")}
+        <span className="ml-1 text-[13px] font-normal text-slate-400">명</span>
+      </p>
+    </StatCard>
+  );
+}
+
+function RatingStatCard({ ratingAvg, reviewCount }: { ratingAvg: number | null; reviewCount: number }) {
+  const dim = ratingAvg == null;
+  return (
+    <StatCard
+      icon={<Star className="h-4 w-4" />}
+      iconClass="bg-[#fefce8] text-[#ca8a04]"
+      label="평균 평점"
+    >
+      <p className={`text-[28px] font-bold tracking-tight ${dim ? "text-slate-300" : "text-[#1e2430]"}`}>
+        {ratingAvg != null ? ratingAvg.toFixed(1) : "—"}
+        <span className="ml-1 text-[13px] font-normal text-slate-400">/ 5.0</span>
+      </p>
+      {reviewCount > 0 ? <p className="mt-1 text-[11px] text-slate-400">리뷰 {reviewCount}개 기준</p> : null}
+    </StatCard>
+  );
+}
+
+function CapStatCard({ usage }: { usage: MentorCapUsage }) {
+  const { usedCap, capLimit, pct, isFull } = usage;
+  // 상태별 색: 마감(빨강) > 여유 적음 80%↑(앰버) > 여유 있음(초록)
+  const tone = isFull || pct >= 100 ? "full" : pct >= 80 ? "warn" : "ok";
+  const color = tone === "full" ? "#dc2626" : tone === "warn" ? "#e08a2f" : "#16a34a";
+  const statusLabel = tone === "full" ? "구독 마감" : tone === "warn" ? "여유 적음" : "여유 있음";
+
+  return (
+    <StatCard
+      icon={<Gauge className="h-4 w-4" />}
+      iconClass="bg-[#eef9f1] text-[#16a34a]"
+      label="구독 수용량"
+    >
+      <p className="text-[28px] font-bold tracking-tight" style={{ color }}>
+        {pct}
+        <span className="ml-1 text-[13px] font-normal text-slate-400">%</span>
+      </p>
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-[5px] bg-[#eef0f3]">
+        <div
+          className="h-full rounded-[5px] transition-all"
+          style={{ width: `${Math.min(100, pct)}%`, backgroundColor: color }}
+        />
+      </div>
+      <p className="mt-1.5 text-[11px] text-slate-400">
+        <span className="font-semibold text-slate-500">
+          {fmtCap(usedCap)} / {fmtCap(capLimit)}
+        </span>{" "}
+        · {statusLabel}
+      </p>
+    </StatCard>
   );
 }
 

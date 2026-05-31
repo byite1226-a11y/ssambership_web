@@ -30,7 +30,6 @@ export default async function StudentDisputeDetailPage(props: PageProps) {
       ctas={[
         { href: "/support/disputes", label: "분쟁·환불 현황", tone: "blue" },
         { href: "/mypage", label: "마이페이지", tone: "slate" },
-        { href: "/home", label: "홈", tone: "slate" },
       ]}
       sections={[
         {

@@ -23,7 +23,6 @@ export default async function StudentDisputesListPage() {
       title="분쟁·환불 현황"
       description="맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있습니다."
       ctas={[
-        { href: "/home", label: "홈", tone: "slate" },
         { href: "/mypage", label: "마이페이지", tone: "slate" },
       ]}
       sections={[
