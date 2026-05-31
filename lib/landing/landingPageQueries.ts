@@ -138,6 +138,38 @@ export type HomeLandingData = {
   publicStats: LandingPublicStats;
 };
 
+/** loadHomeLandingData 실패 시 `/` 랜딩 폴백(500 방지) */
+export function emptyHomeLandingData(): HomeLandingData {
+  return {
+    notices: { rows: [], table: null, probe: "fallback", error: null },
+    mentors: {
+      cards: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 6,
+      hasMore: false,
+      usersError: null,
+      profilesError: null,
+      probes: [],
+      onlySelfVisibleHint: false,
+    },
+    shorts: { rows: [], table: null, error: null },
+    boards: { rows: [], table: null, error: null },
+    plans: { rows: [], table: null, probe: "fallback", error: null },
+    pricingByTier: { limited: null, standard: null, premium: null },
+    pricingFillProbe: "fallback",
+    trust: [],
+    publicStats: {
+      mentorCount: null,
+      shortformCount: null,
+      boardCount: null,
+      mentorProbe: "fallback",
+      shortformProbe: "fallback",
+      boardProbe: "fallback",
+    },
+  };
+}
+
 export async function loadHomeLandingData(supabase: SupabaseClient): Promise<HomeLandingData> {
   const filters = parseMentorsListFilters({});
   const [notices, mentors, shorts, boards, plans, trust, publicStats] = await Promise.all([
