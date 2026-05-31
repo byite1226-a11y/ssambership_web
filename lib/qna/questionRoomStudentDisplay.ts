@@ -104,10 +104,11 @@ export function threadStatusListLabel(thread: Row): {
   label: string;
   tone: "amber" | "emerald" | "blue";
 } {
+  // v4 라벨: pending=답변 대기 / answered=진행 중 / confirmed=답변 완료
   const w = readQuestionThreadWorkflowStatus(thread);
-  if (w === "confirmed") return { label: "완료", tone: "emerald" };
-  if (w === "answered") return { label: "답변도착", tone: "blue" };
-  return { label: "답변대기", tone: "amber" };
+  if (w === "confirmed") return { label: "답변 완료", tone: "emerald" };
+  if (w === "answered") return { label: "진행 중", tone: "blue" };
+  return { label: "답변 대기", tone: "amber" };
 }
 
 export function threadStatusBadgeClass(tone: "amber" | "emerald" | "blue"): string {

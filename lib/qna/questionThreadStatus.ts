@@ -20,9 +20,10 @@ export function readQuestionThreadWorkflowStatus(
 }
 
 export function workflowStatusLabel(status: QuestionThreadWorkflowStatus): string {
-  if (status === "pending") return "답변대기";
-  if (status === "answered") return "답변도착·확인필요";
-  return "완료";
+  // v4 라벨: 멘토 답변 = 진행 중, 명시적 확정 = 답변 완료
+  if (status === "pending") return "답변 대기";
+  if (status === "answered") return "진행 중";
+  return "답변 완료";
 }
 
 export function workflowStatusTone(

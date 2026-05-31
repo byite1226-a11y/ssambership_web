@@ -17,6 +17,9 @@ import {
   Search,
   Send,
 } from "lucide-react";
+import { StatusBadge, legacyToneToStatusBadgeTone } from "@/components/common/StatusBadge";
+// _threadStatusBadgeClass는 신규 StatusBadge로 대체됨 — 잔존 호출 없음
+void _threadStatusBadgeClass;
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { QuestionRoomNewQuestionModal } from "@/components/qna/QuestionRoomNewQuestionModal";
 import { QuestionThreadConfirmButton } from "@/components/qna/QuestionThreadConfirmButton";
@@ -37,7 +40,7 @@ import {
   roomMentorLabel,
   roomSubjectChips,
   threadPreviewText,
-  threadStatusBadgeClass,
+  threadStatusBadgeClass as _threadStatusBadgeClass,
   threadStatusListLabel,
   threadSubjectChip,
   threadTitleFromRow,
@@ -491,11 +494,10 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                       {c}
                     </span>
                   ))}
-                  <span
-                    className={`ml-auto rounded-full border px-2 py-0.5 text-[9px] font-black ${threadStatusBadgeClass(threadStatusListLabel(selectedThread).tone)}`}
-                  >
-                    {threadStatusListLabel(selectedThread).label}
-                  </span>
+                  <StatusBadge
+                    tone={legacyToneToStatusBadgeTone(threadStatusListLabel(selectedThread).tone)}
+                    className="ml-auto"
+                  />
                 </div>
                 <h2 className="mt-4 text-xl font-black text-slate-900">{threadTitleFromRow(selectedThread)}</h2>
                 <p className="mt-4 whitespace-pre-wrap text-sm font-medium leading-relaxed text-slate-700">
@@ -611,11 +613,10 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                               {c}
                             </span>
                           ))}
-                          <span
-                            className={`ml-auto rounded-full border px-2 py-0.5 text-[9px] font-black ${threadStatusBadgeClass(status.tone)}`}
-                          >
-                            {status.label}
-                          </span>
+                          <StatusBadge
+                            tone={legacyToneToStatusBadgeTone(status.tone)}
+                            className="ml-auto"
+                          />
                         </div>
                         <h3 className="mt-2 text-[14px] font-black text-slate-900">{threadTitleFromRow(t)}</h3>
                         <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-relaxed text-slate-500">
@@ -708,13 +709,6 @@ export function QuestionRoomStudentDesignWorkspace(props: {
 
           {rightPanelTab === "chat" && showChatPanel ? (
             <>
-              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4 py-2">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  온라인
-                </span>
-              </div>
-
               {threadWorkflow === "answered" && props.threadId ? (
                 <div className="shrink-0 border-b border-blue-100 bg-white px-4 py-3">
                   <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />

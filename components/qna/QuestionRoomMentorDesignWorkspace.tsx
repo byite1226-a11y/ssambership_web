@@ -5,6 +5,9 @@ import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { QuestionRoomNewNoteModal } from "@/components/qna/QuestionRoomNewNoteModal";
 import { Eye, MessageCircle, Notebook, Paperclip, Plus, Search, Send, User } from "lucide-react";
+import { StatusBadge, legacyToneToStatusBadgeTone } from "@/components/common/StatusBadge";
+// _threadStatusBadgeClass는 신규 StatusBadge로 대체됨 — 잔존 호출 없음(_ 접두로 미사용 표시)
+void _threadStatusBadgeClass;
 import { sendQuestionMessageAction } from "@/lib/qna/questionRoomActions";
 import {
   formatMinutesAgo,
@@ -19,7 +22,7 @@ import {
 } from "@/lib/qna/questionRoomMentorContext";
 import {
   threadPreviewText,
-  threadStatusBadgeClass,
+  threadStatusBadgeClass as _threadStatusBadgeClass,
   threadStatusListLabel,
   threadSubjectChip,
   threadTitleFromRow,
@@ -386,11 +389,10 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                               {c}
                             </span>
                           ))}
-                          <span
-                            className={`ml-auto rounded-full border px-2 py-0.5 text-[9px] font-black ${threadStatusBadgeClass(status.tone)}`}
-                          >
-                            {status.label}
-                          </span>
+                          <StatusBadge
+                            tone={legacyToneToStatusBadgeTone(status.tone)}
+                            className="ml-auto"
+                          />
                         </div>
                         <h3 className="mt-2 text-[14px] font-black text-slate-900">{threadTitleFromRow(t)}</h3>
                         <p className="mt-1 line-clamp-2 text-[12px] font-medium leading-relaxed text-slate-500">
@@ -446,10 +448,6 @@ export function QuestionRoomMentorDesignWorkspace(props: {
             <>
           <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4 py-2">
             <span className="text-[10px] font-bold text-slate-500">{studentName}</span>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              온라인
-            </span>
           </div>
 
           <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
@@ -511,9 +509,6 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                 <ChatSendButton disabled={!props.threadId} />
               </div>
             </form>
-            <p className="mt-2 text-[10px] font-medium text-slate-500">
-              답변 전송 시 학생에게 답변 완료 상태로 표시됩니다.
-            </p>
           </div>
             </>
           ) : (
