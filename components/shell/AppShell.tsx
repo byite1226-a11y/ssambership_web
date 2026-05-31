@@ -5,8 +5,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ShellHeaderInner } from "@/components/shell/ShellHeaderInner";
 import { getMainNavForRole } from "@/lib/shell/mainNavItems";
-import { shellHomeHref } from "@/lib/shell/shellHomeHref";
-import { shellUserHeaderDisplay } from "@/lib/shell/userHeaderDisplay";
+import { shellUserHeaderDisplay, resolveShellUserDisplayName } from "@/lib/shell/userHeaderDisplay";
 import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
 import type { AppRole, UserRow } from "@/lib/types/user";
 
@@ -113,6 +112,7 @@ function HeaderActionsDesktop({ sessionRole, userProfile, notificationBell }: He
   }
 
   const display = shellUserHeaderDisplay(userProfile ?? null, sessionRole);
+  const displayName = resolveShellUserDisplayName(userProfile ?? null, sessionRole);
   // 멘토는 상단 종(알림)·챗(메시지) 아이콘을 숨긴다. 질문방은 메인 네비 텍스트로 접근.
   const showInboxIcons = sessionRole !== "mentor";
 
@@ -132,21 +132,11 @@ function HeaderActionsDesktop({ sessionRole, userProfile, notificationBell }: He
           <User className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
         </span>
         <span className="hidden min-w-0 truncate text-sm font-bold text-slate-900 sm:inline">
-          {sessionRole === "mentor" ? (
-            <>
-              {display.primary} {display.roleBadge}
-            </>
-          ) : (
-            display.primary
-          )}
+          {displayName} {display.roleBadge}
         </span>
-        {sessionRole !== "mentor" ? (
-          <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-extrabold text-slate-600">
-            {display.roleBadge}
-          </span>
-        ) : (
+        {sessionRole === "mentor" ? (
           <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-400 sm:block" aria-hidden />
-        )}
+        ) : null}
       </Link>
       <a
         href="/logout"
@@ -175,7 +165,7 @@ export function AppShell({
           <ShellHeaderInner
             items={mainNav}
             sessionRole={role}
-            logo={<BrandLogo variant="shell" href={shellHomeHref(role)} />}
+            logo={<BrandLogo variant="shell" href="/" />}
             actions={<HeaderActionsDesktop sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
             mobileActions={<HeaderActionsMobile sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
           />

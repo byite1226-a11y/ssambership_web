@@ -272,6 +272,8 @@ export async function listMentorReceivedReviews(
     .from("reviews")
     .select("*")
     .eq("mentor_id", mentorId)
+    .eq("is_hidden", false)
+    .eq("is_blinded", false)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -283,5 +285,5 @@ export async function listMentorReceivedReviews(
     rows.map((r) => r.author_id)
   );
   const subject = await mentorFirstSubject(supabase, mentorId);
-  return rows.filter(isPubliclyVisibleReview).map((r) => toCard(r, authors.get(r.author_id), subject));
+  return rows.map((r) => toCard(r, authors.get(r.author_id), subject));
 }

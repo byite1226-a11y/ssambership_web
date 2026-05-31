@@ -18,6 +18,14 @@ type Props = {
   profile: ProfileLike | null;
   profileLoadError: string | null;
   cashBalanceKrw?: number;
+  /** 좌측 프로필 아래 미니 학습 요약 */
+  learningSummary?: {
+    roomCount: number;
+    activeMentorCount: number;
+    paymentCount: string;
+  };
+  /** 우측 결제·캐시 최근 내역 */
+  ledgerPreview?: React.ReactNode;
   children: React.ReactNode;
 };
 
@@ -37,6 +45,8 @@ export function StudentDashboardShell({
   profile,
   profileLoadError,
   cashBalanceKrw = 0,
+  learningSummary,
+  ledgerPreview,
   children,
 }: Props) {
   const name = profile?.full_name?.trim() || profile?.nickname?.trim() || user?.email || "—";
@@ -72,6 +82,26 @@ export function StudentDashboardShell({
               <p className="mt-2 text-xs font-semibold leading-tight text-amber-600">{profileLoadError}</p>
             ) : null}
           </section>
+
+          {learningSummary ? (
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">내 학습 요약</p>
+              <dl className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <dt className="text-[10px] font-semibold text-slate-400">질문방</dt>
+                  <dd className="mt-0.5 text-lg font-black text-slate-900">{learningSummary.roomCount}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-semibold text-slate-400">구독</dt>
+                  <dd className="mt-0.5 text-lg font-black text-slate-900">{learningSummary.activeMentorCount}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-semibold text-slate-400">의뢰·결제</dt>
+                  <dd className="mt-0.5 text-lg font-black text-slate-900">{learningSummary.paymentCount}</dd>
+                </div>
+              </dl>
+            </section>
+          ) : null}
 
           <nav className="space-y-1 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
             {NAV_ITEMS.map((item) => (
@@ -115,6 +145,8 @@ export function StudentDashboardShell({
               </Link>
             </div>
           </section>
+
+          {ledgerPreview ? <div className="space-y-4">{ledgerPreview}</div> : null}
         </aside>
       </div>
     </div>

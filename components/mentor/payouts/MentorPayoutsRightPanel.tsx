@@ -4,7 +4,7 @@ import {
   MENTOR_SUBSCRIPTION_PLATFORM_SHARE,
 } from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutMonthlyCard, MentorPayoutScheduleInfo } from "@/lib/mentor/mentorPayoutsTypes";
-import { MentorPayoutsMonthlyBarChart } from "./MentorPayoutsCharts";
+import { MentorPayoutsMonthlyBarChartLazy } from "./MentorPayoutsChartLazy";
 
 type Props = {
   schedule: MentorPayoutScheduleInfo;
@@ -42,7 +42,7 @@ export function MentorPayoutsRightPanel(props: Props) {
           </span>
         </div>
         <div className="mt-3">
-          <MentorPayoutsMonthlyBarChart months={props.months} />
+          <MentorPayoutsMonthlyBarChartLazy months={props.months} />
         </div>
       </section>
 

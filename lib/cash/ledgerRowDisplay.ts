@@ -57,7 +57,13 @@ export function ledgerAmountLabel(row: Row): string {
 }
 
 export function ledgerReasonLabel(row: Row): string {
-  return getStringField(row, ["reason", "description", "note", "memo", "summary", "label", "title"]) ?? "—";
+  for (const field of ["ref_type", "reason", "description", "note", "memo", "summary", "label", "title"] as const) {
+    const raw = getStringField(row, [field]);
+    if (!raw || raw === "—") continue;
+    const key = raw.trim().toLowerCase();
+    if (LEDGER_TYPE_KO[key]) return LEDGER_TYPE_KO[key];
+  }
+  return ledgerTypeLabel(row);
 }
 
 /** 주문/결제 연결(있다면) — UUID는 축약 표기 */

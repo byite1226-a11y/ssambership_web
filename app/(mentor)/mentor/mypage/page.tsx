@@ -140,7 +140,7 @@ export default async function MentorMypagePage() {
   const verification = verificationLabel(verificationStatus);
   const kpis = hub?.kpis ?? SAFE_KPI_FALLBACK;
   const ratingAvg = hub?.rating?.avg ?? kpis.avgRating ?? null;
-  const reviewCount = hub?.rating?.count ?? kpis.reviewCount;
+  const reviewCount = Math.max(hub?.rating?.count ?? kpis.reviewCount, recentReviews.length);
   const activeOrdersTop = (hub?.activeOrders ?? []).slice(0, 3);
   const revenue = hub?.revenuePanel;
 

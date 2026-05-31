@@ -66,7 +66,7 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero
   }
 
   return (
-    <main className="min-w-0 space-y-6">
+    <div className="min-w-0 space-y-6">
       {!props.hideHero ? (
         <header>
           <h1 className="text-2xl font-black text-slate-900">멘토 정산</h1>
@@ -152,6 +152,6 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero
           <MentorPayoutsPerformanceTable rows={props.data.performanceLines.slice(0, 30)} />
         </div>
       )}
-    </main>
+    </div>
   );
 }
