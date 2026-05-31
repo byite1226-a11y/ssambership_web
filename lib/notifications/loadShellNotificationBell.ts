@@ -12,3 +12,13 @@ export async function loadShellNotificationBell(userId: string, role: AppRole) {
     items: data.items,
   };
 }
+
+/** 레이아웃 공통 — 알림 조회 실패 시 null(페이지 500 방지) */
+export async function loadShellNotificationBellSafe(userId: string, role: AppRole) {
+  try {
+    return await loadShellNotificationBell(userId, role);
+  } catch (err) {
+    console.error("[loadShellNotificationBellSafe]", role, userId, err);
+    return null;
+  }
+}
