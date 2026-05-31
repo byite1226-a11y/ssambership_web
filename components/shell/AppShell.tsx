@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ChevronDown, MessageCircle, Search, User } from "lucide-react";
+import { ChevronDown, MessageCircle, User } from "lucide-react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ShellHeaderInner } from "@/components/shell/ShellHeaderInner";
@@ -55,9 +55,6 @@ function HeaderActionsMobile({ sessionRole, userProfile, notificationBell }: Hea
 
   return (
     <>
-      <Link href="/mentors" className={iconActionClass} aria-label="멘토 찾기" title="멘토 찾기">
-        <Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-      </Link>
       {notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
       <Link href={messageHref} className={iconActionClass} aria-label="메시지" title="메시지">
         <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
@@ -116,9 +113,6 @@ function HeaderActionsDesktop({ sessionRole, userProfile, notificationBell }: He
 
   return (
     <div className="flex min-w-0 max-w-full items-center gap-3 sm:gap-4">
-      <Link href="/mentors" className={iconActionClass} aria-label="멘토 찾기" title="멘토 찾기">
-        <Search className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-      </Link>
       {notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
       <Link href={messageHref} className={iconActionClass} aria-label="메시지" title="메시지">
         <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
