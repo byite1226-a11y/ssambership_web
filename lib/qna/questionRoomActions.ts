@@ -337,6 +337,113 @@ export async function createQuestionMessageAction(formData: FormData) {
  */
 export const sendQuestionMessageAction = createQuestionMessageAction;
 
+/**
+ * STEP 5: 질문방 채팅 파일/사진 첨부 전송.
+ * 파일을 private 버킷에 업로드 → 서명 URL을 메시지 본문(첨부 마커)으로 저장.
+ * room/thread/역할은 서버에서 재검증한다.
+ */
+export async function sendQuestionAttachmentAction(formData: FormData) {
+  const { uploadQuestionRoomAttachment, buildAttachmentMessageBody } = await import(
+    "@/lib/qna/questionRoomAttachmentStorage"
+  );
+  const { user, actor } = await requireQnaActor();
+  const roomId = textFromForm(formData.get("roomId"));
+  const threadId = textFromForm(formData.get("threadId"));
+  if (!roomId) {
+    redirect(listPathForActor(actor) + "?error=" + encodeURIComponent("room 정보가 없습니다."));
+  }
+  const fallbackThread = threadId || textFromForm(formData.get("contextThreadId")) || null;
+
+  const file = formData.get("attachment");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: fallbackThread,
+        kind: "message",
+        error: "첨부할 파일을 선택해 주세요.",
+      })
+    );
+  }
+  if (!threadId) {
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: fallbackThread,
+        kind: "message",
+        error: "질문을 먼저 선택한 뒤 파일을 첨부해 주세요.",
+      })
+    );
+  }
+
+  const supabase = await createClient();
+  const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
+  if (roomErr) {
+    redirect(
+      buildRedirectUrl(roomId, actor, { thread: fallbackThread, kind: "message", error: userFacingActionError("message", roomErr) })
+    );
+  }
+  const tErr = await assertThreadBelongsToRoom(supabase, roomId, threadId);
+  if (tErr) {
+    redirect(
+      buildRedirectUrl(roomId, actor, { thread: fallbackThread, kind: "message", error: userFacingActionError("message", tErr) })
+    );
+  }
+
+  const typedFile = file as File;
+  const buffer = Buffer.from(await typedFile.arrayBuffer());
+  const uploaded = await uploadQuestionRoomAttachment(supabase, {
+    roomId,
+    threadId,
+    buffer,
+    mime: typedFile.type || "application/octet-stream",
+    name: typedFile.name || "attachment",
+  });
+  if (uploaded.error || !uploaded.url) {
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: threadId,
+        kind: "message",
+        error: uploaded.error ?? "첨부 업로드에 실패했습니다.",
+      })
+    );
+  }
+
+  const body = buildAttachmentMessageBody({
+    isImage: uploaded.isImage,
+    filename: uploaded.filename,
+    url: uploaded.url,
+  });
+
+  const result = await createQuestionMessage({ supabase, role: actor, userId: user.id, roomId, threadId, content: body });
+  if (!result.ok) {
+    redirect(
+      buildRedirectUrl(roomId, actor, { thread: threadId, kind: "message", error: userFacingActionError("message", result.error) })
+    );
+  }
+
+  if (actor === "mentor") {
+    const answered = await markQuestionThreadAnsweredForMentor(supabase, user.id, roomId, threadId);
+    if (answered.ok) {
+      const pair = await resolveMentorIdForRoom(supabase, roomId);
+      if (pair.studentId) {
+        const mentorName = await fetchUserDisplayName(supabase, user.id);
+        await insertNotificationBestEffort({
+          recipientUserId: pair.studentId,
+          type: "question_answered",
+          title: "새 답변이 도착했어요",
+          body: `${mentorName}님이 파일을 보냈습니다.`,
+          link: `/question-room/${encodeURIComponent(roomId)}?thread=${encodeURIComponent(threadId)}`,
+          metadata: { room_id: roomId, thread_id: threadId },
+        });
+      }
+    }
+  }
+
+  revalidatePath(detailBasePath(roomId, actor));
+  redirect(
+    buildRedirectUrl(roomId, actor, { thread: threadId, kind: "message", ok: "첨부를 전송했습니다." })
+  );
+}
+
 export async function saveConnectionNoteAction(formData: FormData) {
   const { user, actor } = await requireQnaActor();
   const roomId = textFromForm(formData.get("roomId"));

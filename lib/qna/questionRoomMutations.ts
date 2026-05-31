@@ -71,29 +71,6 @@ async function insertWithCandidates<T extends Record<string, unknown>>(
   return { ok: false, error: lastError };
 }
 
-async function updateWithCandidates<T extends Record<string, unknown>>(
-  supabase: SupabaseClient,
-  table: string,
-  matchColumn: string,
-  matchValue: string,
-  payloads: Record<string, unknown>[]
-): Promise<MutationResult<T>> {
-  let lastError = "update 후보를 모두 실패했습니다.";
-  for (const payload of payloads) {
-    const { data, error } = await supabase
-      .from(table)
-      .update(payload)
-      .eq(matchColumn, matchValue)
-      .select("*")
-      .limit(1)
-      .maybeSingle();
-    if (!error) return { ok: true, row: (data as T | null) ?? null };
-    lastError = error.message;
-    if (!isMissingColumnError(error)) return { ok: false, error: error.message };
-  }
-  return { ok: false, error: lastError };
-}
-
 function buildThreadPayloads(
   roomColumn: string,
   roomId: string,
@@ -163,16 +140,15 @@ function buildMessagePayloads(
   return payloads;
 }
 
-function buildNotePayloads(content: string, userId: string): Record<string, unknown>[] {
-  // staging: body only — 우선 `mentor_student_room_id` + `body` 조합
+function buildNotePayloads(content: string, userId: string, role: QnaRole): Record<string, unknown>[] {
+  // 작성자(author_id/author_role)를 우선 시도하고, 컬럼 미존재(미마이그레이션) 시 body-only로 폴백.
   const contentKeys = ["body", "content", "note", "text", "memo", "summary"] as const;
-  const userKeys = ["updated_by", "author_id", "user_id", "mentor_id", "student_id"] as const;
   const payloads: Record<string, unknown>[] = [];
 
   for (const c of contentKeys) {
-    const base: Record<string, unknown> = { [c]: content };
-    payloads.push(base);
-    for (const u of userKeys) payloads.push({ ...base, [u]: userId });
+    payloads.push({ [c]: content, author_id: userId, author_role: role });
+    payloads.push({ [c]: content, author_id: userId });
+    payloads.push({ [c]: content });
   }
   return payloads;
 }
@@ -272,37 +248,8 @@ export async function saveConnectionNote(params: {
     return { ok: false, error: err };
   }
 
-  const existingQ = await supabase.from("connection_notes").select("*").eq(roomColumn, roomId).limit(1).maybeSingle();
-  if (existingQ.error) {
-    console.error("[saveConnectionNote] select existing failed", {
-      roomId,
-      roomColumn,
-      supabaseError: existingQ.error.message,
-    });
-    return { ok: false, error: existingQ.error.message };
-  }
-
-  const notePayloads = buildNotePayloads(content.trim(), userId);
-  if (existingQ.data && typeof existingQ.data.id === "string") {
-    const updated = await updateWithCandidates<Record<string, unknown>>(
-      supabase,
-      "connection_notes",
-      "id",
-      existingQ.data.id,
-      notePayloads
-    );
-    if (!updated.ok) {
-      console.error("[saveConnectionNote] update failed", {
-        roomId,
-        roomColumn,
-        noteId: existingQ.data.id,
-        supabaseError: updated.error,
-      });
-      return updated;
-    }
-    return { ok: true, row: updated.row };
-  }
-
+  // 작성자별 카드를 유지하기 위해 매 저장마다 새 노트를 append (room 단위 공유).
+  const notePayloads = buildNotePayloads(content.trim(), userId, role);
   const insertPayloads = notePayloads.map((payload) => ({ [roomColumn]: roomId, ...payload }));
   const inserted = await insertWithCandidates<Record<string, unknown>>(supabase, "connection_notes", insertPayloads);
   if (!inserted.ok) {

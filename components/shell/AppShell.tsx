@@ -50,15 +50,18 @@ function HeaderActionsMobile({ sessionRole, userProfile, notificationBell }: Hea
     return null;
   }
 
-  const messageHref = sessionRole === "mentor" ? "/mentor/question-room" : "/question-room";
   const display = shellUserHeaderDisplay(userProfile ?? null, sessionRole);
+  // 멘토는 상단 종(알림)·챗(메시지) 아이콘을 숨긴다. 질문방은 메인 네비 텍스트로 접근.
+  const showInboxIcons = sessionRole !== "mentor";
 
   return (
     <>
-      {notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
-      <Link href={messageHref} className={iconActionClass} aria-label="메시지" title="메시지">
-        <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-      </Link>
+      {showInboxIcons && notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
+      {showInboxIcons ? (
+        <Link href="/question-room" className={iconActionClass} aria-label="메시지" title="메시지">
+          <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+        </Link>
+      ) : null}
       <Link
         href={display.profileHref}
         className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100"
@@ -108,15 +111,18 @@ function HeaderActionsDesktop({ sessionRole, userProfile, notificationBell }: He
     );
   }
 
-  const messageHref = sessionRole === "mentor" ? "/mentor/question-room" : "/question-room";
   const display = shellUserHeaderDisplay(userProfile ?? null, sessionRole);
+  // 멘토는 상단 종(알림)·챗(메시지) 아이콘을 숨긴다. 질문방은 메인 네비 텍스트로 접근.
+  const showInboxIcons = sessionRole !== "mentor";
 
   return (
     <div className="flex min-w-0 max-w-full items-center gap-3 sm:gap-4">
-      {notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
-      <Link href={messageHref} className={iconActionClass} aria-label="메시지" title="메시지">
-        <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-      </Link>
+      {showInboxIcons && notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
+      {showInboxIcons ? (
+        <Link href="/question-room" className={iconActionClass} aria-label="메시지" title="메시지">
+          <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+        </Link>
+      ) : null}
       <Link
         href={display.profileHref}
         className="group flex min-w-0 max-w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 py-0.5 pl-0.5 pr-2.5 transition hover:bg-slate-100 sm:pr-3"

@@ -155,8 +155,8 @@ export function QuestionRoomWorkspace(props: {
 
   // List View
   if (props.surface === "list") {
-    const startHref = props.listStartQuestion?.href ?? (props.variant === "student" ? "/mentors" : "/mentor/mypage");
-    const startLabel = props.listStartQuestion?.label ?? (props.variant === "student" ? "질문 시작하기" : "마이페이지로 이동");
+    const startHref = props.listStartQuestion?.href ?? (props.variant === "student" ? "/mentors" : "/mentor/dashboard");
+    const startLabel = props.listStartQuestion?.label ?? (props.variant === "student" ? "질문 시작하기" : "대시보드로 이동");
     
     return (
       <div className="mx-auto w-full max-w-7xl min-w-0 space-y-3">
@@ -194,6 +194,8 @@ export function QuestionRoomWorkspace(props: {
         draftMessageBody={props.draftMessageBody}
         draftNoteBody={props.draftNoteBody}
         formRevision={rev}
+        threadDetailMode={props.threadDetailMode}
+        backHref={props.backHref}
         actionFeedback={{
           ok: props.actionFeedback?.ok ?? null,
           error: props.actionFeedback?.error ?? null,
@@ -530,10 +532,10 @@ export function QuestionRoomWorkspace(props: {
                   <ChevronLeft className="h-4 w-4 rotate-180 text-slate-300 group-hover:text-slate-500" />
                 </Link>
                 <Link
-                  href={props.variant === "mentor" ? "/mentor/mypage" : "/home"}
+                  href={props.variant === "mentor" ? "/mentor/dashboard" : "/home"}
                   className="group flex items-center justify-between rounded-xl bg-slate-50 p-3 transition hover:bg-slate-100"
                 >
-                  <span className="text-[12px] font-bold text-slate-700">{props.variant === "mentor" ? "멘토 마이페이지" : "학생 홈"}</span>
+                  <span className="text-[12px] font-bold text-slate-700">{props.variant === "mentor" ? "멘토 대시보드" : "학생 홈"}</span>
                   <Layout className="h-4 w-4 text-slate-300 group-hover:text-slate-500" />
                 </Link>
               </div>
