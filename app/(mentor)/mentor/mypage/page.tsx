@@ -10,6 +10,8 @@ import type {
 } from "@/lib/mentor/dashboard/mentorHubDashboardTypes";
 import { MentorRevenueChart, type MonthlyRevenue } from "@/components/mentor/mypage/MentorRevenueChart";
 import { loadMentorCapUsage, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
+import { listMentorReceivedReviews, type ReviewCardItem } from "@/lib/reviews/reviewQueries";
+import { formatKoreanDate } from "@/lib/utils/formatDisplay";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -132,6 +134,7 @@ export default async function MentorMypagePage() {
   const monthlyRevenue = await loadRecentMonthlyRevenue(supabase, user.id);
   const currentMonthLabel = monthlyRevenue[monthlyRevenue.length - 1]?.month ?? "이번 달";
   const capUsage = await loadMentorCapUsage(user.id);
+  const recentReviews = await listMentorReceivedReviews(supabase, user.id, 3);
 
   const displayName = profile?.nickname?.trim() || profile?.full_name?.trim() || "멘토";
   const verification = verificationLabel(verificationStatus);
@@ -147,6 +150,7 @@ export default async function MentorMypagePage() {
         displayName={displayName}
         verification={verification}
         reviewCount={reviewCount}
+        ratingAvg={ratingAvg}
       />
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_300px]">
@@ -166,7 +170,10 @@ export default async function MentorMypagePage() {
         {/* 우 컬럼 */}
         <aside className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1">
           <SubscribersStatCard activeSubscribers={kpis.activeSubscribers} />
-          <RatingStatCard ratingAvg={ratingAvg} reviewCount={reviewCount} />
+          <div className="space-y-5">
+            <RatingStatCard ratingAvg={ratingAvg} reviewCount={reviewCount} />
+            {recentReviews.length > 0 ? <RecentReviewsCard reviews={recentReviews} /> : null}
+          </div>
           <CapStatCard usage={capUsage} />
         </aside>
       </div>
@@ -180,8 +187,9 @@ function ProfileHeader(props: {
   displayName: string;
   verification: VerificationToken;
   reviewCount: number;
+  ratingAvg: number | null;
 }) {
-  const { displayName, verification, reviewCount } = props;
+  const { displayName, verification, reviewCount, ratingAvg } = props;
   const initial = initialOf(displayName);
   const verifBadgeClass =
     verification.tone === "ok"
@@ -189,7 +197,12 @@ function ProfileHeader(props: {
       : verification.tone === "pending"
         ? "text-amber-700 bg-amber-50"
         : "text-slate-500 bg-slate-100";
-  const subline = reviewCount > 0 ? `후기 ${reviewCount}개` : "아직 등록된 후기가 없어요";
+  const subline =
+    reviewCount > 0 && ratingAvg != null
+      ? `후기 ${reviewCount}개 · 평균 ${ratingAvg.toFixed(1)}`
+      : reviewCount > 0
+        ? `후기 ${reviewCount}개`
+        : "아직 등록된 후기가 없어요";
 
   return (
     <header className="mb-7 flex items-center gap-3.5">
@@ -404,6 +417,29 @@ function RatingStatCard({ ratingAvg, reviewCount }: { ratingAvg: number | null; 
       </p>
       {reviewCount > 0 ? <p className="mt-1 text-[11px] text-slate-400">리뷰 {reviewCount}개 기준</p> : null}
     </StatCard>
+  );
+}
+
+function RecentReviewsCard({ reviews }: { reviews: ReviewCardItem[] }) {
+  return (
+    <article className="rounded-2xl border border-[#eef0f3] bg-white px-5 py-5">
+      <p className="text-[13px] font-medium text-slate-500">최근 후기</p>
+      <ul className="mt-3 space-y-3">
+        {reviews.map((r) => (
+          <li key={r.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12px] font-bold text-amber-500">★ {r.rating.toFixed(1)}</span>
+              <span className="truncate text-[11px] text-slate-400">{formatKoreanDate(r.createdAt)}</span>
+            </div>
+            <p className="mt-0.5 text-[12px] font-semibold text-slate-700">{r.studentMaskedName}</p>
+            <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-600">{r.content}</p>
+          </li>
+        ))}
+      </ul>
+      <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-blue-600 hover:underline">
+        후기 전체보기 →
+      </Link>
+    </article>
   );
 }
 

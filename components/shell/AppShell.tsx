@@ -5,6 +5,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ShellHeaderInner } from "@/components/shell/ShellHeaderInner";
 import { getMainNavForRole } from "@/lib/shell/mainNavItems";
+import { shellHomeHref } from "@/lib/shell/shellHomeHref";
 import { shellUserHeaderDisplay } from "@/lib/shell/userHeaderDisplay";
 import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
 import type { AppRole, UserRow } from "@/lib/types/user";
@@ -174,7 +175,7 @@ export function AppShell({
           <ShellHeaderInner
             items={mainNav}
             sessionRole={role}
-            logo={<BrandLogo variant="shell" href="/" />}
+            logo={<BrandLogo variant="shell" href={shellHomeHref(role)} />}
             actions={<HeaderActionsDesktop sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
             mobileActions={<HeaderActionsMobile sessionRole={role} userProfile={userProfile} notificationBell={notificationBell} />}
           />

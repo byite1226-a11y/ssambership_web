@@ -40,6 +40,8 @@ type RoleLoginFormProps = {
   /** «유형 선택» 링크: `next` 유지하려면 `/login?next=...` */
   rolePickerHref?: string;
   hideRolePickerLink?: boolean;
+  /** 듀얼 패널에서 비활성 카드 입력 차단(브라우저 autofill 공유 방지) */
+  disabled?: boolean;
   /** 제어형 입력(듀얼 패널에서 카드별 state 분리용). 미전달 시 내부 state 사용 */
   email?: string;
   password?: string;
@@ -55,6 +57,7 @@ export function RoleLoginForm({
   initialNext,
   rolePickerHref = "/login",
   hideRolePickerLink = false,
+  disabled = false,
   email: emailProp,
   password: passwordProp,
   onEmailChange,
@@ -190,6 +193,7 @@ export function RoleLoginForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+      <fieldset disabled={disabled || loading} className="space-y-4 sm:space-y-5 disabled:opacity-60">
       {signupFollowUp && !error ? (
         <p
           className={
@@ -228,13 +232,12 @@ export function RoleLoginForm({
           id={emailId}
           type="email"
           name={`${role}-email`}
-          autoComplete={`${role} email`}
+          autoComplete={`section-${role} email`}
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           className={inputByRole[role] + " mt-2 block"}
           placeholder="name@example.com"
-          disabled={loading}
         />
       </div>
       <div>
@@ -245,12 +248,11 @@ export function RoleLoginForm({
           id={passwordId}
           type="password"
           name={`${role}-password`}
-          autoComplete={`${role} current-password`}
+          autoComplete={`section-${role} current-password`}
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           className={inputByRole[role] + " mt-2 block"}
-          disabled={loading}
         />
         <p className="mt-1.5 text-right text-sm text-slate-500">
           <Link href="/forgot-password" className="font-semibold text-blue-600 underline decoration-blue-200 underline-offset-4 hover:text-blue-800">
@@ -273,6 +275,7 @@ export function RoleLoginForm({
           </Link>
         </p>
       ) : null}
+      </fieldset>
     </form>
   );
 }

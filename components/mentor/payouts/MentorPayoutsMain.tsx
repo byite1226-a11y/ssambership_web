@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import type { MentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsTypes";
 import { formatYearMonthLabel } from "@/lib/mentor/mentorPayoutsDisplay";
 import { Download } from "lucide-react";
-import { MentorPayoutsKpiCards } from "./MentorPayoutsKpiCards";
 import { MentorPayoutsPerformanceTable } from "./MentorPayoutsPerformanceTable";
 import { MentorPayoutsSettlementTable } from "./MentorPayoutsSettlementTable";
 import { formatPayoutTableDate, settlementStatusBadge, typeBadgeLabel } from "./payoutUi";
@@ -32,7 +31,7 @@ function inMonth(iso: string, ym: string): boolean {
   return key === ym;
 }
 
-export function MentorPayoutsMain(props: { data: MentorPayoutsPageData }) {
+export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero?: boolean }) {
   const [tab, setTab] = useState<TabId>("settlement");
   const [month, setMonth] = useState(props.data.defaultMonth);
   const [showAllSettlement, setShowAllSettlement] = useState(false);
@@ -67,18 +66,13 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData }) {
   }
 
   return (
-    <main className="min-w-0 flex-1 space-y-6">
-      <header>
-        <h1 className="text-2xl font-black text-slate-900">멘토 정산</h1>
-        <p className="mt-1 text-sm text-slate-600">예상 정산 금액과 서비스 수익을 확인하세요.</p>
-      </header>
-
-      <MentorPayoutsKpiCards
-        subscription={props.data.kpis.subscription}
-        customRequest={props.data.kpis.customRequest}
-        total={props.data.kpis.total}
-        lifetimePaid={props.data.kpis.lifetimePaid}
-      />
+    <main className="min-w-0 space-y-6">
+      {!props.hideHero ? (
+        <header>
+          <h1 className="text-2xl font-black text-slate-900">멘토 정산</h1>
+          <p className="mt-1 text-sm text-slate-600">예상 정산 금액과 서비스 수익을 확인하세요.</p>
+        </header>
+      ) : null}
 
       <div className="border-b border-slate-200">
         <nav className="flex gap-1">

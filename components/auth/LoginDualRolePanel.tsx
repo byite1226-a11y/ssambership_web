@@ -78,12 +78,14 @@ function LoginRoleCard(props: {
       <div className="mt-auto flex flex-1 flex-col pt-4">
         <Suspense fallback={<p className="text-center text-sm text-slate-500">로그인 폼 불러오는 중…</p>}>
           <RoleLoginForm
+            key={role}
             role={role}
             emailId={emailId}
             passwordId={passwordId}
             submitLabel="로그인"
             initialNext={initialNext}
             hideRolePickerLink
+            disabled={!active}
             email={props.email}
             password={props.password}
             onEmailChange={props.onEmailChange}

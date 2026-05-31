@@ -1,6 +1,5 @@
 import Link from "next/link";
 import React from "react";
-import { Bell, CreditCard, HelpCircle, MessageSquare, Star } from "lucide-react";
 
 interface UserLike {
   email?: string | null;
@@ -115,29 +114,6 @@ export function StudentDashboardShell({
                 사용내역
               </Link>
             </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">빠른 바로가기</p>
-            <ul className="mt-3 space-y-2">
-              {[
-                { href: "/question-room", label: "질문방", Icon: MessageSquare },
-                { href: "/custom-request/orders", label: "맞춤의뢰", Icon: CreditCard },
-                { href: "/notifications", label: "알림", Icon: Bell },
-                { href: "/support/disputes", label: "고객지원", Icon: HelpCircle },
-                { href: "/mentors", label: "멘토 찾기", Icon: Star },
-              ].map(({ href, label, Icon }) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 hover:text-[#1A56DB]"
-                  >
-                    <Icon className="h-5 w-5 shrink-0 text-slate-400" strokeWidth={2} />
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
           </section>
         </aside>
       </div>
