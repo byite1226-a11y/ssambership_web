@@ -616,7 +616,6 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 <div className="space-y-3">
                   {sortedThreads.map((t) => {
                     const id = String(t.id);
-                    const active = props.threadId === id;
                     const status = threadStatusListLabel(t);
                     const workflow = readQuestionThreadWorkflowStatus(t);
                     const lastMsg = props.lastMessageByThreadId?.[id] ?? null;
@@ -627,11 +626,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     return (
                       <article
                         key={id}
-                        className={`rounded-xl border p-4 transition ${
-                          active
-                            ? "border-[#1A56DB]/40 bg-[#EEF4FF] shadow-sm ring-1 ring-[#1A56DB]/20"
-                            : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm"
-                        }`}
+                        className="rounded-xl border border-slate-100 bg-white p-4 transition hover:border-slate-200 hover:shadow-sm"
                       >
                         <Link
                           href={threadInRoomPath("/question-room", props.roomId, id)}

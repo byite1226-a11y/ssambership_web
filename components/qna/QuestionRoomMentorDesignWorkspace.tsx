@@ -577,9 +577,8 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                 <p className="py-12 text-center text-[12px] font-bold text-slate-400">표시할 질문이 없습니다.</p>
               ) : (
                 <div className="space-y-3">
-                  {sortedThreads.map((t, idx) => {
+                  {sortedThreads.map((t) => {
                     const id = String(t.id);
-                    const active = props.threadId === id || (!props.threadId && idx === 0);
                     const status = threadStatusListLabel(t);
                     const lastMsg = props.lastMessageByThreadId?.[id] ?? null;
                     const chip = threadSubjectChip(t, subjectChipsRoom);
@@ -590,11 +589,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                         key={id}
                         href={threadInRoomPath(roomBase, props.roomId, id)}
                         scroll={false}
-                        className={`block rounded-xl border p-4 transition ${
-                          active
-                            ? "border-blue-400/40 bg-blue-50 shadow-sm ring-1 ring-blue-200/50"
-                            : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm"
-                        }`}
+                        className="block rounded-xl border border-slate-100 bg-white p-4 transition hover:border-slate-200 hover:shadow-sm"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           {chip.map((c) => (
