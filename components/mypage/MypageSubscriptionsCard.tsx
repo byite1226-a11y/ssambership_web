@@ -4,6 +4,7 @@ import Link from "next/link";
 import { UserSearch } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { ActiveSubscriptionCard } from "@/lib/mypage/studentActiveSubscriptions";
+import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 
 type FetchState =
   | { phase: "loading" }
@@ -120,7 +121,7 @@ export function MypageSubscriptionsCard() {
   }, [load]);
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+    <section className={SURFACE_CARD}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-bold text-slate-900">구독 현황</h2>

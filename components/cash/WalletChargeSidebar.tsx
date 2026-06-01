@@ -55,9 +55,6 @@ export function WalletChargeSidebar(props: {
             </dl>
           </>
         )}
-        <Link href="/wallet/ledger" className="mt-4 inline-block text-xs font-bold text-blue-600 hover:underline">
-          사용 내역 보기 &rarr;
-        </Link>
       </section>
 
       {balanceOnly ? null : (

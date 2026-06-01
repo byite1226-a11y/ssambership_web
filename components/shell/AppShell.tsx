@@ -9,7 +9,6 @@ import {
   ShellHeaderGuestActions,
 } from "@/components/shell/ShellHeaderActions";
 import { getMainNavForRole } from "@/lib/shell/mainNavItems";
-import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
 import type { AppRole, UserRow } from "@/lib/types/user";
 
 type ShellArea = "public" | "student" | "mentor" | "admin";
@@ -19,12 +18,6 @@ type AppShellProps = {
   children: ReactNode;
   sessionRole?: AppRole | null;
   userProfile?: UserRow | null;
-  notificationBell?: {
-    userId: string;
-    role: AppRole;
-    unreadCount: number;
-    items: NotificationBellItem[];
-  } | null;
 };
 
 export function AppShell({
@@ -32,7 +25,6 @@ export function AppShell({
   children,
   sessionRole = null,
   userProfile = null,
-  notificationBell = null,
 }: AppShellProps) {
   const mainNav = getMainNavForRole(sessionRole);
   const role = sessionRole ?? null;
@@ -46,7 +38,6 @@ export function AppShell({
       <ShellHeaderActionsDesktop
         sessionRole={role}
         userProfile={userProfile}
-        notificationBell={notificationBell}
       />
     );
 
@@ -55,7 +46,6 @@ export function AppShell({
       <ShellHeaderActionsMobile
         sessionRole={role}
         userProfile={userProfile}
-        notificationBell={notificationBell}
       />
     );
 

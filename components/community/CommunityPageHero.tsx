@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 
 export type CommunityHeroCta = { href: string; label: string; tone?: "blue" | "green" | "slate" };
 
@@ -21,11 +22,11 @@ export function CommunityPageHero(props: Props) {
   const cta = props.primaryAction;
   const secondary = props.secondaryAction;
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className={SURFACE_CARD}>
       {props.eyebrow ? (
         <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">{props.eyebrow}</p>
       ) : null}
-      <h1 className={`text-3xl font-black tracking-tight text-slate-900 ${props.eyebrow ? "mt-2" : ""}`}>
+      <h1 className={`text-[22px] font-bold tracking-tight text-slate-900 ${props.eyebrow ? "mt-2" : ""}`}>
         {props.title}
       </h1>
       <p className="mt-2 text-sm leading-6 text-slate-600">{props.description}</p>

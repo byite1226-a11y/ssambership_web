@@ -1,6 +1,4 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { createClient } from "@/lib/supabase/server";
-import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { MentorCommunityComposeForm } from "@/components/community/MentorCommunityComposeForm";
 
@@ -27,13 +25,10 @@ export default async function MentorCommunityNewPage(props: PageProps) {
   const sp = (await props.searchParams) ?? {};
   const rawCode = typeof sp.error === "string" && sp.error.length ? sp.error.trim() : null;
   const errorMessage = mentorComposeErrorDisplay(rawCode);
-  const supabase = await createClient();
-  const weeklyMentor = await loadCommunityWeeklyTopMentor(supabase);
 
   return (
     <CommunityLayoutShell
       activeNav="none"
-      weeklyTopMentor={weeklyMentor}
       hero={
         <CommunityPageHero
           eyebrow="멘토 · 커뮤니티 · 새 글"

@@ -1,10 +1,8 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityMeTabPanels, type CommunityMeActivityPayload } from "@/components/community/CommunityMeTabPanels";
 import { CommunityMeOverviewSections } from "@/components/community/CommunityMeOverviewSections";
-import { CommunityMeTabNav } from "@/components/community/CommunityMeTabNav";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroPrimaryAction } from "@/lib/community/communityHeroActions";
 import {
   buildCommunityMePostsList,
   countMyCommunityBoardPosts,
@@ -14,7 +12,6 @@ import {
 } from "@/lib/community/communityQueries";
 import { communityMePath, parseCommunityMeTab } from "@/lib/community/communityMeTab";
 import type { CommunityNavActive } from "@/components/community/CommunityNavTypes";
-import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 import { createClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/lib/types/user";
 
@@ -70,26 +67,15 @@ export default async function CommunityMePage(props: PageProps) {
     };
   }
 
-  const supabase = await createClient();
-  const weeklyMentor = await loadCommunityWeeklyTopMentor(supabase);
-
   return (
-    <CommunityLayoutShell activeNav={activeNavForMeTab(tab)} weeklyTopMentor={weeklyMentor}>
+    <CommunityLayoutShell activeNav={activeNavForMeTab(tab)}>
       <CommunityPageHero
         eyebrow="커뮤니티"
         title="내 활동"
         description={meDescription(role, loggedIn)}
-        primaryAction={buildCommunityHeroPrimaryAction({
-          surface: "me",
-          role,
-          loggedIn,
-          nextPath: loginNextPath,
-        })}
       />
 
       <div className="space-y-5">
-        <CommunityMeTabNav active={tab} />
-
         {tab === "overview" ? (
           <CommunityMeOverviewSections activity={activity} />
         ) : (

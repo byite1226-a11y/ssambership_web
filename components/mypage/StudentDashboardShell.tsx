@@ -55,7 +55,7 @@ export function StudentDashboardShell({
 
   return (
     <div className="mx-auto max-w-[1320px] px-4 py-8 antialiased">
-      <div className={`grid grid-cols-1 items-start lg:grid-cols-4 ${PAGE_COL_GAP}`}>
+      <div className={`grid grid-cols-1 items-start lg:grid-cols-[200px_minmax(0,1fr)_300px] ${PAGE_COL_GAP}`}>
         <aside className={`flex flex-col self-start ${PAGE_COL_GAP} lg:col-span-1`}>
           <section className={SURFACE_CARD}>
             <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">마이페이지</p>
@@ -121,9 +121,9 @@ export function StudentDashboardShell({
           </nav>
         </aside>
 
-        <div className={`min-w-0 lg:col-span-2 ${PAGE_COL_GAP} flex flex-col`}>{children}</div>
+        <div className={`min-w-0 ${PAGE_COL_GAP} flex flex-col`}>{children}</div>
 
-        <aside className={`flex flex-col self-start ${PAGE_COL_GAP} lg:col-span-1`}>
+        <aside className={`flex flex-col self-start ${PAGE_COL_GAP}`}>
           {ledgerPreview ? (
             ledgerPreview
           ) : (

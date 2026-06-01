@@ -85,7 +85,6 @@ export function CommunityMeTabPanels(props: {
   const act = activity;
 
   if (!loggedIn) {
-    const loginHref = `/login?next=${encodeURIComponent(props.loginNextPath)}`;
     const tabHint: Record<CommunityMeTab, string> = {
       overview: "요약과 탭별 화면은 로그인 후 이용할 수 있어요.",
       posts: "내 게시글 탭은 로그인 후 이용할 수 있어요.",
@@ -95,11 +94,6 @@ export function CommunityMeTabPanels(props: {
     return (
       <Panel title="로그인이 필요해요">
         <p>{tabHint[tab]}</p>
-        <div className="mt-4">
-          <Link href={loginHref} className={btnMentor}>
-            로그인하고 이어가기
-          </Link>
-        </div>
         <NavHint />
       </Panel>
     );

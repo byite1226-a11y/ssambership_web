@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { SiteFooter } from "@/components/common/SiteFooter";
 import { AppShell } from "@/components/shell/AppShell";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { loadShellNotificationBellSafe } from "@/lib/notifications/loadShellNotificationBell";
 import { mentorBlockedCashPath } from "@/lib/shell/mainNavItems";
 import type { AppRole } from "@/lib/types/user";
 
@@ -17,17 +16,12 @@ export default async function PublicLayout({ children }: { children: ReactNode }
   const sessionRole: AppRole | null =
     profile?.role === "mentor" || profile?.role === "student" || profile?.role === "admin" ? profile.role : null;
 
-  const notificationBell =
-    user && sessionRole && sessionRole !== "admin"
-      ? await loadShellNotificationBellSafe(user.id, sessionRole)
-      : null;
-
   if (sessionRole === "mentor" && mentorBlockedCashPath(pathname)) {
     redirect("/mentor/mypage");
   }
 
   return (
-    <AppShell area="public" sessionRole={sessionRole} userProfile={profile} notificationBell={notificationBell}>
+    <AppShell area="public" sessionRole={sessionRole} userProfile={profile}>
       {children}
       <SiteFooter />
     </AppShell>

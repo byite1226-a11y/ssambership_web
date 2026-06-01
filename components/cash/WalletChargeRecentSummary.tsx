@@ -32,9 +32,9 @@ export function WalletChargeRecentSummary(props: {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h2 className="text-base font-extrabold text-slate-900">최근 사용 요약</h2>
+        <h2 className="text-base font-extrabold text-slate-900">최근 사용 내역</h2>
         <Link href="/wallet/ledger" className="text-xs font-bold text-blue-600 hover:underline">
-          전체 사용내역 보기 &gt;
+          사용내역 전체 &gt;
         </Link>
       </div>
 

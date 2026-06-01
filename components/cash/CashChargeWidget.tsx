@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Check } from "lucide-react";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
 import { CASH_CHARGE_PACKAGES } from "@/lib/cash/chargePackages";
@@ -16,9 +14,6 @@ type Props = {
 };
 
 export function CashChargeWidget({ userId, currentBalance }: Props) {
-  const pathname = usePathname();
-  const onChargeTab = pathname?.startsWith("/wallet/charge") ?? true;
-
   const [selectedPayKrw, setSelectedPayKrw] = useState<number>(CASH_CHARGE_PACKAGES[0].payKrw);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [loading, setLoading] = useState(false);
@@ -76,32 +71,6 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
 
   return (
     <div className="space-y-6">
-      <nav className="flex gap-1 border-b border-slate-200">
-        <Link
-          href="/wallet/charge"
-          className={[
-            "rounded-t-lg px-4 py-2.5 text-sm font-extrabold transition",
-            onChargeTab
-              ? "border border-b-0 border-slate-200 bg-white text-[#1A56DB]"
-              : "text-slate-500 hover:text-slate-800",
-          ].join(" ")}
-          aria-current={onChargeTab ? "page" : undefined}
-        >
-          충전하기
-        </Link>
-        <Link
-          href="/wallet/ledger"
-          className={[
-            "rounded-t-lg px-4 py-2.5 text-sm font-extrabold transition",
-            !onChargeTab
-              ? "border border-b-0 border-slate-200 bg-white text-[#1A56DB]"
-              : "text-slate-500 hover:text-slate-800",
-          ].join(" ")}
-        >
-          사용내역
-        </Link>
-      </nav>
-
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h3 className="text-sm font-extrabold text-slate-900">
           <span className="text-[#1A56DB]">①</span> 충전 금액 선택

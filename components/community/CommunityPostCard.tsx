@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import type { CommunityBoardPostCard } from "@/lib/community/communityBoardQueries";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
 
@@ -10,7 +11,7 @@ export function CommunityPostCard(props: { post: CommunityBoardPostCard }) {
   const detailHref = `/community/board/${p.id}`;
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 sm:p-5">
+    <article className="rounded-2xl border border-[#eef0f3] bg-white p-4 transition hover:border-slate-300 sm:p-5">
       <div className="flex gap-3">
         <div
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
@@ -50,7 +51,10 @@ export function CommunityPostCard(props: { post: CommunityBoardPostCard }) {
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500">
               <span>좋아요 {p.likeCount.toLocaleString("ko-KR")}</span>
-              <span>댓글 {p.commentCount.toLocaleString("ko-KR")}</span>
+              <span className="inline-flex items-center gap-1 text-slate-400">
+                <MessageCircle className="h-3.5 w-3.5" />
+                {p.commentCount.toLocaleString("ko-KR")}
+              </span>
               <span>조회 {p.viewCount.toLocaleString("ko-KR")}</span>
             </div>
             <Link

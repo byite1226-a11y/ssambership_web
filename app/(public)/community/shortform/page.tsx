@@ -7,7 +7,7 @@ import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { listShortformFeed } from "@/lib/community/communityShortformQueries";
 import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
-import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
+import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -18,16 +18,13 @@ export default async function CommunityShortformPage(props: Props) {
   const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
 
-  const [{ items, error }, weeklyMentor] = await Promise.all([
-    listShortformFeed(supabase, { category, limit: 48 }),
-    loadCommunityWeeklyTopMentor(supabase),
-  ]);
+  const { items, error } = await listShortformFeed(supabase, { category, limit: 48 });
 
   const isMentor = profile?.role === "mentor";
 
   return (
-    <CommunityLayoutShell activeNav="shortform" weeklyTopMentor={weeklyMentor}>
-      <header className="flex flex-wrap items-center justify-between gap-3 px-1 py-2">
+    <CommunityLayoutShell activeNav="shortform">
+      <header className={`${SURFACE_CARD} flex flex-wrap items-center justify-between gap-3`}>
         <div>
           <h1 className="text-xl font-black text-slate-900">숏폼</h1>
           <p className="mt-1 text-sm text-slate-700">멘토의 짧은 학습 영상을 둘러보세요.</p>
@@ -52,7 +49,7 @@ export default async function CommunityShortformPage(props: Props) {
           등록된 숏폼이 없습니다.
         </p>
       ) : (
-        <ul className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3 lg:grid-cols-4">
+        <ul className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3">
           {items.map((item) => (
             <CommunityShortformVideoCard key={item.id} item={item} href={`/community/shortform/${item.id}`} />
           ))}

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { AppRole } from "@/lib/types/user";
 
 export function CommunityShortformEmptyPanel(props: {
@@ -35,14 +34,6 @@ export function CommunityShortformEmptyPanel(props: {
               숏폼 항목을 선택해 진행하면 돼요.
             </>
           )}
-        </p>
-      ) : null}
-      {!props.loggedIn && !isMentor ? (
-        <p className="mt-4 text-xs text-slate-500">
-          <Link href={`/login?next=${encodeURIComponent("/community/shortform")}`} className="font-bold text-blue-800 underline">
-            로그인
-          </Link>
-          후 댓글·스크랩을 이용할 수 있어요.
         </p>
       ) : null}
     </div>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 
 type Props = {
   title: string;
@@ -10,7 +11,7 @@ type Props = {
 
 export function CommunitySectionCard(props: Props) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className={SURFACE_CARD}>
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
         <div className="min-w-0">
           <h2 className="text-lg font-extrabold text-slate-900">{props.title}</h2>

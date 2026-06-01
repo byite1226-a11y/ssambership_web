@@ -1,55 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, MessageCircle, User } from "lucide-react";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { ChevronDown, User } from "lucide-react";
 import { RoleBadgeOnly, UserNameWithRoleBadge } from "@/components/shell/UserNameWithRoleBadge";
 import { shellUserHeaderDisplay } from "@/lib/shell/userHeaderDisplay";
-import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
 import type { AppRole, UserRow } from "@/lib/types/user";
-
-const iconActionClass =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center text-slate-500 transition hover:text-slate-800";
-
-type BellProps = {
-  userId: string;
-  role: AppRole;
-  unreadCount: number;
-  items: NotificationBellItem[];
-};
 
 type HeaderActionsProps = {
   sessionRole: AppRole;
   userProfile?: UserRow | null;
-  notificationBell?: BellProps | null;
 };
 
-function ShellNotificationBell(props: { bell: BellProps }) {
-  return (
-    <NotificationBell
-      userId={props.bell.userId}
-      role={props.bell.role}
-      initialUnreadCount={props.bell.unreadCount}
-      initialItems={props.bell.items}
-      iconClassName={iconActionClass}
-    />
-  );
-}
-
-export function ShellHeaderActionsMobile({ sessionRole, userProfile, notificationBell }: HeaderActionsProps) {
+export function ShellHeaderActionsMobile({ sessionRole, userProfile }: HeaderActionsProps) {
   if (sessionRole === "admin") return null;
 
   const display = shellUserHeaderDisplay(userProfile ?? null, sessionRole);
-  const showInboxIcons = sessionRole !== "mentor";
 
   return (
     <>
-      {showInboxIcons && notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
-      {showInboxIcons ? (
-        <Link href="/question-room" className={iconActionClass} aria-label="메시지" title="메시지">
-          <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-        </Link>
-      ) : null}
       <Link
         href={display.profileHref}
         className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100"
@@ -68,18 +36,11 @@ export function ShellHeaderActionsMobile({ sessionRole, userProfile, notificatio
   );
 }
 
-export function ShellHeaderActionsDesktop({ sessionRole, userProfile, notificationBell }: HeaderActionsProps) {
+export function ShellHeaderActionsDesktop({ sessionRole, userProfile }: HeaderActionsProps) {
   const display = shellUserHeaderDisplay(userProfile ?? null, sessionRole);
-  const showInboxIcons = sessionRole !== "mentor";
 
   return (
     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-      {showInboxIcons && notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
-      {showInboxIcons ? (
-        <Link href="/question-room" className={iconActionClass} aria-label="메시지" title="메시지">
-          <MessageCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
-        </Link>
-      ) : null}
       <Link
         href={display.profileHref}
         className="group flex min-w-0 max-w-full items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 py-0.5 pl-0.5 pr-2.5 transition hover:bg-slate-100 sm:pr-3"

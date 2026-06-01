@@ -9,7 +9,6 @@ import {
 } from "@/lib/community/communityBoardQueries";
 import { isCommunityPostUuid } from "@/lib/community/communityQueries";
 import { incrementPostView } from "@/lib/community/communityBoardMutations";
-import { loadCommunityWeeklyTopMentor } from "@/lib/community/communitySidebarData";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -51,10 +50,8 @@ export default async function CommunityBoardDetailPage(props: Props) {
 
   const reactions = post ? await getPostReactionFlags(supabase, id, user?.id ?? null) : { liked: false, scrapped: false };
 
-  const weeklyMentor = await loadCommunityWeeklyTopMentor(supabase);
-
   return (
-    <CommunityLayoutShell activeNav="board" weeklyTopMentor={weeklyMentor}>
+    <CommunityLayoutShell activeNav="board">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         {loadError ? <p className="text-sm font-semibold text-red-800">{loadError}</p> : null}
         {missing ? (

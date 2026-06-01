@@ -39,36 +39,7 @@ export function WalletChargeRightSidebar(props: { ledgerRows: LedgerLineRow[] })
   return (
     <aside className="space-y-4 lg:sticky lg:top-8">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-extrabold text-slate-900">충전 안내</h2>
-        <ul className="mt-3 space-y-2.5 text-xs leading-relaxed text-slate-600">
-          <li className="flex gap-2">
-            <span className="text-blue-600" aria-hidden>
-              •
-            </span>
-            충전한 캐시는 즉시 사용 가능해요
-          </li>
-          <li className="flex gap-2">
-            <span className="text-blue-600" aria-hidden>
-              •
-            </span>
-            보너스 캐시는 이벤트 조건에 따라 지급됩니다
-          </li>
-          <li className="flex gap-2">
-            <span className="text-blue-600" aria-hidden>
-              •
-            </span>
-            안전한 결제를 위해 SSL 보안 시스템을 적용하여 보호합니다
-          </li>
-        </ul>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-extrabold text-slate-900">이번 달 사용 요약</h2>
-          <Link href="/wallet/ledger" className="text-xs font-bold text-blue-600 hover:underline">
-            전체 보기 &gt;
-          </Link>
-        </div>
+        <h2 className="text-sm font-extrabold text-slate-900">이번 달 사용 요약</h2>
         <p className="mt-2 text-2xl font-black tabular-nums text-slate-900">
           {stats.total.toLocaleString("ko-KR")}
           <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
@@ -97,11 +68,11 @@ export function WalletChargeRightSidebar(props: { ledgerRows: LedgerLineRow[] })
       </section>
 
       <section className="rounded-2xl border border-amber-100 bg-amber-50/40 p-5">
-        <h2 className="text-sm font-extrabold text-amber-950">안내 및 유의사항</h2>
+        <h2 className="text-sm font-extrabold text-amber-950">유의사항</h2>
         <ul className="mt-3 space-y-2 text-xs leading-relaxed text-amber-950/90">
-          <li>충전한 캐시는 환불이 불가합니다</li>
-          <li>현금 영수증은 결제 수단에 따라 자동 발급됩니다</li>
-          <li>문의사항은 고객센터를 이용해 주세요</li>
+          <li>충전 캐시는 결제 즉시 반영됩니다.</li>
+          <li>보너스 캐시는 이벤트 조건에 따라 지급됩니다.</li>
+          <li>문의는 고객센터에서 확인할 수 있어요.</li>
         </ul>
         <Link
           href="/notifications"

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { AppRole } from "@/lib/types/user";
 
 export function CommunityBoardEmptyPanel(props: { role: AppRole | null | undefined; loggedIn: boolean }) {
@@ -16,14 +15,6 @@ export function CommunityBoardEmptyPanel(props: { role: AppRole | null | undefin
         <p className="mx-auto mt-5 max-w-md text-xs leading-relaxed text-slate-600">
           첫 게시글은 게시판 상단의 <span className="font-semibold text-slate-800">게시글 작성</span> 버튼 또는 멘토 메뉴의 커뮤니티 작성에서
           이어가면 돼요.
-        </p>
-      ) : null}
-      {!props.loggedIn ? (
-        <p className="mt-4 text-xs text-slate-500">
-          <Link href={`/login?next=${encodeURIComponent("/community/board")}`} className="font-bold text-blue-800 underline">
-            로그인
-          </Link>
-          후 댓글·스크랩을 이용할 수 있어요.
         </p>
       ) : null}
     </div>

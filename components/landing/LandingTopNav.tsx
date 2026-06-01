@@ -64,24 +64,6 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
 
         {/* 액션 버튼 영역 (우측) */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* 공통 검색 아이콘 (모바일/데스크톱 모두 노출) */}
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800"
-            aria-label="검색"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="h-5 w-5"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-          </button>
-
           {/* 데스크톱 전용: 로그인/회원가입 또는 프로필 */}
           <div className="hidden lg:flex lg:items-center lg:gap-3">
             {logged ? (

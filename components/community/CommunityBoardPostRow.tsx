@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
 import {
   formatCommunityPostDate,
@@ -20,7 +21,7 @@ export function CommunityBoardPostRow(props: { row: Row; index: number; dense?: 
   return (
     <li
       key={id ?? `b-${i}`}
-      className={`list-none rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md ${pad}`}
+      className={`list-none rounded-2xl border border-[#eef0f3] bg-white transition hover:border-slate-300 ${pad}`}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
@@ -42,7 +43,10 @@ export function CommunityBoardPostRow(props: { row: Row; index: number; dense?: 
           )}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
             {dateStr ? <time>{dateStr}</time> : <span>날짜 정보 없음</span>}
-            <span className="font-semibold text-slate-600">댓글 {comments}</span>
+            <span className="inline-flex items-center gap-1 text-slate-400">
+              <MessageCircle className="h-3.5 w-3.5" />
+              {comments}
+            </span>
           </div>
         </div>
         <div className="flex shrink-0 items-center lg:flex-col lg:items-end">
