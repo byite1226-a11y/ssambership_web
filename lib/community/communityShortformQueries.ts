@@ -24,7 +24,7 @@ function pickAuthorLabel(row: Row): string {
     const v = row[k];
     if (typeof v === "string" && v.trim()) return v.trim();
   }
-  return pickAuthorRoleSummary(row) === "\uBA58\uD1A0" ? "\uC258\uBC84\uC2ED \uBA58\uD1A0" : "\uC258\uBC84\uC2ED \uD68C\uC6D0";
+  return pickAuthorRoleSummary(row) === "\uBA58\uD1A0" ? "\uC37C\uBC84\uC2ED \uBA58\uD1A0" : "\uC37C\uBC84\uC2ED \uD68C\uC6D0";
 }
 
 function pickThumb(row: Row): string | null {

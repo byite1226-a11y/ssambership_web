@@ -43,10 +43,12 @@ export type CommunityBoardCommentNode = {
 };
 
 function categoryLabel(slug: string | null): string {
+  if (!slug || !slug.trim()) {
+    return COMMUNITY_POST_CATEGORIES.find((c) => c.slug === "free")?.label ?? "\uC790\uC720";
+  }
   const hit = COMMUNITY_POST_CATEGORIES.find((c) => c.slug === slug);
   if (hit) return hit.label;
-  if (slug && slug.trim()) return slug;
-  return "\uC804\uCCB4";
+  return slug;
 }
 
 function pickBody(row: Row): string {
@@ -62,8 +64,8 @@ function pickAuthorLabel(row: Row): string {
     if (typeof v === "string" && v.trim()) return v.trim();
   }
   const role = pickAuthorRoleSummary(row);
-  if (role === "\uBA58\uD1A0") return "\uC258\uBC84\uC2ED \uBA58\uD1A0";
-  return "\uC258\uBC84\uC2ED \uD68C\uC6D0";
+  if (role === "\uBA58\uD1A0") return "\uC37C\uBC84\uC2ED \uBA58\uD1A0";
+  return "\uC37C\uBC84\uC2ED \uD68C\uC6D0";
 }
 
 function pickImageUrls(row: Row): string[] {
@@ -123,6 +125,16 @@ export function mapRowToBoardCard(row: Row, viewerId?: string | null): Community
   };
 }
 
+function applyBoardCategoryFilter<T extends { eq: (col: string, val: string) => T; or: (filters: string) => T }>(
+  q: T,
+  category: CommunityPostCategorySlug
+): T {
+  if (category === "free") {
+    return q.or("category.eq.free,category.is.null,category.eq.");
+  }
+  return q.eq("category", category);
+}
+
 export async function listCommunityBoardPosts(
   supabase: SupabaseClient,
   opts: {
@@ -142,7 +154,7 @@ export async function listCommunityBoardPosts(
     .limit(limit + 1);
 
   if (opts.category && opts.category !== "all") {
-    q = q.eq("category", opts.category);
+    q = applyBoardCategoryFilter(q, opts.category);
   }
   if (opts.authorId) {
     q = q.eq("author_id", opts.authorId);
@@ -178,7 +190,7 @@ async function listCommunityBoardPostsLegacy(
 ): Promise<{ posts: CommunityBoardPostCard[]; nextCursor: string | null; error: string | null }> {
   const limit = opts.limit ?? COMMUNITY_POST_PAGE_SIZE;
   let q = supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(limit + 1);
-  if (opts.category && opts.category !== "all") q = q.eq("category", opts.category);
+  if (opts.category && opts.category !== "all") q = applyBoardCategoryFilter(q, opts.category);
   if (opts.authorId) q = q.eq("author_id", opts.authorId);
   if (opts.cursor) q = q.lt("created_at", opts.cursor);
   const { data, error } = await q;
@@ -305,7 +317,7 @@ export async function loadBoardComments(
       likeCount: typeof r.like_count === "number" ? r.like_count : 0,
       authorId,
       authorLabel:
-        typeof r.author_label === "string" && r.author_label.trim() ? r.author_label.trim() : "\uC258\uBC84\uC2ED \uD68C\uC6D0",
+        typeof r.author_label === "string" && r.author_label.trim() ? r.author_label.trim() : "\uC37C\uBC84\uC2ED \uD68C\uC6D0",
       createdAt,
       createdAtLabel: formatRelativeTime(createdAt),
       isOwn: viewerId != null && authorId === viewerId,

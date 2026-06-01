@@ -9,6 +9,21 @@ export const COMMUNITY_POST_CATEGORIES = [
 
 export type CommunityPostCategorySlug = (typeof COMMUNITY_POST_CATEGORIES)[number]["slug"];
 
+export type CommunityPostCategoryValue = Exclude<CommunityPostCategorySlug, "all">;
+
+export const COMMUNITY_POST_CATEGORY_SLUGS = COMMUNITY_POST_CATEGORIES.filter((c) => c.slug !== "all").map(
+  (c) => c.slug
+) as CommunityPostCategoryValue[];
+
+export function isCommunityPostCategorySlug(slug: string): slug is CommunityPostCategoryValue {
+  return (COMMUNITY_POST_CATEGORY_SLUGS as readonly string[]).includes(slug);
+}
+
+export function normalizeCommunityPostCategory(slug: string | null | undefined): CommunityPostCategoryValue {
+  if (slug && isCommunityPostCategorySlug(slug)) return slug;
+  return "free";
+}
+
 export const COMMUNITY_POST_PAGE_SIZE = 12;
 
 export const COMMUNITY_IMAGE_MAX = 5;

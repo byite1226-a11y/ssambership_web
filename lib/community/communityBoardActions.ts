@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   COMMUNITY_HASHTAG_MAX,
   COMMUNITY_IMAGE_MAX,
-  type CommunityPostCategorySlug,
+  normalizeCommunityPostCategory,
 } from "@/lib/community/communityBoardConstants";
 import {
   insertBoardComment,
@@ -30,7 +30,7 @@ function parseHashtags(raw: string): string[] {
 async function authorLabelFor(userId: string): Promise<{ label: string; role: string | null }> {
   const supabase = await createClient();
   const { data: profile } = await getUserProfileById(supabase, userId);
-  const label = profile?.nickname?.trim() || profile?.full_name?.trim() || "\uC258\uBC84\uC2ED \uD68C\uC6D0";
+  const label = profile?.nickname?.trim() || profile?.full_name?.trim() || "\uC37C\uBC84\uC2ED \uD68C\uC6D0";
   const role = profile?.role === "mentor" ? "\uBA58\uD1A0" : profile?.role === "student" ? "\uD559\uC0DD" : null;
   return { label, role };
 }
@@ -47,7 +47,7 @@ export async function submitCommunityBoardPostAction(formData: FormData) {
   const status = intent === "draft" ? "draft" : "published";
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
-  const category = String(formData.get("category") ?? "free") as CommunityPostCategorySlug;
+  const category = normalizeCommunityPostCategory(String(formData.get("category") ?? "free"));
   const hashtags = parseHashtags(String(formData.get("hashtags") ?? ""));
 
   if (!title) redirect(errRedirect("/community/new", "title"));
@@ -75,7 +75,7 @@ export async function submitCommunityBoardPostAction(formData: FormData) {
   const r = await insertCommunityBoardPost(supabase, user.id, {
     title,
     body,
-    category: category === "all" ? "free" : category,
+    category,
     imageUrls,
     hashtags,
     status,

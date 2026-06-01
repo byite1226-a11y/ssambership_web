@@ -58,7 +58,7 @@ export async function submitShortformUploadAction(formData: FormData) {
     if (!up.error) thumbnailUrl = up.url;
   }
 
-  const label = profile?.nickname?.trim() || profile?.full_name?.trim() || "\uC258\uBC84\uC2ED \uBA58\uD1A0";
+  const label = profile?.nickname?.trim() || profile?.full_name?.trim() || "\uC37C\uBC84\uC2ED \uBA58\uD1A0";
   const r = await insertShortformPost(supabase, user.id, {
     title,
     category,

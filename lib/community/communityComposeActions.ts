@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeCommunityPostCategory } from "@/lib/community/communityBoardConstants";
 import { insertMentorBoardPost, insertMentorShortformPost } from "@/lib/community/communityMutations";
+import { SHORTFORM_CATEGORIES, type ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
 
 const NEW_PATH = "/mentor/community/new";
 
@@ -21,7 +23,7 @@ export async function submitMentorCommunityPost(formData: FormData) {
 
   const postType = String(formData.get("postType") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
-  const category = String(formData.get("category") ?? "").trim();
+  const categoryRaw = String(formData.get("category") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   const source = String(formData.get("source") ?? "").trim();
   const rights = formData.get("rightsAck") === "on";
@@ -38,6 +40,11 @@ export async function submitMentorCommunityPost(formData: FormData) {
   if (!rights) {
     redirect(buildErrorRedirect("validation_rights"));
   }
+
+  const boardCategory = normalizeCommunityPostCategory(categoryRaw);
+  const shortformHit = SHORTFORM_CATEGORIES.find((c) => c.slug === categoryRaw && c.slug !== "all");
+  const shortformCategory: ShortformCategorySlug = shortformHit ? shortformHit.slug : "study";
+  const category = postType === "shortform" ? shortformCategory : boardCategory;
 
   const input = { title, body, category, source };
 

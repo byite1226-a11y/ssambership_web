@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { submitCommunityBoardPostAction } from "@/lib/community/communityBoardActions";
 import { COMMUNITY_POST_CATEGORIES, COMMUNITY_HASHTAG_MAX, COMMUNITY_IMAGE_MAX } from "@/lib/community/communityBoardConstants";
+import { CommunityCategoryChips } from "@/components/community/CommunityCategoryChips";
 
 const PRIMARY = "#1A56DB";
 
@@ -92,16 +93,7 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
         <input name="title" required className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" />
       </label>
 
-      <label className="block text-sm font-extrabold text-slate-800">
-        {"\uCE74\uD14C\uACE0\uB9AC"}
-        <select name="category" required className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" defaultValue="study">
-          {COMMUNITY_POST_CATEGORIES.filter((c) => c.slug !== "all").map((c) => (
-            <option key={c.slug} value={c.slug}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <CommunityCategoryChips categories={COMMUNITY_POST_CATEGORIES} name="category" defaultSlug="study" />
 
       <label className="block text-sm font-extrabold text-slate-800">
         {"\uBCF8\uBB38 (\uCD5C\uC18C 10\uC790)"}
