@@ -155,7 +155,7 @@ export default async function MentorMypagePage() {
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_300px]">
         {/* 좌 컬럼 */}
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-5">
           <RevenueCard
             currentMonthLabel={currentMonthLabel}
             totalExpected={revenue?.totalExpected ?? 0}
@@ -168,13 +168,11 @@ export default async function MentorMypagePage() {
         </div>
 
         {/* 우 컬럼 */}
-        <aside className="grid grid-cols-1 gap-5 sm:grid-cols-3 lg:grid-cols-1">
+        <aside className="flex flex-col gap-5 self-start">
           <SubscribersStatCard activeSubscribers={kpis.activeSubscribers} />
-          <div className="space-y-5">
-            <RatingStatCard ratingAvg={ratingAvg} reviewCount={reviewCount} />
-            {recentReviews.length > 0 ? <RecentReviewsCard reviews={recentReviews} /> : null}
-          </div>
+          <RatingStatCard ratingAvg={ratingAvg} reviewCount={reviewCount} />
           <CapStatCard usage={capUsage} />
+          {recentReviews.length > 0 ? <RecentReviewsCard reviews={recentReviews} /> : null}
         </aside>
       </div>
     </main>
@@ -235,7 +233,7 @@ function RevenueCard(props: {
   monthlyRevenue: MonthlyRevenue[];
 }) {
   return (
-    <section className="rounded-[14px] border border-[#eef0f3] bg-white px-[26px] py-6">
+    <section className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5">
       <div className="mb-[18px] flex items-center justify-between">
         <p className="text-[13px] font-medium text-slate-400">
           이번 달 수익 · {props.currentMonthLabel}
@@ -277,7 +275,7 @@ function RevenueCard(props: {
 function ActiveOrdersSection({ orders }: { orders: MentorHubOrderRow[] }) {
   return (
     <section>
-      <div className="mb-3.5 mt-[30px] flex items-center justify-between">
+      <div className="mb-3.5 flex items-center justify-between">
         <h2 className="text-[15px] font-semibold text-[#1e2430]">진행 중 의뢰</h2>
         <Link
           href="/mentor/custom-request/orders"
@@ -293,7 +291,7 @@ function ActiveOrdersSection({ orders }: { orders: MentorHubOrderRow[] }) {
 
 function EmptyOrders() {
   return (
-    <div className="rounded-[14px] border border-[#eef0f3] bg-white px-[26px] py-12 text-center">
+    <div className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-12 text-center">
       <div className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-slate-50">
         <Inbox className="h-5 w-5 text-slate-300" aria-hidden />
       </div>
@@ -310,7 +308,7 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
     <ul className="space-y-3">
       {orders.map((order) => (
         <li key={order.id}>
-          <article className="rounded-[14px] border border-[#eef0f3] bg-white px-[26px] py-5 transition hover:border-blue-100">
+          <article className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5 transition hover:border-blue-100">
             <div className="flex items-start gap-4">
               <span
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-blue-600"
@@ -422,7 +420,7 @@ function RatingStatCard({ ratingAvg, reviewCount }: { ratingAvg: number | null; 
 
 function RecentReviewsCard({ reviews }: { reviews: ReviewCardItem[] }) {
   return (
-    <article className="rounded-2xl border border-[#eef0f3] bg-white px-5 py-5">
+    <article className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5">
       <p className="text-[13px] font-medium text-slate-500">최근 후기</p>
       <ul className="mt-3 space-y-3">
         {reviews.map((r) => (

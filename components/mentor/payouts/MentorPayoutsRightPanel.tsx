@@ -4,7 +4,7 @@ import {
   MENTOR_SUBSCRIPTION_PLATFORM_SHARE,
 } from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutMonthlyCard, MentorPayoutScheduleInfo } from "@/lib/mentor/mentorPayoutsTypes";
-import { MentorPayoutsMonthlyBarChartLazy } from "./MentorPayoutsChartLazy";
+import { MentorPayoutsMonthlyAreaChartLazy } from "./MentorPayoutsChartLazy";
 
 type Props = {
   schedule: MentorPayoutScheduleInfo;
@@ -16,7 +16,7 @@ export function MentorPayoutsRightPanel(props: Props) {
 
   return (
     <aside className="w-full space-y-4 xl:sticky xl:top-24 xl:self-start">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-[#eef0f3] bg-white p-5">
         <h3 className="text-sm font-extrabold text-slate-900">지급 일정</h3>
         <p className="mt-3 text-xs font-semibold text-slate-500">다음 지급 예정일</p>
         <p className="mt-1 text-lg font-black text-slate-900">{schedule.nextPayoutLabel}</p>
@@ -34,7 +34,7 @@ export function MentorPayoutsRightPanel(props: Props) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-[#eef0f3] bg-white p-5">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-extrabold text-slate-900">월간 추이</h3>
           <span className="rounded-lg border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
@@ -42,21 +42,30 @@ export function MentorPayoutsRightPanel(props: Props) {
           </span>
         </div>
         <div className="mt-3">
-          <MentorPayoutsMonthlyBarChartLazy months={props.months} />
+          <MentorPayoutsMonthlyAreaChartLazy months={props.months} />
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
+      <section className="rounded-2xl border border-[#eef0f3] bg-white p-5">
         <h3 className="text-sm font-extrabold text-slate-900">정산 안내</h3>
-        <ul className="mt-3 space-y-2 text-xs leading-relaxed text-slate-600">
-          <li>매월 10일에 등록된 계좌로 지급됩니다.</li>
-          <li>
-            수수료는 구독 {Math.round(MENTOR_SUBSCRIPTION_PLATFORM_SHARE * 100)}% · 맞춤의뢰{" "}
-            {Math.round(MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE * 100)}%가 기본 적용됩니다.
-          </li>
-          <li>환불·취소 건은 익월 정산에 반영될 수 있습니다.</li>
-        </ul>
-        <Link href="/support/disputes" className="mt-3 inline-flex text-xs font-bold text-[#1A56DB] hover:underline">
+        <dl className="mt-3 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <dt className="shrink-0 text-[11px] font-medium text-slate-400">지급일</dt>
+            <dd className="text-right text-[13px] font-medium text-slate-700">매월 10일 · 등록 계좌</dd>
+          </div>
+          <div className="flex items-start justify-between gap-3">
+            <dt className="shrink-0 text-[11px] font-medium text-slate-400">수수료</dt>
+            <dd className="text-right text-[13px] font-medium text-slate-700">
+              구독 {Math.round(MENTOR_SUBSCRIPTION_PLATFORM_SHARE * 100)}% · 맞춤의뢰{" "}
+              {Math.round(MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE * 100)}%
+            </dd>
+          </div>
+          <div className="flex items-start justify-between gap-3">
+            <dt className="shrink-0 text-[11px] font-medium text-slate-400">환불·취소</dt>
+            <dd className="text-right text-[13px] font-medium text-slate-700">익월 정산 반영</dd>
+          </div>
+        </dl>
+        <Link href="/support/disputes" className="mt-4 inline-flex text-xs font-bold text-[#1A56DB] hover:underline">
           1:1 문의하기 →
         </Link>
       </section>

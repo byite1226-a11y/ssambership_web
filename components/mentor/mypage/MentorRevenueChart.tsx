@@ -6,10 +6,12 @@ export type MonthlyRevenue = { month: string; total: number };
 
 const PRIMARY = "#2563eb";
 
-function formatTooltipKrw(v: number): string {
-  if (!Number.isFinite(v) || v <= 0) return "0 캐시";
-  if (v >= 10000) return `${Math.round(v / 10000)}만 캐시`;
-  return `${v.toLocaleString("ko-KR")} 캐시`;
+export type MonthlyChartUnit = "캐시" | "원";
+
+function formatTooltipValue(v: number, unit: MonthlyChartUnit): string {
+  if (!Number.isFinite(v) || v <= 0) return unit === "원" ? "0원" : "0 캐시";
+  if (v >= 10000) return `${Math.round(v / 10000)}만 ${unit === "원" ? "원" : "캐시"}`;
+  return unit === "원" ? `${v.toLocaleString("ko-KR")}원` : `${v.toLocaleString("ko-KR")} 캐시`;
 }
 
 type DotProps = {
@@ -40,15 +42,25 @@ function makeLastDotRenderer(lastIndex: number) {
   };
 }
 
-export function MentorRevenueChart(props: { monthlyRevenue: MonthlyRevenue[] }) {
+type MentorRevenueChartProps = {
+  monthlyRevenue: MonthlyRevenue[];
+  height?: number;
+  gradientId?: string;
+  valueUnit?: MonthlyChartUnit;
+};
+
+export function MentorRevenueChart(props: MentorRevenueChartProps) {
   const data = props.monthlyRevenue;
   const lastIndex = data.length - 1;
+  const height = props.height ?? 130;
+  const gradientId = props.gradientId ?? "mentor-revenue-grad";
+  const valueUnit = props.valueUnit ?? "캐시";
 
   return (
-    <ResponsiveContainer width="100%" height={130}>
+    <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
         <defs>
-          <linearGradient id="mentor-revenue-grad" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={PRIMARY} stopOpacity={0.09} />
             <stop offset="100%" stopColor={PRIMARY} stopOpacity={0} />
           </linearGradient>
@@ -72,7 +84,7 @@ export function MentorRevenueChart(props: { monthlyRevenue: MonthlyRevenue[] }) 
           itemStyle={{ color: "#fff" }}
           formatter={(value) => {
             const n = typeof value === "number" ? value : Number(value);
-            return [formatTooltipKrw(n), ""];
+            return [formatTooltipValue(n, valueUnit), ""];
           }}
           separator=""
         />
@@ -81,7 +93,7 @@ export function MentorRevenueChart(props: { monthlyRevenue: MonthlyRevenue[] }) 
           dataKey="total"
           stroke={PRIMARY}
           strokeWidth={2}
-          fill="url(#mentor-revenue-grad)"
+          fill={`url(#${gradientId})`}
           dot={makeLastDotRenderer(lastIndex)}
           activeDot={{ r: 5, fill: PRIMARY, stroke: "#fff", strokeWidth: 2 }}
         />

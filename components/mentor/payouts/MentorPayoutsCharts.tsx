@@ -1,18 +1,15 @@
 "use client";
 
 import {
-  Bar,
-  BarChart,
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 import { formatChartMonthLabel } from "@/lib/mentor/mentorPayoutsDisplay";
 import type { MentorPayoutMonthlyCard } from "@/lib/mentor/mentorPayoutsTypes";
+import { MentorRevenueChart } from "@/components/mentor/mypage/MentorRevenueChart";
 import { formatCashKrw } from "./payoutUi";
 
 const PRIMARY = "#1A56DB";
@@ -71,12 +68,12 @@ export function MentorPayoutsDonutChart(props: DonutProps) {
   );
 }
 
-export function MentorPayoutsMonthlyBarChart(props: { months: MentorPayoutMonthlyCard[] }) {
+export function MentorPayoutsMonthlyAreaChart(props: { months: MentorPayoutMonthlyCard[] }) {
   const chartData = [...props.months]
     .reverse()
     .map((m) => ({
-      label: formatChartMonthLabel(m.yearMonth),
-      revenue: m.revenue,
+      month: formatChartMonthLabel(m.yearMonth),
+      total: m.revenue,
     }));
 
   if (!chartData.length) {
@@ -87,19 +84,12 @@ export function MentorPayoutsMonthlyBarChart(props: { months: MentorPayoutMonthl
 
   return (
     <div className="h-48">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
-          <YAxis
-            tick={{ fontSize: 10, fill: "#64748b" }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v) => `${Math.round(Number(v) / 10000)}만`}
-          />
-          <Tooltip formatter={(v) => formatCashKrw(Number(v ?? 0))} />
-          <Bar dataKey="revenue" fill={PRIMARY} radius={[6, 6, 0, 0]} maxBarSize={36} />
-        </BarChart>
-      </ResponsiveContainer>
+      <MentorRevenueChart
+        monthlyRevenue={chartData}
+        height={192}
+        gradientId="mentor-payout-trend-grad"
+        valueUnit="원"
+      />
     </div>
   );
 }

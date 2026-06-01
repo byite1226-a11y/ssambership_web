@@ -84,20 +84,28 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
           {/* 데스크톱 전용: 로그인/회원가입 또는 프로필 */}
           <div className="hidden lg:flex lg:items-center lg:gap-3">
             {logged ? (
-              <Link
-                href={profileHref(props.profile)}
-                className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 p-0.5 pr-3 transition-colors hover:bg-slate-100"
-                onClick={closeMenu}
-              >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-500">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-bold text-slate-800">
-                  {props.profile?.full_name || props.profile?.nickname || "사용자"} 님
-                </span>
-              </Link>
+              <>
+                <Link
+                  href={profileHref(props.profile)}
+                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 p-0.5 pr-3 transition-colors hover:bg-slate-100"
+                  onClick={closeMenu}
+                >
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-500">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-bold text-slate-800">
+                    {props.profile?.full_name || props.profile?.nickname || "사용자"} 님
+                  </span>
+                </Link>
+                <a
+                  href="/logout"
+                  className="shrink-0 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
+                >
+                  로그아웃
+                </a>
+              </>
             ) : (
               <>
                 <Link

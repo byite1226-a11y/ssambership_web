@@ -3,8 +3,8 @@
 import dynamic from "next/dynamic";
 import type { MentorPayoutMonthlyCard } from "@/lib/mentor/mentorPayoutsTypes";
 
-const MentorPayoutsMonthlyBarChartInner = dynamic(
-  () => import("./MentorPayoutsCharts").then((m) => m.MentorPayoutsMonthlyBarChart),
+const MentorPayoutsMonthlyAreaChartInner = dynamic(
+  () => import("./MentorPayoutsCharts").then((m) => m.MentorPayoutsMonthlyAreaChart),
   {
     ssr: false,
     loading: () => (
@@ -13,6 +13,6 @@ const MentorPayoutsMonthlyBarChartInner = dynamic(
   }
 );
 
-export function MentorPayoutsMonthlyBarChartLazy(props: { months: MentorPayoutMonthlyCard[] }) {
-  return <MentorPayoutsMonthlyBarChartInner months={props.months} />;
+export function MentorPayoutsMonthlyAreaChartLazy(props: { months: MentorPayoutMonthlyCard[] }) {
+  return <MentorPayoutsMonthlyAreaChartInner months={props.months} />;
 }

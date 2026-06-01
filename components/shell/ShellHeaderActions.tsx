@@ -57,6 +57,12 @@ export function ShellHeaderActionsMobile({ sessionRole, userProfile, notificatio
       >
         <User className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
       </Link>
+      <a
+        href="/logout"
+        className="shrink-0 text-[11px] font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline sm:text-xs"
+      >
+        로그아웃
+      </a>
     </>
   );
 }
@@ -67,7 +73,7 @@ export function ShellHeaderActionsDesktop({ sessionRole, userProfile, notificati
   const showInboxIcons = sessionRole !== "mentor";
 
   return (
-    <div className="flex min-w-0 max-w-full items-center gap-3 sm:gap-4">
+    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
       {showInboxIcons && notificationBell ? <ShellNotificationBell bell={notificationBell} /> : null}
       {showInboxIcons ? (
         <Link href="/question-room" className={iconActionClass} aria-label="메시지" title="메시지">

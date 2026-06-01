@@ -37,6 +37,12 @@ export function AdminConsoleTopBar() {
           <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800">
             관리자
           </span>
+          <a
+            href="/logout"
+            className="shrink-0 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"
+          >
+            로그아웃
+          </a>
         </div>
       </div>
     </header>
