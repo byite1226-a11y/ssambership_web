@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { UserNameWithRoleBadge } from "@/components/shell/UserNameWithRoleBadge";
 import { ADMIN_CONSOLE_NAV, adminNavItemIsActive } from "@/components/admin/adminConsoleNavConfig";
 
 function NavLinks({ collapsed }: { collapsed: boolean }) {
@@ -79,14 +80,17 @@ export function AdminConsoleNavSidebar() {
   );
 }
 
-export function AdminConsoleNavTop() {
+export function AdminConsoleNavTop(props: { profile?: import("@/lib/types/user").UserRow | null }) {
   return (
     <div className="border-b border-slate-200 bg-white lg:hidden">
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
         <BrandBlock collapsed={false} />
-        <a href="/logout" className="text-xs font-bold text-slate-500 underline">
-          로그아웃
-        </a>
+        <div className="flex shrink-0 items-center gap-2">
+          <UserNameWithRoleBadge profile={props.profile ?? null} role="admin" nameClassName="text-xs" />
+          <a href="/logout" className="text-xs font-bold text-slate-500 underline">
+            로그아웃
+          </a>
+        </div>
       </div>
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3" aria-label="관리자 메뉴">
         <NavLinks collapsed={false} />

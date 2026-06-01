@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { Bell, Search } from "lucide-react";
+import { UserNameWithRoleBadge } from "@/components/shell/UserNameWithRoleBadge";
+import type { UserRow } from "@/lib/types/user";
 
-export function AdminConsoleTopBar() {
+export function AdminConsoleTopBar(props: { profile?: UserRow | null }) {
   return (
     <header className="hidden border-b border-slate-200 bg-white lg:block">
       <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3">
@@ -34,9 +36,7 @@ export function AdminConsoleTopBar() {
           >
             <Bell className="h-4 w-4" />
           </Link>
-          <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800">
-            관리자
-          </span>
+          <UserNameWithRoleBadge profile={props.profile ?? null} role="admin" />
           <a
             href="/logout"
             className="shrink-0 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"

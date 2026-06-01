@@ -3,6 +3,7 @@ import {
   SUBSCRIPTION_PLATFORM_FEE_LABEL,
 } from "@/lib/mentor/mentorPayoutsConstants";
 import type { MentorPayoutScheduleInfo, MentorPayoutSummary } from "@/lib/mentor/mentorPayoutsTypes";
+import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 import { formatCashKrw } from "./payoutUi";
 
 type Props = {
@@ -15,7 +16,7 @@ export function MentorPayoutsHeroCard(props: Props) {
   const { summary, schedule, lifetimePaid } = props;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className={SURFACE_CARD}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[13px] font-medium text-slate-500">이번 달 예상 정산 · {schedule.monthLabel}</p>

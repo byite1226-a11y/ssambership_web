@@ -11,7 +11,7 @@ export function MentorPayoutsPage(props: { data: MentorPayoutsPageData }) {
         <p className="mt-1 text-sm text-slate-600">예상 정산 금액과 서비스 수익을 확인하세요.</p>
       </header>
       <div className="grid grid-cols-1 items-start gap-[18px] xl:grid-cols-[1fr_300px]">
-        <div className="min-w-0 space-y-6">
+        <div className="min-w-0 space-y-[18px]">
           <MentorPayoutsHeroCard
             summary={props.data.summary}
             schedule={props.data.schedule}

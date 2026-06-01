@@ -1,11 +1,18 @@
 import type { ReactNode } from "react";
 import { AdminConsoleNavSidebar, AdminConsoleNavTop } from "@/components/admin/AdminConsoleNav";
 import { AdminConsoleTopBar } from "@/components/admin/AdminConsoleTopBar";
+import type { UserRow } from "@/lib/types/user";
 
 /**
  * 관리자 콘솔 전용 쉘 — 일반 AppShell과 분리.
  */
-export function AdminConsoleShell({ children }: { children: ReactNode }) {
+export function AdminConsoleShell({
+  children,
+  profile = null,
+}: {
+  children: ReactNode;
+  profile?: UserRow | null;
+}) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex min-h-screen w-full">
@@ -13,8 +20,8 @@ export function AdminConsoleShell({ children }: { children: ReactNode }) {
           <AdminConsoleNavSidebar />
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <AdminConsoleNavTop />
-          <AdminConsoleTopBar />
+          <AdminConsoleNavTop profile={profile} />
+          <AdminConsoleTopBar profile={profile} />
           <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
       </div>

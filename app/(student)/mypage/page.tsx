@@ -16,6 +16,7 @@ import {
 import { countActiveSubscriptionsForStudent } from "@/lib/mypage/studentActiveSubscriptions";
 import { MypageSubscriptionsCard } from "@/components/mypage/MypageSubscriptionsCard";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
+import { SURFACE_CARD, PAGE_COL_GAP } from "@/lib/ui/surfaceCard";
 
 export default async function StudentMyPage() {
   const { user, profile, error: profileLoadError } = await getServerUserWithProfile();
@@ -33,7 +34,6 @@ export default async function StudentMyPage() {
   const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
 
   const activeMentorCount = activeSubs.error ? 0 : activeSubs.count;
-  const activeMentorText = activeSubs.error ? "—" : String(activeMentorCount);
   const paymentCount = bundle.payments.valueText || "0";
 
   const { roomCount } = bundle;
@@ -45,7 +45,7 @@ export default async function StudentMyPage() {
 
   const ledgerPreview = (
     <>
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <section className={SURFACE_CARD}>
         <p className="text-xs font-bold uppercase tracking-wide text-slate-400">결제 · 캐시</p>
         <p className="mt-2 text-2xl font-black tabular-nums text-[#1A56DB]">
           {cashBalanceKrw.toLocaleString("ko-KR")}
@@ -98,7 +98,7 @@ export default async function StudentMyPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+      <section className={SURFACE_CARD}>
         <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">알림 · 지원 · 리뷰</p>
         <ul className="divide-y divide-slate-100 text-sm">
           <li className="flex items-center justify-between gap-2 py-2.5">
@@ -139,7 +139,6 @@ export default async function StudentMyPage() {
       user={user}
       profile={profile}
       profileLoadError={profileLoadError?.message ?? null}
-      cashBalanceKrw={cashBalanceKrw}
       learningSummary={{
         roomCount: roomCount.n ?? 0,
         activeMentorCount,
@@ -147,13 +146,13 @@ export default async function StudentMyPage() {
       }}
       ledgerPreview={ledgerPreview}
     >
-      <div className="space-y-6">
+      <div className={`flex flex-col ${PAGE_COL_GAP}`}>
         <header>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">마이페이지</h1>
           <p className="mt-1 text-sm text-slate-500">진행 중인 질문과 구독 현황을 확인하세요.</p>
         </header>
 
-        <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+        <section className={SURFACE_CARD}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-base font-bold text-slate-900">진행 중인 질문</h2>
@@ -178,19 +177,6 @@ export default async function StudentMyPage() {
         </section>
 
         <MypageSubscriptionsCard />
-
-        <section className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <p className="font-medium text-slate-600">
-              구독 멘토 <span className="font-black text-slate-900">{activeMentorText}명</span>
-              <span className="mx-2 text-slate-300">·</span>
-              맞춤의뢰·결제 <span className="font-black text-slate-900">{paymentCount}건</span>
-            </p>
-            <Link href="/custom-request/orders" className="text-xs font-bold text-blue-600 hover:underline">
-              맞춤의뢰 내역 →
-            </Link>
-          </div>
-        </section>
       </div>
     </StudentDashboardShell>
   );

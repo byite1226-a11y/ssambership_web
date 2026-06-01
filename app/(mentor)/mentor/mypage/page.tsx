@@ -12,6 +12,7 @@ import { MentorRevenueChart, type MonthlyRevenue } from "@/components/mentor/myp
 import { loadMentorCapUsage, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
 import { listMentorReceivedReviews, type ReviewCardItem } from "@/lib/reviews/reviewQueries";
 import { formatKoreanDate } from "@/lib/utils/formatDisplay";
+import { PAGE_COL_GAP, SURFACE_CARD } from "@/lib/ui/surfaceCard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -153,9 +154,9 @@ export default async function MentorMypagePage() {
         ratingAvg={ratingAvg}
       />
 
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1fr_300px]">
+      <div className={`grid grid-cols-1 items-start lg:grid-cols-[1fr_300px] ${PAGE_COL_GAP}`}>
         {/* 좌 컬럼 */}
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className={`flex min-w-0 flex-col ${PAGE_COL_GAP}`}>
           <RevenueCard
             currentMonthLabel={currentMonthLabel}
             totalExpected={revenue?.totalExpected ?? 0}
@@ -168,11 +169,11 @@ export default async function MentorMypagePage() {
         </div>
 
         {/* 우 컬럼 */}
-        <aside className="flex flex-col gap-5 self-start">
+        <aside className={`flex flex-col self-start ${PAGE_COL_GAP}`}>
           <SubscribersStatCard activeSubscribers={kpis.activeSubscribers} />
           <RatingStatCard ratingAvg={ratingAvg} reviewCount={reviewCount} />
+          <RecentReviewsCard reviews={recentReviews} />
           <CapStatCard usage={capUsage} />
-          {recentReviews.length > 0 ? <RecentReviewsCard reviews={recentReviews} /> : null}
         </aside>
       </div>
     </main>
@@ -233,7 +234,7 @@ function RevenueCard(props: {
   monthlyRevenue: MonthlyRevenue[];
 }) {
   return (
-    <section className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5">
+    <section className={SURFACE_CARD}>
       <div className="mb-[18px] flex items-center justify-between">
         <p className="text-[13px] font-medium text-slate-400">
           이번 달 수익 · {props.currentMonthLabel}
@@ -291,7 +292,7 @@ function ActiveOrdersSection({ orders }: { orders: MentorHubOrderRow[] }) {
 
 function EmptyOrders() {
   return (
-    <div className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-12 text-center">
+    <div className={`${SURFACE_CARD} py-12 text-center`}>
       <div className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-slate-50">
         <Inbox className="h-5 w-5 text-slate-300" aria-hidden />
       </div>
@@ -308,7 +309,7 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
     <ul className="space-y-3">
       {orders.map((order) => (
         <li key={order.id}>
-          <article className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5 transition hover:border-blue-100">
+          <article className={`${SURFACE_CARD} transition hover:border-blue-100`}>
             <div className="flex items-start gap-4">
               <span
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-blue-600"
@@ -374,7 +375,7 @@ function StatCard(props: {
   children: React.ReactNode;
 }) {
   return (
-    <article className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5">
+    <article className={SURFACE_CARD}>
       <div className="mb-3.5 flex items-center gap-2.5">
         <span className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${props.iconClass}`}>
           {props.icon}
@@ -420,20 +421,24 @@ function RatingStatCard({ ratingAvg, reviewCount }: { ratingAvg: number | null; 
 
 function RecentReviewsCard({ reviews }: { reviews: ReviewCardItem[] }) {
   return (
-    <article className="rounded-2xl border border-[#eef0f3] bg-white px-[22px] py-5">
+    <article className={SURFACE_CARD}>
       <p className="text-[13px] font-medium text-slate-500">최근 후기</p>
-      <ul className="mt-3 space-y-3">
-        {reviews.map((r) => (
-          <li key={r.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[12px] font-bold text-amber-500">★ {r.rating.toFixed(1)}</span>
-              <span className="truncate text-[11px] text-slate-400">{formatKoreanDate(r.createdAt)}</span>
-            </div>
-            <p className="mt-0.5 text-[12px] font-semibold text-slate-700">{r.studentMaskedName}</p>
-            <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-600">{r.content}</p>
-          </li>
-        ))}
-      </ul>
+      {reviews.length === 0 ? (
+        <p className="mt-3 text-[12px] leading-relaxed text-slate-400">아직 등록된 후기가 없어요</p>
+      ) : (
+        <ul className="mt-3 space-y-3">
+          {reviews.map((r) => (
+            <li key={r.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[12px] font-bold text-amber-500">★ {r.rating.toFixed(1)}</span>
+                <span className="truncate text-[11px] text-slate-400">{formatKoreanDate(r.createdAt)}</span>
+              </div>
+              <p className="mt-0.5 text-[12px] font-semibold text-slate-700">{r.studentMaskedName}</p>
+              <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-600">{r.content}</p>
+            </li>
+          ))}
+        </ul>
+      )}
       <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-blue-600 hover:underline">
         후기 전체보기 →
       </Link>

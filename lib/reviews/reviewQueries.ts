@@ -272,14 +272,12 @@ export async function listMentorReceivedReviews(
     .from("reviews")
     .select("*")
     .eq("mentor_id", mentorId)
-    .eq("is_hidden", false)
-    .eq("is_blinded", false)
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(Math.min(limit * 3, 150));
 
   if (error || !data) return [];
 
-  const rows = mapRows(data as Record<string, unknown>[]);
+  const rows = mapRows(data as Record<string, unknown>[]).filter(isPubliclyVisibleReview).slice(0, limit);
   const authors = await loadAuthorsMap(
     supabase,
     rows.map((r) => r.author_id)

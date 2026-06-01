@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ChevronDown, MessageCircle, User } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { shellUserHeaderDisplay, resolveShellUserDisplayName } from "@/lib/shell/userHeaderDisplay";
+import { RoleBadgeOnly, UserNameWithRoleBadge } from "@/components/shell/UserNameWithRoleBadge";
+import { shellUserHeaderDisplay } from "@/lib/shell/userHeaderDisplay";
 import type { NotificationBellItem } from "@/lib/notifications/notificationBellQueries";
 import type { AppRole, UserRow } from "@/lib/types/user";
 
@@ -69,7 +70,6 @@ export function ShellHeaderActionsMobile({ sessionRole, userProfile, notificatio
 
 export function ShellHeaderActionsDesktop({ sessionRole, userProfile, notificationBell }: HeaderActionsProps) {
   const display = shellUserHeaderDisplay(userProfile ?? null, sessionRole);
-  const displayName = resolveShellUserDisplayName(userProfile ?? null, sessionRole);
   const showInboxIcons = sessionRole !== "mentor";
 
   return (
@@ -87,8 +87,8 @@ export function ShellHeaderActionsDesktop({ sessionRole, userProfile, notificati
         <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-500 group-hover:border-slate-300">
           <User className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
         </span>
-        <span className="hidden min-w-0 truncate text-sm font-bold text-slate-900 sm:inline">
-          {displayName} {display.roleBadge}
+        <span className="hidden min-w-0 sm:inline">
+          <UserNameWithRoleBadge profile={userProfile ?? null} role={sessionRole} />
         </span>
         {sessionRole === "mentor" ? (
           <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-400 sm:block" aria-hidden />
@@ -126,10 +126,7 @@ export function ShellHeaderGuestActions() {
 export function ShellHeaderAdminActions() {
   return (
     <div className="flex items-center gap-4">
-      <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-800">
-        Admin
-      </span>
-      <span className="text-sm font-bold text-slate-900">관리자</span>
+      <RoleBadgeOnly role="admin" />
       <a
         href="/logout"
         className="shrink-0 text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline"

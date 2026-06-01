@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React from "react";
+import { SURFACE_CARD, PAGE_COL_GAP } from "@/lib/ui/surfaceCard";
 
 interface UserLike {
   email?: string | null;
@@ -17,6 +18,7 @@ type Props = {
   user: UserLike | null;
   profile: ProfileLike | null;
   profileLoadError: string | null;
+  /** ledgerPreview 없을 때 우측 간단 캐시 카드용 */
   cashBalanceKrw?: number;
   /** 좌측 프로필 아래 미니 학습 요약 */
   learningSummary?: {
@@ -29,12 +31,10 @@ type Props = {
   children: React.ReactNode;
 };
 
+/** 상단 AppShell 네비와 겹치지 않는 보조 메뉴만 유지 */
 const NAV_ITEMS: { tab: Props["activeTab"]; href: string; label: string; icon: string }[] = [
   { tab: "home", href: "/mypage", label: "마이페이지", icon: "📑" },
   { tab: "subscriptions", href: "/subscriptions", label: "구독 현황", icon: "📅" },
-  { tab: "wallet", href: "/wallet/charge", label: "내 캐시", icon: "💰" },
-  { tab: "questions", href: "/question-room", label: "내 질문 & 답변", icon: "💬" },
-  { tab: "custom", href: "/custom-request/orders", label: "맞춤의뢰 내역", icon: "📋" },
   { tab: "notifications", href: "/notifications", label: "알림", icon: "🔔" },
   { tab: "support", href: "/support/disputes", label: "분쟁·환불 현황", icon: "⚠️" },
 ];
@@ -55,9 +55,9 @@ export function StudentDashboardShell({
 
   return (
     <div className="mx-auto max-w-[1320px] px-4 py-8 antialiased">
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-4">
-        <aside className="space-y-5 lg:col-span-1">
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <div className={`grid grid-cols-1 items-start lg:grid-cols-4 ${PAGE_COL_GAP}`}>
+        <aside className={`flex flex-col self-start ${PAGE_COL_GAP} lg:col-span-1`}>
+          <section className={SURFACE_CARD}>
             <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">마이페이지</p>
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xl font-bold text-blue-600">
@@ -84,7 +84,7 @@ export function StudentDashboardShell({
           </section>
 
           {learningSummary ? (
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <section className={SURFACE_CARD}>
               <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">내 학습 요약</p>
               <dl className="grid grid-cols-3 gap-2 text-center">
                 <div>
@@ -103,7 +103,7 @@ export function StudentDashboardShell({
             </section>
           ) : null}
 
-          <nav className="space-y-1 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm">
+          <nav className={`space-y-1 ${SURFACE_CARD} !py-3`}>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
@@ -121,32 +121,34 @@ export function StudentDashboardShell({
           </nav>
         </aside>
 
-        <div className="min-w-0 lg:col-span-2">{children}</div>
+        <div className={`min-w-0 lg:col-span-2 ${PAGE_COL_GAP} flex flex-col`}>{children}</div>
 
-        <aside className="space-y-4 lg:col-span-1">
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-400">내 캐시</p>
-            <h3 className="mt-2 text-3xl font-black text-[#1A56DB]">
-              {cashBalanceKrw.toLocaleString("ko-KR")}
-              <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
-            </h3>
-            <div className="mt-4 flex flex-col gap-2">
-              <Link
-                href="/wallet/charge"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
-              >
-                충전하기
-              </Link>
-              <Link
-                href="/wallet/ledger"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
-              >
-                사용내역
-              </Link>
-            </div>
-          </section>
-
-          {ledgerPreview ? <div className="space-y-4">{ledgerPreview}</div> : null}
+        <aside className={`flex flex-col self-start ${PAGE_COL_GAP} lg:col-span-1`}>
+          {ledgerPreview ? (
+            ledgerPreview
+          ) : (
+            <section className={SURFACE_CARD}>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">결제 · 캐시</p>
+              <p className="mt-2 text-2xl font-black tabular-nums text-[#1A56DB]">
+                {cashBalanceKrw.toLocaleString("ko-KR")}
+                <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
+              </p>
+              <div className="mt-4 flex flex-col gap-2">
+                <Link
+                  href="/wallet/charge"
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+                >
+                  충전하기
+                </Link>
+                <Link
+                  href="/wallet/ledger"
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  사용내역 전체
+                </Link>
+              </div>
+            </section>
+          )}
         </aside>
       </div>
     </div>

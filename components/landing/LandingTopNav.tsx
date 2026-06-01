@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import type { UserRow } from "@/lib/types/user";
+import { UserNameWithRoleBadge } from "@/components/shell/UserNameWithRoleBadge";
+import type { AppRole, UserRow } from "@/lib/types/user";
 import type { User } from "@supabase/supabase-js";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { LandingMainNav } from "@/components/landing/LandingMainNav";
@@ -95,9 +96,11 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
                       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                     </svg>
                   </div>
-                  <span className="text-sm font-bold text-slate-800">
-                    {props.profile?.full_name || props.profile?.nickname || "사용자"} 님
-                  </span>
+                  <UserNameWithRoleBadge
+                    profile={props.profile}
+                    role={(role ?? "student") as AppRole}
+                    className="text-sm"
+                  />
                 </Link>
                 <a
                   href="/logout"
