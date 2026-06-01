@@ -4,7 +4,7 @@ import { mentorCustomOrderStatusHeadline } from "@/lib/customRequest/mentorCusto
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { SUBSCRIPTIONS_TABLE } from "@/lib/subscribe/subscriptionsTable";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
-import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsQueries";
+import { loadMentorPayoutsBundle } from "@/lib/mentor/mentorPayoutsQueries";
 import { aggregateThreadStatsForRooms } from "@/lib/home/threadStats";
 import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 
@@ -26,7 +26,7 @@ export type MentorDashboardData = {
   disputeCount: number;
   monthlyRevenueCash: number;
   threadStats: Awaited<ReturnType<typeof aggregateThreadStatsForRooms>>;
-  payouts: Awaited<ReturnType<typeof loadMentorPayoutsPageData>>;
+  payouts: Awaited<ReturnType<typeof loadMentorPayoutsBundle>>;
   customRecent: {
     table: string | null;
     rows: Row[];
@@ -148,7 +148,7 @@ export async function loadMentorDashboardData(
 
   const [threadStats, payouts, customRecent, notifyProbe] = await Promise.all([
     aggregateThreadStatsForRooms(supabase, roomIds, { maxRooms: 15, mode: "mentor" }),
-    loadMentorPayoutsPageData(supabase, mentorId),
+    loadMentorPayoutsBundle(supabase, mentorId),
     fetchRecentCustomOrders(supabase, mentorId, 5),
     notificationsCountProbe(supabase, mentorId),
   ]);

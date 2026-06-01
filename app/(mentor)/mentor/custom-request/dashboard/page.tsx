@@ -13,7 +13,7 @@ import {
   fetchMentorCustomRequestOrdersFromPrimaryTable,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/home/mentorDashboardQueries";
-import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsQueries";
+import { loadMentorPayoutsBundle } from "@/lib/mentor/mentorPayoutsQueries";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { fetchMentorWorkspaceCounts, mentorWorkspaceSidebarCounts } from "@/lib/customRequest/mentorCounts";
 import {
@@ -82,7 +82,7 @@ export default async function MentorCustomRequestDashboardPage() {
     loadMentorRecentApplicationsWithPostHints(supabase, user.id, 5),
     fetchMentorCustomRequestOrdersFromPrimaryTable(supabase, user.id, 12),
     fetchMentorWorkspaceCounts(supabase, user.id),
-    loadMentorPayoutsPageData(supabase, user.id),
+    loadMentorPayoutsBundle(supabase, user.id),
     fetchMentorProfileRow(supabase, user.id),
   ]);
 
