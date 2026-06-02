@@ -243,7 +243,7 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats; heroCtas?
       <section className="bg-[#1A56DB] py-14 sm:py-16">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div>
-            <h2 className="text-2xl font-black text-white sm:text-3xl">회원가입하면 무료 질문권 15개 지급!</h2>
+            <h2 className="text-2xl font-black text-white sm:text-3xl">회원가입하면 무료 질문권 7개 지급!</h2>
             <p className="mt-3 text-sm font-medium leading-relaxed text-blue-100 sm:text-base">
               <span className="block">한 멘토에게는 최대 3개까지 사용 가능</span>
               <span className="block">무료 질문권은 가입 후 7일 후에 소멸됩니다</span>
@@ -252,7 +252,7 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats; heroCtas?
           <div className="w-full rounded-2xl border border-blue-300/50 bg-sky-400/25 p-5 backdrop-blur-sm lg:w-auto lg:min-w-[440px]">
             <div className="space-y-3">
               <p className="text-sm font-semibold text-white">
-                🎁 무료 질문권 15개 지급 <span className="text-blue-100">— 가입 즉시 제공</span>
+                🎁 무료 질문권 7개 지급 <span className="text-blue-100">— 가입 즉시 제공</span>
               </p>
               <p className="text-sm font-semibold text-white">
                 💬 한 멘토당 최대 3개 <span className="text-blue-100">— 여러 멘토에게 나눠 사용 가능</span>

@@ -4,7 +4,7 @@ import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
-import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import { cashKrwForSubscribeTier, SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 import {
   SUBSCRIPTIONS_ORDER_COLUMN,
   SUBSCRIPTIONS_SELECT,
@@ -124,6 +124,43 @@ function planRowDebitAmountCents(planRow: Row): number {
   return Math.round(krwDisplay * 100);
 }
 
+/** DB mentor_plans 금액과 잠금 카탈로그(55k/114.9k/249.9k) 교차검증 — 불일치 시 차감·구독 차단 */
+function assertPlanDebitMatchesCatalog(
+  planRow: Row,
+  planTier: SubscribePlanTier,
+  context: string
+): { ok: true; amountCents: number } | { ok: false; error: string } {
+  const amountCents = planRowDebitAmountCents(planRow);
+  const expectedCents = cashKrwForSubscribeTier(planTier) * 100;
+  if (amountCents <= 0) {
+    console.error(`[assertPlanDebitMatchesCatalog:${context}] non-positive debit`, {
+      planTier,
+      amountCents,
+      planRowId: planRow.id ?? planRow.plan_id,
+    });
+    return {
+      ok: false,
+      error:
+        "구독 플랜에서 캐시 차감할 유효 금액을 찾을 수 없습니다. 멘토 플랜 금액 설정을 확인하거나 잠시 후 다시 시도해 주세요.",
+    };
+  }
+  if (amountCents !== expectedCents) {
+    console.error(`[assertPlanDebitMatchesCatalog:${context}] plan_price_catalog_mismatch`, {
+      planTier,
+      amountCents,
+      expectedCents,
+      mentorId: planRow.mentor_id,
+      planRowId: planRow.id ?? planRow.plan_id,
+    });
+    return {
+      ok: false,
+      error:
+        "구독 플랜 금액이 시스템 기준과 일치하지 않아 결제를 진행할 수 없습니다. 고객센터에 문의해 주세요.",
+    };
+  }
+  return { ok: true, amountCents };
+}
+
 /** DB `record_subscription_cash_debit`: idempotency_key = 'sub_debit_' || payment_id */
 function subscriptionCashDebitIdempotencyKey(paymentId: string): string {
   return `sub_debit_${paymentId}`;
@@ -183,27 +220,35 @@ async function repairMissingSubscriptionCashLedgerIfNeeded(
     const { byTier } = assignPlansByTier(plans.rows);
     planRow = byTier[planTier];
   }
-  const amountCents = planRow ? planRowDebitAmountCents(planRow) : 0;
-  if (amountCents <= 0) {
-    const details = {
-      studentId,
-      paymentId,
-      mentorId,
-      planTier,
-      hasPlanRow: Boolean(planRow),
-      amountCents,
-    };
+  if (!planRow) {
+    const details = { studentId, paymentId, mentorId, planTier, hasPlanRow: false };
     if (mode === "newSubscription") {
-      console.error(`${logTag} non-positive debit amount (blocking new subscription)`, details);
+      console.error(`${logTag} missing plan row (blocking new subscription)`, details);
       return {
         ok: false,
         error:
           "구독 플랜에서 캐시 차감할 유효 금액을 찾을 수 없습니다. 멘토 플랜 금액 설정을 확인하거나 잠시 후 다시 시도해 주세요.",
       };
     }
-    console.warn(`${logTag} skip ledger repair: non-positive debit amount (no subscription cash debit for this path)`, details);
+    console.warn(`${logTag} skip ledger repair: no plan row`, details);
     return { ok: true };
   }
+
+  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, mode);
+  if (!debitCheck.ok) {
+    if (mode === "newSubscription") {
+      return { ok: false, error: debitCheck.error };
+    }
+    console.warn(`${logTag} skip ledger repair: catalog mismatch`, {
+      studentId,
+      paymentId,
+      mentorId,
+      planTier,
+      error: debitCheck.error,
+    });
+    return { ok: true };
+  }
+  const amountCents = debitCheck.amountCents;
   if (!subscriptionId) {
     const details = {
       studentId,
@@ -656,6 +701,12 @@ export async function finalizeSubscriptionCheckout(
     };
   }
 
+  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, "finalizeSubscriptionCheckout");
+  if (!debitCheck.ok) {
+    return { ok: false, error: debitCheck.error, code: "db" };
+  }
+  const amountCents = debitCheck.amountCents;
+
   let subId: string | null = null;
   const subInsert = await insertSubscriptionRow(
     supabase,
@@ -666,7 +717,6 @@ export async function finalizeSubscriptionCheckout(
   }
   subId = subInsert.subscriptionId;
 
-  const amountCents = planRowDebitAmountCents(planRow);
   const debit = await repairMissingSubscriptionCashLedgerIfNeeded(supabase, {
     mode: "newSubscription",
     studentId,

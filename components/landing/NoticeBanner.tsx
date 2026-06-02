@@ -16,7 +16,7 @@ export function NoticeBanner() {
             공지
           </span>
           <p className="min-w-0 flex-1 text-[12px] font-semibold leading-snug text-slate-800 sm:flex-none sm:text-[13px]">
-            6월 모의고사 직후 출시 기념! 지금 가입하면 1주일 무료 + 무료 15질문 제공
+            6월 모의고사 직후 출시 기념! 지금 가입하면 1주일 무료 + 무료 7질문 제공
           </p>
         </div>
         <Link

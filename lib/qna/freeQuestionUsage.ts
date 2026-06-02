@@ -1,13 +1,45 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FREE_QUESTION_PER_MENTOR_LIMIT, FREE_QUESTION_TOTAL_LIMIT } from "@/lib/mentor/freeQuestionPolicy";
+import {
+  FREE_QUESTION_EXPIRY_DAYS,
+  FREE_QUESTION_PER_MENTOR_LIMIT,
+  FREE_QUESTION_TOTAL_LIMIT,
+} from "@/lib/mentor/freeQuestionPolicy";
 
 const TABLE = "free_question_usage" as const;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type FreeQuestionGateResult =
   | { ok: true; usedFreeQuota: true }
   | { ok: false; userMessage: string };
+
+function freeQuestionExpiryInstant(signupCreatedAt: string | Date): number {
+  const signupMs = new Date(signupCreatedAt).getTime();
+  if (!Number.isFinite(signupMs)) {
+    return 0;
+  }
+  return signupMs + FREE_QUESTION_EXPIRY_DAYS * MS_PER_DAY;
+}
+
+/** 가입일(users.created_at) 기준 무료 질문권 유효 여부 */
+export async function isFreeQuestionQuotaExpired(
+  supabase: SupabaseClient,
+  studentId: string
+): Promise<{ expired: boolean; error: string | null }> {
+  const { data, error } = await supabase.from("users").select("created_at").eq("id", studentId).maybeSingle();
+  if (error) {
+    if (/relation|does not exist|schema cache/i.test(error.message)) {
+      return { expired: false, error: null };
+    }
+    return { expired: false, error: error.message };
+  }
+  const createdAt = (data as { created_at?: string } | null)?.created_at;
+  if (!createdAt) {
+    return { expired: false, error: "student created_at missing" };
+  }
+  return { expired: Date.now() >= freeQuestionExpiryInstant(createdAt), error: null };
+}
 
 export async function countFreeQuestionsTotal(
   supabase: SupabaseClient,
@@ -54,6 +86,13 @@ export async function loadFreeQuestionRemainingForMentor(
   if (!studentId) {
     return null;
   }
+  const expiry = await isFreeQuestionQuotaExpired(supabase, studentId);
+  if (expiry.error) {
+    return null;
+  }
+  if (expiry.expired) {
+    return 0;
+  }
   const { count, error } = await countFreeQuestionsForMentor(supabase, studentId, mentorId);
   if (error) {
     return null;
@@ -67,6 +106,18 @@ export async function assertFreeQuestionAllowed(
   studentId: string,
   mentorId: string
 ): Promise<FreeQuestionGateResult> {
+  const expiry = await isFreeQuestionQuotaExpired(supabase, studentId);
+  if (expiry.error) {
+    console.error("[assertFreeQuestionAllowed] expiry check", expiry.error);
+    return { ok: false, userMessage: "무료 질문권을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." };
+  }
+  if (expiry.expired) {
+    return {
+      ok: false,
+      userMessage: `무료 질문권은 가입 후 ${FREE_QUESTION_EXPIRY_DAYS}일까지만 사용할 수 있습니다. 멘토를 구독한 뒤 질문해 주세요.`,
+    };
+  }
+
   const total = await countFreeQuestionsTotal(supabase, studentId);
   if (total.error) {
     console.error("[assertFreeQuestionAllowed] total count", total.error);
@@ -109,6 +160,12 @@ export async function recordFreeQuestionUsage(
     }
     if (insErr.code === "P0002") {
       return { ok: false, userMessage: "무료 질문권을 모두 사용했습니다." };
+    }
+    if (insErr.code === "P0003") {
+      return {
+        ok: false,
+        userMessage: `무료 질문권은 가입 후 ${FREE_QUESTION_EXPIRY_DAYS}일까지만 사용할 수 있습니다. 멘토를 구독한 뒤 질문해 주세요.`,
+      };
     }
     console.error("[recordFreeQuestionUsage] insert", insErr.message);
     return { ok: false, userMessage: "무료 질문권 차감에 실패했습니다. 잠시 후 다시 시도해 주세요." };
