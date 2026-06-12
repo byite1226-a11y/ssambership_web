@@ -333,9 +333,13 @@ export function QuestionRoomMentorDesignWorkspace(props: {
           </p>
           <p className="text-[11px] font-medium text-slate-400">질문 상세 · 실시간 대화</p>
         </div>
-        {props.threadId && selectedThreadWorkflow === "pending" ? (
+        {props.threadId ? (
           <div className="ml-auto shrink-0">
-            <QuestionThreadAnswerCompleteButton roomId={props.roomId} threadId={props.threadId} />
+            <QuestionThreadAnswerCompleteButton
+              roomId={props.roomId}
+              threadId={props.threadId}
+              workflowStatus={selectedThreadWorkflow}
+            />
           </div>
         ) : null}
       </header>
