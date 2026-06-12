@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import type { CommunityMePostListItem } from "@/lib/community/communityQueries";
+import type { CommunityMeDraftItem, CommunityMePostListItem } from "@/lib/community/communityQueries";
 import type { CommunityMeTab } from "@/lib/community/communityMeTab";
 import { communityMePath } from "@/lib/community/communityMeTab";
 import type { AppRole } from "@/lib/types/user";
@@ -11,6 +11,7 @@ const btnMentor = "inline-flex rounded-xl bg-blue-600 px-4 py-2 text-xs font-bol
 
 export type CommunityMeActivityPayload = {
   myPosts: CommunityMePostListItem[];
+  myDrafts: CommunityMeDraftItem[];
   boardCount: number | null;
   shortformCount: number | null;
   recent: CommunityMePostListItem[];
@@ -38,6 +39,28 @@ function KindBadge(props: { kind: "board" | "shortform" }) {
       : "border-violet-200 bg-violet-50 text-violet-900";
   return (
     <span className={`inline-flex shrink-0 rounded-lg border px-2 py-0.5 text-[10px] font-extrabold ${cls}`}>{label}</span>
+  );
+}
+
+export function MeDraftsList(props: { items: CommunityMeDraftItem[] }) {
+  if (props.items.length === 0) return null;
+  return (
+    <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/40">
+      {props.items.map((item) => (
+        <li key={`${item.kind}-${item.id}`} className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            <KindBadge kind={item.kind} />
+            <div className="min-w-0 flex-1">
+              <span className="font-bold text-slate-900 line-clamp-2">{item.title}</span>
+              {item.dateLabel ? <p className="mt-0.5 text-xs text-slate-500">{item.dateLabel}</p> : null}
+            </div>
+          </div>
+          <Link href={item.continueHref} className={linkSlate}>
+            이어서 작성
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -88,8 +111,8 @@ export function CommunityMeTabPanels(props: {
     const tabHint: Record<CommunityMeTab, string> = {
       overview: "요약과 탭별 화면은 로그인 후 이용할 수 있어요.",
       posts: "내 게시글 탭은 로그인 후 이용할 수 있어요.",
+      drafts: "임시저장 목록은 로그인 후 이용할 수 있어요.",
       scraps: "스크랩 목록은 데이터 연결 후 표시될 예정이에요. 로그인 후에도 내용이 비어 있을 수 있어요.",
-      follows: "팔로우 목록은 데이터 연결 후 표시될 예정이에요. 로그인 후에도 내용이 비어 있을 수 있어요.",
     };
     return (
       <Panel title="로그인이 필요해요">
@@ -101,6 +124,7 @@ export function CommunityMeTabPanels(props: {
 
   const overviewCounts = act ? countLine(act.boardCount, act.shortformCount) : null;
   const hasPosts = (act?.myPosts.length ?? 0) > 0;
+  const hasDrafts = (act?.myDrafts.length ?? 0) > 0;
 
   if (isMentor) {
     if (tab === "overview") {
@@ -138,14 +162,28 @@ export function CommunityMeTabPanels(props: {
           ) : hasPosts ? (
             <p className="text-slate-600">작성한 게시판 글과 숏폼이 최신순으로 표시됩니다.</p>
           ) : (
-            <p>작성한 게시글이 아직 없어요. 첫 글은 멘토 작성 화면에서 시작할 수 있어요.</p>
+            <p>작성한 게시글이 아직 없어요. 첫 글은 작성 화면에서 시작할 수 있어요.</p>
           )}
           <MePostsList items={act?.myPosts ?? []} />
           <div className="mt-4">
-            <Link href="/mentor/community/new" className={btnMentor}>
+            <Link href="/community/new" className={btnMentor}>
               게시글 작성
             </Link>
           </div>
+        </Panel>
+      );
+    }
+    if (tab === "drafts") {
+      return (
+        <Panel title="임시저장">
+          {act?.loadFailed ? (
+            <p className="text-amber-900">목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+          ) : hasDrafts ? (
+            <p className="text-slate-600">임시저장한 게시글·숏폼을 이어서 작성할 수 있어요.</p>
+          ) : (
+            <p>임시저장된 글이 없어요. 작성 중 「임시저장」을 누르면 여기에 모입니다.</p>
+          )}
+          <MeDraftsList items={act?.myDrafts ?? []} />
         </Panel>
       );
     }
@@ -157,12 +195,7 @@ export function CommunityMeTabPanels(props: {
         </Panel>
       );
     }
-    return (
-      <Panel title="팔로우">
-        <p className="text-sm">팔로우한 멘토 목록은 데이터 연결 후 이 탭에 표시될 예정이에요.</p>
-        <NavHint />
-      </Panel>
-    );
+    return null;
   }
 
   /* student · admin · 기타 로그인 — 작성 CTA 없음 */
@@ -199,6 +232,25 @@ export function CommunityMeTabPanels(props: {
       </Panel>
     );
   }
+  if (tab === "drafts") {
+    return (
+      <Panel title="임시저장">
+        {act?.loadFailed ? (
+          <p className="text-amber-900">목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+        ) : hasDrafts ? (
+          <p className="text-slate-600">임시저장한 게시글을 이어서 작성할 수 있어요.</p>
+        ) : (
+          <p>임시저장된 글이 없어요. 작성 중 「임시저장」을 누르면 여기에 모입니다.</p>
+        )}
+        <MeDraftsList items={act?.myDrafts ?? []} />
+        <div className="mt-4">
+          <Link href="/community/new" className={linkSlate}>
+            새 글 작성
+          </Link>
+        </div>
+      </Panel>
+    );
+  }
   if (tab === "scraps") {
     return (
       <Panel title="스크랩">
@@ -207,10 +259,5 @@ export function CommunityMeTabPanels(props: {
       </Panel>
     );
   }
-  return (
-    <Panel title="팔로우">
-      <p className="text-sm">팔로우한 멘토 목록은 데이터 연결 후 이 탭에 표시될 예정이에요.</p>
-      <NavHint />
-    </Panel>
-  );
+  return null;
 }

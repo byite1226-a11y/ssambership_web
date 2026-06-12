@@ -2,9 +2,6 @@ import Link from "next/link";
 import type { CommunityNavActive } from "@/components/community/CommunityNavTypes";
 import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 
-const PRIMARY = "#2563eb";
-
-const DEFAULT_HASHTAGS = ["학습루틴", "면접", "포트폴리오"] as const;
 const HOT_TOPICS = [
   { rank: 1, label: "학습 루틴 공유" },
   { rank: 2, label: "포트폴리오 피드백" },
@@ -29,7 +26,7 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
 
 export function CommunityLeftSidebar(props: { active: CommunityNavActive; loggedIn: boolean }) {
   const a = props.active;
-  const meActive = a === "me" || a === "my-posts" || a === "scraps" || a === "follows";
+  const meActive = a === "me" || a === "my-posts" || a === "scraps";
 
   return (
     <aside className="w-full lg:w-[200px]" aria-label="커뮤니티 메뉴">
@@ -41,27 +38,6 @@ export function CommunityLeftSidebar(props: { active: CommunityNavActive; logged
         <div className="my-2 border-t border-[#eef0f3]" />
         <NavLink href="/community/me" label="내 활동" active={meActive} />
       </nav>
-      <section className={`${SURFACE_CARD} !px-3 !py-3`}>
-        <h3 className="text-xs font-extrabold text-slate-900">인기 해시태그</h3>
-        <ul className="mt-2 flex flex-wrap gap-2">
-          {DEFAULT_HASHTAGS.map((tag) => (
-            <li key={tag}>
-              <Link
-                href={`/community/board?tag=${encodeURIComponent(tag)}`}
-                className="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-blue-50 hover:text-[#2563eb]"
-              >
-                #{tag}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <Link
-          href="/community/board"
-          className="mt-3 block text-center text-xs font-bold text-slate-500 hover:text-[#1A56DB]"
-        >
-          전체 해시태그 보기
-        </Link>
-      </section>
 
       <section className={`${SURFACE_CARD} !px-3 !py-3`}>
         <h3 className="text-xs font-extrabold text-slate-900">실시간 인기 주제</h3>
@@ -78,7 +54,7 @@ export function CommunityLeftSidebar(props: { active: CommunityNavActive; logged
       {!props.loggedIn ? (
         <section className="rounded-2xl bg-[#2563eb] px-3 py-4 text-white">
           <p className="text-xs font-extrabold leading-relaxed">로그인하면</p>
-          <p className="mt-1 text-xs leading-relaxed text-blue-50">댓글·스크랩·팔로우 이용</p>
+          <p className="mt-1 text-xs leading-relaxed text-blue-50">댓글·스크랩 이용</p>
           <Link
             href="/login?next=%2Fcommunity"
             className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-[#2563eb]"

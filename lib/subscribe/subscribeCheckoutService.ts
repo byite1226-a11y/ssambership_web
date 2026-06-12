@@ -14,6 +14,7 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { loadMentorCapUsage, wouldExceedCap } from "@/lib/subscribe/mentorCapService";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
+import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 
 type Row = Record<string, unknown>;
 
@@ -381,6 +382,10 @@ export async function createSubscriptionPaymentIntent(
   if (mUser.error || !mUser.data || mUser.data.role !== "mentor") {
     return { ok: false, error: "멘토를 확인할 수 없습니다.", code: "mentor" };
   }
+  const mentorGate = await assertMentorApprovedForAction(supabase, mentorId);
+  if (!mentorGate.ok) {
+    return { ok: false, error: mentorGate.error, code: "mentor" };
+  }
   const dup = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
   if (dup) {
     return {
@@ -610,6 +615,10 @@ export async function finalizeSubscriptionCheckout(
   const mcol = (await pickExistingColumn(supabase, payTable, ["mentor_id", "mentor_user_id"])).column;
   if (mcol && p[mcol] != null && String(p[mcol]) !== mentorId) {
     return { ok: false, error: "멘토 정보가 결제와 일치하지 않습니다.", code: "forbidden" };
+  }
+  const mentorGate = await assertMentorApprovedForAction(supabase, mentorId);
+  if (!mentorGate.ok) {
+    return { ok: false, error: mentorGate.error, code: "forbidden" };
   }
 
   const stCol = (await pickExistingColumn(supabase, payTable, ["status", "state", "payment_status"])).column;

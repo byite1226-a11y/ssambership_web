@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { CommunityMeActivityPayload } from "@/components/community/CommunityMeTabPanels";
-import { MePostsList } from "@/components/community/CommunityMeTabPanels";
+import { MeDraftsList, MePostsList } from "@/components/community/CommunityMeTabPanels";
 import { communityMePath } from "@/lib/community/communityMeTab";
 
 function SectionCard(props: {
@@ -27,6 +27,7 @@ export function CommunityMeOverviewSections(props: {
 }) {
   const act = props.activity;
   const recentPosts = act?.myPosts.slice(0, 5) ?? [];
+  const recentDrafts = act?.myDrafts.slice(0, 3) ?? [];
 
   return (
     <div className="space-y-6">
@@ -40,14 +41,19 @@ export function CommunityMeOverviewSections(props: {
         )}
       </SectionCard>
 
+      <SectionCard title="임시저장" moreHref={communityMePath("drafts")}>
+        {act?.loadFailed ? (
+          <p className="text-xs font-semibold text-amber-800">목록을 불러오지 못했어요.</p>
+        ) : recentDrafts.length === 0 ? (
+          <p className="text-sm text-slate-500">임시저장된 글이 없어요.</p>
+        ) : (
+          <MeDraftsList items={recentDrafts} />
+        )}
+      </SectionCard>
+
       <SectionCard title="스크랩" moreHref={communityMePath("scraps")}>
         <p className="text-sm text-slate-600">스크랩한 게시글을 모아 볼 수 있어요.</p>
         <p className="mt-2 text-xs text-slate-500">「더 보기」에서 전체 스크랩 목록을 확인하세요.</p>
-      </SectionCard>
-
-      <SectionCard title="팔로우" moreHref={communityMePath("follows")}>
-        <p className="text-sm text-slate-600">팔로우한 멘토·유저 목록을 확인할 수 있어요.</p>
-        <p className="mt-2 text-xs text-slate-500">「더 보기」에서 팔로우 목록으로 이동합니다.</p>
       </SectionCard>
     </div>
   );

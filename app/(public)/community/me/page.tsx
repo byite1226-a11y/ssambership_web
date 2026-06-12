@@ -2,8 +2,10 @@ import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShel
 import { CommunityMeTabPanels, type CommunityMeActivityPayload } from "@/components/community/CommunityMeTabPanels";
 import { CommunityMeOverviewSections } from "@/components/community/CommunityMeOverviewSections";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
+import { LoginRequiredState } from "@/components/common/LoginRequiredState";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import {
+  buildCommunityMeDraftsList,
   buildCommunityMePostsList,
   countMyCommunityBoardPosts,
   countMyShortformPosts,
@@ -27,8 +29,8 @@ function meDescription(role: AppRole | null | undefined, loggedIn: boolean): str
 
 function activeNavForMeTab(tab: ReturnType<typeof parseCommunityMeTab>): CommunityNavActive {
   if (tab === "posts") return "my-posts";
+  if (tab === "drafts") return "my-posts";
   if (tab === "scraps") return "scraps";
-  if (tab === "follows") return "follows";
   return "me";
 }
 
@@ -45,8 +47,24 @@ export default async function CommunityMePage(props: PageProps) {
   const loggedIn = user != null;
   const role = profile?.role;
 
+  if (!loggedIn) {
+    return (
+      <CommunityLayoutShell activeNav={activeNavForMeTab(tab)}>
+        <CommunityPageHero
+          eyebrow="커뮤니티"
+          title="내 활동"
+          description="내 게시글·스크랩은 로그인 후 이용할 수 있어요."
+        />
+        <LoginRequiredState
+          nextPath={loginNextPath}
+          description="로그인하면 작성한 글과 스크랩 활동을 확인할 수 있어요."
+        />
+      </CommunityLayoutShell>
+    );
+  }
+
   let activity: CommunityMeActivityPayload | null = null;
-  if (loggedIn && user?.id) {
+  if (user?.id) {
     const supabase = await createClient();
     const uid = user.id;
     const [boardRes, shortRes, boardCount, shortCount] = await Promise.all([
@@ -60,6 +78,7 @@ export default async function CommunityMePage(props: PageProps) {
     const loadFailed = Boolean(boardRes.error || shortRes.error);
     activity = {
       myPosts: buildCommunityMePostsList(boardRes.rows, shortRes.rows, 200),
+      myDrafts: buildCommunityMeDraftsList(boardRes.rows, shortRes.rows, 50),
       boardCount: boardCount,
       shortformCount: shortCount,
       recent: buildCommunityMePostsList(boardRes.rows, shortRes.rows, 3),

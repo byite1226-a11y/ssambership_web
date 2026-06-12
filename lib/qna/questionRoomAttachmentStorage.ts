@@ -34,24 +34,54 @@ function buildObjectPath(roomId: string, threadId: string, mime: string, origina
 export async function uploadQuestionRoomAttachment(
   supabase: SupabaseClient,
   params: { roomId: string; threadId: string; buffer: Buffer; mime: string; name: string }
-): Promise<{ url: string | null; isImage: boolean; filename: string; error: string | null }> {
+): Promise<{
+  url: string | null;
+  isImage: boolean;
+  filename: string;
+  storagePath: string | null;
+  mime: string;
+  error: string | null;
+}> {
   const { roomId, threadId, buffer, mime, name } = params;
   const isImage = mime.startsWith("image/");
   if (!ALLOWED_MIME.has(mime)) {
-    return { url: null, isImage, filename: name, error: "지원하지 않는 파일 형식입니다." };
+    return { url: null, isImage, filename: name, storagePath: null, mime, error: "지원하지 않는 파일 형식입니다." };
   }
   if (buffer.length > MAX_BYTES) {
-    return { url: null, isImage, filename: name, error: "파일은 20MB 이하로 올려주세요." };
+    return { url: null, isImage, filename: name, storagePath: null, mime, error: "파일은 20MB 이하로 올려주세요." };
   }
   const path = buildObjectPath(roomId, threadId, mime, name);
   const { error: upErr } = await supabase.storage
     .from(QUESTION_ROOM_ATTACHMENTS_BUCKET)
     .upload(path, buffer, { contentType: mime, upsert: false });
-  if (upErr) return { url: null, isImage, filename: name, error: upErr.message };
+  if (upErr) return { url: null, isImage, filename: name, storagePath: null, mime, error: upErr.message };
 
   const signed = await createSignedStorageUrl(supabase, QUESTION_ROOM_ATTACHMENTS_BUCKET, path);
   if (signed.error || !signed.url) {
-    return { url: null, isImage, filename: name, error: signed.error ?? "서명 URL 발급 실패" };
+    return { url: null, isImage, filename: name, storagePath: path, mime, error: signed.error ?? "서명 URL 발급 실패" };
   }
-  return { url: signed.url, isImage, filename: name, error: null };
+  return { url: signed.url, isImage, filename: name, storagePath: path, mime, error: null };
+}
+
+export async function recordQuestionAttachmentMetadataBestEffort(
+  supabase: SupabaseClient,
+  params: {
+    threadId: string;
+    messageId: string | null;
+    storagePath: string | null;
+    fileName: string | null;
+    mimeType: string | null;
+  }
+): Promise<void> {
+  if (!params.threadId || !params.storagePath) return;
+  const { error } = await supabase.from("question_attachments").insert({
+    thread_id: params.threadId,
+    message_id: params.messageId,
+    storage_path: params.storagePath,
+    file_name: params.fileName,
+    mime_type: params.mimeType,
+  });
+  if (error && !/does not exist|schema cache|relation|column|permission/i.test(error.message)) {
+    console.error("[recordQuestionAttachmentMetadataBestEffort]", error.message);
+  }
 }

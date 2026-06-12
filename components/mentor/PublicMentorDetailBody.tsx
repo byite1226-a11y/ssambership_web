@@ -42,7 +42,8 @@ function statFromProfile(row: Row | null, keys: string[]): number | null {
 
 function mentorDetailStats(
   profileRow: Row | null,
-  reviews: { count: number | null; avgRating: number | null }
+  reviews: { count: number | null; avgRating: number | null },
+  avgResponseHours?: number | null
 ) {
   const totalAnswers = statFromProfile(profileRow, [
     "total_answers",
@@ -54,7 +55,7 @@ function mentorDetailStats(
     "student_count",
     "active_students",
   ]);
-  const responseHours = avgResponseHoursFromProfileRow(profileRow);
+  const responseHours = avgResponseHours ?? avgResponseHoursFromProfileRow(profileRow);
   const avgResponseLabel = formatAvgResponseHoursLabel(responseHours);
   const satisfactionLabel =
     reviews.avgRating != null
@@ -82,6 +83,7 @@ export function PublicMentorDetailBody(props: {
   initialFavorited?: boolean;
   freeQuestionRemaining?: number | null;
   subscriptionClosed?: boolean;
+  avgResponseHours?: number | null;
 }) {
   const { mentorId, display, bundle, viewer, reviewEligibility } = props;
   const isLoggedIn = props.isLoggedIn ?? Boolean(viewer);
@@ -102,7 +104,7 @@ export function PublicMentorDetailBody(props: {
   const stats = mentorDetailStats(bundle.profileRow, {
     count: bundle.reviews.count,
     avgRating: bundle.reviews.avgRating,
-  });
+  }, props.avgResponseHours);
 
   const photo = display.photoUrl?.trim();
   const verKo = mentorVerificationKo(display.verification);

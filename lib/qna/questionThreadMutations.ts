@@ -7,9 +7,12 @@ type MutationOk = { ok: true; row: Record<string, unknown> | null };
 export async function updateQuestionThreadStatus(
   supabase: SupabaseClient,
   threadId: string,
-  status: QuestionThreadWorkflowStatus
+  status: QuestionThreadWorkflowStatus,
+  extra?: Record<string, unknown>
 ): Promise<MutationOk | MutationFail> {
   const payloads: Record<string, unknown>[] = [
+    { status, ...(extra ?? {}), updated_at: new Date().toISOString() },
+    { status, ...(extra ?? {}) },
     { status, updated_at: new Date().toISOString() },
     { status },
   ];

@@ -21,6 +21,7 @@ import { parseAttachmentMessageBody } from "@/lib/qna/questionRoomAttachmentDisp
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { QuestionRoomNewQuestionModal } from "@/components/qna/QuestionRoomNewQuestionModal";
 import { QuestionThreadConfirmButton } from "@/components/qna/QuestionThreadConfirmButton";
+import { QuestionThreadWrongAnswerToggle } from "@/components/qna/QuestionThreadWrongAnswerToggle";
 import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
 import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsageDisplay";
 import { sendQuestionMessageAction } from "@/lib/qna/questionRoomActions";
@@ -560,9 +561,20 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                   )}
                 </div>
 
-                {threadWorkflow === "answered" && props.threadId ? (
-                  <div className="mt-6">
-                    <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />
+                {props.threadId ? (
+                  <div className="mt-6 space-y-3">
+                    <QuestionThreadWrongAnswerToggle
+                      roomId={props.roomId}
+                      threadId={props.threadId}
+                      initialChecked={Boolean(selectedThread.is_wrong_answer)}
+                    />
+                    {threadWorkflow === "answered" ? (
+                      <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />
+                    ) : threadWorkflow === "confirmed" ? (
+                      <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12px] font-bold text-emerald-900">
+                        답변 확인이 완료되었습니다. 이 질문은 주간 질문 집계에 반영됐어요.
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

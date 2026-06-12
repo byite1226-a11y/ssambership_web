@@ -5,8 +5,8 @@ import { communityMePath } from "@/lib/community/communityMeTab";
 const TABS: { id: CommunityMeTab; label: string }[] = [
   { id: "overview", label: "전체" },
   { id: "posts", label: "내 게시글" },
+  { id: "drafts", label: "임시저장" },
   { id: "scraps", label: "스크랩" },
-  { id: "follows", label: "팔로우" },
 ];
 
 export function CommunityMeTabNav(props: { active: CommunityMeTab }) {

@@ -5,8 +5,7 @@ import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
 import { WEEKLY_QUESTION_LIMIT_MESSAGE } from "@/lib/qna/questionThreadStatus";
-
-const DEFAULT_SUBJECTS = ["미적분", "확률과통계", "수학Ⅰ", "수학Ⅱ", "기하", "대수", "물리", "화학"] as const;
+import { QUESTION_SUBJECT_OPTIONS, normalizeQuestionSubjectCode } from "@/lib/qna/questionSubjects";
 
 export function QuestionRoomStudentThreadForm(props: {
   roomId: string;
@@ -19,15 +18,24 @@ export function QuestionRoomStudentThreadForm(props: {
 }) {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [subjectTag, setSubjectTag] = useState("");
+  const [subjectCode, setSubjectCode] = useState("");
+  const [topic, setTopic] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isModal = props.variant === "modal";
 
   const subjects = useMemo(() => {
-    const fromProps = props.subjectOptions ?? [];
-    const merged = [...new Set([...fromProps, ...DEFAULT_SUBJECTS])].filter(Boolean);
-    return merged.slice(0, 12);
+    const byCode = new Map<string, string>();
+    for (const s of QUESTION_SUBJECT_OPTIONS) {
+      byCode.set(s.code, s.label);
+    }
+    for (const value of props.subjectOptions ?? []) {
+      const code = normalizeQuestionSubjectCode(value);
+      if (!code) continue;
+      const label = QUESTION_SUBJECT_OPTIONS.find((s) => s.code === code)?.label;
+      if (label) byCode.set(code, label);
+    }
+    return [...byCode].map(([code, label]) => ({ code, label })).slice(0, 12);
   }, [props.subjectOptions]);
 
   const canAsk = props.usage?.canAsk !== false && !props.usageLoading;
@@ -37,7 +45,8 @@ export function QuestionRoomStudentThreadForm(props: {
     e.preventDefault();
     if (!canAsk) return;
     const trimmed = title.trim();
-    const subject = subjectTag.trim();
+    const subject = normalizeQuestionSubjectCode(subjectCode);
+    const topicText = topic.trim();
     if (!subject) {
       setError("과목을 선택해 주세요.");
       return;
@@ -53,7 +62,13 @@ export function QuestionRoomStudentThreadForm(props: {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId: props.roomId, title: trimmed, subjectTag: subject }),
+        body: JSON.stringify({
+          roomId: props.roomId,
+          title: trimmed,
+          subject,
+          subjectTag: subject,
+          topic: topicText || null,
+        }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string; threadId?: string | null };
       if (!res.ok || !json.ok) {
@@ -61,7 +76,8 @@ export function QuestionRoomStudentThreadForm(props: {
         return;
       }
       setTitle("");
-      setSubjectTag("");
+      setSubjectCode("");
+      setTopic("");
       props.onSuccess?.();
       const nextThread = json.threadId ?? props.contextThreadId ?? null;
       const base = `/question-room/${encodeURIComponent(props.roomId)}`;
@@ -81,19 +97,32 @@ export function QuestionRoomStudentThreadForm(props: {
     <div>
       <label className="mb-1 block text-[11px] font-bold text-slate-600">과목</label>
       <select
-        value={subjectTag}
-        onChange={(e) => setSubjectTag(e.target.value)}
+        value={subjectCode}
+        onChange={(e) => setSubjectCode(e.target.value)}
         required
         disabled={!canAsk || pending}
         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[12px] font-medium outline-none focus:border-[#1A56DB] disabled:bg-slate-50"
       >
         <option value="">과목 선택</option>
         {subjects.map((s) => (
-          <option key={s} value={s}>
-            {s}
+          <option key={s.code} value={s.code}>
+            {s.label}
           </option>
         ))}
       </select>
+    </div>
+  );
+
+  const topicField = (
+    <div>
+      <label className="mb-1 block text-[11px] font-bold text-slate-600">단원·개념 메모</label>
+      <input
+        value={topic}
+        onChange={(e) => setTopic(e.target.value)}
+        disabled={!canAsk || pending}
+        placeholder="예: 미적분, 확률과 통계, 지문 독해"
+        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-[13px] font-medium outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20 disabled:bg-slate-50"
+      />
     </div>
   );
 
@@ -106,6 +135,7 @@ export function QuestionRoomStudentThreadForm(props: {
           </p>
         ) : null}
         {subjectField}
+        {topicField}
         <div>
           <label className="mb-1 block text-[11px] font-bold text-slate-600">질문 제목</label>
           <input

@@ -8,6 +8,8 @@ import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { loadFreeQuestionRemainingForMentor } from "@/lib/qna/freeQuestionUsage";
 import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
 import { loadMentorCapUsage } from "@/lib/subscribe/mentorCapService";
+import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
+import { loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
 
 type Props = {
   params: Promise<{ mentorId: string }>;
@@ -56,7 +58,18 @@ export default async function MentorDetailByIdPage(props: Props) {
   }
 
   const display = buildMentorProfileDisplay(bundle.profileRow, bundle.userRow);
-  const capUsage = await loadMentorCapUsage(mentorId);
+  const canViewUnapproved = viewer?.role === "admin" || viewer?.userId === mentorId;
+  if (!canViewUnapproved && !mentorVerificationStatusAllowsActivity(bundle.profileRow?.verification_status)) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <PublicMentorNotFoundBody title="표시 불가" message="아직 승인되지 않은 멘토 프로필입니다." />
+      </div>
+    );
+  }
+  const [capUsage, avgResponseHours] = await Promise.all([
+    loadMentorCapUsage(mentorId),
+    loadMentorAvgResponseHours(supabase, mentorId),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] py-6 sm:py-8">
@@ -72,6 +85,7 @@ export default async function MentorDetailByIdPage(props: Props) {
         initialFavorited={initialFavorited}
         freeQuestionRemaining={freeQuestionRemaining}
         subscriptionClosed={capUsage.isFull}
+        avgResponseHours={avgResponseHours}
       />
     </div>
   );

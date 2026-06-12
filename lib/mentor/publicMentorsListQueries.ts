@@ -8,6 +8,8 @@ import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVis
 import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 import { loadMentorCapUsageBatch, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
+import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
+import { formatAvgResponseHoursLabel, loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
 import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
 import {
   cashKrwForSubscribeTier,
@@ -339,7 +341,11 @@ function sortKey(f: MentorsListSort): (a: MentorPublicListCard, b: MentorPublicL
       return (a, b) => {
         const parseMin = (label: string) => {
           const m = label.match(/(\d+)\s*분/);
-          return m ? Number(m[1]) : Number.POSITIVE_INFINITY;
+          if (m) return Number(m[1]);
+          const h = label.match(/(\d+)\s*시간/);
+          if (h) return Number(h[1]) * 60;
+          if (label.includes("48시간 이상")) return 49 * 60;
+          return Number.POSITIVE_INFINITY;
         };
         return parseMin(a.stats.avgResponseLabel) - parseMin(b.stats.avgResponseLabel);
       };
@@ -461,6 +467,19 @@ async function batchMentorListStats(
     break;
   }
 
+  const responseEntries = await Promise.all(
+    mentorIds.map(async (id) => [id, await loadMentorAvgResponseHours(supabase, id)] as const)
+  );
+  for (const [id, hours] of responseEntries) {
+    if (hours == null) continue;
+    const label = formatAvgResponseHoursLabel(hours);
+    if (label === "—") continue;
+    const prev = out.get(id);
+    if (prev) {
+      out.set(id, { ...prev, avgResponseLabel: `평균 ${label} 답변` });
+    }
+  }
+
   return out;
 }
 
@@ -543,6 +562,9 @@ export async function loadPublicMentorsList(
   const cards: MentorPublicListCard[] = [];
   for (const u of users) {
     const prow = profileByUser.get(u.id) ?? null;
+    if (!mentorVerificationStatusAllowsActivity(prow?.verification_status)) {
+      continue;
+    }
     const display = buildMentorProfileDisplay(prow, u);
     const rev = revBatch.map.get(u.id) ?? { count: null, avg: null };
     const plan = planBatch.byMentor.get(u.id);

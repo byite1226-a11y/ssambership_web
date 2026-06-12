@@ -5,5 +5,4 @@ export type CommunityNavActive =
   | "me"
   | "my-posts"
   | "scraps"
-  | "follows"
   | "none";

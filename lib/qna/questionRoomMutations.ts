@@ -2,6 +2,7 @@ import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 import { CONNECTION_NOTES_ROOM_FK_CANDIDATES, QUESTION_THREADS_ROOM_FK_CANDIDATES } from "@/lib/qna/questionThreadRoomRef";
+import { normalizeQuestionSubjectCode, questionSubjectLabelFromCode } from "@/lib/qna/questionSubjects";
 
 type QnaRole = "student" | "mentor";
 
@@ -75,26 +76,31 @@ function buildThreadPayloads(
   roomColumn: string,
   roomId: string,
   title: string,
-  subjectTag: string | null,
+  subject: string | null,
+  topic: string | null,
   role: QnaRole,
   userId: string
 ): Record<string, unknown>[] {
   const titleKeys = ["title"] as const;
-  const topicKeys = ["topic", "category", "subject"] as const;
   const roleKeys = ["author_role", "sender_role", "writer_role"] as const;
   const userKeysCommon = ["author_id", "created_by", "user_id", "sender_id"] as const;
   const userKeysRole = role === "student" ? (["student_id", "student_user_id"] as const) : (["mentor_id", "mentor_user_id"] as const);
 
   const payloads: Record<string, unknown>[] = [];
-  const tag = subjectTag?.trim() || null;
+  const subjectCode = normalizeQuestionSubjectCode(subject);
+  const topicText = topic?.trim() || null;
+  const subjectFallback = subjectCode ? questionSubjectLabelFromCode(subjectCode) ?? subjectCode : null;
 
   for (const t of titleKeys) {
-    const bases: Record<string, unknown>[] = [{ [roomColumn]: roomId, [t]: title, status: "pending" }];
-    if (tag) {
-      for (const tk of topicKeys) {
-        bases.push({ [roomColumn]: roomId, [t]: title, [tk]: tag, status: "pending" });
-      }
-    }
+    const base = { [roomColumn]: roomId, [t]: title, status: "pending" };
+    const bases: Record<string, unknown>[] = [];
+    if (subjectCode && topicText) bases.push({ ...base, subject: subjectCode, topic: topicText });
+    if (subjectCode) bases.push({ ...base, subject: subjectCode });
+    if (topicText) bases.push({ ...base, topic: topicText });
+    if (subjectFallback) bases.push({ ...base, topic: subjectFallback });
+    if (topicText) bases.push({ ...base, category: topicText });
+    if (subjectFallback) bases.push({ ...base, category: subjectFallback });
+    bases.push(base);
     for (const base of bases) {
       payloads.push(base);
       for (const roleKey of roleKeys) payloads.push({ ...base, [roleKey]: role });
@@ -159,9 +165,11 @@ export async function createQuestionThread(params: {
   userId: string;
   roomId: string;
   title: string;
+  subject?: string | null;
+  topic?: string | null;
   subjectTag?: string | null;
 }): Promise<{ ok: true; threadId: string | null; row: Record<string, unknown> | null } | MutationFail> {
-  const { supabase, role, userId, roomId, title, subjectTag } = params;
+  const { supabase, role, userId, roomId, title, subject, topic, subjectTag } = params;
   if (!title.trim()) return { ok: false, error: "thread 제목을 입력하세요." };
 
   const scopeError = await ensureRoomScope(supabase, role, userId, roomId);
@@ -177,7 +185,7 @@ export async function createQuestionThread(params: {
   const created = await insertWithCandidates<Record<string, unknown>>(
     supabase,
     "question_threads",
-    buildThreadPayloads(roomColumn, roomId, title.trim(), subjectTag ?? null, role, userId)
+    buildThreadPayloads(roomColumn, roomId, title.trim(), subject ?? subjectTag ?? null, topic ?? null, role, userId)
   );
   if (!created.ok) return created;
 

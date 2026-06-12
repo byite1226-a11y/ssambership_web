@@ -13,6 +13,7 @@ import {
 } from "@/lib/subscribe/subscribePlanCatalog";
 import { loadMentorCapUsage, wouldExceedCap } from "@/lib/subscribe/mentorCapService";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
+import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -52,6 +53,20 @@ export default async function StudentSubscribePage(props: Props) {
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
         <h1 className="text-xl font-black text-slate-900">멘토 정보를 불러오지 못했어요</h1>
         <p className="mt-2 text-sm text-slate-600">{USER_UI_LOAD_FAILED}</p>
+        <Link href="/mentors" className="mt-6 inline-block font-bold text-blue-600 hover:underline">
+          멘토 찾기 &rarr;
+        </Link>
+      </div>
+    );
+  }
+
+  if (!mentorVerificationStatusAllowsActivity(data.display.verification)) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <h1 className="text-xl font-black text-slate-900">아직 구독할 수 없는 멘토입니다</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          관리자 승인 완료 전에는 구독을 받을 수 없습니다. 승인된 멘토를 찾아 주세요.
+        </p>
         <Link href="/mentors" className="mt-6 inline-block font-bold text-blue-600 hover:underline">
           멘토 찾기 &rarr;
         </Link>

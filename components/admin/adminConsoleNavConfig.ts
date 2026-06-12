@@ -4,6 +4,7 @@ export const ADMIN_CONSOLE_NAV = [
   { href: "/admin/mentor-approval", label: "멘토 승인", icon: "mentor" },
   { href: "/admin/moderation", label: "콘텐츠 검수", icon: "moderation" },
   { href: "/admin/reviews", label: "리뷰 관리", icon: "reviews" },
+  { href: "/admin/custom-request-orders", label: "맞춤의뢰 주문", icon: "orders" },
   { href: "/admin/disputes", label: "신고·분쟁", icon: "disputes" },
   { href: "/admin/refunds", label: "환불·정산", icon: "refunds" },
   { href: "/admin/notices", label: "이벤트 관리", icon: "events" },

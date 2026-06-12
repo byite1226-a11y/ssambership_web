@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getQnaApiSession } from "@/lib/qna/questionRoomApiAuth";
 import { createStudentQuestionThread } from "@/lib/qna/questionRoomThreadService";
+import { normalizeQuestionSubjectCode } from "@/lib/qna/questionSubjects";
 export async function POST(req: Request) {
   const session = await getQnaApiSession();
   if (!session.ok) {
@@ -24,13 +25,15 @@ export async function POST(req: Request) {
   const roomId = typeof o.roomId === "string" ? o.roomId.trim() : "";
   const title =
     (typeof o.title === "string" ? o.title : typeof o.threadTitle === "string" ? o.threadTitle : "").trim();
-  const subjectTag =
+  const subjectRaw =
     (typeof o.subjectTag === "string"
       ? o.subjectTag
       : typeof o.subject === "string"
         ? o.subject
         : ""
     ).trim() || null;
+  const subject = normalizeQuestionSubjectCode(subjectRaw);
+  const topic = typeof o.topic === "string" ? o.topic.trim() || null : null;
 
   if (!roomId) {
     return NextResponse.json({ ok: false, error: "roomId가 필요합니다." }, { status: 400 });
@@ -41,7 +44,8 @@ export async function POST(req: Request) {
     session.user.id,
     roomId,
     title,
-    subjectTag
+    subject,
+    topic
   );
   if (!result.ok) {
     const status = result.status;

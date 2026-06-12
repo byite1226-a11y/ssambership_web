@@ -8,6 +8,7 @@ import { fetchWeeklyQuestionUsage } from "@/lib/qna/weeklyQuestionUsage";
 import { assertFreeQuestionAllowed, recordFreeQuestionUsage } from "@/lib/qna/freeQuestionUsage";
 import { findActiveSubscriptionForPair } from "@/lib/subscribe/subscribeCheckoutService";
 import { threadRowBelongsToMentorStudentRoom } from "@/lib/qna/questionThreadRoomRef";
+import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 
 export async function resolveMentorIdForRoom(
   supabase: SupabaseClient,
@@ -72,7 +73,8 @@ export async function createStudentQuestionThread(
   studentId: string,
   roomId: string,
   title: string,
-  subjectTag?: string | null
+  subject?: string | null,
+  topic?: string | null
 ): Promise<
   | { ok: true; threadId: string | null }
   | { ok: false; status: 400 | 403 | 404 | 429 | 500; error: string }
@@ -93,7 +95,8 @@ export async function createStudentQuestionThread(
     userId: studentId,
     roomId,
     title: trimmed,
-    subjectTag: subjectTag?.trim() || null,
+    subject: subject?.trim() || null,
+    topic: topic?.trim() || null,
   });
 
   if (!result.ok) {
@@ -149,7 +152,9 @@ export async function confirmQuestionThreadForStudent(
     return { ok: false, status: 400, error: "멘토 답변이 도착한 뒤에만 확인할 수 있습니다." };
   }
 
-  const updated = await updateQuestionThreadStatus(supabase, threadId, "confirmed");
+  const updated = await updateQuestionThreadStatus(supabase, threadId, "confirmed", {
+    confirmed_at: new Date().toISOString(),
+  });
   if (!updated.ok) {
     return { ok: false, status: 500, error: updated.error };
   }
@@ -166,6 +171,10 @@ export async function markQuestionThreadAnsweredForMentor(
   if (!party.ok) {
     return { ok: false, status: party.status === 403 ? 403 : 404, error: party.error };
   }
+  const mentorGate = await assertMentorApprovedForAction(supabase, mentorId);
+  if (!mentorGate.ok) {
+    return { ok: false, status: 403, error: mentorGate.error };
+  }
   const inRoom = await assertThreadInRoom(supabase, roomId, threadId);
   if (!inRoom.ok) {
     return { ok: false, status: inRoom.status, error: inRoom.error };
@@ -179,9 +188,50 @@ export async function markQuestionThreadAnsweredForMentor(
     return { ok: true };
   }
 
-  const updated = await updateQuestionThreadStatus(supabase, threadId, "answered");
+  const extra = inRoom.row.first_answered_at
+    ? undefined
+    : { first_answered_at: new Date().toISOString() };
+  const updated = await updateQuestionThreadStatus(supabase, threadId, "answered", extra);
   if (!updated.ok) {
     return { ok: false, status: 500, error: updated.error };
   }
   return { ok: true };
+}
+
+export async function updateQuestionThreadWrongAnswerForStudent(
+  supabase: SupabaseClient,
+  studentId: string,
+  roomId: string,
+  threadId: string,
+  isWrongAnswer: boolean
+): Promise<{ ok: true } | { ok: false; status: 403 | 404 | 500; error: string }> {
+  const party = await assertRoomParty(supabase, roomId, studentId, "student");
+  if (!party.ok) {
+    return { ok: false, status: party.status === 403 ? 403 : 404, error: party.error };
+  }
+  const inRoom = await assertThreadInRoom(supabase, roomId, threadId);
+  if (!inRoom.ok) {
+    return { ok: false, status: inRoom.status, error: inRoom.error };
+  }
+
+  const now = new Date().toISOString();
+  const payloads: Record<string, unknown>[] = [
+    {
+      is_wrong_answer: isWrongAnswer,
+      mastery_status: isWrongAnswer ? "wrong" : "unknown",
+      updated_at: now,
+    },
+    { is_wrong_answer: isWrongAnswer, updated_at: now },
+    { is_wrong_answer: isWrongAnswer },
+  ];
+  let lastError = "오답 표시를 저장하지 못했습니다.";
+  for (const payload of payloads) {
+    const { error } = await supabase.from("question_threads").update(payload).eq("id", threadId);
+    if (!error) return { ok: true };
+    lastError = error.message;
+    if (!/column|schema cache|Could not find/i.test(error.message)) {
+      return { ok: false, status: 500, error: error.message };
+    }
+  }
+  return { ok: false, status: 500, error: lastError };
 }

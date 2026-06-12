@@ -6,6 +6,7 @@ import { useFormStatus } from "react-dom";
 import { QuestionRoomNewNoteModal } from "@/components/qna/QuestionRoomNewNoteModal";
 import { ArrowLeft, Download, Eye, FileText, MessageCircle, Notebook, Plus, Search, Send, User } from "lucide-react";
 import { QuestionRoomAttachmentButton } from "@/components/qna/QuestionRoomAttachmentButton";
+import { QuestionThreadAnswerCompleteButton } from "@/components/qna/QuestionThreadAnswerCompleteButton";
 import { parseAttachmentMessageBody } from "@/lib/qna/questionRoomAttachmentDisplay";
 import { StatusBadge, legacyToneToStatusBadgeTone } from "@/components/common/StatusBadge";
 // _threadStatusBadgeClass는 신규 StatusBadge로 대체됨 — 잔존 호출 없음(_ 접두로 미사용 표시)
@@ -241,6 +242,9 @@ export function QuestionRoomMentorDesignWorkspace(props: {
     [props.threads.rows, props.threadId]
   );
   const selectedThreadTitle = selectedThread ? threadTitleFromRow(selectedThread) : "질문";
+  const selectedThreadWorkflow = selectedThread
+    ? readQuestionThreadWorkflowStatus(selectedThread)
+    : ("pending" as const);
 
   /* 연결 노트 패널 (2·3단계 공통 우측 상주) */
   const notesPanel = (
@@ -329,6 +333,11 @@ export function QuestionRoomMentorDesignWorkspace(props: {
           </p>
           <p className="text-[11px] font-medium text-slate-400">질문 상세 · 실시간 대화</p>
         </div>
+        {props.threadId && selectedThreadWorkflow === "pending" ? (
+          <div className="ml-auto shrink-0">
+            <QuestionThreadAnswerCompleteButton roomId={props.roomId} threadId={props.threadId} />
+          </div>
+        ) : null}
       </header>
 
       <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto bg-[#f8fafc] p-5">

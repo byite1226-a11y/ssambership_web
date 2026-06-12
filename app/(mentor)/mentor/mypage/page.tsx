@@ -154,6 +154,19 @@ export default async function MentorMypagePage() {
         ratingAvg={ratingAvg}
       />
 
+      {verification.tone !== "ok" ? (
+        <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+          <p className="font-black">승인 대기 중입니다.</p>
+          <p className="mt-1 leading-relaxed">
+            관리자 승인 완료 전에는 질문 답변, 맞춤의뢰 지원, 멘토 찾기 노출, 구독 받기가 제한됩니다.
+            학생증 또는 프로필 정보를 수정해야 한다면 인증 상태 화면을 확인해 주세요.
+          </p>
+          <Link href="/mentor/verification" className="mt-2 inline-flex font-extrabold text-amber-900 underline underline-offset-2">
+            인증 상태 확인하기 →
+          </Link>
+        </section>
+      ) : null}
+
       <div className={`grid grid-cols-1 items-start lg:grid-cols-[1fr_300px] ${PAGE_COL_GAP}`}>
         {/* 좌 컬럼 */}
         <div className={`flex min-w-0 flex-col ${PAGE_COL_GAP}`}>
@@ -478,4 +491,3 @@ function CapStatCard({ usage }: { usage: MentorCapUsage }) {
     </StatCard>
   );
 }
-

@@ -9,6 +9,7 @@ import { draftToParam } from "@/lib/qna/draftQuery";
 import { QUESTION_THREADS_ROOM_FK_CANDIDATES, threadRowBelongsToMentorStudentRoom } from "@/lib/qna/questionThreadRoomRef";
 import { userMatchesMentorInRoomRow, userMatchesStudentInRoomRow } from "@/lib/qna/questionRoomQueries";
 import { assertThreadCreationSubscriptionAllowed } from "@/lib/qna/questionThreadSubscriptionGuard";
+import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 import {
   createQuestionMessage,
   createQuestionThread,
@@ -238,9 +239,9 @@ export async function createQuestionMessageAction(formData: FormData) {
 
   const supabase = await createClient();
   /* question_messages.author_id = user.id (서버) — 폼/히든에서 user id 수신 없음 */
-  const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
   const { threadId, content } = readMessageFromForm(formData);
   const fallbackThread = threadId || textFromForm(formData.get("contextThreadId")) || null;
+  const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
 
   if (roomErr) {
     redirect(
@@ -253,7 +254,24 @@ export async function createQuestionMessageAction(formData: FormData) {
     );
   }
 
-  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId, actor, { isNewThread: false });
+  if (actor === "mentor") {
+    const mentorGate = await assertMentorApprovedForAction(supabase, user.id);
+    if (!mentorGate.ok) {
+      redirect(
+        buildRedirectUrl(roomId, actor, {
+          thread: fallbackThread,
+          kind: "message",
+          error: mentorGate.error,
+          draftMessage: content,
+        })
+      );
+    }
+  }
+
+  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId, actor, {
+    isNewThread: false,
+    threadId: threadId || fallbackThread,
+  });
   if (!subGate.ok) {
     redirect(
       buildRedirectUrl(roomId, actor, {
@@ -343,7 +361,7 @@ export const sendQuestionMessageAction = createQuestionMessageAction;
  * room/thread/역할은 서버에서 재검증한다.
  */
 export async function sendQuestionAttachmentAction(formData: FormData) {
-  const { uploadQuestionRoomAttachment, buildAttachmentMessageBody } = await import(
+  const { uploadQuestionRoomAttachment, buildAttachmentMessageBody, recordQuestionAttachmentMetadataBestEffort } = await import(
     "@/lib/qna/questionRoomAttachmentStorage"
   );
   const { user, actor } = await requireQnaActor();
@@ -381,10 +399,36 @@ export async function sendQuestionAttachmentAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, { thread: fallbackThread, kind: "message", error: userFacingActionError("message", roomErr) })
     );
   }
+  if (actor === "mentor") {
+    const mentorGate = await assertMentorApprovedForAction(supabase, user.id);
+    if (!mentorGate.ok) {
+      redirect(
+        buildRedirectUrl(roomId, actor, {
+          thread: fallbackThread,
+          kind: "message",
+          error: mentorGate.error,
+        })
+      );
+    }
+  }
   const tErr = await assertThreadBelongsToRoom(supabase, roomId, threadId);
   if (tErr) {
     redirect(
       buildRedirectUrl(roomId, actor, { thread: fallbackThread, kind: "message", error: userFacingActionError("message", tErr) })
+    );
+  }
+
+  const subGate = await assertThreadCreationSubscriptionAllowed(supabase, roomId, actor, {
+    isNewThread: false,
+    threadId,
+  });
+  if (!subGate.ok) {
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: threadId,
+        kind: "message",
+        error: subGate.userMessage,
+      })
     );
   }
 
@@ -419,6 +463,14 @@ export async function sendQuestionAttachmentAction(formData: FormData) {
       buildRedirectUrl(roomId, actor, { thread: threadId, kind: "message", error: userFacingActionError("message", result.error) })
     );
   }
+
+  await recordQuestionAttachmentMetadataBestEffort(supabase, {
+    threadId,
+    messageId: typeof result.row?.id === "string" ? result.row.id : null,
+    storagePath: uploaded.storagePath,
+    fileName: uploaded.filename,
+    mimeType: uploaded.mime,
+  });
 
   if (actor === "mentor") {
     const answered = await markQuestionThreadAnsweredForMentor(supabase, user.id, roomId, threadId);

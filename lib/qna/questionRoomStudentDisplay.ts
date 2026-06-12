@@ -5,6 +5,7 @@ import { mentorSubjectChips } from "@/lib/mentor/mentorPublicProfileDisplay";
 import { partyUserIdFromRoomRow } from "@/lib/qna/questionRoomUiLabels";
 import { readQuestionThreadWorkflowStatus } from "@/lib/qna/questionThreadStatus";
 import type { QuestionRoomListPreview } from "@/lib/qna/questionRoomQueries";
+import { questionSubjectLabelFromCode } from "@/lib/qna/questionSubjects";
 
 export const QNA_PRIMARY_BLUE = "#1A56DB";
 
@@ -76,6 +77,10 @@ export function roomSubjectChips(room: Row, mentorDisplays: MentorDisplayById, m
 
 export function threadSubjectChip(thread: Row | null | undefined, fallback: string[]): string[] {
   if (!thread) return fallback.slice(0, 1);
+  const subjectLabel = questionSubjectLabelFromCode(thread.subject);
+  const topic = typeof thread.topic === "string" ? thread.topic.trim() : "";
+  if (subjectLabel && topic && topic !== subjectLabel) return [subjectLabel, topic].slice(0, 2);
+  if (subjectLabel) return [subjectLabel];
   for (const k of ["topic", "category", "subject_tag", "subject"] as const) {
     const v = thread[k];
     if (typeof v === "string" && v.trim()) {
