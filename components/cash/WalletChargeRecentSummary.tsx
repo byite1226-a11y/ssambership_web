@@ -30,9 +30,15 @@ export function WalletChargeRecentSummary(props: {
   const list = props.rows.slice(0, 5);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h2 className="text-base font-extrabold text-slate-900">최근 사용 내역</h2>
+    <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
+            <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+            최근 사용 내역
+          </h2>
+          <p className="mt-1 text-xs font-medium leading-relaxed text-[#8a96a8]">최근 캐시 충전과 사용 흐름입니다.</p>
+        </div>
         <Link href="/wallet/ledger" className="text-xs font-bold text-blue-600 hover:underline">
           사용내역 전체 &gt;
         </Link>
@@ -70,7 +76,7 @@ export function WalletChargeRecentSummary(props: {
                     <td className="py-3 pr-3 text-xs text-slate-500 whitespace-nowrap">{ledgerAt(r)}</td>
                     <td
                       className={`py-3 pr-3 text-right font-extrabold tabular-nums whitespace-nowrap ${
-                        credit ? "text-blue-600" : "text-red-600"
+                        credit ? "text-[#047857]" : "text-[#dc2626]"
                       }`}
                     >
                       {credit && !amt.startsWith("+") ? `+${amt}` : amt}

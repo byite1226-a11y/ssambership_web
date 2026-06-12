@@ -38,8 +38,11 @@ export function WalletChargeRightSidebar(props: { ledgerRows: LedgerLineRow[] })
 
   return (
     <aside className="space-y-4 lg:sticky lg:top-8">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-extrabold text-slate-900">이번 달 사용 요약</h2>
+      <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+        <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
+          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+          이번 달 사용 요약
+        </h2>
         <p className="mt-2 text-2xl font-black tabular-nums text-slate-900">
           {stats.total.toLocaleString("ko-KR")}
           <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
@@ -47,14 +50,14 @@ export function WalletChargeRightSidebar(props: { ledgerRows: LedgerLineRow[] })
         <p className="text-xs text-slate-500">총 사용 금액 (차감 합계)</p>
         <div className="mt-4 space-y-3">
           {[
-            { label: "맞춤의뢰", value: stats.custom, color: "bg-red-400" },
-            { label: "구독제", value: stats.subscription, color: "bg-violet-400" },
-            { label: "기타", value: stats.other, color: "bg-slate-300" },
+            { label: "맞춤의뢰", value: stats.custom, color: "bg-slate-400" },
+            { label: "구독제", value: stats.subscription, color: "bg-slate-300" },
+            { label: "기타", value: stats.other, color: "bg-slate-200" },
           ].map((item) => (
             <div key={item.label}>
               <div className="flex justify-between text-xs font-semibold text-slate-600">
                 <span>{item.label}</span>
-                <span>{item.value.toLocaleString("ko-KR")}캐시</span>
+                <span className="font-black text-[#0f172a]">{item.value.toLocaleString("ko-KR")}캐시</span>
               </div>
               <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
@@ -75,7 +78,7 @@ export function WalletChargeRightSidebar(props: { ledgerRows: LedgerLineRow[] })
           <li>문의는 고객센터에서 확인할 수 있어요.</li>
         </ul>
         <Link
-          href="/notifications"
+          href="/support"
           className="mt-3 inline-block text-xs font-bold text-blue-700 hover:underline"
         >
           고객센터 바로가기 &gt;

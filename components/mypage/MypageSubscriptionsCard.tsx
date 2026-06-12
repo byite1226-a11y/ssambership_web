@@ -4,7 +4,6 @@ import Link from "next/link";
 import { UserSearch } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { ActiveSubscriptionCard } from "@/lib/mypage/studentActiveSubscriptions";
-import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 
 type FetchState =
   | { phase: "loading" }
@@ -28,7 +27,7 @@ function SubscriptionCardSkeleton() {
 
 function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-6 transition hover:border-slate-300 hover:bg-white">
+    <article className="rounded-2xl border border-[#e2e8f2] bg-white p-5 transition hover:border-[#cbd5e1]">
       <div className="flex gap-4 sm:gap-5">
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
           {item.photoUrl ? (
@@ -45,7 +44,7 @@ function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-base font-extrabold text-slate-900">{item.mentorName}</h3>
-          <p className="mt-1 text-sm font-bold text-blue-700">{item.planLabel}</p>
+          <p className="mt-1 text-sm font-bold text-[#2563eb]">{item.planLabel}</p>
           <dl className="mt-2 grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
             <div>
               <dt className="inline font-semibold text-slate-500">구독 시작 </dt>
@@ -60,7 +59,7 @@ function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
       </div>
       <Link
         href={`/question-room?mentorId=${encodeURIComponent(item.mentorId)}`}
-        className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 sm:w-auto"
+        className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-[#2563eb] px-4 text-sm font-bold text-white transition hover:bg-[#1d4ed8] sm:w-auto"
       >
         질문하러 가기
       </Link>
@@ -121,17 +120,20 @@ export function MypageSubscriptionsCard() {
   }, [load]);
 
   return (
-    <section className={SURFACE_CARD}>
+    <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 className="text-base font-bold text-slate-900">구독 현황</h2>
-          <p className="mt-1 text-xs text-slate-500">활성 구독 중인 멘토와 질문 한도를 확인하세요.</p>
+          <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
+            <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+            구독 현황
+          </h2>
+          <p className="mt-1 text-xs font-medium leading-relaxed text-[#8a96a8]">활성 구독 중인 멘토와 질문 한도를 확인하세요.</p>
         </div>
         {state.phase === "error" ? (
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-[#e2e8f2] px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
           >
             다시 시도
           </button>
@@ -149,13 +151,13 @@ export function MypageSubscriptionsCard() {
             {state.message}
           </p>
         ) : state.items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-12 text-center">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#e2e8f2] bg-white px-6 py-12 text-center">
             <UserSearch className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
             <h3 className="mt-4 text-base font-black text-slate-900">아직 구독 중인 멘토가 없어요</h3>
             <p className="mt-2 text-sm font-medium text-slate-600">나에게 맞는 멘토를 찾아 구독해보세요.</p>
             <Link
               href="/mentors"
-              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563eb] px-5 text-sm font-extrabold text-white hover:bg-[#1d4ed8]"
             >
               멘토 찾기
             </Link>
@@ -168,13 +170,13 @@ export function MypageSubscriptionsCard() {
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           href="/subscriptions"
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+          className="rounded-xl border border-[#e2e8f2] bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
         >
           구독 관리
         </Link>
         <Link
           href="/mentors"
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+          className="rounded-xl border border-[#e2e8f2] bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
         >
           멘토 찾기
         </Link>
