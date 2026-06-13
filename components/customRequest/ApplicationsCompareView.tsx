@@ -12,6 +12,7 @@ import { CustomRequestLifecycleStepper } from "@/components/customRequest/Custom
 import { CustomRequestAppsBreadcrumb, CustomRequestStepperShell } from "@/components/customRequest/customRequestDetailLayout";
 import { SelectMentorApplicationForm } from "@/components/customRequest/SelectMentorApplicationForm";
 import { ApplicationAttachmentsCompareList } from "@/components/customRequest/ApplicationAttachmentsCompareList";
+import { maskContactInText } from "@/lib/customRequest/contactMasking";
 import Link from "next/link";
 import { MentorPostStatusBadge } from "@/components/customRequest/MentorPostStatusBadge";
 
@@ -178,10 +179,12 @@ export function ApplicationsCompareView(props: {
             ? [e.display.university, e.display.department].filter((x) => x && x !== "—").join(" · ")
             : "";
           const { proposal } = getApplicationTextBlocksForCompare(r);
+          const maskedProposal = maskContactInText(proposal);
           const preview =
-            proposal && proposal !== "작성된 내용이 없습니다."
-              ? proposal.replace(/\s+/g, " ").trim()
+            maskedProposal && maskedProposal !== "작성된 내용이 없습니다."
+              ? maskedProposal.replace(/\s+/g, " ").trim()
               : "";
+          const canPreviewAttachments = Boolean(existingOrderId);
           const avatarUrl = e.display?.photoUrl && e.display.photoUrl !== "—" ? e.display.photoUrl : null;
           const verified = ["approved", "verified", "complete", "인증 완료"].some((v) =>
             String(e.display?.verification ?? "").toLowerCase().includes(v)
@@ -225,6 +228,8 @@ export function ApplicationsCompareView(props: {
                       applicationId={e.applicationId}
                       attachments={attachmentsByApplicationId[e.applicationId] ?? []}
                       thumbUrlByAttachmentId={attachmentThumbUrlByAttachmentId}
+                      allowPreview={canPreviewAttachments}
+                      maskFilenames={!canPreviewAttachments}
                     />
                   ) : null}
                   <p className="mt-1 text-[11px] text-slate-400">연락처: {maskRowContact(r)} (선정 전 비공개)</p>

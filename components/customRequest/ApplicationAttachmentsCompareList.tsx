@@ -9,6 +9,8 @@ export function ApplicationAttachmentsCompareList(props: {
   className?: string;
   variant?: "default" | "detail";
   thumbUrlByAttachmentId?: Record<string, string>;
+  allowPreview?: boolean;
+  maskFilenames?: boolean;
 }) {
   if (props.attachments.length === 0) return null;
   const title = props.title ?? "포트폴리오·참고 파일";
@@ -19,6 +21,8 @@ export function ApplicationAttachmentsCompareList(props: {
       applicationId={props.applicationId}
       attachments={props.attachments}
       thumbUrlByAttachmentId={props.thumbUrlByAttachmentId}
+      allowPreview={props.allowPreview}
+      maskFilenames={props.maskFilenames}
       listClassName={props.variant === "detail" ? "cr-file-list" : "cr-file-list mt-2"}
     />
   );

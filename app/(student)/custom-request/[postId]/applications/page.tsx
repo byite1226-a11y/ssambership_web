@@ -43,12 +43,13 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
   const applicationIds = enriched
     .map((e) => e.applicationId)
     .filter((id): id is string => Boolean(id));
+  const orderId = await getOrderIdForPostAndStudent(supabase, postId, user.id);
   const { byApplicationId: attachmentsByApplicationId } = await loadApplicationAttachments(
     supabase,
     applicationIds
   );
   const allAttachments = Object.values(attachmentsByApplicationId).flat();
-  const attachmentThumbUrlByAttachmentId = authz.ok
+  const attachmentThumbUrlByAttachmentId = authz.ok && orderId
     ? await batchSignApplicationAttachmentImageThumbUrls(
         supabase,
         { userId: user.id, role: "student" },
@@ -56,7 +57,6 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
         allAttachments
       )
     : {};
-  const orderId = await getOrderIdForPostAndStudent(supabase, postId, user.id);
 
   return (
     <PageScaffold

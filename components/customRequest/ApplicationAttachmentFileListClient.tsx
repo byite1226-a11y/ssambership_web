@@ -7,6 +7,7 @@ import { isPreviewableImageMime } from "@/lib/customRequest/applicationAttachmen
 import { formatAttachmentBytes } from "@/components/customRequest/customRequestDetailLayout";
 import { ApplicationAttachmentLightbox } from "@/components/customRequest/ApplicationAttachmentLightbox";
 import { CustomRequestApplicationFileChip } from "@/components/customRequest/CustomRequestApplicationFileChip";
+import { maskContactInText } from "@/lib/customRequest/contactMasking";
 
 type LightboxTarget = {
   attachmentId: string;
@@ -19,7 +20,10 @@ export function ApplicationAttachmentFileListClient(props: {
   attachments: ApplicationAttachmentListItem[];
   thumbUrlByAttachmentId?: Record<string, string>;
   listClassName?: string;
+  allowPreview?: boolean;
+  maskFilenames?: boolean;
 }) {
+  const allowPreview = props.allowPreview ?? true;
   const thumbs = props.thumbUrlByAttachmentId ?? {};
   const [lightboxTarget, setLightboxTarget] = useState<LightboxTarget | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -67,12 +71,13 @@ export function ApplicationAttachmentFileListClient(props: {
             postId={props.postId}
             applicationId={props.applicationId}
             attachmentId={a.id}
-            filename={a.original_filename}
+            filename={props.maskFilenames ? maskContactInText(a.original_filename) : a.original_filename}
             sizeLabel={formatAttachmentBytes(a.file_size_bytes)}
             mimeType={a.mime_type}
-            thumbUrl={thumbs[a.id] ?? null}
+            thumbUrl={allowPreview ? (thumbs[a.id] ?? null) : null}
+            allowPreview={allowPreview}
             onImageClick={
-              isPreviewableImageMime(a.mime_type, a.original_filename) && thumbs[a.id]
+              allowPreview && isPreviewableImageMime(a.mime_type, a.original_filename) && thumbs[a.id]
                 ? () => void openLightbox(a)
                 : undefined
             }
