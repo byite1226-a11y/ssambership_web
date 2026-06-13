@@ -496,7 +496,7 @@ export function OrderLeftContextPanel(props: LeftContextProps) {
         </ul>
         <div className="pt-2 border-t border-slate-100">
           <Link
-            href="/guide"
+            href="/legal/mentor-guide"
             className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-black text-slate-600 hover:bg-slate-50 transition"
           >
             <span>이용 가이드 보기</span>

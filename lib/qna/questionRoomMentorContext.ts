@@ -26,7 +26,7 @@ export async function loadStudentDisplaysForQuestionRooms(
       const name =
         (userQ.data?.full_name && userQ.data.full_name.trim()) ||
         (userQ.data?.nickname && userQ.data.nickname.trim()) ||
-        "학생";
+        "이름 미설정";
       out[id] = { displayName: name, initial: name.slice(0, 1) };
     })
   );
@@ -65,5 +65,5 @@ export function studentLabelForRoom(
     const v = room[k];
     if (typeof v === "string" && v.trim()) return v.trim();
   }
-  return "학생";
+  return "이름 미설정";
 }

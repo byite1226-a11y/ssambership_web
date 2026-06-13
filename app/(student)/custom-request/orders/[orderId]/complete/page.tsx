@@ -112,7 +112,7 @@ function mapCompleteViewProps(
         }
       : null;
 
-  const reviewHref = mentorId ? `/mentor/${mentorId}/reviews/new` : "/mentors";
+  const reviewHref = mentorId ? `/mentors/${encodeURIComponent(mentorId)}#reviews` : "/mentors";
 
   return {
     orderId,

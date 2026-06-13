@@ -20,7 +20,7 @@ export function NoticeBanner() {
           </p>
         </div>
         <Link
-          href="/notices/1"
+        href="/notices"
           className="inline-flex shrink-0 items-center justify-center text-[13px] font-bold text-slate-500 transition-colors hover:text-slate-800"
         >
           자세히 보기

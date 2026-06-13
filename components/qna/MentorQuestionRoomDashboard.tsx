@@ -31,7 +31,7 @@ function roomTitle(r: Row): string {
     const v = r[k];
     if (typeof v === "string" && v.trim()) return v.trim();
   }
-  return "학생";
+  return "이름 미설정";
 }
 
 function extractNoteText(n: Row | undefined): string {
@@ -167,11 +167,16 @@ export function MentorQuestionRoomDashboard(props: {
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span
-                      className={`block truncate text-[13px] font-black ${isSelected ? "text-slate-900" : "text-slate-700"}`}
-                    >
-                      {studentName} 학생
-                    </span>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        className={`truncate text-[13px] font-black ${isSelected ? "text-slate-900" : "text-slate-700"}`}
+                      >
+                        {studentName}
+                      </span>
+                      <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-500">
+                        학생
+                      </span>
+                    </div>
                     <p className="line-clamp-1 text-[11px] font-medium text-slate-500">{previewText}</p>
                   </div>
                 </button>
@@ -207,9 +212,14 @@ export function MentorQuestionRoomDashboard(props: {
                       <User className="h-6 w-6 text-slate-400 sm:h-7 sm:w-7" />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="truncate text-lg font-black text-slate-900 sm:text-[20px]">
-                        {roomTitle(selectedRoom)} 학생
-                      </h2>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <h2 className="truncate text-lg font-black text-slate-900 sm:text-[20px]">
+                          {roomTitle(selectedRoom)}
+                        </h2>
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">
+                          학생
+                        </span>
+                      </div>
                       <p className="mt-0.5 text-[13px] font-bold text-slate-400">질문방 정보</p>
                     </div>
                   </div>

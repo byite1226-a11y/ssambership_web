@@ -163,7 +163,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
 
   const studentName = currentRoom
     ? studentLabelForRoom(currentRoom, props.studentDisplays)
-    : "학생";
+    : "이름 미설정";
 
   const filteredRooms = useMemo(() => {
     const q = roomSearch.trim().toLowerCase();
@@ -533,7 +533,12 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                 <User className="h-8 w-8 text-slate-300" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="text-[18px] font-black text-slate-900">{studentName} 학생</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="truncate text-[18px] font-black text-slate-900">{studentName}</h1>
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">
+                    학생
+                  </span>
+                </div>
                 <p className="mt-1 text-[12px] font-medium text-slate-500">질문방 관리</p>
                 {subjectChipsRoom.length > 0 ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
