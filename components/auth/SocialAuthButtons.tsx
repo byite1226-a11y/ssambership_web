@@ -9,7 +9,7 @@ type SocialAuthButtonsProps = {
 };
 
 const baseBtn =
-  "inline-flex w-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-2.5 text-xs font-bold transition sm:gap-2 sm:px-2.5 sm:text-sm";
+  "inline-flex w-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-2xl border px-2 py-2.5 text-xs font-bold transition sm:gap-2 sm:px-2.5 sm:text-sm";
 const baseBtnH = "min-h-11 sm:min-h-[2.9rem] md:min-h-12";
 const baseBtnHCompact = "min-h-10 sm:min-h-11";
 const baseBtnHLanding =
@@ -17,9 +17,9 @@ const baseBtnHLanding =
 
 const toneClass: Record<SocialAuthButtonsProps["tone"], string> = {
   student:
-    "border-slate-200/90 bg-white text-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50",
+    "border-slate-200 bg-white text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50",
   mentor:
-    "border-emerald-200/90 bg-white text-slate-800 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:bg-emerald-50/80 disabled:cursor-not-allowed disabled:opacity-50",
+    "border-slate-200 bg-white text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50",
 };
 
 function GoogleIcon() {

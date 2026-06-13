@@ -72,7 +72,7 @@ function primaryPaymentStatusTokenLower(row: Row | null | undefined): string {
 }
 
 /**
- * 납품 수락 게이트: `payment_status`(및 별칭)가 **`paid` 한 가지**일 때만 “결제 완료”로 본다.
+ * 납품 수락 게이트: `payment_status`(및 별칭)가 **`paid` 한 가지**일 때만 “결제 완료(지급까지)”로 본다.
  * `allowsUnpaidCustomOrderAccept()`가 true이면(스테이징 우회) 이 판정을 생략한다.
  */
 export function isCustomOrderPaymentStatusStrictlyPaid(row: Row | null | undefined): boolean {
@@ -80,12 +80,20 @@ export function isCustomOrderPaymentStatusStrictlyPaid(row: Row | null | undefin
 }
 
 /**
- * 비(`paid` 아님) 수락·정산 row 생성이 막혀야 하면 `true`.
+ * 납품 수락·지급 트리거 가능: `escrowed`(예치 완료, 정상) 또는 `paid`(멱등·수리).
+ */
+export function isCustomOrderPaymentStatusAcceptEligible(row: Row | null | undefined): boolean {
+  const s = primaryPaymentStatusTokenLower(row);
+  return s === "paid" || s === "escrowed";
+}
+
+/**
+ * 비(`escrowed`/`paid` 아님) 수락·정산 row 생성이 막혀야 하면 `true`.
  * - 우회: `allowsUnpaidCustomOrderAccept()` 만 참고(위 env 1곳); NODE_ENV는 우회에 사용하지 않는다.
  */
 export function mustBlockUnpaidAcceptForProduction(orderRow: Row): boolean {
   if (allowsUnpaidCustomOrderAccept()) {
     return false;
   }
-  return !isCustomOrderPaymentStatusStrictlyPaid(orderRow);
+  return !isCustomOrderPaymentStatusAcceptEligible(orderRow);
 }

@@ -6,6 +6,8 @@ import {
   FREE_QUESTION_PER_MENTOR_LIMIT,
   FREE_QUESTION_TOTAL_LIMIT,
 } from "@/lib/mentor/freeQuestionPolicy";
+import { fetchThreadsForRoom } from "@/lib/qna/questionRoomQueries";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 const TABLE = "free_question_usage" as const;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -188,4 +190,128 @@ export async function assertFreeQuestionAllowedAndRecord(
     return { ok: false, userMessage: recorded.userMessage };
   }
   return { ok: true, usedFreeQuota: true };
+}
+
+/**
+ * `free_question_usage` 에 thread_id 가 없으므로, 사용 시각과 스레드 created_at 을 1:1 근접 매칭한다.
+ * (폼: usage 기록 → 스레드 생성 / API: 스레드 생성 → usage 기록 — 양방향 허용)
+ */
+export const FREE_QUESTION_THREAD_PAIR_MAX_MS = 15 * 60 * 1000;
+
+function parseRowTimestamp(v: unknown): number | null {
+  if (typeof v !== "string" || !v.trim()) {
+    return null;
+  }
+  const t = Date.parse(v);
+  return Number.isNaN(t) ? null : t;
+}
+
+function pairFreeUsageRowsToThreadIds(
+  usages: readonly { created_at: unknown }[],
+  threads: readonly { id: unknown; created_at: unknown }[],
+  maxMs: number
+): Set<string> {
+  const paired = new Set<string>();
+  const usedThreadIds = new Set<string>();
+
+  for (const usage of usages) {
+    const usageTs = parseRowTimestamp(usage.created_at);
+    if (usageTs == null) {
+      continue;
+    }
+
+    let bestId: string | null = null;
+    let bestDiff = Infinity;
+
+    for (const thread of threads) {
+      const threadId =
+        typeof thread.id === "string" ? thread.id : thread.id != null ? String(thread.id) : "";
+      if (!threadId || usedThreadIds.has(threadId)) {
+        continue;
+      }
+      const threadTs = parseRowTimestamp(thread.created_at);
+      if (threadTs == null) {
+        continue;
+      }
+      const diff = Math.abs(threadTs - usageTs);
+      if (diff <= maxMs && diff < bestDiff) {
+        bestDiff = diff;
+        bestId = threadId;
+      }
+    }
+
+    if (bestId) {
+      paired.add(bestId);
+      usedThreadIds.add(bestId);
+    }
+  }
+
+  return paired;
+}
+
+/**
+ * 무료 스레드 짝짓기용 usage 조회 — service_role 전용.
+ * `free_question_usage` RLS는 student_id=auth.uid() select만 허용하므로 멘토 세션 폴백은 항상 빈 결과(답변 차단)가 된다.
+ */
+async function readFreeQuestionUsageRowsForPairing(
+  studentId: string,
+  mentorId: string
+): Promise<{ created_at: unknown }[]> {
+  try {
+    const admin = createServiceRoleClient();
+    const { data, error } = await admin
+      .from(TABLE)
+      .select("created_at")
+      .eq("student_id", studentId)
+      .eq("mentor_id", mentorId)
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.error("[readFreeQuestionUsageRowsForPairing]", error.message, { studentId, mentorId });
+      return [];
+    }
+    return (data as { created_at: unknown }[]) ?? [];
+  } catch (e) {
+    console.error("[readFreeQuestionUsageRowsForPairing] service role unavailable", { studentId, mentorId, e });
+    return [];
+  }
+}
+
+/** room 내 무료질문권으로 생성된 것으로 매칭된 thread id 집합 */
+export async function loadFreeQuestionThreadIdsInRoom(
+  supabase: SupabaseClient,
+  studentId: string,
+  mentorId: string,
+  roomId: string
+): Promise<Set<string>> {
+  const usages = await readFreeQuestionUsageRowsForPairing(studentId, mentorId);
+  if (usages.length === 0) {
+    return new Set();
+  }
+
+  const { rows: threads, error: threadErr } = await fetchThreadsForRoom(supabase, roomId);
+  if (threadErr || threads.length === 0) {
+    return new Set();
+  }
+
+  return pairFreeUsageRowsToThreadIds(
+    usages,
+    threads as { id: unknown; created_at: unknown }[],
+    FREE_QUESTION_THREAD_PAIR_MAX_MS
+  );
+}
+
+/** 메시지/답변 게이트: 해당 thread 가 무료질문권 1회 사용과 짝지어진 스레드인지 */
+export async function isFreeQuestionThreadInRoom(
+  supabase: SupabaseClient,
+  studentId: string,
+  mentorId: string,
+  roomId: string,
+  threadId: string
+): Promise<boolean> {
+  const tid = threadId.trim();
+  if (!tid) {
+    return false;
+  }
+  const ids = await loadFreeQuestionThreadIdsInRoom(supabase, studentId, mentorId, roomId);
+  return ids.has(tid);
 }

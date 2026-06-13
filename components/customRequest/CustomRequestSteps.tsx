@@ -1,110 +1,66 @@
-import { ChevronRight } from "lucide-react";
-
-const STEPS = [
-  {
-    num: "1",
-    title: "의뢰 요청 등록",
-    desc: "도움이 필요한 내용을 자세히 작성하고 예산과 희망 완료일을 설정해요.",
-    icon: "📝",
-  },
-  {
-    num: "2",
-    title: "멘토 지원",
-    desc: "적합한 멘토들이 의뢰 내용을 보고 지원서를 제출해요.",
-    icon: "👥",
-  },
-  {
-    num: "3",
-    title: "멘토 선택",
-    desc: "지원서를 비교하고 후기를 참고하여 원하는 멘토를 선택해요.",
-    icon: "⭐",
-  },
-  {
-    num: "4",
-    title: "납품 확인",
-    desc: "납품 파일을 확인하고 완료하면 의뢰가 마무리돼요.",
-    icon: "✔️",
-  },
-] as const;
+function StepArrow() {
+  return (
+    <span className="arrow" aria-hidden>
+      <svg className="ico" width="22" height="22" viewBox="0 0 24 24">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+    </span>
+  );
+}
 
 export function CustomRequestSteps() {
   return (
-    <section className="w-full scroll-mt-24" id="flow-steps">
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.05)] sm:p-8 lg:p-10">
-        <header className="border-b border-slate-200/90 pb-6">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-violet-700/90">진행 방식</p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">맞춤의뢰, 이렇게 진행돼요!</h2>
-          <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-slate-600">네 단계로 안내에 따라 진행해요.</p>
-        </header>
-
-        {/* Desktop: 동일 폭·높이 카드 + chevron */}
-        <div className="mt-8 hidden lg:flex lg:items-stretch lg:justify-between lg:gap-0 select-none">
-          {STEPS.map((s, i) => (
-            <div key={s.title} className="flex min-w-0 flex-1 items-stretch">
-              <article className="flex h-full min-h-[200px] w-full flex-col rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/60 p-5 shadow-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-violet-200 bg-gradient-to-br from-blue-600 to-violet-600 text-sm font-black text-white shadow-md">
-                    {s.num}
-                  </span>
-                  <span className="text-2xl leading-none opacity-90" aria-hidden>
-                    {s.icon}
-                  </span>
-                </div>
-                <p className="mt-4 text-base font-extrabold leading-snug text-slate-900">{s.title}</p>
-                <p className="mt-1 flex-1 text-xs font-medium leading-relaxed text-slate-600">{s.desc}</p>
-              </article>
-              {i < STEPS.length - 1 ? (
-                <div className="flex w-10 shrink-0 items-center justify-center text-slate-300" aria-hidden>
-                  <ChevronRight className="h-6 w-6" strokeWidth={2} />
-                </div>
-              ) : null}
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:hidden">
-          {STEPS.map((s) => (
-            <article
-              key={s.title}
-              className="flex min-h-[180px] flex-col rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm"
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-violet-200 bg-gradient-to-br from-blue-600 to-violet-600 text-sm font-black text-white">
-                {s.num}
-              </span>
-              <p className="mt-4 text-base font-extrabold text-slate-900">{s.title}</p>
-              <p className="mt-2 flex-1 text-xs font-medium leading-relaxed text-slate-600">{s.desc}</p>
-            </article>
-          ))}
-        </div>
-
-        {/* Mobile narrow: 세로 타임라인 (sm 미만) */}
-        <ol className="mt-8 hidden space-y-0 max-sm:block select-none" aria-label="맞춤의뢰 진행 단계">
-          {STEPS.map((s, i) => {
-            const isLast = i === STEPS.length - 1;
-            return (
-              <li key={s.title} className="flex gap-4">
-                <div className="flex w-11 shrink-0 flex-col items-center">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-violet-200 bg-gradient-to-br from-blue-600 to-violet-600 text-sm font-black text-white shadow-md">
-                    {s.num}
-                  </span>
-                  {!isLast ? <span className="my-1 min-h-[28px] w-0.5 flex-1 rounded-full bg-slate-200" aria-hidden /> : null}
-                </div>
-                <div className={`min-w-0 flex-1 ${isLast ? "" : "pb-8"}`}>
-                  <article className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-base font-extrabold text-slate-900">{s.title}</p>
-                      <span className="text-xl" aria-hidden>
-                        {s.icon}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{s.desc}</p>
-                  </article>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+    <>
+      <div className="sec-head">
+        <span className="eyebrow">이용 순서</span>
+        <h2>맞춤의뢰, 이렇게 진행돼요</h2>
+        <p>요청 등록부터 납품 확인까지, 네 단계면 충분해요.</p>
       </div>
-    </section>
+      <div className="steps">
+        <div className="step">
+          <span className="ticon blue">
+            <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+              <path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+            </svg>
+          </span>
+          <div className="sn">STEP 1</div>
+          <h4>의뢰 등록</h4>
+          <p>필요한 내용·예산·희망 일정을 정리해 올려요.</p>
+          <StepArrow />
+        </div>
+        <div className="step">
+          <span className="ticon blue">
+            <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+            </svg>
+          </span>
+          <div className="sn">STEP 2</div>
+          <h4>멘토 지원</h4>
+          <p>멘토들이 의뢰를 보고 제안을 보내요.</p>
+          <StepArrow />
+        </div>
+        <div className="step">
+          <span className="ticon blue">
+            <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+              <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
+          </span>
+          <div className="sn">STEP 3</div>
+          <h4>멘토 선택</h4>
+          <p>제안을 비교하고 한 분을 골라요.</p>
+          <StepArrow />
+        </div>
+        <div className="step">
+          <span className="ticon blue">
+            <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+            </svg>
+          </span>
+          <div className="sn">STEP 4</div>
+          <h4>납품 확인</h4>
+          <p>납품 파일을 확인하고 완료하면 끝이에요.</p>
+        </div>
+      </div>
+    </>
   );
 }

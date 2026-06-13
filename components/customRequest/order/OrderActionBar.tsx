@@ -1,6 +1,9 @@
-import { AlertTriangle, CheckCircle2, ChevronRight, Pencil, Play } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Pencil, Play, XCircle } from "lucide-react";
 import { startCustomOrderWorkAction } from "@/lib/customRequest/orderMentorActions";
-import { acceptCustomOrderDeliverableAction } from "@/lib/customRequest/orderStudentActions";
+import {
+  acceptCustomOrderDeliverableAction,
+  cancelCustomOrderByStudentAction,
+} from "@/lib/customRequest/orderStudentActions";
 import {
   ORDER_ROOM_CARD_CLASS,
   ORDER_ROOM_TERMINAL_MENTOR_NOTICE,
@@ -31,9 +34,11 @@ type Props = {
   studentAcceptDisabledReason: string | null;
   mentorStartDisabledReason: string | null;
   studentRevisionRequestDisabledReason: string | null;
+  studentCancelDisabledReason: string | null;
   openDisputeApplicationDisabledReason: string | null;
   hasActiveDispute?: boolean;
   mentorRevisionJumpDisabledReason?: string | null;
+  embedded?: boolean;
 };
 
 function Chevr() {
@@ -52,9 +57,11 @@ export function OrderActionBar(props: Props) {
     studentAcceptDisabledReason,
     mentorStartDisabledReason,
     studentRevisionRequestDisabledReason,
+    studentCancelDisabledReason,
     openDisputeApplicationDisabledReason,
     hasActiveDispute = false,
     mentorRevisionJumpDisabledReason = null,
+    embedded = false,
   } = props;
 
   if (orderTerminal) {
@@ -63,8 +70,8 @@ export function OrderActionBar(props: Props) {
         ? ORDER_ROOM_TERMINAL_STUDENT_NOTICE
         : "이 주문은 완료되어 추가 작업이 제한됩니다.";
     return (
-      <div className={ORDER_ROOM_CARD_CLASS} role="status" aria-label="주문 완료 안내">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">작업 관리</p>
+      <div className={embedded ? "space-y-2" : ORDER_ROOM_CARD_CLASS} role="status" aria-label="주문 완료 안내">
+        {!embedded ? <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">작업 관리</p> : null}
         <p className="mt-2 text-sm font-semibold text-slate-900">추가 작업 없음</p>
         <p className="mt-1 text-sm leading-relaxed text-slate-700">{notice}</p>
       </div>
@@ -76,6 +83,8 @@ export function OrderActionBar(props: Props) {
   const canMentorStart = false;
   const canStudentRevisionJumps =
     actorRole === "student" && view === "student" && !studentRevisionRequestDisabledReason && orderId.trim().length > 0;
+  const canStudentCancel =
+    actorRole === "student" && view === "student" && !studentCancelDisabledReason && orderId.trim().length > 0;
   const canDisputeJump =
     (actorRole === "student" || actorRole === "mentor") &&
     !hasActiveDispute &&
@@ -86,14 +95,18 @@ export function OrderActionBar(props: Props) {
   const studentPrimaryAccepts = Boolean(canStudentAccept);
 
   return (
-    <div className={`${ORDER_ROOM_CARD_CLASS} w-full`} role="group" aria-label="주문 액션">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">작업 관리</p>
-      <p className="mt-0.5 text-xs text-slate-500">
-        현재 단계에서 꼭 눌러야 할 작업 하나를 위에 두고, 나머지는 바로 아래 텍스트 링크로 모았습니다.
-      </p>
+    <div className={embedded ? "w-full space-y-3" : `${ORDER_ROOM_CARD_CLASS} w-full`} role="group" aria-label="주문 액션">
+      {!embedded ? (
+        <>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">작업 관리</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            현재 단계에서 꼭 눌러야 할 작업 하나를 위에 두고, 나머지는 바로 아래 텍스트 링크로 모았습니다.
+          </p>
+        </>
+      ) : null}
 
-      <div className="mt-4 flex flex-col gap-2">
-        {hasActiveDispute ? (
+      <div className={embedded ? "flex flex-col gap-2" : "mt-4 flex flex-col gap-2"}>
+        {!embedded && hasActiveDispute ? (
           <a href="#order-disputes" className={orangeNoticeCard}>
             <span className="flex min-w-0 items-start gap-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -123,53 +136,82 @@ export function OrderActionBar(props: Props) {
         ) : null}
       </div>
 
-      <div className="mt-3 space-y-0.5 border-t border-slate-100 pt-3">
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">추가 링크</p>
+      <div className={embedded ? "space-y-0.5" : "mt-3 space-y-0.5 border-t border-slate-100 pt-3"}>
+        {!embedded ? <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">추가 링크</p> : null}
         {view === "student" && actorRole === "student" && !studentPrimaryAccepts ? (
           <p className="py-1 text-xs text-slate-500" title={studentAcceptDisabledReason ?? undefined}>
             납품 수락은 지금 단계에서 사용할 수 없어요.
           </p>
         ) : null}
-        {view === "student" && actorRole === "student" && canStudentRevisionJumps ? (
-          <a href="#order-revisions" className={subtleLinkBar}>
-            <span className="flex min-w-0 items-center gap-2">
-              <Pencil className="h-3.5 w-3.5 shrink-0 text-slate-500" />
-              수정 요청하기
-            </span>
-            <Chevr />
-          </a>
+        {view === "student" && actorRole === "student" && canStudentCancel ? (
+          <form action={cancelCustomOrderByStudentAction} className="w-full">
+            <input type="hidden" name="orderId" value={orderId} />
+            <button type="submit" className={`${subtleLinkBar} text-red-800 hover:bg-red-50`}>
+              <span className="flex min-w-0 items-center gap-2">
+                <XCircle className="h-3.5 w-3.5 shrink-0" />
+                주문 취소(예치 반환)
+              </span>
+              <Chevr />
+            </button>
+          </form>
         ) : view === "student" && actorRole === "student" ? (
-          <button type="button" disabled className={mutedLink} title={studentRevisionRequestDisabledReason ?? "사용할 수 없음"}>
-            <span className="flex min-w-0 items-center gap-2">
-              <Pencil className="h-3.5 w-3.5 shrink-0" />
-              수정 요청하기
-            </span>
-            <Chevr />
-          </button>
-        ) : null}
-
-        {hasActiveDispute ? null : canDisputeJump ? (
-          <a href="#order-disputes" className={disputeSubtleHref}>
-            <span className="flex min-w-0 items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              문제 해결 요청하기
-            </span>
-            <Chevr />
-          </a>
-        ) : (
           <button
             type="button"
             disabled
             className={mutedLink}
-            title={openDisputeApplicationDisabledReason ?? "지금은 문제 해결 요청을 보낼 수 없습니다."}
+            title={studentCancelDisabledReason ?? "지금은 주문을 취소할 수 없습니다."}
           >
             <span className="flex min-w-0 items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              문제 해결 요청하기
+              <XCircle className="h-3.5 w-3.5 shrink-0" />
+              주문 취소(예치 반환)
             </span>
             <Chevr />
           </button>
-        )}
+        ) : null}
+        {!embedded ? (
+          view === "student" && actorRole === "student" && canStudentRevisionJumps ? (
+            <a href="#order-revisions" className={subtleLinkBar}>
+              <span className="flex min-w-0 items-center gap-2">
+                <Pencil className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                수정 요청하기
+              </span>
+              <Chevr />
+            </a>
+          ) : view === "student" && actorRole === "student" ? (
+            <button type="button" disabled className={mutedLink} title={studentRevisionRequestDisabledReason ?? "사용할 수 없음"}>
+              <span className="flex min-w-0 items-center gap-2">
+                <Pencil className="h-3.5 w-3.5 shrink-0" />
+                수정 요청하기
+              </span>
+              <Chevr />
+            </button>
+          ) : null
+        ) : null}
+
+        {!embedded ? (
+          hasActiveDispute ? null : canDisputeJump ? (
+            <a href="#order-disputes" className={disputeSubtleHref}>
+              <span className="flex min-w-0 items-center gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                문제 해결 요청하기
+              </span>
+              <Chevr />
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className={mutedLink}
+              title={openDisputeApplicationDisabledReason ?? "지금은 문제 해결 요청을 보낼 수 없습니다."}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                문제 해결 요청하기
+              </span>
+              <Chevr />
+            </button>
+          )
+        ) : null}
       </div>
     </div>
   );
@@ -199,10 +241,10 @@ function OrderActionBarMentor(props: Props) {
   if (orderTerminal) {
     const notice = actorRole === "mentor" ? ORDER_ROOM_TERMINAL_MENTOR_NOTICE : "이 주문은 완료되어 추가 작업이 제한됩니다.";
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm" role="status" aria-label="주문 완료 안내">
-        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">작업 관리</p>
-        <p className="mt-2.5 text-xs font-black text-slate-900">추가 작업 없음</p>
-        <p className="mt-1 text-xs font-bold leading-relaxed text-slate-500">{notice}</p>
+      <div className="rounded-2xl bg-slate-50 p-6" role="status" aria-label="주문 완료 안내">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">작업 관리</p>
+        <p className="mt-3 text-sm font-bold text-slate-900">추가 작업 없음</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">{notice}</p>
       </div>
     );
   }
@@ -220,17 +262,17 @@ function OrderActionBarMentor(props: Props) {
   const mentorPrimaryStarts = Boolean(canMentorStart);
 
   return (
-    <div className="rounded-xl border border-slate-200/70 bg-white px-4 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)] w-full" role="group" aria-label="주문 액션">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">작업 관리</p>
+    <div className="w-full space-y-4" role="group" aria-label="주문 액션">
+      <p className="text-sm font-semibold text-slate-900">작업 관리</p>
 
       <div className="flex flex-col gap-2">
         {hasActiveDispute ? (
-          <a href="#order-disputes" className="flex w-full items-center justify-between gap-2 rounded-lg border border-orange-200 bg-orange-50/30 px-3 py-2.5 shadow-sm hover:border-orange-300 hover:bg-orange-50 transition group">
+          <a href="#order-disputes" className="group flex w-full items-center justify-between gap-2 rounded-xl border border-orange-200 bg-orange-50/40 px-4 py-3 transition hover:border-orange-300 hover:bg-orange-50">
             <span className="flex items-start gap-2.5">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-600" aria-hidden />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" aria-hidden />
               <span className="flex flex-col text-left">
-                <span className="text-[11px] font-bold text-orange-900">문제 해결 진행 중</span>
-                <span className="text-[9px] font-medium text-orange-700/80">현황을 확인하세요.</span>
+                <span className="text-sm font-bold text-orange-900">문제 해결 진행 중</span>
+                <span className="text-xs font-medium text-orange-800/80">현황을 확인하세요.</span>
               </span>
             </span>
             <ChevrMentor />
@@ -240,12 +282,12 @@ function OrderActionBarMentor(props: Props) {
         {actorRole === "mentor" && mentorPrimaryStarts ? (
           <form action={startCustomOrderWorkAction} className="w-full">
             <input type="hidden" name="orderId" value={orderId} />
-            <button type="submit" className="flex w-full items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2.5 shadow-sm hover:border-blue-300 hover:bg-blue-50/80 active:scale-[0.98] transition group">
+            <button type="submit" className="group flex w-full items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50/50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50 active:scale-[0.98]">
               <span className="flex items-start gap-2.5">
-                <Play className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />
+                <Play className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
                 <span className="flex flex-col text-left">
-                  <span className="text-[11px] font-bold text-blue-900">작업 시작하기</span>
-                  <span className="text-[9px] font-medium text-blue-700/80">의뢰 착수 버튼을 누릅니다.</span>
+                  <span className="text-sm font-bold text-blue-900">작업 시작하기</span>
+                  <span className="text-xs font-medium text-blue-800/80">의뢰 착수 버튼을 누릅니다.</span>
                 </span>
               </span>
               <ChevrMentor />
@@ -254,15 +296,15 @@ function OrderActionBarMentor(props: Props) {
         ) : null}
       </div>
 
-      <div className="mt-3.5 space-y-0.5 border-t border-slate-100 pt-2.5">
+      <div className="mt-4 space-y-0.5 border-t border-ds-border-subtle pt-3">
         {actorRole === "mentor" && !mentorPrimaryStarts && (
-          <p className="text-[9px] font-medium text-slate-400 py-1 px-1">※ 지금은 작업을 시작할 수 없습니다.</p>
+          <p className="px-1 py-1 text-xs font-medium text-slate-500">※ 지금은 작업을 시작할 수 없습니다.</p>
         )}
         
         {actorRole === "mentor" && canMentorRevisionJump ? (
-          <a href="#order-revisions" className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[10px] font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition group">
+          <a href="#order-revisions" className="group flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-blue-600">
             <span className="flex items-center gap-2">
-              <Pencil className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
+              <Pencil className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-500" />
               수정 요청 내역
             </span>
             <ChevrMentor />
@@ -270,17 +312,17 @@ function OrderActionBarMentor(props: Props) {
         ) : null}
 
         {hasActiveDispute ? null : canDisputeJump ? (
-          <a href="#order-disputes" className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[10px] font-bold text-red-500 hover:bg-red-50/50 transition group">
+          <a href="#order-disputes" className="group flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-xs font-semibold text-red-600 transition hover:bg-red-50/50">
             <span className="flex items-center gap-2">
-              <AlertTriangle className="h-3 w-3 text-red-400" aria-hidden />
+              <AlertTriangle className="h-3.5 w-3.5 text-red-400" aria-hidden />
               문제 해결 요청
             </span>
             <ChevrMentor />
           </a>
         ) : (
-          <div className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[10px] font-medium text-slate-300 cursor-not-allowed">
+          <div className="flex w-full cursor-not-allowed items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-xs font-medium text-slate-300">
             <span className="flex items-center gap-2">
-              <AlertTriangle className="h-3 w-3" aria-hidden />
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
               문제 해결 요청
             </span>
           </div>

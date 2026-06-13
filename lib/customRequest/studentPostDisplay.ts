@@ -2,10 +2,16 @@ import { formatBudgetRangeKrw } from "@/lib/customRequest/mentorCustomRequestDis
 
 type Row = Record<string, unknown>;
 
-export type StudentPostListFilter = "all" | "waiting" | "active" | "done";
+export type StudentPostListFilter = "all" | "draft" | "waiting" | "active" | "done";
+
+export function isDraftStudentPost(row: Row): boolean {
+  const s = String(row.status ?? row.state ?? row.post_status ?? "").trim().toLowerCase();
+  return s === "draft";
+}
 
 export function studentPostStatusBucket(row: Row): StudentPostListFilter {
   const s = String(row.status ?? row.state ?? row.post_status ?? "open").toLowerCase();
+  if (s === "draft") return "draft";
   if (["cancelled", "canceled", "rejected"].includes(s)) return "done";
   if (["completed", "closed", "done", "finished", "fulfilled"].includes(s)) return "done";
   if (["in_progress", "active", "assigned", "matched", "selected"].includes(s)) return "active";
@@ -14,6 +20,7 @@ export function studentPostStatusBucket(row: Row): StudentPostListFilter {
 
 const STATUS_BADGE: Record<StudentPostListFilter, { label: string; cls: string }> = {
   all: { label: "전체", cls: "border-slate-200 bg-slate-100 text-slate-700" },
+  draft: { label: "임시저장", cls: "border-violet-200 bg-violet-100 text-violet-900" },
   waiting: { label: "지원대기", cls: "border-amber-200 bg-amber-100 text-amber-900" },
   active: { label: "진행중", cls: "border-blue-200 bg-blue-100 text-blue-900" },
   done: { label: "완료", cls: "border-emerald-200 bg-emerald-100 text-emerald-900" },
@@ -25,6 +32,7 @@ export function studentPostStatusBadge(row: Row): { label: string; cls: string }
     return { label: "취소", cls: "border-slate-200 bg-slate-100 text-slate-600" };
   }
   const bucket = studentPostStatusBucket(row);
+  if (bucket === "draft") return STATUS_BADGE.draft;
   if (bucket === "done") return STATUS_BADGE.done;
   if (bucket === "active") return STATUS_BADGE.active;
   return STATUS_BADGE.waiting;

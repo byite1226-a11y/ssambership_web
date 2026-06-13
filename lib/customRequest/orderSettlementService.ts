@@ -249,6 +249,7 @@ export type AcceptDeliverableAtomicRpcResult =
       settlementId?: string;
       gross?: number;
       feeRate?: number;
+      payoutDone?: boolean;
       reason?: string;
     }
   | { ok: false; error: string };
@@ -284,6 +285,7 @@ export async function acceptCustomOrderDeliverableAtomic(
       settlementId: typeof raw.settlement_id === "string" ? raw.settlement_id : undefined,
       gross: typeof raw.gross === "number" ? raw.gross : undefined,
       feeRate: typeof raw.fee_rate === "number" ? raw.fee_rate : undefined,
+      payoutDone: raw.payout_done === true,
       reason: typeof raw.reason === "string" ? raw.reason : undefined,
     };
   } catch (e) {

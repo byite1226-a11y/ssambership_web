@@ -8,6 +8,30 @@ import {
 
 type Row = Record<string, unknown>;
 
+/** 의뢰 진행단계 스텝퍼 active 값 — `CustomRequestLifecycleStepper`와 동일 */
+export type CustomRequestLifecycleStep = "register" | "compare" | "select" | "progress" | "complete";
+
+/** post status/state → lifecycle stepper active (모집 중=compare, 종료=complete, 기본 compare) */
+export function lifecycleStepFromPostRow(row: Row): CustomRequestLifecycleStep {
+  const t = mentorPostStatusToken(row);
+  if (!t) return "compare";
+  if (
+    t.includes("complete") ||
+    t.includes("fulfill") ||
+    t === "closed" ||
+    t === "archived" ||
+    t.includes("cancel") ||
+    t === "canceled" ||
+    t === "cancelled"
+  ) {
+    return "complete";
+  }
+  if (t === "selected" || t === "in_progress" || t.includes("progress")) {
+    return "progress";
+  }
+  return "compare";
+}
+
 function pickDeadlineRaw(row: Row): unknown {
   for (const k of ["deadline", "due_at", "due_date", "ends_at", "close_at"] as const) {
     if (row[k] != null) {
@@ -32,6 +56,14 @@ function contactLineMasked(row: Row): string {
  * browse RPC(006·018)와 맞춰 모집 중인 의뢰만 지원 가능으로 본다.
  * status·state가 비어 있으면(스키마상 정보 없음) 열어 두어 기존 공개 상세와 톤을 맞춤.
  */
+export function isDraftCustomRequestPost(row: Row | null | undefined): boolean {
+  if (!row) return false;
+  const s = String(row.status ?? "").trim().toLowerCase();
+  const st = String(row.state ?? "").trim().toLowerCase();
+  const ps = String(row.post_status ?? "").trim().toLowerCase();
+  return s === "draft" || st === "draft" || ps === "draft";
+}
+
 export function isMentorApplicablePostStatus(row: Row): boolean {
   const s = String(row.status ?? "").trim().toLowerCase();
   const st = String((row as { state?: string }).state ?? "").trim().toLowerCase();

@@ -1,0 +1,93 @@
+"use client";
+
+import { useId, useRef, useState } from "react";
+
+type Props = {
+  name: string;
+  accept: string;
+  multiple?: boolean;
+  required?: boolean;
+  buttonLabel: string;
+  hint?: string;
+  maxFiles?: number;
+  onFilesChange?: (files: FileList | null) => void;
+};
+
+export function CommunityFileDropzone(props: Props) {
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [label, setLabel] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  function syncLabel(files: FileList | null) {
+    props.onFilesChange?.(files);
+    if (!files?.length) {
+      setLabel(null);
+      return;
+    }
+    if (props.multiple) {
+      const names = Array.from(files)
+        .slice(0, props.maxFiles ?? files.length)
+        .map((f) => f.name);
+      setLabel(`${names.length}개 선택 · ${names.join(", ")}`);
+      return;
+    }
+    setLabel(files[0]?.name ?? null);
+  }
+
+  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+    syncLabel(e.target.files);
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const input = inputRef.current;
+    if (!input) return;
+    input.files = e.dataTransfer.files;
+    syncLabel(input.files);
+  }
+
+  return (
+    <div className="space-y-2">
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        name={props.name}
+        accept={props.accept}
+        multiple={props.multiple}
+        required={props.required}
+        onChange={onChange}
+        className="sr-only"
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        className={[
+          "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors",
+          dragOver ? "border-[#1A56DB] bg-blue-50/40" : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50",
+        ].join(" ")}
+      >
+        <span className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800">
+          {props.buttonLabel}
+        </span>
+        <p className="mt-2 text-xs text-slate-500">{props.hint ?? "클릭하거나 파일을 끌어다 놓으세요"}</p>
+      </div>
+      {label ? <p className="text-xs font-semibold text-slate-700">{label}</p> : null}
+    </div>
+  );
+}

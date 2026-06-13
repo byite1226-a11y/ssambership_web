@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { CommunityHomeFeed } from "@/components/community/CommunityHomeFeed";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
+import { parseCommunityBoardSortTab } from "@/lib/community/communityBoardSort";
 import { createClient } from "@/lib/supabase/server";
 import type { CommunityPostCategorySlug } from "@/lib/community/communityBoardConstants";
 import { listCommunityBoardPosts } from "@/lib/community/communityBoardQueries";
@@ -12,10 +13,11 @@ export default async function CommunityBoardPage(props: Props) {
   const sp = (await props.searchParams) ?? {};
   const catRaw = sp.category;
   const category = (typeof catRaw === "string" ? catRaw : "all") as CommunityPostCategorySlug;
+  const sortTab = parseCommunityBoardSortTab(typeof sp.tab === "string" ? sp.tab : undefined);
 
   const supabase = await createClient();
 
-  const feed = await listCommunityBoardPosts(supabase, { category, limit: 12 });
+  const feed = await listCommunityBoardPosts(supabase, { category, limit: 12, sort: sortTab });
 
   if (feed.error) console.error("[community/board] feed", feed.error);
 
@@ -32,6 +34,8 @@ export default async function CommunityBoardPage(props: Props) {
           initialPosts={feed.posts}
           initialCursor={feed.nextCursor}
           initialCategory={category}
+          initialSort={sortTab}
+          showSortTabs
           basePath="/community/board"
         />
       </Suspense>

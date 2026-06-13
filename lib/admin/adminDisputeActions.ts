@@ -9,6 +9,7 @@ import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { firstReadableAdminTable } from "@/lib/admin/adminQueries";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { recordCustomOrderDisputeSplitRpc } from "@/lib/customRequest/customOrderDisputeSplitService";
 
 const LIST_PATH = "/admin/disputes";
 
@@ -215,4 +216,55 @@ export async function saveDisputeAdminNoteAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath(`/admin/disputes/${disputeId}`);
   redirect(okUrl(disputeId, "note"));
+}
+
+function parseNonNegativeIntWon(raw: string, label: string): number | { error: string } {
+  const t = raw.trim();
+  if (!t || !/^\d+$/.test(t)) {
+    return { error: `${label}은(는) 0 이상의 정수(원)로 입력해 주세요.` };
+  }
+  const n = Number.parseInt(t, 10);
+  if (!Number.isSafeInteger(n) || n < 0) {
+    return { error: `${label}이(가) 올바르지 않습니다.` };
+  }
+  return n;
+}
+
+/**
+ * 분쟁 예치 분배(4단계-A) — RPC만 호출. UI(폼)는 4단계-B.
+ * FormData: disputeId, orderId, mentorGrossWon, studentRefundWon (원, 정수)
+ */
+export async function applyCustomOrderDisputeSplitAdminAction(formData: FormData) {
+  const { user } = await requireRole("admin");
+  const disputeId = textFromForm(formData.get("disputeId"));
+  const orderId = textFromForm(formData.get("orderId"));
+  if (!disputeId) redirect(`${LIST_PATH}?error=${encodeURIComponent(safeMsg("분쟁을 식별할 수 없습니다."))}`);
+  if (!orderId) redirect(errUrlDetail(disputeId, safeMsg("주문 ID가 필요합니다.")));
+
+  const mentorParsed = parseNonNegativeIntWon(textFromForm(formData.get("mentorGrossWon")), "멘토 배정 gross");
+  if (typeof mentorParsed !== "number") {
+    redirect(errUrlDetail(disputeId, safeMsg(mentorParsed.error)));
+  }
+  const studentParsed = parseNonNegativeIntWon(textFromForm(formData.get("studentRefundWon")), "학생 환불");
+  if (typeof studentParsed !== "number") {
+    redirect(errUrlDetail(disputeId, safeMsg(studentParsed.error)));
+  }
+
+  const split = await recordCustomOrderDisputeSplitRpc({
+    orderId,
+    mentorGrossWon: mentorParsed,
+    studentRefundWon: studentParsed,
+    adminId: user.id,
+  });
+  if (!split.ok) {
+    redirect(errUrlDetail(disputeId, safeMsg(split.error)));
+  }
+
+  revalidatePath(LIST_PATH);
+  revalidatePath("/admin");
+  revalidatePath(`/admin/disputes/${disputeId}`);
+  revalidatePath(`/custom-request/orders/${orderId}`);
+  revalidatePath("/wallet/ledger");
+  revalidatePath("/mentor/payouts");
+  redirect(okUrl(disputeId, "dispute_split"));
 }

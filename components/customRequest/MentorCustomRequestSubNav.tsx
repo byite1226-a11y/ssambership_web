@@ -4,10 +4,6 @@ import {
   FileText,
   Send,
   CheckCircle,
-  PlayCircle,
-  Package,
-  XCircle,
-  ClipboardList,
   BookOpen,
   HelpCircle,
   MessageCircle,
@@ -27,23 +23,20 @@ interface MentorCustomRequestSubNavProps {
   active: MentorCustomRequestNavKey;
   tab?: string;
   counts?: Record<string, number>;
+  /** 멘토 가이드·도움 카드 — 대시보드에서만 표시 */
+  showAuxCards?: boolean;
 }
 
 function isItemActive(itemKey: string, active: MentorCustomRequestNavKey, tab?: string): boolean {
   if (itemKey === "dashboard") return active === "dashboard";
   if (itemKey === "posts-open") return active === "posts" && (!tab || tab === "open");
   if (itemKey === "posts-applied") return active === "posts" && tab === "applied";
-  if (itemKey === "orders-all") return active === "orders" && (!tab || tab === "all");
-  if (itemKey === "orders-billing") return active === "orders" && tab === "billing";
-  if (itemKey === "orders-work") return active === "orders" && (tab === "work" || tab === "revision");
-  if (itemKey === "orders-delivery") return active === "orders" && tab === "delivery";
-  if (itemKey === "orders-revision") return active === "orders" && tab === "revision";
-  if (itemKey === "orders-done") return active === "orders" && tab === "done";
+  if (itemKey === "orders-all") return active === "orders";
   return false;
 }
 
 export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps) {
-  const { active, tab, counts = {} } = props;
+  const { active, tab, counts = {}, showAuxCards = false } = props;
 
   const navItems: NavItem[] = [
     {
@@ -74,50 +67,6 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
       badgeKey: "ordersTotal",
     },
     {
-      href: "/mentor/custom-request/orders?tab=billing",
-      label: "작업 대기",
-      key: "orders-billing",
-      Icon: PlayCircle,
-      badgeKey: "billing",
-    },
-    {
-      href: "/mentor/custom-request/orders?tab=work",
-      label: "진행 중",
-      key: "orders-work",
-      Icon: PlayCircle,
-      badgeKey: "work",
-    },
-    {
-      href: "/mentor/custom-request/orders?tab=delivery",
-      label: "납품 대기",
-      key: "orders-delivery",
-      Icon: Package,
-      badgeKey: "delivery",
-    },
-    {
-      href: "/mentor/custom-request/orders?tab=revision",
-      label: "수정 요청",
-      key: "orders-revision",
-      Icon: XCircle,
-      badgeKey: "revision",
-    },
-    {
-      href: "/mentor/custom-request/orders?tab=done",
-      label: "납품 완료",
-      key: "orders-done",
-      Icon: XCircle,
-      badgeKey: "done",
-    },
-  ];
-
-  const bottomNavItems: NavItem[] = [
-    {
-      href: "/mentor/custom-request/posts?tab=applied",
-      label: "제안 내역",
-      key: "applied-history",
-      Icon: ClipboardList,
-    },
-    {
       href: "/legal/no-offplatform-contact",
       label: "의뢰 가이드",
       key: "guide",
@@ -127,19 +76,16 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Main Nav */}
       <nav
         className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
         aria-label="맞춤의뢰 하위 메뉴"
       >
-        {/* Header */}
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
           <h2 className="text-[13px] font-black tracking-tight text-slate-800">
             맞춤의뢰 (멘토용)
           </h2>
         </div>
 
-        {/* Nav Items */}
         <ul className="p-2 space-y-0.5">
           {navItems.map((item) => {
             const isActive = isItemActive(item.key, active, tab);
@@ -177,67 +123,46 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
               </li>
             );
           })}
-
-          {/* Divider */}
-          <li className="my-1.5 border-t border-slate-100" />
-
-          {bottomNavItems.map((item) => {
-            const isActive = isItemActive(item.key, active, tab);
-            return (
-              <li key={item.key}>
-                <Link
-                  href={item.href}
-                  className={[
-                    "flex min-h-[38px] items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all duration-150",
-                    isActive
-                      ? "bg-[#142d61] text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                  ].join(" ")}
-                >
-                  <item.Icon className="h-4 w-4 shrink-0 text-slate-400" />
-                  <span className="flex-1 leading-tight">{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
         </ul>
       </nav>
 
-      {/* Mentor Guide Card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-2">
-          <BookOpen className="h-4 w-4 text-[#142d61]" />
-          <h3 className="text-[13px] font-black text-slate-900">멘토 가이드</h3>
-        </div>
-        <p className="text-[12px] leading-relaxed text-slate-500 mb-3">
-          맞춤의뢰 진행 방법과<br />유의사항을 확인해보세요.
-        </p>
-        <Link
-          href="/legal/no-ghostwriting"
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-        >
-          <BookOpen className="h-3.5 w-3.5 text-slate-400" />
-          운영 정책 안내
-        </Link>
-      </div>
+      {showAuxCards ? (
+        <>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <BookOpen className="h-4 w-4 text-[#142d61]" />
+              <h3 className="text-[13px] font-black text-slate-900">멘토 가이드</h3>
+            </div>
+            <p className="text-[12px] leading-relaxed text-slate-500 mb-3">
+              맞춤의뢰 진행 방법과<br />유의사항을 확인해보세요.
+            </p>
+            <Link
+              href="/legal/no-ghostwriting"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-slate-400" />
+              운영 정책 안내
+            </Link>
+          </div>
 
-      {/* Help Card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-2">
-          <HelpCircle className="h-4 w-4 text-slate-500" />
-          <h3 className="text-[13px] font-black text-slate-900">도움이 필요하신가요?</h3>
-        </div>
-        <p className="text-[12px] leading-relaxed text-slate-500 mb-3">
-          궁금한 점은 언제든 문의해주세요.
-        </p>
-        <Link
-          href="/notifications"
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-        >
-          <MessageCircle className="h-3.5 w-3.5 text-slate-400" />
-          알림 센터
-        </Link>
-      </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <HelpCircle className="h-4 w-4 text-slate-500" />
+              <h3 className="text-[13px] font-black text-slate-900">도움이 필요하신가요?</h3>
+            </div>
+            <p className="text-[12px] leading-relaxed text-slate-500 mb-3">
+              궁금한 점은 언제든 문의해주세요.
+            </p>
+            <Link
+              href="/notifications"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            >
+              <MessageCircle className="h-3.5 w-3.5 text-slate-400" />
+              알림 센터
+            </Link>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

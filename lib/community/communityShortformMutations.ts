@@ -59,3 +59,40 @@ export async function insertShortformPost(
   const id = data && typeof (data as { id: string }).id === "string" ? (data as { id: string }).id : "";
   return id ? { ok: true, id } : { ok: false, error: "db" };
 }
+
+export async function updateShortformPost(
+  supabase: SupabaseClient,
+  userId: string,
+  postId: string,
+  input: InsertShortformInput
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const title = input.title.trim().slice(0, SHORTFORM_TITLE_MAX);
+  const body = input.body.trim().slice(0, SHORTFORM_DESC_MAX);
+  if (!title) return { ok: false, error: "title" };
+  if (!input.videoUrl && input.status === "published") return { ok: false, error: "video" };
+  const tags = input.tags.slice(0, SHORTFORM_TAG_MAX);
+
+  const payload: Record<string, unknown> = {
+    title,
+    body,
+    category: input.category === "all" ? "study" : input.category,
+    source: input.source || null,
+    video_url: input.videoUrl,
+    thumbnail_url: input.thumbnailUrl,
+    tags,
+    status: input.status,
+    author_label: input.authorLabel,
+  };
+
+  const { data, error } = await supabase
+    .from("shortform_posts")
+    .update(payload)
+    .eq("id", postId)
+    .eq("author_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: "db" };
+  const id = data && typeof (data as { id: string }).id === "string" ? (data as { id: string }).id : postId;
+  return { ok: true, id };
+}

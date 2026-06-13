@@ -10,10 +10,33 @@ type Props = {
   activeStep: 1 | 2 | 3 | 4;
   className?: string;
   id?: string;
+  /** flat: 랜딩 톤 절제형 (`.cr-landing` 하위) */
+  variant?: "default" | "flat";
 };
 
 export function CustomRequestFlowStepper(props: Props) {
-  const { activeStep, className = "", id } = props;
+  const { activeStep, className = "", id, variant = "default" } = props;
+
+  if (variant === "flat") {
+    return (
+      <div className={`form-stepper ${className}`.trim()}>
+        <ol id={id} aria-label="맞춤의뢰 진행 단계">
+          {STEPS.map((s) => {
+            const done = s.n < activeStep;
+            const current = s.n === activeStep;
+            const state = current ? "is-current" : done ? "is-done" : "";
+            return (
+              <li key={s.n} className={`step-item ${state}`.trim()}>
+                <span className="step-dot">{done && !current ? "✓" : s.n}</span>
+                <span className="step-label">{s.label}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    );
+  }
+
   return (
     <div className={`w-full rounded-2xl border border-slate-200/90 bg-slate-100/50 p-4 shadow-inner sm:p-5 ${className}`}>
       <ol

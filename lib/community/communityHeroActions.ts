@@ -1,7 +1,8 @@
 import type { CommunityHeroCta } from "@/components/community/CommunityPageHero";
+import { communityComposePath } from "@/lib/community/communityComposeTab";
 import type { AppRole } from "@/lib/types/user";
 
-/** 공개 커뮤니티 히어로가 위치한 화면(탐색·작성 동선 분기) */
+/** 공개 커뮤니티 히어로가 위치한 화면(탐색·작성 동선) */
 export type CommunityHeroSurface =
   | "home"
   | "board_list"
@@ -31,13 +32,13 @@ export function buildCommunityHeroPrimaryAction(params: {
   if (isMentor(role)) {
     switch (surface) {
       case "home":
-        return { href: "/mentor/community/new", label: "게시글 작성", tone: "blue" };
+        return { href: communityComposePath("board"), label: "게시글 작성", tone: "blue" };
       case "board_list":
       case "board_detail":
-        return { href: "/mentor/community/new", label: "게시글 작성", tone: "blue" };
+        return { href: communityComposePath("board"), label: "게시글 작성", tone: "blue" };
       case "shortform_list":
       case "shortform_detail":
-        return { href: "/mentor/community/new", label: "숏폼 업로드", tone: "blue" };
+        return { href: communityComposePath("shortform"), label: "숏폼 업로드", tone: "blue" };
       case "me":
       case "compose_gate":
         return null;

@@ -9,6 +9,8 @@ import { loadOrderDetailPageData } from "@/lib/customRequest/orderDetailQueries"
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { getMentorStartDisabledByMissingOrderDdl } from "@/lib/customRequest/orderSchemaGate";
+import { fetchMentorStudentDisplayName } from "@/lib/customRequest/mentorDashboardOrderEnrichment";
+import { pickOrderStudentId } from "@/lib/customRequest/orderRoomMutations";
 import type { AppRole } from "@/lib/types/user";
 
 type PageProps = {
@@ -42,6 +44,12 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   const isMentor = role === "mentor";
   const mentorStartDdlDisabledReason = getMentorStartDisabledByMissingOrderDdl();
 
+  let mentorStudentDisplayName: string | undefined;
+  if (isMentor && canEnrich && bundle.order.row) {
+    const studentId = pickOrderStudentId(bundle.order.row as Record<string, unknown>);
+    mentorStudentDisplayName = await fetchMentorStudentDisplayName(supabase, studentId);
+  }
+
   const alerts = (
     <>
       {sp.error ? (
@@ -68,6 +76,7 @@ export default async function CustomRequestOrderPage(props: PageProps) {
         accessDenied={accessDenied}
         mentorOrderHubHref={isMentor ? "/mentor/custom-request/orders" : undefined}
         mentorStartDdlDisabledReason={mentorStartDdlDisabledReason}
+        mentorStudentDisplayName={mentorStudentDisplayName}
       />
     </div>
   );

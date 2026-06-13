@@ -2,11 +2,15 @@ import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { MentorOpenPostListSection } from "@/components/customRequest/MentorOpenPostListSection";
 import { MentorAppliedListSection } from "@/components/customRequest/MentorAppliedListSection";
-import { MentorCustomRequestPostsFilterPanel } from "@/components/customRequest/MentorCustomRequestPostsFilterPanel";
 import { MentorCustomRequestWorkspaceLayout } from "@/components/customRequest/MentorCustomRequestWorkspaceLayout";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { loadMentorRecentApplicationsWithPostHints, loadOpenCustomRequestPostsForMentorBrowse, pickDisplayField } from "@/lib/customRequest/customRequestQueries";
+import {
+  loadMentorAppliedPostIdSet,
+  loadMentorRecentApplicationsWithPostHints,
+  loadOpenCustomRequestPostsForMentorBrowse,
+  pickDisplayField,
+} from "@/lib/customRequest/customRequestQueries";
 import { fetchMentorWorkspaceCounts, mentorWorkspaceSidebarCounts } from "@/lib/customRequest/mentorCounts";
 
 export const dynamic = "force-dynamic";
@@ -42,15 +46,12 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
   const currentTab = typeof sp.tab === "string" ? sp.tab : "open";
   const categoryTab = typeof sp.cat === "string" ? sp.cat : "all";
 
-  const [openList, applied, counts] = await Promise.all([
+  const [openList, applied, counts, appliedPostIds] = await Promise.all([
     loadOpenCustomRequestPostsForMentorBrowse(supabase, 50),
     loadMentorRecentApplicationsWithPostHints(supabase, user.id, 25),
     fetchMentorWorkspaceCounts(supabase, user.id),
+    loadMentorAppliedPostIdSet(supabase, user.id),
   ]);
-
-  const appliedPostIds = new Set(
-    (applied.items ?? []).map((item) => String(item.postId || "").trim())
-  );
 
   const filteredOpenRows = (openList.rows ?? []).filter((row) => {
     const id = String(row.id ?? "").trim();
@@ -91,18 +92,14 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
       <MentorCustomRequestWorkspaceLayout active="posts" tab={isApplied ? "applied" : "open"} counts={mentorWorkspaceSidebarCounts(counts)}>
         {/* Page header */}
         <div className="mb-5">
-          <h1 className="text-[24px] font-black tracking-tight text-slate-900">{titleText}</h1>
-          <p className="mt-1 text-[14px] text-slate-500">{descriptionText}</p>
+          <h1 className="ds-text-h2 text-slate-900">{titleText}</h1>
+          <p className="mt-1 text-sm text-slate-600">{descriptionText}</p>
         </div>
 
-        <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
-          {/* Main content */}
-          <div className="min-w-0 lg:col-span-8">
+        <div className="min-w-0">
             {!isApplied ? (
-              <>
-                {/* Category Tabs + Filter button row — matching req_10 */}
-                <div className="mb-5 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-0 overflow-x-auto border-b border-slate-200 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-1">
+              <div className="max-w-3xl">
+                <div className="mb-5 flex items-center gap-0 overflow-x-auto border-b border-slate-200 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {CATEGORY_TABS.map((catTab) => {
                       const isActive = categoryTab === catTab.id;
                       const count = categoryCounts[catTab.id] ?? 0;
@@ -134,17 +131,6 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                         </Link>
                       );
                     })}
-                  </div>
-                  {/* Filter button */}
-                  <button
-                    type="button"
-                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-600 shadow-sm hover:bg-slate-50 transition mb-3"
-                  >
-                    <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h10a1 1 0 010 2H7a1 1 0 01-1-1zm3 4a1 1 0 011-1h4a1 1 0 010 2h-4a1 1 0 01-1-1z" />
-                    </svg>
-                    의뢰 필터
-                  </button>
                 </div>
                 <p className="mb-4 text-[11px] leading-relaxed text-slate-400">
                   전체는 노출 중인 모든 의뢰 수이고, 카테고리 옆 숫자는 해당 분류에 속한 건수만 표시합니다.
@@ -154,7 +140,7 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                   <h2 className="sr-only">모집 중인 맞춤의뢰</h2>
                   <MentorOpenPostListSection rows={categoryFilteredRows} listStatus={openList.status} />
                 </section>
-              </>
+              </div>
             ) : (
               <>
                 <div className="mb-5">
@@ -178,18 +164,13 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
             )}
 
             <p className="mt-8 text-center text-xs text-slate-400">
-              <Link href="/custom-request" className="font-semibold text-blue-800 underline-offset-2 hover:underline">
+              <Link
+                href="/custom-request"
+                className="font-semibold text-ds-secondary underline-offset-2 transition hover:text-ds-primary hover:underline"
+              >
                 맞춤의뢰 소개 보기
               </Link>
             </p>
-          </div>
-
-          {/* Right filter panel */}
-          <div className="mt-6 min-w-0 lg:col-span-4 lg:mt-0">
-            <div className="lg:sticky lg:top-24">
-              <MentorCustomRequestPostsFilterPanel />
-            </div>
-          </div>
         </div>
       </MentorCustomRequestWorkspaceLayout>
     </PageScaffold>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityShortformCategoryTabs } from "@/components/community/CommunityShortformCategoryTabs";
 import { CommunityShortformTabs, parseShortformTab } from "@/components/community/CommunityShortformTabs";
@@ -8,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listShortformFeed } from "@/lib/community/communityShortformQueries";
 import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
 import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
+import { CommunityShortformUploadFab } from "@/components/community/CommunityShortformUploadFab";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -18,25 +18,18 @@ export default async function CommunityShortformPage(props: Props) {
   const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
 
-  const { items, error } = await listShortformFeed(supabase, { category, limit: 48 });
+  const { items, error } = await listShortformFeed(supabase, { category, limit: 48, sort: sortTab });
 
+  const isLoggedIn = Boolean(user);
   const isMentor = profile?.role === "mentor";
 
   return (
     <CommunityLayoutShell activeNav="shortform">
-      <header className={`${SURFACE_CARD} flex flex-wrap items-center justify-between gap-3`}>
+      <header className={SURFACE_CARD}>
         <div>
           <h1 className="text-xl font-black text-slate-900">숏폼</h1>
           <p className="mt-1 text-sm text-slate-700">멘토의 짧은 학습 영상을 둘러보세요.</p>
         </div>
-        {isMentor ? (
-          <Link
-            href="/community/shortform/new"
-            className="rounded-xl bg-[#1A56DB] px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:opacity-90"
-          >
-            업로드
-          </Link>
-        ) : null}
       </header>
 
       <CommunityShortformTabs active={sortTab} />
@@ -55,6 +48,7 @@ export default async function CommunityShortformPage(props: Props) {
           ))}
         </ul>
       )}
+      <CommunityShortformUploadFab isLoggedIn={isLoggedIn} isMentor={isMentor} />
     </CommunityLayoutShell>
   );
 }

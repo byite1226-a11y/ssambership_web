@@ -1,0 +1,38 @@
+﻿
+app\signup\page.tsx:6:import { createClient } from "@/lib/supabase/client";
+components\auth\RoleLoginForm.tsx:6:import { createClient } from "@/lib/supabase/client";
+components\auth\UpdatePasswordClient.tsx:5:import { createClient } from "@/lib/supabase/client";
+components\notifications\NotificationBell.tsx:7:import { createClient } from "@/lib/supabase/client";
+lib\admin\adminUnifiedActivityLog.ts:1:import "server-only";
+lib\admin\mentorProfilesAdminRead.ts:1:import "server-only";
+lib\auth\getCurrentProfile.ts:10: * createClient()는 lib/supabase/client.ts(브라우저) 또는 server.ts(서버)에서 전달
+lib\auth\syncAfterSignUpSession.ts:1:import { createClient } from "@/lib/supabase/client";
+lib\customRequest\customRequestMutations.ts:254:    payment_status: "unpaid",
+lib\customRequest\customRequestMutations.ts:281:    payment_status: "unpaid",
+lib\customRequest\mentorCustomOrderBrowseDisplay.ts:3: * — Supabase / server-only 모듈을 import하지 않습니다.
+lib\customRequest\orderDeliverableFiles.ts:1:import "server-only";
+lib\customRequest\orderLifecycleConstants.ts:11: * | 동일 insert의 `payment_status` | `unpaid` | `insertCustomRequestOrder
+` p1 (primary 상태 키 후보 아님) |
+lib\customRequest\orderLifecycleConstants.ts:27:export const ORDER_INSERT_PAYMENT_STATUS_UNPAID = "unpaid" as const;
+lib\customRequest\orderLifecycleConstants.ts:309: * UI(RSC/클라)에서도 사용 가능하도록 `server-only` 모듈에 의존하지 않는다.
+lib\customRequest\orderPaymentPolicy.ts:1:import "server-only";
+lib\customRequest\orderPaymentPolicy.ts:69: * 납품 수락 게이트: `payment_status`(및 별칭)가 **`paid` 한 가지**일 때만 “결제 완료”로 본다.
+lib\customRequest\orderSchemaGate.ts:1:import "server-only";
+lib\customRequest\orderSettlementAmounts.ts:1:import "server-only";
+lib\customRequest\orderSettlementService.ts:1:import "server-only";
+lib\customRequest\orderStudentActions.ts:116:      "[acceptCustomOrderDeliverableAction] Unpaid accept allowed by env (
+staging/test). Custom order will proceed without payment_status === \"paid\".",
+lib\customRequest\postAttachmentConstants.ts:1:/** 클라이언트·서버 공용 — `postAttachmentFiles.ts`(server-only)와 분리 */
+lib\customRequest\postAttachmentFiles.ts:1:import "server-only";
+lib\mentor\mentorPayoutsDisplay.ts:2: * 멘토 정산 UI 표시 헬퍼 — 클라이언트·서버 공용 (server-only import 없음)
+lib\mentor\mentorPayoutsService.ts:1:import "server-only";
+lib\mentor\mentorPayoutsTypes.ts:1:/** 멘토 정산 UI·API 공용 타입 — server-only 모듈 import 금지 */
+lib\mentor\dashboard\mentorHubDashboardDisplay.ts:2: * 멘토 통합 대시보드 UI 헬퍼 — server-only import 없음
+lib\mentor\dashboard\mentorHubDashboardQueries.ts:1:import "server-only";
+lib\notifications\notificationInsert.ts:1:import "server-only";
+lib\qna\freeQuestionUsage.ts:1:import "server-only";
+lib\qna\weeklyQuestionUsageServer.ts:1:import "server-only";
+lib\supabase\admin.ts:1:import "server-only";
+lib\supabase\admin.ts:9: * - 이 모듈은 `"server-only"` 이므로 Client Component에서 import 시 빌드가 실패합니다.
+
+

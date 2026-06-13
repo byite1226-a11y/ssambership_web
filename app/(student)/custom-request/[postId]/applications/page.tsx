@@ -1,4 +1,7 @@
+import "@/app/(public)/custom-request/landing.css";
+import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
+import { CustomRequestDetailShell } from "@/components/customRequest/customRequestDetailLayout";
 import { ApplicationsCompareView } from "@/components/customRequest/ApplicationsCompareView";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
@@ -6,9 +9,12 @@ import {
   enrichApplicationRows,
   isAuthorOfPost,
   getOrderIdForPostAndStudent,
+  loadApplicationAttachments,
   loadApplicationsForPost,
   loadCustomPostById,
 } from "@/lib/customRequest/customRequestQueries";
+import { isDraftCustomRequestPost } from "@/lib/customRequest/customRequestPostMappers";
+import { batchSignApplicationAttachmentImageThumbUrls } from "@/lib/customRequest/applicationAttachmentAccess";
 
 type Row = Record<string, unknown>;
 
@@ -29,26 +35,42 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
   const supabase = await createClient();
   const post = await loadCustomPostById(supabase, postId);
   const authz = isAuthorOfPost(user.id, post.row);
+  if (authz.ok && isDraftCustomRequestPost(post.row)) {
+    redirect(`/custom-request/new?draftId=${encodeURIComponent(postId)}`);
+  }
   const list = await loadApplicationsForPost(supabase, postId, 40);
   const enriched = await enrichApplicationRows(supabase, (list.rows as Row[]) ?? []);
+  const applicationIds = enriched
+    .map((e) => e.applicationId)
+    .filter((id): id is string => Boolean(id));
+  const { byApplicationId: attachmentsByApplicationId } = await loadApplicationAttachments(
+    supabase,
+    applicationIds
+  );
+  const allAttachments = Object.values(attachmentsByApplicationId).flat();
+  const attachmentThumbUrlByAttachmentId = authz.ok
+    ? await batchSignApplicationAttachmentImageThumbUrls(
+        supabase,
+        { userId: user.id, role: "student" },
+        postId,
+        allAttachments
+      )
+    : {};
   const orderId = await getOrderIdForPostAndStudent(supabase, postId, user.id);
 
   return (
     <PageScaffold
-      compactHero
+      hideHero
       hideFooterPlaceholderCards
-      eyebrow="맞춤의뢰"
-      title="멘토 지원서 목록"
-      description="제출된 제안을 비교하고 한 분을 선택해 주세요. 선택 후 주문방에서 작업이 이어집니다."
-      ctas={[
-        { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
-        { href: `/custom-request/${postId}`, label: "의뢰 상세", tone: "slate" },
-      ]}
+      eyebrow=""
+      title=""
+      description=""
+      ctas={[]}
       sections={[]}
       emptyState=""
       dataPoints={[]}
     >
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
+      <CustomRequestDetailShell>
         {hasErrQ ? (
           <p className="mb-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-bold text-red-900">
             처리에 문제가 있었어요. 잠시 후 다시 시도해 주세요.
@@ -65,9 +87,11 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
             postRow={post.row != null ? (post.row as Row) : null}
             enriched={enriched}
             existingOrderId={orderId}
+            attachmentsByApplicationId={attachmentsByApplicationId}
+            attachmentThumbUrlByAttachmentId={attachmentThumbUrlByAttachmentId}
           />
         )}
-      </div>
+      </CustomRequestDetailShell>
     </PageScaffold>
   );
 }

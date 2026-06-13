@@ -4,10 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
+import { recordCustomOrderEscrowRefundRpc } from "@/lib/customRequest/customOrderEscrowService";
 import {
+  isOrderPaymentEscrowedForStudentCancel,
   isOrderStatusAllowingStudentAccept,
+  isOrderStatusBeforeMentorWorkStarted,
   isOrderRowTerminalForActions,
   normalizedPrimaryOrderStatus,
+  ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS,
   primaryOrderStatusColumnKey,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
@@ -100,7 +104,7 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
   if (mustBlockUnpaidAcceptForProduction(row)) {
     redirectWithError(
       orderId,
-      "결제가 완료되지 않은 주문은 수락할 수 없습니다. 결제 확인 후 다시 시도해 주세요."
+      "결제(예치)가 완료되지 않은 주문은 수락할 수 없습니다. 캐시 예치 확인 후 다시 시도해 주세요."
     );
   }
   if (!isCustomOrderPaymentStatusStrictlyPaid(row)) {
@@ -160,6 +164,7 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
 
   await recordOrderEventBestEffort(supabase, orderId, "deliverable_accepted", user.id, {
     settlement_row_created: atomic.settlementCreated,
+    payout_done: atomic.payoutDone ?? false,
     via: "accept_custom_order_deliverable_atomic",
   });
 
@@ -186,5 +191,92 @@ export async function acceptCustomOrderDeliverableAction(formData: FormData): Pr
 
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
+  revalidatePath("/wallet/ledger");
+  revalidatePath("/mentor/payouts");
   redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("납품을 수락해 주문을 완료했습니다.")}`);
+}
+
+/**
+ * 학생 직접 취소 — 멘토 작업 시작 전(`pending`) + 예치(`escrowed`)만.
+ * 예치 전액 반환 RPC 후 주문은 RPC에서 cancelled·payment_status refunded 로 마감.
+ */
+export async function cancelCustomOrderByStudentAction(formData: FormData): Promise<void> {
+  const { user } = await requireRole("student");
+  const supabase = await createClient();
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  if (!orderId) {
+    redirect("/custom-request?error=" + encodeURIComponent("orderId가 필요합니다."));
+  }
+
+  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
+  if (!oT.table) {
+    redirectWithError(orderId, oT.error || "주문 테이블을 찾을 수 없습니다.");
+  }
+
+  const { data: rowData, error: oe } = await supabase.from(oT.table).select("*").eq("id", orderId).maybeSingle();
+  if (oe || !rowData) {
+    redirectWithError(orderId, "주문을 찾을 수 없어요. 잠시 후 다시 시도해 주세요.");
+  }
+  const row = rowData as Row;
+
+  const access = canAccessOrder(row, user.id, "student");
+  if (!access.ok) {
+    redirectWithError(orderId, "이 주문을 취소할 권한이 없습니다.");
+  }
+
+  const { column: stuCol } = await pickExistingColumn(supabase, oT.table, [
+    "student_id",
+    "buyer_id",
+    "user_id",
+    "client_id",
+    "author_id",
+    "requester_id",
+  ]);
+  if (!stuCol || String(row[stuCol]) !== user.id) {
+    redirectWithError(orderId, "의뢰자(학생) 본인만 주문을 취소할 수 있습니다.");
+  }
+
+  const disputeBlock = await getActiveDisputeBlockMessage(supabase, orderId);
+  if (disputeBlock) {
+    redirectWithError(orderId, disputeBlock);
+  }
+
+  if (isOrderRowTerminalForActions(row)) {
+    redirectWithError(orderId, "이미 종료된 주문입니다.");
+  }
+
+  const norm = normalizedPrimaryOrderStatus(row);
+  if (!norm) {
+    redirectWithError(orderId, "주문 상태를 확인할 수 없어 취소할 수 없습니다.");
+  }
+
+  if (!isOrderStatusBeforeMentorWorkStarted(norm)) {
+    if (norm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS || norm === "in_progress") {
+      redirectWithError(
+        orderId,
+        "작업이 시작되어 직접 취소할 수 없습니다. 문의·분쟁을 이용해 주세요."
+      );
+    }
+    redirectWithError(orderId, `현재 단계(${norm})에서는 직접 취소할 수 없습니다.`);
+  }
+
+  if (!isOrderPaymentEscrowedForStudentCancel(row)) {
+    redirectWithError(orderId, "예치(결제)가 완료된 주문만 직접 취소할 수 있습니다.");
+  }
+
+  const refunded = await recordCustomOrderEscrowRefundRpc(orderId);
+  if (!refunded.ok) {
+    redirectWithError(orderId, refunded.error);
+  }
+
+  await recordOrderEventBestEffort(supabase, orderId, "order_cancelled", user.id, {
+    via: "student_direct_cancel",
+    escrow_refund: true,
+  });
+
+  revalidatePath(orderPath(orderId));
+  revalidatePath("/custom-request");
+  revalidatePath("/custom-request/orders");
+  revalidatePath("/wallet/ledger");
+  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("주문을 취소했고 예치 캐시를 반환했습니다.")}`);
 }

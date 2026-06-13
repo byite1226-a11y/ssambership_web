@@ -13,6 +13,7 @@ import {
   pickOrderAmountLabel,
   studentDisplayInitial,
 } from "@/lib/customRequest/mentorOrderPageMappers";
+import { fetchMentorStudentDisplayName } from "@/lib/customRequest/mentorDashboardOrderEnrichment";
 import { pickOrderStudentId } from "@/lib/customRequest/orderRoomMutations";
 import { formatDeadlineDday } from "@/lib/customRequest/studentPostDisplay";
 import { createClient } from "@/lib/supabase/server";
@@ -44,12 +45,7 @@ export default async function MentorOrderRevisionPage(props: PageProps) {
   const messageRows = (detail.messages.rows as Row[]) ?? [];
 
   const studentId = pickOrderStudentId(order);
-  let studentName = "의뢰자";
-  if (studentId) {
-    const { data: u } = await supabase.from("users").select("full_name, nickname").eq("id", studentId).maybeSingle();
-    const name = (u?.full_name ?? u?.nickname ?? "").trim();
-    if (name) studentName = name;
-  }
+  const studentName = await fetchMentorStudentDisplayName(supabase, studentId);
 
   const revision = pickLatestRevisionRequest(revisionRows, messageRows, studentId);
   const revisionUsage = computeRevisionUsage(delRows.length);

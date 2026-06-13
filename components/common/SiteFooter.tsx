@@ -11,23 +11,23 @@ const SERVICE_LINKS: FooterLink[] = [
 ];
 
 const SUPPORT_LINKS: FooterLink[] = [
-  { label: "자주 묻는 질문", href: "/pricing" },
-  { label: "1:1 문의하기", href: "/login?next=%2Fmypage" },
-  { label: "공지사항", href: "/notifications" },
+  { label: "자주 묻는 질문", href: "/support" },
+  { label: "공지사항", href: "/notices" },
+  { label: "고객센터", href: "/support#contact" },
   { label: "서비스 소개", href: "/" },
 ];
 
 const MENTOR_LINKS: FooterLink[] = [
   { label: "멘토 가입하기", href: "/signup" },
-  { label: "멘토 가이드", href: "/legal/community-guidelines" },
-  { label: "정산 안내", href: "/mentor/payouts" },
+  { label: "멘토 가이드", href: "/legal/mentor-guide" },
+  { label: "정산 안내", href: "/legal/payout-guide" },
 ];
 
 const LEGAL_LINKS: FooterLink[] = [
   { label: "이용약관", href: "/legal/terms" },
   { label: "개인정보처리방침", href: "/legal/privacy", emphasis: true },
   { label: "환불 정책", href: "/legal/refund" },
-  { label: "고객센터", href: "/login?next=%2Fmypage" },
+  { label: "고객센터", href: "/support#contact" },
 ];
 
 function FooterColumn(props: { title: string; links: FooterLink[] }) {

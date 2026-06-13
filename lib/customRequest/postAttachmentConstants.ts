@@ -3,4 +3,4 @@
 export const POST_ATTACHMENT_STORAGE_BUCKET = "custom-request-post-attachments" as const;
 
 export const POST_ATTACHMENT_MAX_FILE_BYTES = 50 * 1024 * 1024;
-export const POST_ATTACHMENT_MAX_FILES = 3;
+export const POST_ATTACHMENT_MAX_FILES = 40;

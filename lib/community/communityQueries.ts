@@ -1,4 +1,5 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import { communityComposePath } from "@/lib/community/communityComposeTab";
 
 type Row = Record<string, unknown>;
 
@@ -266,7 +267,21 @@ export type CommunityMePostListItem = {
   linkHref: string | null;
 };
 
+export type CommunityMeDraftItem = {
+  kind: "board" | "shortform";
+  id: string;
+  title: string;
+  dateLabel: string | null;
+  continueHref: string;
+};
+
+function isDraftRow(row: Row): boolean {
+  const status = typeof row.status === "string" ? row.status : "published";
+  return status === "draft";
+}
+
 export function toCommunityMePostListItem(kind: "board" | "shortform", row: Row): CommunityMePostListItem | null {
+  if (isDraftRow(row)) return null;
   const id = typeof row.id === "string" ? row.id.trim() : "";
   if (!id) return null;
   const base = kind === "board" ? "/community/board" : "/community/shortform";
@@ -277,6 +292,33 @@ export function toCommunityMePostListItem(kind: "board" | "shortform", row: Row)
     dateLabel: formatCommunityPostDate(row),
     linkHref: isCommunityPostUuid(id) ? `${base}/${encodeURIComponent(id)}` : null,
   };
+}
+
+export function toCommunityMeDraftItem(kind: "board" | "shortform", row: Row): CommunityMeDraftItem | null {
+  if (!isDraftRow(row)) return null;
+  const id = typeof row.id === "string" ? row.id.trim() : "";
+  if (!id || !isCommunityPostUuid(id)) return null;
+  return {
+    kind,
+    id,
+    title: pickTitle(row),
+    dateLabel: formatCommunityPostDate(row),
+    continueHref: communityComposePath(kind, { draftId: id }),
+  };
+}
+
+export function buildCommunityMeDraftsList(boardRows: Row[], shortformRows: Row[], max: number): CommunityMeDraftItem[] {
+  const merged = mergeMeRecentCommunityItems(
+    boardRows.filter(isDraftRow),
+    shortformRows.filter(isDraftRow),
+    max
+  );
+  const out: CommunityMeDraftItem[] = [];
+  for (const { kind, row } of merged) {
+    const item = toCommunityMeDraftItem(kind, row);
+    if (item) out.push(item);
+  }
+  return out;
 }
 
 export function buildCommunityMePostsList(boardRows: Row[], shortformRows: Row[], max: number): CommunityMePostListItem[] {

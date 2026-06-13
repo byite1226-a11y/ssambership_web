@@ -1,67 +1,138 @@
-﻿import type { CustomCategoryRow } from "@/lib/customRequest/customRequestQueries";
+﻿import type { CSSProperties, ReactNode } from "react";
+import type { CustomCategoryRow } from "@/lib/customRequest/customRequestQueries";
 
 const SUBJECT_CATEGORIES = [
-  { label: "수학", desc: "수학 개념·문제 코치", icon: "📐", examplePill: "개념 정리" },
-  { label: "영어", desc: "영어 언어·작문 피드백", icon: "📖", examplePill: "언어 작문" },
-  { label: "국어", desc: "국어 작문·비설 코치", icon: "📚", examplePill: "비설 첨삭" },
-  { label: "과학", desc: "과학 실험·이론 정리", icon: "🔬", examplePill: "실험 보고" },
-  { label: "사회", desc: "사회 내신·서술 코치", icon: "🌍", examplePill: "내신 자료" },
-  { label: "기타", desc: "기타 학습 상담", icon: "💬", examplePill: "맞춤 상담" },
+  { label: "수학", desc: "수학 개념·문제 코치" },
+  { label: "영어", desc: "영어 언어·작문 피드백" },
+  { label: "국어", desc: "국어 작문·비설 코치" },
+  { label: "과학", desc: "과학 실험·이론 정리" },
+  { label: "사회", desc: "사회 내신·서술 코치" },
+  { label: "기타", desc: "기타 학습 상담" },
 ] as const;
+
+const DESC_BY_LABEL = Object.fromEntries(SUBJECT_CATEGORIES.map((c) => [c.label, c.desc])) as Record<string, string>;
+
+const CAT_COLORS = [
+  { cls: "blue", cc: "#2563eb", cbg: "#eef4ff", cbd: "#c9dcfb" },
+  { cls: "violet", cc: "#7c3aed", cbg: "#f4eeff", cbd: "#dccdfb" },
+  { cls: "emerald", cc: "#059669", cbg: "#e9f8f1", cbd: "#aeead0" },
+  { cls: "sky", cc: "#0284c7", cbg: "#e8f5fd", cbd: "#b3e0fa" },
+  { cls: "amber", cc: "#d97706", cbg: "#fdf4e7", cbd: "#f8d99c" },
+  { cls: "rose", cc: "#e11d48", cbg: "#fdeef2", cbd: "#f8c2cd" },
+] as const;
+
+const ICON_BY_NAME: Record<string, ReactNode> = {
+  수학: (
+    <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+      <line x1="19" y1="5" x2="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  ),
+  영어: (
+    <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+    </svg>
+  ),
+  국어: (
+    <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+  ),
+  과학: (
+    <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+      <path d="M9 3h6M10 3v5.5L5.2 17a2 2 0 001.8 3h10a2 2 0 001.8-3L14 8.5V3" />
+    </svg>
+  ),
+  사회: (
+    <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a15 15 0 010 18 15 15 0 010-18z" />
+    </svg>
+  ),
+  기타: (
+    <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+      <path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-4A8.4 8.4 0 1121 11.5z" />
+    </svg>
+  ),
+};
+
+const FALLBACK_ICON = (
+  <svg className="ico" width="27" height="27" viewBox="0 0 24 24" aria-hidden>
+    <path d="M4 4h16v16H4z" />
+    <path d="M4 9h16M9 4v16" />
+  </svg>
+);
 
 type Props = {
   fromTable: { rows: CustomCategoryRow[]; table: string | null; error: string | null };
 };
 
-function CategoryCard(props: { label: string; desc: string; icon: string; examplePill: string }) {
-  const c = props;
-  return (
-    <article
-      tabIndex={0}
-      className="flex min-h-[190px] w-full flex-col justify-between rounded-2xl border border-slate-200/90 bg-gradient-to-b from-slate-50/80 to-white p-4 shadow-sm outline-none transition hover:border-sky-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:min-h-[198px]"
-    >
-      <div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-sky-100 bg-white text-2xl shadow-sm">{c.icon}</div>
-        <p className="mt-3 text-sm font-extrabold leading-snug text-slate-900">{c.label}</p>
-        <p className="mt-1 text-xs font-medium leading-relaxed text-slate-600">{c.desc}</p>
-      </div>
-      <p className="mt-3 inline-flex max-w-full items-center rounded-full border border-blue-100 bg-blue-50/90 px-3 py-1.5 text-[11px] font-bold leading-snug text-blue-900">
-        예: {c.examplePill}
-      </p>
-    </article>
-  );
+type DisplayCategory = { key: string; name: string; desc: string | null };
+
+function categoryName(row: CustomCategoryRow): string {
+  return (row.label ?? row.name ?? row.title ?? "기타").trim() || "기타";
+}
+
+function resolveDisplayCategories(fromTable: Props["fromTable"]): DisplayCategory[] {
+  if (fromTable.rows.length > 0) {
+    return fromTable.rows.map((row, i) => {
+      const name = categoryName(row);
+      return {
+        key: row.id ?? row.slug ?? `${name}-${i}`,
+        name,
+        desc: DESC_BY_LABEL[name] ?? null,
+      };
+    });
+  }
+  return SUBJECT_CATEGORIES.map((c) => ({
+    key: c.label,
+    name: c.label,
+    desc: c.desc,
+  }));
 }
 
 export function CustomRequestCategoryGrid(props: Props) {
-  const { fromTable } = props;
-  const categoryFallbackNote = fromTable.error
-    ? fromTable.table
-      ? "등록된 분류를 불러오지 못해 기본 예시를 표시합니다."
-      : "분류 테이블이 없어 기본 예시를 표시합니다."
-    : null;
+  const categories = resolveDisplayCategories(props.fromTable);
 
   return (
-    <section className="w-full scroll-mt-24" id="categories">
-      <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.05)] sm:p-8 lg:p-10">
-        <header className="border-b border-slate-200/90 pb-6">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-blue-700/90">분야 선택</p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">어떤 도움이 필요하신가요?</h2>
-          <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
-            수학·영어·국어·과학·사회·기타 중 가까운 분야를 골라 의뢰를 등록해 주세요.
-          </p>
-          {categoryFallbackNote ? <p className="mt-3 text-xs font-semibold text-amber-800">{categoryFallbackNote}</p> : null}
-        </header>
-
-        <div className="pt-8">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3">
-            {SUBJECT_CATEGORIES.map((c) => (
-              <CategoryCard key={c.label} {...c} />
-            ))}
-          </div>
-        </div>
+    <>
+      <div className="sec-head">
+        <span className="eyebrow">분야 선택</span>
+        <h2>어떤 도움이 필요하신가요?</h2>
+        <p>가까운 분야를 골라 의뢰를 등록해 주세요.</p>
       </div>
-    </section>
+      <div className="cat-grid">
+        {categories.map((cat, i) => {
+          const c = CAT_COLORS[i % CAT_COLORS.length];
+          const icon = ICON_BY_NAME[cat.name] ?? FALLBACK_ICON;
+          const cardStyle = {
+            "--cc": c.cc,
+            "--cbg": c.cbg,
+            "--cbd": c.cbd,
+          } as CSSProperties;
+
+          return (
+            <article
+              key={cat.key}
+              tabIndex={0}
+              className="cat"
+              style={cardStyle}
+            >
+              <span className={`ticon ${c.cls}`}>{icon}</span>
+              <div className="cn">{cat.name}</div>
+              {cat.desc ? <div className="cs">{cat.desc}</div> : null}
+              <span className="catgo" aria-hidden>
+                <svg className="ico" width="19" height="19" viewBox="0 0 24 24">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </article>
+          );
+        })}
+      </div>
+    </>
   );
 }
-
-

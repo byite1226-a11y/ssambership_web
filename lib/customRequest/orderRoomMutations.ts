@@ -12,11 +12,13 @@ type Row = Record<string, unknown>;
 
 export type OrderRoomEventKind =
   | "order_started"
+  | "order_cancelled"
   | "deliverable_submitted"
   | "deliverable_accepted"
   | "message_created"
   | "revision_requested"
   | "dispute_opened"
+  | "dispute_split_applied"
   | "settlement_item_created"
   | "payment_confirmed";
 

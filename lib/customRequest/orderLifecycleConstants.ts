@@ -56,6 +56,31 @@ export function normalizedPrimaryOrderStatus(row: Record<string, unknown>): stri
 /** 멘토 「작업 시작」직전 — insert 직후 primary만 허용 */
 export const ORDER_STATUSES_MENTOR_START_WORK_ALLOWED = new Set<string>([ORDER_INSERT_STATUS_PENDING]);
 
+/** 학생 직접 취소(예치 반환) — 멘토 작업 시작 전과 동일: primary `pending` + payment `escrowed` */
+export function isOrderStatusBeforeMentorWorkStarted(norm: string): boolean {
+  return ORDER_STATUSES_MENTOR_START_WORK_ALLOWED.has(String(norm ?? "").trim().toLowerCase());
+}
+
+const ORDER_PAYMENT_ESCROWED_FOR_REFUND = new Set(["escrowed"]);
+
+/** 학생 직접 취소 가능한 결제 상태(예치 완료, 아직 환불·지급 전) */
+export function isOrderPaymentEscrowedForStudentCancel(row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) {
+    return false;
+  }
+  for (const k of ["payment_status", "payment_state", "pay_status"] as const) {
+    const v = row[k];
+    if (v == null) {
+      continue;
+    }
+    const s = String(v).trim().toLowerCase();
+    if (s && ORDER_PAYMENT_ESCROWED_FOR_REFUND.has(s)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * 학생 납품 수락 직전 — `insertCustomRequestOrder`에는 납품 후 상태가 없음.
  * 운영 DB·이전 스텁에서만 쓰이던 값은 legacy로 유지한다.
@@ -72,6 +97,39 @@ export const ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY = new Set<string>([
 
 export function isOrderStatusAllowingStudentAccept(norm: string): boolean {
   return ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY.has(norm);
+}
+
+export const ORDER_STATUSES_ALLOWING_STUDENT_DELIVERABLE_DOWNLOAD = new Set<string>([
+  "completed",
+  "accepted",
+  "finished",
+]);
+
+const ORDER_STATUSES_BLOCKING_STUDENT_DELIVERABLE_DOWNLOAD = new Set<string>([
+  "cancelled",
+  "canceled",
+  "refunded",
+  "rejected",
+  "disputed",
+  "dispute_resolved",
+]);
+
+export function studentCanDownloadDeliverable(row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) {
+    return false;
+  }
+  const norm = normalizedPrimaryOrderStatus(row);
+  if (ORDER_STATUSES_BLOCKING_STUDENT_DELIVERABLE_DOWNLOAD.has(norm)) {
+    return false;
+  }
+  if (ORDER_STATUSES_ALLOWING_STUDENT_DELIVERABLE_DOWNLOAD.has(norm)) {
+    return true;
+  }
+  if (ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY.has(norm) || norm === "paid") {
+    return false;
+  }
+  const completedAt = row.completed_at;
+  return completedAt != null && String(completedAt).trim() !== "";
 }
 
 /** 종료·취소 등 — `orderStudentActions` + 흔한 취소류 + `threadStats` 종료 패턴 일부 */
@@ -242,6 +300,7 @@ const PAYMENT_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
   completed: "결제 완료",
   failed: "결제 실패",
   refunded: "환불됨",
+  dispute_resolved: "분쟁 분배 완료",
   partial_refund: "부분 환불",
   cancelled: "결제 취소",
   canceled: "결제 취소",
@@ -273,7 +332,7 @@ export function paymentStatusUiToneForRaw(raw: string): PaymentStatusUiTone {
   if (s === "failed") {
     return "red";
   }
-  if (s === "refunded" || s === "partial_refund") {
+  if (s === "refunded" || s === "partial_refund" || s === "dispute_resolved") {
     return "gray";
   }
   if (s === "cancelled" || s === "canceled") {
@@ -343,7 +402,9 @@ export function orderEventKindLabelForUi(raw: string): string {
     message_created: "메시지 작성",
     revision_requested: "수정 요청",
     dispute_opened: "해결 요청",
+    dispute_split_applied: "분쟁 분배 완료",
     payment_confirmed: "결제 확인",
+    order_cancelled: "주문 취소",
   };
   return map[s] ?? orderStatusLabelForUi(s);
 }

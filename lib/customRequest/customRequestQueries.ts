@@ -5,6 +5,13 @@ import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
 type Row = Record<string, unknown>;
 
+function isPublicBrowsePostRow(row: Row): boolean {
+  const s = String(row.status ?? "").trim().toLowerCase();
+  const st = String(row.state ?? "").trim().toLowerCase();
+  if (!s && !st) return true;
+  return s === "open" || st === "open" || st === "published";
+}
+
 function fmt(e: PostgrestError | null): string | null {
   return e ? e.message : null;
 }
@@ -106,8 +113,13 @@ export async function loadRecentCustomRequestPosts(supabase: SupabaseClient, lim
   if (!table) {
     return { table: null, sourceNote: te, rows: [], error: te };
   }
-  const { rows, error } = await selectWithOrder<Row>(supabase, table, limit);
-  return { table, sourceNote: "최근 의뢰(공개 정책에 맞는 필터는 후속)", rows: error ? [] : rows, error };
+  const { rows, error } = await selectWithOrder<Row>(supabase, table, Math.max(limit * 4, limit));
+  return {
+    table,
+    sourceNote: "최근 공개 의뢰(open/published)",
+    rows: error ? [] : rows.filter(isPublicBrowsePostRow).slice(0, limit),
+    error,
+  };
 }
 
 /** 학생 본인이 등록한 의뢰 목록 */
@@ -252,6 +264,15 @@ export type PostAttachmentListItem = {
   created_at: string;
 };
 
+export type ApplicationAttachmentListItem = {
+  id: string;
+  application_id: string;
+  original_filename: string;
+  file_size_bytes: number | null;
+  mime_type: string | null;
+  created_at: string;
+};
+
 /**
  * 의뢰 등록 첨부(메타) — RLS: 작성·멘토·admin만 행 조회. 비로그인·비참여는 0행.
  */
@@ -284,6 +305,49 @@ export async function loadPostAttachments(
     })),
     error: null,
   };
+}
+
+/**
+ * 멘토 지원서 첨부(메타) — RLS: 지원 멘토 본인 · post 작성 학생 · admin만 행 조회.
+ */
+export async function loadApplicationAttachments(
+  supabase: SupabaseClient,
+  applicationIds: string[]
+): Promise<{ byApplicationId: Record<string, ApplicationAttachmentListItem[]>; error: string | null }> {
+  const ids = [...new Set(applicationIds.map((id) => id.trim()).filter(Boolean))];
+  if (ids.length === 0) {
+    return { byApplicationId: {}, error: null };
+  }
+  const { data, error } = await supabase
+    .from("custom_request_application_attachments")
+    .select("id, application_id, original_filename, file_size_bytes, mime_type, created_at")
+    .in("application_id", ids)
+    .order("created_at", { ascending: true });
+  if (error) {
+    if (/relation|does not exist|schema cache/i.test(error.message)) {
+      return { byApplicationId: {}, error: null };
+    }
+    return { byApplicationId: {}, error: error.message };
+  }
+  const byApplicationId: Record<string, ApplicationAttachmentListItem[]> = {};
+  for (const raw of (data as Row[] | null) ?? []) {
+    const appId = String(raw.application_id ?? "");
+    if (!appId) continue;
+    const item: ApplicationAttachmentListItem = {
+      id: String(raw.id),
+      application_id: appId,
+      original_filename: String(raw.original_filename ?? "파일"),
+      file_size_bytes: typeof raw.file_size_bytes === "number" ? raw.file_size_bytes : null,
+      mime_type: typeof raw.mime_type === "string" ? raw.mime_type : null,
+      created_at:
+        raw.created_at != null && (typeof raw.created_at === "string" || raw.created_at instanceof Date)
+          ? String(raw.created_at)
+          : "",
+    };
+    if (!byApplicationId[appId]) byApplicationId[appId] = [];
+    byApplicationId[appId].push(item);
+  }
+  return { byApplicationId, error: null };
 }
 
 export async function loadCustomPostById(
@@ -709,6 +773,40 @@ export async function mentorHasApplicationForPost(
   return true;
 }
 
+/** 멘토가 해당 post에 제출한 application id (없으면 null) */
+export async function loadMentorApplicationIdForPost(
+  supabase: SupabaseClient,
+  postId: string,
+  mentorId: string
+): Promise<string | null> {
+  const tProbe = await firstReadableCustomTable(supabase, ["custom_request_applications", "request_applications", "custom_bids"]);
+  if (!tProbe.table) return null;
+  const t = tProbe.table;
+  const { column: postCol } = await pickExistingColumn(supabase, t, [
+    "post_id",
+    "request_id",
+    "custom_request_id",
+    "custom_request_post_id",
+  ]);
+  const { column: mentorCol } = await pickExistingColumn(supabase, t, [
+    "mentor_id",
+    "applicant_id",
+    "user_id",
+    "proposer_id",
+  ]);
+  if (!postCol || !mentorCol) return null;
+  const { data, error } = await supabase
+    .from(t)
+    .select("id")
+    .eq(postCol, postId)
+    .eq(mentorCol, mentorId)
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const id = (data as Row).id;
+  return id != null ? String(id) : null;
+}
+
 export type MentorApplicationWithPostHint = {
   application: Row;
   postId: string;
@@ -716,8 +814,126 @@ export type MentorApplicationWithPostHint = {
   href: string;
 };
 
+export type MentorOrderApplicationFilterKeys = {
+  applicationIds: Set<string>;
+  postIds: Set<string>;
+};
+
+function pickPostIdFromCustomRow(r: Row): string {
+  return String(
+    r.post_id ?? r.custom_request_post_id ?? r.request_id ?? r.custom_request_id ?? ""
+  ).trim();
+}
+
+function applicationHasMentorOrder(app: Row, keys: MentorOrderApplicationFilterKeys): boolean {
+  const appId = pickApplicationRowId(app);
+  if (appId && keys.applicationIds.has(appId)) {
+    return true;
+  }
+  const postId = pickPostIdFromCustomRow(app);
+  return Boolean(postId && keys.postIds.has(postId));
+}
+
 /**
- * 멘토가 제출한 지원 요약(의뢰 제목은 browse RPC·상세 조회로 보강)
+ * 멘토 주문 중 application·post 연결 키(제안 목록에서 주문 전환 건 제외용, 읽기 전용).
+ */
+export async function fetchMentorOrderApplicationFilterKeys(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<MentorOrderApplicationFilterKeys> {
+  const empty = { applicationIds: new Set<string>(), postIds: new Set<string>() };
+  const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
+  if (!oT.table) {
+    return empty;
+  }
+  const t = oT.table;
+  const { column: mentorCol } = await pickExistingColumn(supabase, t, [
+    "mentor_id",
+    "mentor_user_id",
+    "expert_id",
+    "assignee_id",
+    "selected_mentor_id",
+  ]);
+  if (!mentorCol) {
+    return empty;
+  }
+  const { column: appCol } = await pickExistingColumn(supabase, t, [
+    "application_id",
+    "custom_request_application_id",
+    "bid_id",
+  ]);
+  const { column: postCol } = await pickExistingColumn(supabase, t, [
+    "post_id",
+    "custom_request_post_id",
+    "request_id",
+    "custom_request_id",
+  ]);
+  const selectCols = [appCol, postCol].filter(Boolean).join(", ") || "*";
+  const { data, error } = await supabase.from(t).select(selectCols).eq(mentorCol, mentorId);
+  if (error) {
+    return empty;
+  }
+  const applicationIds = new Set<string>();
+  const postIds = new Set<string>();
+  for (const row of ((data ?? []) as unknown as Row[])) {
+    if (appCol) {
+      const aid = String(row[appCol] ?? "").trim();
+      if (aid) {
+        applicationIds.add(aid);
+      }
+    }
+    const pid = postCol ? String(row[postCol] ?? "").trim() : pickPostIdFromCustomRow(row);
+    if (pid) {
+      postIds.add(pid);
+    }
+  }
+  return { applicationIds, postIds };
+}
+
+/**
+ * 멘토가 지원한 의뢰 post id 전체(주문 전환 여부 무관) — open 풀 제외용.
+ */
+export async function loadMentorAppliedPostIdSet(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<Set<string>> {
+  const tProbe = await firstReadableCustomTable(supabase, ["custom_request_applications", "request_applications", "custom_bids"]);
+  if (!tProbe.table) {
+    return new Set();
+  }
+  const t = tProbe.table;
+  const { column: mentorCol } = await pickExistingColumn(supabase, t, [
+    "mentor_id",
+    "applicant_id",
+    "user_id",
+    "proposer_id",
+  ]);
+  const { column: postCol } = await pickExistingColumn(supabase, t, [
+    "post_id",
+    "custom_request_post_id",
+    "request_id",
+    "custom_request_id",
+  ]);
+  if (!mentorCol || !postCol) {
+    return new Set();
+  }
+  const { data, error } = await supabase.from(t).select(postCol).eq(mentorCol, mentorId);
+  if (error) {
+    return new Set();
+  }
+  const ids = new Set<string>();
+  for (const row of ((data ?? []) as unknown as Row[])) {
+    const id = String(row[postCol] ?? "").trim();
+    if (id) {
+      ids.add(id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * 멘토가 제출한 지원 요약(의뢰 제목은 browse RPC·상세 조회로 보강).
+ * 주문으로 전환된 지원은 제외(매칭 대기만).
  */
 export async function loadMentorRecentApplicationsWithPostHints(
   supabase: SupabaseClient,
@@ -738,6 +954,7 @@ export async function loadMentorRecentApplicationsWithPostHints(
   if (!mentorCol) {
     return { items: [], listFailed: true };
   }
+  const orderKeys = await fetchMentorOrderApplicationFilterKeys(supabase, mentorId);
   const o1 = await supabase
     .from(t)
     .select("*")
@@ -752,9 +969,11 @@ export async function loadMentorRecentApplicationsWithPostHints(
     if (o2.error) {
       return { items: [], listFailed: true };
     }
-    return mapAppsToHints(supabase, (o2.data as Row[]) ?? []);
+    const pending = ((o2.data as Row[]) ?? []).filter((a) => !applicationHasMentorOrder(a, orderKeys));
+    return mapAppsToHints(supabase, pending);
   }
-  return mapAppsToHints(supabase, (o1.data as Row[]) ?? []);
+  const pending = ((o1.data as Row[]) ?? []).filter((a) => !applicationHasMentorOrder(a, orderKeys));
+  return mapAppsToHints(supabase, pending);
 }
 
 async function mapAppsToHints(
@@ -763,9 +982,7 @@ async function mapAppsToHints(
 ): Promise<{ items: MentorApplicationWithPostHint[]; listFailed: boolean }> {
   const items: MentorApplicationWithPostHint[] = [];
   for (const a of apps) {
-    const pid = String(
-      a.post_id ?? a.custom_request_post_id ?? a.request_id ?? a.custom_request_id ?? ""
-    ).trim();
+    const pid = pickPostIdFromCustomRow(a);
     if (!pid) {
       continue;
     }

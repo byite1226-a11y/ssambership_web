@@ -4,6 +4,12 @@ import {
   COMMUNITY_POST_PAGE_SIZE,
   type CommunityPostCategorySlug,
 } from "@/lib/community/communityBoardConstants";
+import {
+  collectAuthorIdsNeedingLookup,
+  fetchCommunityAuthorNamesByIds,
+  resolveCommunityAuthorLabel,
+  type CommunityAuthorNameRow,
+} from "@/lib/community/communityAuthorLabels";
 import { pickAuthorRoleSummary, pickExcerpt, pickTitle } from "@/lib/community/communityQueries";
 
 type Row = Record<string, unknown>;
@@ -58,14 +64,8 @@ function pickBody(row: Row): string {
   return "";
 }
 
-function pickAuthorLabel(row: Row): string {
-  for (const k of ["author_label", "author_name", "nickname", "display_name"] as const) {
-    const v = row[k];
-    if (typeof v === "string" && v.trim()) return v.trim();
-  }
-  const role = pickAuthorRoleSummary(row);
-  if (role === "\uBA58\uD1A0") return "\uC37C\uBC84\uC2ED \uBA58\uD1A0";
-  return "\uC37C\uBC84\uC2ED \uD68C\uC6D0";
+async function boardAuthorNameMap(supabase: SupabaseClient, rows: Row[]): Promise<Map<string, CommunityAuthorNameRow>> {
+  return fetchCommunityAuthorNamesByIds(supabase, collectAuthorIdsNeedingLookup(rows));
 }
 
 function pickImageUrls(row: Row): string[] {
@@ -101,19 +101,24 @@ function formatRelativeTime(iso: string): string {
   }
 }
 
-export function mapRowToBoardCard(row: Row, viewerId?: string | null): CommunityBoardPostCard {
+export function mapRowToBoardCard(
+  row: Row,
+  userMap?: Map<string, CommunityAuthorNameRow>
+): CommunityBoardPostCard {
   const id = String(row.id ?? "");
   const createdAt =
     typeof row.created_at === "string" ? row.created_at : new Date().toISOString();
   const cat = typeof row.category === "string" ? row.category : null;
+  const authorId = typeof row.author_id === "string" ? row.author_id : null;
+  const user = authorId && userMap ? userMap.get(authorId) : undefined;
   return {
     id,
     title: pickTitle(row),
     excerpt: pickExcerpt(row) || pickBody(row).slice(0, 120),
     category: cat,
     categoryLabel: categoryLabel(cat),
-    authorId: typeof row.author_id === "string" ? row.author_id : null,
-    authorLabel: pickAuthorLabel(row),
+    authorId,
+    authorLabel: resolveCommunityAuthorLabel(row, user),
     authorRole: pickAuthorRoleSummary(row),
     imageUrls: pickImageUrls(row),
     hashtags: pickHashtags(row),
@@ -135,6 +140,22 @@ function applyBoardCategoryFilter<T extends { eq: (col: string, val: string) => 
   return q.eq("category", category);
 }
 
+export type CommunityBoardFeedSort = "all" | "latest" | "popular";
+
+function applyBoardFeedSort<T extends { order: (col: string, opts: { ascending: boolean }) => T }>(
+  q: T,
+  sort: CommunityBoardFeedSort
+): T {
+  if (sort === "popular") {
+    return q
+      .order("like_count", { ascending: false })
+      .order("view_count", { ascending: false })
+      .order("comment_count", { ascending: false })
+      .order("created_at", { ascending: false });
+  }
+  return q.order("created_at", { ascending: false });
+}
+
 export async function listCommunityBoardPosts(
   supabase: SupabaseClient,
   opts: {
@@ -143,24 +164,39 @@ export async function listCommunityBoardPosts(
     limit?: number;
     authorId?: string | null;
     status?: "published" | "draft";
+    sort?: CommunityBoardFeedSort;
   }
 ): Promise<{ posts: CommunityBoardPostCard[]; nextCursor: string | null; error: string | null }> {
   const limit = opts.limit ?? COMMUNITY_POST_PAGE_SIZE;
-  let q = supabase
-    .from("community_posts")
-    .select("*")
-    .eq("status", opts.status ?? "published")
-    .order("created_at", { ascending: false })
-    .limit(limit + 1);
+  const sort = opts.sort ?? "all";
+  const isPopular = sort === "popular";
+  let offset = 0;
+  if (isPopular && opts.cursor?.startsWith("o:")) {
+    offset = Math.max(0, parseInt(opts.cursor.slice(2), 10) || 0);
+  }
+
+  let q = applyBoardFeedSort(
+    supabase
+      .from("community_posts")
+      .select("*")
+      .eq("status", opts.status ?? "published"),
+    sort
+  );
+
+  if (isPopular) {
+    q = q.range(offset, offset + limit);
+  } else {
+    q = q.limit(limit + 1);
+    if (opts.cursor) {
+      q = q.lt("created_at", opts.cursor);
+    }
+  }
 
   if (opts.category && opts.category !== "all") {
     q = applyBoardCategoryFilter(q, opts.category);
   }
   if (opts.authorId) {
     q = q.eq("author_id", opts.authorId);
-  }
-  if (opts.cursor) {
-    q = q.lt("created_at", opts.cursor);
   }
 
   const { data, error } = await q;
@@ -174,8 +210,15 @@ export async function listCommunityBoardPosts(
   const rows = (data as Row[]) ?? [];
   const hasMore = rows.length > limit;
   const slice = hasMore ? rows.slice(0, limit) : rows;
-  const posts = slice.map((r) => mapRowToBoardCard(r));
-  const nextCursor = hasMore && slice.length ? String(slice[slice.length - 1].created_at ?? "") : null;
+  const userMap = await boardAuthorNameMap(supabase, slice);
+  const posts = slice.map((r) => mapRowToBoardCard(r, userMap));
+  const nextCursor = hasMore
+    ? isPopular
+      ? `o:${offset + limit}`
+      : slice.length
+        ? String(slice[slice.length - 1].created_at ?? "")
+        : null
+    : null;
   return { posts, nextCursor: nextCursor || null, error: null };
 }
 
@@ -198,7 +241,8 @@ async function listCommunityBoardPostsLegacy(
   const rows = (data as Row[]) ?? [];
   const hasMore = rows.length > limit;
   const slice = hasMore ? rows.slice(0, limit) : rows;
-  const posts = slice.map((r) => mapRowToBoardCard(r));
+  const userMap = await boardAuthorNameMap(supabase, slice);
+  const posts = slice.map((r) => mapRowToBoardCard(r, userMap));
   const nextCursor = hasMore && slice.length ? String(slice[slice.length - 1].created_at ?? "") : null;
   return { posts, nextCursor: nextCursor || null, error: null };
 }
@@ -218,7 +262,50 @@ export async function getCommunityBoardPost(
   if (status === "draft") {
     return { post: null, row, error: null };
   }
-  return { post: mapRowToBoardCard(row), row, error: null };
+  const userMap = await boardAuthorNameMap(supabase, [row]);
+  return { post: mapRowToBoardCard(row, userMap), row, error: null };
+}
+
+export type CommunityBoardDraftRow = {
+  id: string;
+  title: string;
+  body: string;
+  category: string;
+  imageUrls: string[];
+};
+
+export async function getCommunityBoardDraft(
+  supabase: SupabaseClient,
+  userId: string,
+  draftId: string
+): Promise<{ draft: CommunityBoardDraftRow | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from("community_posts")
+    .select("id, title, body, content, category, image_urls, status, author_id")
+    .eq("id", draftId)
+    .eq("author_id", userId)
+    .eq("status", "draft")
+    .maybeSingle();
+  if (error) return { draft: null, error: error.message };
+  if (!data) return { draft: null, error: null };
+  const row = data as Row;
+  const body =
+    (typeof row.body === "string" && row.body) ||
+    (typeof row.content === "string" && row.content) ||
+    "";
+  const imageUrls = Array.isArray(row.image_urls)
+    ? (row.image_urls as unknown[]).filter((u): u is string => typeof u === "string")
+    : [];
+  return {
+    draft: {
+      id: String(row.id ?? ""),
+      title: typeof row.title === "string" ? row.title : "",
+      body,
+      category: typeof row.category === "string" ? row.category : "free",
+      imageUrls,
+    },
+    error: null,
+  };
 }
 
 export async function listPopularHashtags(
@@ -260,7 +347,13 @@ export async function loadBoardComments(
     return { nodes: [], error: "\uB313\uAE00\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4." };
   }
 
-  const flat = ((data as Record<string, unknown>[]) ?? []).map((r) => {
+  const commentRows = (data as Record<string, unknown>[]) ?? [];
+  const commentUserMap = await fetchCommunityAuthorNamesByIds(
+    supabase,
+    collectAuthorIdsNeedingLookup(commentRows)
+  );
+
+  const flat = commentRows.map((r) => {
     const createdAt = typeof r.created_at === "string" ? r.created_at : new Date().toISOString();
     const authorId = String(r.author_id ?? "");
     return {
@@ -270,8 +363,7 @@ export async function loadBoardComments(
       content: String(r.content ?? ""),
       likeCount: typeof r.like_count === "number" ? r.like_count : 0,
       authorId,
-      authorLabel:
-        typeof r.author_label === "string" && r.author_label.trim() ? r.author_label.trim() : "\uC37C\uBC84\uC2ED \uD68C\uC6D0",
+      authorLabel: resolveCommunityAuthorLabel(r, commentUserMap.get(authorId)),
       createdAt,
       createdAtLabel: formatRelativeTime(createdAt),
       isOwn: viewerId != null && authorId === viewerId,
@@ -334,7 +426,8 @@ export async function listUserScrapPosts(
   if (pErr) return { posts: [], error: pErr.message };
   const byId = new Map(((posts as Row[]) ?? []).map((r) => [String(r.id), r]));
   const ordered = ids.map((id) => byId.get(id)).filter((r): r is Row => Boolean(r));
-  return { posts: ordered.map((r) => mapRowToBoardCard(r)), error: null };
+  const userMap = await boardAuthorNameMap(supabase, ordered);
+  return { posts: ordered.map((r) => mapRowToBoardCard(r, userMap)), error: null };
 }
 
 export function pickPostBody(row: Row | null): string {

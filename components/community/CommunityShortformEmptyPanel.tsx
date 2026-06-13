@@ -25,13 +25,11 @@ export function CommunityShortformEmptyPanel(props: {
       {isMentor ? (
         <p className={`mx-auto max-w-md text-xs leading-relaxed text-slate-600 ${props.compact ? "mt-4" : "mt-5"}`}>
           {props.compact ? (
-            <>
-              첫 숏폼 영상은 화면 상단의 작성 버튼으로 들어가 숏폼 항목을 고르거나, 멘토 메뉴의 커뮤니티 작성에서 이어가면 돼요.
-            </>
+            <>첫 숏폼 영상은 화면 우측 하단의 「숏폼 올리기」 버튼으로 업로드할 수 있어요.</>
           ) : (
             <>
-              업로드는 숏폼 목록 상단의 <span className="font-semibold text-slate-800">업로드</span> 버튼 또는 멘토 메뉴의 커뮤니티 작성에서
-              숏폼 항목을 선택해 진행하면 돼요.
+              업로드는 숏폼 목록 우측 하단의 <span className="font-semibold text-slate-800">숏폼 올리기</span> 버튼으로
+              진행하면 돼요.
             </>
           )}
         </p>

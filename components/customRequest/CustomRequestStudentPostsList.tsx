@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ClipboardList } from "lucide-react";
+import { deleteCustomRequestDraftAction } from "@/lib/customRequest/customRequestComposeActions";
 import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
 import {
   applicationCountFromRow,
   bodyPreviewTwoLines,
   formatBudgetRangeCash,
   formatDeadlineDday,
+  isDraftStudentPost,
   studentPostStatusBadge,
   studentPostStatusBucket,
   type StudentPostListFilter,
@@ -16,8 +18,21 @@ import {
 
 type Row = Record<string, unknown>;
 
-export function CustomRequestStudentPostsList(props: { rows: Row[] }) {
-  const [filter, setFilter] = useState<StudentPostListFilter>("all");
+function formatSavedAt(row: Row): string {
+  const raw = row.updated_at ?? row.created_at;
+  if (raw == null) return "저장 시각 없음";
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  if (Number.isNaN(d.getTime())) return "저장 시각 없음";
+  return d.toLocaleString("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilter?: StudentPostListFilter }) {
+  const [filter, setFilter] = useState<StudentPostListFilter>(props.initialFilter ?? "all");
   const filtered = useMemo(() => {
     if (filter === "all") return props.rows;
     return props.rows.filter((r) => studentPostStatusBucket(r) === filter);
@@ -25,6 +40,7 @@ export function CustomRequestStudentPostsList(props: { rows: Row[] }) {
 
   const tabs: { id: StudentPostListFilter; label: string }[] = [
     { id: "all", label: "전체" },
+    { id: "draft", label: "임시저장" },
     { id: "waiting", label: "지원대기" },
     { id: "active", label: "진행중" },
     { id: "done", label: "완료" },
@@ -76,9 +92,45 @@ export function CustomRequestStudentPostsList(props: { rows: Row[] }) {
                 const dday = formatDeadlineDday(r);
                 const apps = applicationCountFromRow(r);
                 const preview = bodyPreviewTwoLines(d.body !== "—" ? d.body : "");
+                const isDraft = isDraftStudentPost(r);
 
                 return (
                   <li key={id}>
+                    {isDraft ? (
+                      <div className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <span className="inline-flex rounded-full border border-blue-200 bg-white px-2.5 py-0.5 text-xs font-bold text-[#1A56DB]">
+                            {d.category && d.category !== "—" ? d.category : "기타"}
+                          </span>
+                          <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${badge.cls}`}>
+                            {badge.label}
+                          </span>
+                        </div>
+                        <h3 className="mt-3 text-base font-extrabold text-slate-900">
+                          {d.title && d.title !== "—" ? d.title : "제목 없는 임시글"}
+                        </h3>
+                        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-slate-500">
+                          <span>저장 {formatSavedAt(r)}</span>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Link
+                            href={`/custom-request/new?draftId=${encodeURIComponent(id)}`}
+                            className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#1A56DB] px-4 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+                          >
+                            이어서 작성
+                          </Link>
+                          <form action={deleteCustomRequestDraftAction}>
+                            <input type="hidden" name="postId" value={id} />
+                            <button
+                              type="submit"
+                              className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                            >
+                              삭제
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    ) : (
                     <Link
                       href={`/custom-request/${id}/applications`}
                       className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
@@ -101,6 +153,7 @@ export function CustomRequestStudentPostsList(props: { rows: Row[] }) {
                         <span>지원 {apps}명</span>
                       </div>
                     </Link>
+                    )}
                   </li>
                 );
               })}

@@ -385,7 +385,7 @@ function SignupPageContent() {
               <p className="mt-3 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-4 sm:text-lg md:text-xl">
                 역할에 따라 혜택·입력 항목·이후 흐름(인증, 심사)이 달라요. 한 가지를 골라 주세요.
               </p>
-              <div className="mt-6 rounded-2xl border border-slate-200/50 bg-slate-50/40 p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_16px_40px_-20px_rgba(15,23,42,0.1)] sm:mt-8 sm:rounded-3xl sm:p-5 md:p-7 lg:p-8">
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:mt-8 sm:p-6">
                 <RoleSelector value={role} onChange={setRole} disabled={loading} />
               </div>
             </div>
@@ -687,7 +687,7 @@ function SignupPageContent() {
                 type="button"
                 onClick={goNext}
                 disabled={loading || !role}
-                className="min-h-[3.6rem] min-w-[11.5rem] rounded-2xl bg-blue-600 px-11 py-4 text-lg font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:rounded-3xl md:min-w-[12.5rem]"
+                className="min-h-[3.6rem] min-w-[11.5rem] rounded-2xl bg-[#2563eb] px-11 py-4 text-lg font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:min-w-[12.5rem]"
               >
                 다음 — 정보 입력
               </button>

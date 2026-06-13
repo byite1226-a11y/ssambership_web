@@ -1,14 +1,18 @@
+import "@/app/(public)/custom-request/landing.css";
+import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
+import { CustomRequestDetailShell } from "@/components/customRequest/customRequestDetailLayout";
 import {
   CustomRequestApplicationsWaitingView,
   type WaitingApplicationItem,
   type WaitingPostSummary,
 } from "@/components/customRequest/CustomRequestApplicationsWaitingView";
 import { requireRole } from "@/lib/auth/routeGuard";
-import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
+import { isDraftCustomRequestPost, mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
 import {
   enrichApplicationRows,
   isAuthorOfPost,
+  loadApplicationAttachments,
   loadApplicationsForPost,
   loadCustomPostById,
   pickApplicationRowId,
@@ -100,7 +104,8 @@ function mapPostSummary(postRow: Row | null): WaitingPostSummary {
 
 function mapApplications(
   enriched: EnrichedApplication[],
-  ratings: Map<string, number | null>
+  ratings: Map<string, number | null>,
+  attachmentCountByApplicationId: Record<string, number>
 ): WaitingApplicationItem[] {
   return enriched.map((e, index) => {
     const displayName =
@@ -124,6 +129,7 @@ function mapApplications(
       appliedAtLabel: formatAppliedAt(e.row),
       photoUrl,
       verified: mentorIsVerified(e.display?.verification),
+      attachmentCount: attachmentCountByApplicationId[applicationId] ?? 0,
     };
   });
 }
@@ -136,31 +142,38 @@ export default async function CustomRequestApplicationsWaitingPage(props: PagePr
 
   const post = await loadCustomPostById(supabase, postId);
   const authz = isAuthorOfPost(user.id, post.row);
+  if (authz.ok && isDraftCustomRequestPost(post.row)) {
+    redirect(`/custom-request/new?draftId=${encodeURIComponent(postId)}`);
+  }
   const list = await loadApplicationsForPost(supabase, postId, MAX_APPLICANTS);
   const enriched = await enrichApplicationRows(supabase, (list.rows as Row[]) ?? []);
+  const applicationIds = enriched
+    .map((e) => pickApplicationRowId(e.row) ?? e.applicationId)
+    .filter((id): id is string => Boolean(id));
+  const { byApplicationId } = await loadApplicationAttachments(supabase, applicationIds);
+  const attachmentCountByApplicationId = Object.fromEntries(
+    Object.entries(byApplicationId).map(([id, rows]) => [id, rows.length])
+  );
   const mentorIds = enriched.map((e) => e.mentorId).filter((id): id is string => Boolean(id));
   const ratings = await loadMentorRatings(supabase, mentorIds);
 
   const postSummary = mapPostSummary(post.row != null ? (post.row as Row) : null);
-  const applications = mapApplications(enriched, ratings);
+  const applications = mapApplications(enriched, ratings, attachmentCountByApplicationId);
   const applicantCount = list.error ? 0 : list.rows.length;
 
   return (
     <PageScaffold
-      compactHero
+      hideHero
       hideFooterPlaceholderCards
-      eyebrow="맞춤의뢰"
-      title="멘토 지원 대기"
-      description="멘토들의 지원을 기다리는 중이에요. 마감일까지 제안이 들어오면 확인할 수 있어요."
-      ctas={[
-        { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
-        { href: `/custom-request/${postId}`, label: "의뢰 상세", tone: "slate" },
-      ]}
+      eyebrow=""
+      title=""
+      description=""
+      ctas={[]}
       sections={[]}
       emptyState=""
       dataPoints={[]}
     >
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
+      <CustomRequestDetailShell>
         {!authz.ok ? (
           <p className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold text-amber-950">
             이 맞춤의뢰는 작성자(의뢰하신 본인)만 지원 대기 화면을 열 수 있어요.
@@ -175,7 +188,7 @@ export default async function CustomRequestApplicationsWaitingPage(props: PagePr
             listError={list.error && !list.rows.length ? list.error : null}
           />
         )}
-      </div>
+      </CustomRequestDetailShell>
     </PageScaffold>
   );
 }

@@ -11,11 +11,13 @@ import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import type { AuthLoginRole } from "./loginRoleContent";
 import type { UserRow } from "@/lib/types/user";
 
+
+const inputBase =
+  "w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 sm:min-h-[3.1rem] sm:px-5";
+
 const inputByRole: Record<AuthLoginRole, string> = {
-  student:
-    "w-full min-h-12 rounded-2xl border-2 border-sky-200/80 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200/60 sm:min-h-[3.1rem] sm:px-5",
-  mentor:
-    "w-full min-h-12 rounded-2xl border-2 border-emerald-200/80 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200/60 sm:min-h-[3.1rem] sm:px-5",
+  student: `${inputBase} focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20`,
+  mentor: `${inputBase} focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20`,
 };
 
 const labelByRole: Record<AuthLoginRole, string> = {
@@ -25,9 +27,9 @@ const labelByRole: Record<AuthLoginRole, string> = {
 
 const ctaByRole: Record<AuthLoginRole, string> = {
   student:
-    "w-full min-h-14 rounded-2xl bg-blue-600 text-base font-extrabold text-white shadow-[0_8px_24px_-4px_rgba(37,99,235,0.5)] transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:rounded-3xl sm:text-lg",
+    "w-full min-h-14 rounded-2xl bg-[#2563eb] text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
   mentor:
-    "w-full min-h-14 rounded-2xl bg-emerald-700 text-base font-extrabold text-white shadow-[0_8px_24px_-4px_rgba(4,120,87,0.45)] transition hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:rounded-3xl sm:text-lg",
+    "w-full min-h-14 rounded-2xl bg-[#16A34A] text-base font-extrabold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A34A] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
 };
 
 type RoleLoginFormProps = {
@@ -196,11 +198,7 @@ export function RoleLoginForm({
       <fieldset disabled={disabled || loading} className="space-y-4 sm:space-y-5 disabled:opacity-60">
       {signupFollowUp && !error ? (
         <p
-          className={
-            role === "mentor"
-              ? "rounded-2xl border-2 border-emerald-200/90 bg-emerald-50 px-4 py-3 text-sm text-emerald-950 sm:text-base"
-              : "rounded-2xl border-2 border-sky-200/90 bg-sky-50 px-4 py-3 text-sm text-sky-900 sm:text-base"
-          }
+          className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 sm:text-base"
           role="status"
         >
           회원가입이 접수됐어요. 이메일을 열고 인증 링크를 눌러 주시면, 이어서 아래에서 로그인하실 수 있어요. 메일이 안
@@ -209,7 +207,7 @@ export function RoleLoginForm({
       ) : null}
       {error ? (
         <p
-          className="rounded-2xl border-2 border-red-200/90 bg-red-50 px-4 py-3 text-sm text-red-800 sm:text-base"
+          className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:text-base"
           role="alert"
         >
           {error}
@@ -217,7 +215,7 @@ export function RoleLoginForm({
       ) : null}
       {success ? (
         <p
-          className="rounded-2xl border-2 border-emerald-200/90 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 sm:text-base"
+          className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 sm:text-base"
           role="status"
         >
           {success}

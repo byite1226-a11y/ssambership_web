@@ -5,6 +5,7 @@ export function MentorCustomRequestWorkspaceLayout(props: {
   active: MentorCustomRequestNavKey;
   tab?: string;
   counts?: Record<string, number>;
+  showAuxCards?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -12,7 +13,12 @@ export function MentorCustomRequestWorkspaceLayout(props: {
       {/* Left sidebar - ~200px wide matching reference design */}
       <aside className="order-2 w-full shrink-0 lg:order-1 lg:w-[200px]">
         <div className="lg:sticky lg:top-20">
-          <MentorCustomRequestSubNav active={props.active} tab={props.tab} counts={props.counts} />
+          <MentorCustomRequestSubNav
+            active={props.active}
+            tab={props.tab}
+            counts={props.counts}
+            showAuxCards={props.showAuxCards}
+          />
         </div>
       </aside>
       {/* Main content */}

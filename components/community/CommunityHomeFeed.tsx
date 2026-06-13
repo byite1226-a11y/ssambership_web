@@ -7,6 +7,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { COMMUNITY_POST_CATEGORIES } from "@/lib/community/communityBoardConstants";
 import type { CommunityBoardPostCard } from "@/lib/community/communityBoardQueries";
 import { CommunityPostCard } from "@/components/community/CommunityPostCard";
+import { communityFilterChipClass } from "@/components/community/communityFilterChipStyles";
+import {
+  CommunityBoardSortTabs,
+} from "@/components/community/CommunityBoardSortTabs";
+import {
+  parseCommunityBoardSortTab,
+  type CommunityBoardSortTab,
+} from "@/lib/community/communityBoardSort";
 
 const PRIMARY = "#1A56DB";
 
@@ -14,6 +22,8 @@ type Props = {
   initialPosts: CommunityBoardPostCard[];
   initialCursor: string | null;
   initialCategory: string;
+  initialSort?: CommunityBoardSortTab;
+  showSortTabs?: boolean;
   /** 목록 URL 기준 (홈: /community, 게시판: /community/board) */
   basePath?: string;
   writeHref?: string;
@@ -25,6 +35,7 @@ export function CommunityHomeFeed(props: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const category = searchParams.get("category") ?? props.initialCategory ?? "all";
+  const sortTab = parseCommunityBoardSortTab(searchParams.get("tab") ?? props.initialSort ?? "all");
 
   const [posts, setPosts] = useState(props.initialPosts);
   const [cursor, setCursor] = useState<string | null>(props.initialCursor);
@@ -33,7 +44,7 @@ export function CommunityHomeFeed(props: Props) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (category === props.initialCategory) {
+    if (category === props.initialCategory && sortTab === (props.initialSort ?? "all")) {
       setPosts(props.initialPosts);
       setCursor(props.initialCursor);
       setDone(!props.initialCursor);
@@ -44,6 +55,7 @@ export function CommunityHomeFeed(props: Props) {
       setLoading(true);
       try {
         const q = new URLSearchParams({ category, limit: "12" });
+        if (sortTab !== "all") q.set("tab", sortTab);
         const res = await fetch(`/api/community/posts?${q.toString()}`);
         const json = (await res.json()) as { posts: CommunityBoardPostCard[]; nextCursor: string | null };
         if (!cancelled) {
@@ -58,13 +70,14 @@ export function CommunityHomeFeed(props: Props) {
     return () => {
       cancelled = true;
     };
-  }, [props.initialPosts, props.initialCursor, props.initialCategory, category, basePath]);
+  }, [props.initialPosts, props.initialCursor, props.initialCategory, props.initialSort, category, sortTab, basePath]);
 
   const loadMore = useCallback(async () => {
     if (loading || done || !cursor) return;
     setLoading(true);
     try {
       const q = new URLSearchParams({ category, cursor, limit: "12" });
+      if (sortTab !== "all") q.set("tab", sortTab);
       const res = await fetch(`/api/community/posts?${q.toString()}`);
       const json = (await res.json()) as {
         posts: CommunityBoardPostCard[];
@@ -76,7 +89,7 @@ export function CommunityHomeFeed(props: Props) {
     } finally {
       setLoading(false);
     }
-  }, [category, cursor, done, loading]);
+  }, [category, cursor, done, loading, sortTab]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -101,6 +114,9 @@ export function CommunityHomeFeed(props: Props) {
 
   return (
     <section className="space-y-4">
+      {props.showSortTabs ? (
+        <CommunityBoardSortTabs active={sortTab} basePath={basePath} />
+      ) : null}
       <nav className="flex flex-wrap gap-2" aria-label="카테고리">
         {COMMUNITY_POST_CATEGORIES.map((c) => {
           const active = category === c.slug;
@@ -109,11 +125,7 @@ export function CommunityHomeFeed(props: Props) {
               key={c.slug}
               type="button"
               onClick={() => onTab(c.slug)}
-              className={[
-                "rounded-full px-3.5 py-1.5 text-xs font-bold transition",
-                active ? "text-white shadow-sm" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-              ].join(" ")}
-              style={active ? { backgroundColor: PRIMARY } : undefined}
+              className={communityFilterChipClass(active, "sm")}
             >
               {c.label}
             </button>

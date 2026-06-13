@@ -86,12 +86,22 @@ export function assignPlansByTier(rows: Row[]): { byTier: PlansByTier; fillProbe
 
 export function priceLabelFromPlanRow(row: Row | null, tier?: SubscribePlanTier): string {
   const resolvedTier = tier ?? (row ? detectTier(row) : null);
-  const krw = resolvedTier
-    ? cashKrwForSubscribeTier(resolvedTier)
-    : row
-      ? cashKrwFromPlanRow(row)
-      : 0;
-  if (krw <= 0) return "—";
+
+  let krw = 0;
+  if (row) {
+    krw = cashKrwFromPlanRow(row, resolvedTier ?? undefined);
+  }
+  if (krw <= 0 && resolvedTier) {
+    krw = cashKrwForSubscribeTier(resolvedTier);
+  }
+  if (krw <= 0 && row) {
+    const tierFromRow = detectTier(row);
+    if (tierFromRow) {
+      krw = cashKrwForSubscribeTier(tierFromRow);
+    }
+  }
+
+  if (krw <= 0) return "가격 확인";
   return formatSubscribePlanCashMonthlyLabel(krw);
 }
 

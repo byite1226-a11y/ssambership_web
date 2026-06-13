@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
-import { createClient } from "@/lib/supabase/server";
 import {
-  COMMUNITY_HASHTAG_MAX,
+  COMMUNITY_BRAND_MEMBER_LABEL,
+  COMMUNITY_BRAND_MENTOR_LABEL,
+} from "@/lib/community/communityAuthorLabels";
+import {
   COMMUNITY_IMAGE_MAX,
   normalizeCommunityPostCategory,
 } from "@/lib/community/communityBoardConstants";
@@ -15,80 +17,109 @@ import {
   insertCommunityBoardPost,
   softDeleteBoardComment,
   togglePostReaction,
+  updateCommunityBoardPost,
 } from "@/lib/community/communityBoardMutations";
+import { communityComposePath } from "@/lib/community/communityComposeTab";
 import { uploadCommunityPostImages } from "@/lib/community/communityStorage";
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { createClient } from "@/lib/supabase/server";
 
-function parseHashtags(raw: string): string[] {
-  return raw
-    .split(/[,\s#]+/)
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .slice(0, COMMUNITY_HASHTAG_MAX);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DEFAULT_RETURN = "/community/new";
+
+function safeReturnPath(raw: string): string {
+  const path = raw.trim();
+  if (path.startsWith("/community")) return path;
+  return DEFAULT_RETURN;
+}
+
+function errRedirect(returnPath: string, code: string) {
+  const sep = returnPath.includes("?") ? "&" : "?";
+  return `${returnPath}${sep}error=${encodeURIComponent(code)}`;
 }
 
 async function authorLabelFor(userId: string): Promise<{ label: string; role: string | null }> {
   const supabase = await createClient();
   const { data: profile } = await getUserProfileById(supabase, userId);
-  const label = profile?.nickname?.trim() || profile?.full_name?.trim() || "\uC37C\uBC84\uC2ED \uD68C\uC6D0";
-  const role = profile?.role === "mentor" ? "\uBA58\uD1A0" : profile?.role === "student" ? "\uD559\uC0DD" : null;
+  const label =
+    profile?.nickname?.trim() ||
+    profile?.full_name?.trim() ||
+    (profile?.role === "mentor" ? COMMUNITY_BRAND_MENTOR_LABEL : COMMUNITY_BRAND_MEMBER_LABEL);
+  const role = profile?.role === "mentor" ? "멘토" : profile?.role === "student" ? "학생" : null;
   return { label, role };
-}
-
-function errRedirect(path: string, code: string) {
-  return `${path}?error=${encodeURIComponent(code)}`;
 }
 
 export async function submitCommunityBoardPostAction(formData: FormData) {
   const { user } = await getServerAuthUser();
-  if (!user) redirect(`/login?next=${encodeURIComponent("/community/new")}`);
+  const returnPath = safeReturnPath(String(formData.get("returnPath") ?? DEFAULT_RETURN));
+  if (!user) redirect(`/login?next=${encodeURIComponent(returnPath.split("?")[0] ?? returnPath)}`);
 
   const intent = String(formData.get("intent") ?? "publish");
   const status = intent === "draft" ? "draft" : "published";
+  const draftId = String(formData.get("draftId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   const category = normalizeCommunityPostCategory(String(formData.get("category") ?? "free"));
-  const hashtags = parseHashtags(String(formData.get("hashtags") ?? ""));
 
-  if (!title) redirect(errRedirect("/community/new", "title"));
-  if (body.length < 10 && status === "published") redirect(errRedirect("/community/new", "body"));
+  if (!title) redirect(errRedirect(returnPath, "title"));
+  if (body.length < 10 && status === "published") redirect(errRedirect(returnPath, "body"));
 
   const supabase = await createClient();
   const imageUrls: string[] = [];
+  const existingImagesRaw = String(formData.get("existingImageUrls") ?? "").trim();
+  if (existingImagesRaw) {
+    try {
+      const parsed = JSON.parse(existingImagesRaw) as unknown;
+      if (Array.isArray(parsed)) {
+        imageUrls.push(...parsed.filter((u): u is string => typeof u === "string" && u.startsWith("http")));
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   const files = formData.getAll("images").filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length > COMMUNITY_IMAGE_MAX) redirect(errRedirect("/community/new", "images"));
+  if (files.length + imageUrls.length > COMMUNITY_IMAGE_MAX) redirect(errRedirect(returnPath, "images"));
 
   if (files.length) {
     const buffers = await Promise.all(
-      files.slice(0, COMMUNITY_IMAGE_MAX).map(async (f) => ({
+      files.slice(0, COMMUNITY_IMAGE_MAX - imageUrls.length).map(async (f) => ({
         buffer: Buffer.from(await f.arrayBuffer()),
         mime: (f.type || "image/jpeg").toLowerCase(),
         name: f.name || "image",
       }))
     );
     const up = await uploadCommunityPostImages(supabase, user.id, buffers);
-    if (up.error) redirect(errRedirect("/community/new", "upload"));
+    if (up.error) redirect(errRedirect(returnPath, "upload"));
     imageUrls.push(...up.urls);
   }
 
   const { label, role } = await authorLabelFor(user.id);
-  const r = await insertCommunityBoardPost(supabase, user.id, {
+  const payload = {
     title,
     body,
     category,
     imageUrls,
-    hashtags,
-    status,
+    hashtags: [] as string[],
+    status: status as "draft" | "published",
     authorLabel: label,
     authorRole: role,
-  });
+  };
 
-  if (!r.ok) redirect(errRedirect("/community/new", r.error));
+  const r =
+    draftId && UUID_RE.test(draftId)
+      ? await updateCommunityBoardPost(supabase, user.id, draftId, payload)
+      : await insertCommunityBoardPost(supabase, user.id, payload);
+
+  if (!r.ok) redirect(errRedirect(returnPath, r.error));
 
   revalidatePath("/community");
   revalidatePath("/community/board");
+  revalidatePath("/community/me");
+
   if (status === "published") redirect(`/community/board/${r.id}`);
-  redirect(`/community/new?draft=1`);
+
+  const draftReturn = communityComposePath("board", { draft: "1", draftId: r.id });
+  redirect(draftReturn);
 }
 
 export async function toggleCommunityPostReactionAction(formData: FormData) {

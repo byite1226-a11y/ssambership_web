@@ -12,6 +12,7 @@ import {
   pickSubmittedRaw,
   reviewDeadlineIsoFromSubmitted,
 } from "@/lib/customRequest/mentorOrderPageMappers";
+import { fetchMentorStudentDisplayName } from "@/lib/customRequest/mentorDashboardOrderEnrichment";
 import { pickOrderStudentId } from "@/lib/customRequest/orderRoomMutations";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,12 +46,7 @@ export default async function MentorOrderWaitingReviewPage(props: PageProps) {
   const postRow = detail.post.row as Row | null;
   const postDetail = postRow ? mapPostRowToPublicDetail(postRow) : null;
   const studentId = pickOrderStudentId(order);
-  let clientName = "의뢰자";
-  if (studentId) {
-    const { data: u } = await supabase.from("users").select("full_name, nickname").eq("id", studentId).maybeSingle();
-    const name = (u?.full_name ?? u?.nickname ?? "").trim();
-    if (name) clientName = name;
-  }
+  const clientName = await fetchMentorStudentDisplayName(supabase, studentId);
 
   const submittedRaw = pickSubmittedRaw(latest);
   const deliverable = latest ? mapDeliverableItem(latest, 0) : null;

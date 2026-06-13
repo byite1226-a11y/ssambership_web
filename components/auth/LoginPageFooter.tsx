@@ -95,7 +95,12 @@ export function LoginPageFooter({ termsUrl, privacyUrl, supportUrl }: LoginPageF
                 고객센터
               </a>
             ) : (
-              <span className="text-slate-500">고객센터</span>
+              <Link
+                className="font-semibold text-slate-700 underline decoration-slate-300/80 underline-offset-[3px] hover:text-slate-900"
+                href="/support#contact"
+              >
+                고객센터
+              </Link>
             )}
           </nav>
         </div>

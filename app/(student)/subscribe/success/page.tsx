@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { loadStudentSubscribePage } from "@/lib/subscribe/subscribePageQueries";
-import { isSubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { findActiveSubscriptionForPair } from "@/lib/subscribe/subscribeCheckoutService";
+import { loadStudentSubscribePage, isSubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -26,11 +26,42 @@ export default async function SubscribeSuccessPage({ searchParams }: Props) {
   }
 
   const supabase = await createClient();
-  const data = await loadStudentSubscribePage(supabase, {
-    mentorId,
-    studentId: user.id,
-  });
+  const [data, activeSub] = await Promise.all([
+    loadStudentSubscribePage(supabase, { mentorId, studentId: user.id }),
+    findActiveSubscriptionForPair(supabase, user.id, mentorId),
+  ]);
   const mentorName = data.kind === "ok" ? data.display.displayName : "멘토";
+  const verified = activeSub !== null;
+
+  if (!verified) {
+    const retryHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center sm:p-10">
+          <AlertCircle className="mx-auto h-14 w-14 text-amber-500" strokeWidth={2} aria-hidden />
+          <h1 className="mt-4 text-xl font-black text-slate-900">결제 정보를 확인할 수 없습니다</h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            <span className="font-bold text-slate-800">{mentorName}</span> 멘토에 대한 활성 구독을 찾지
+            못했어요. 구독 결제를 완료하지 않았거나, 처리 중일 수 있습니다.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href={retryHref}
+              className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-500"
+            >
+              구독 다시 시도
+            </Link>
+            <Link
+              href="/mypage"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            >
+              마이페이지
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-lg px-4 py-16">

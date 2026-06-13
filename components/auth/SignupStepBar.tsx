@@ -35,13 +35,13 @@ export function SignupStepBar({ current }: SignupStepBarProps) {
                     className={[
                       "flex h-11 w-11 items-center justify-center text-base font-bold transition sm:h-[3.4rem] sm:w-[3.4rem] sm:text-lg md:h-[3.85rem] md:w-[3.85rem] md:text-xl",
                       here
-                        ? "rounded-full bg-blue-600 text-white shadow-sm"
+                        ? "rounded-full bg-[#2563eb] text-white"
                         : "",
                       done && !here
-                        ? "rounded-full bg-blue-500 text-white shadow-sm"
+                        ? "rounded-full bg-[#2563eb]/80 text-white"
                         : "",
                       !here && !done
-                        ? "rounded-full border-2 border-slate-200 bg-white text-slate-300 shadow-sm"
+                        ? "rounded-full border-2 border-slate-200 bg-white text-slate-300"
                         : "",
                     ]
                       .filter(Boolean)

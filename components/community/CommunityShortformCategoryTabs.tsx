@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { communityFilterChipClass } from "@/components/community/communityFilterChipStyles";
 import { SHORTFORM_CATEGORIES } from "@/lib/community/communityShortformConstants";
-
-const PRIMARY = "#1A56DB";
 
 export function CommunityShortformCategoryTabs(props: { active: string }) {
   const pathname = usePathname();
@@ -21,11 +20,7 @@ export function CommunityShortformCategoryTabs(props: { active: string }) {
           <Link
             key={c.slug}
             href={href}
-            className={[
-              "rounded-full px-3.5 py-1.5 text-xs font-bold transition",
-              active ? "text-white shadow-sm" : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-            ].join(" ")}
-            style={active ? { backgroundColor: PRIMARY } : undefined}
+            className={communityFilterChipClass(active, "sm")}
           >
             {c.label}
           </Link>

@@ -13,8 +13,8 @@ export function CommunityBoardEmptyPanel(props: { role: AppRole | null | undefin
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">{desc}</p>
       {isMentor ? (
         <p className="mx-auto mt-5 max-w-md text-xs leading-relaxed text-slate-600">
-          첫 게시글은 게시판 상단의 <span className="font-semibold text-slate-800">게시글 작성</span> 버튼 또는 멘토 메뉴의 커뮤니티 작성에서
-          이어가면 돼요.
+          첫 게시글은 게시판 우측 하단의 <span className="font-semibold text-slate-800">글쓰기</span> 버튼으로 작성할 수
+          있어요.
         </p>
       ) : null}
     </div>

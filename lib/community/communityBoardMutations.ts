@@ -24,7 +24,7 @@ export async function insertCommunityBoardPost(
   const title = input.title.trim();
   const body = input.body.trim();
   if (title.length < 1) return { ok: false, error: "title" };
-  if (body.length < COMMUNITY_BODY_MIN) return { ok: false, error: "body" };
+  if (input.status === "published" && body.length < COMMUNITY_BODY_MIN) return { ok: false, error: "body" };
   if (input.category === "all") return { ok: false, error: "category" };
 
   const hashtags = input.hashtags.map((t) => t.replace(/^#/, "").trim()).filter(Boolean).slice(0, COMMUNITY_HASHTAG_MAX);
@@ -61,6 +61,45 @@ export async function insertCommunityBoardPost(
   }
   const id = data && typeof (data as { id: string }).id === "string" ? (data as { id: string }).id : null;
   if (!id) return { ok: false, error: "db" };
+  return { ok: true, id };
+}
+
+export async function updateCommunityBoardPost(
+  supabase: SupabaseClient,
+  userId: string,
+  postId: string,
+  input: InsertBoardPostInput
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const title = input.title.trim();
+  const body = input.body.trim();
+  if (title.length < 1) return { ok: false, error: "title" };
+  if (input.status === "published" && body.length < COMMUNITY_BODY_MIN) return { ok: false, error: "body" };
+  if (input.category === "all") return { ok: false, error: "category" };
+
+  const hashtags = input.hashtags.map((t) => t.replace(/^#/, "").trim()).filter(Boolean).slice(0, COMMUNITY_HASHTAG_MAX);
+
+  const payload: Record<string, unknown> = {
+    title,
+    body,
+    content: body,
+    category: input.category,
+    image_urls: input.imageUrls,
+    hashtags,
+    status: input.status,
+    author_label: input.authorLabel,
+    author_role: input.authorRole,
+  };
+
+  const { data, error } = await supabase
+    .from("community_posts")
+    .update(payload)
+    .eq("id", postId)
+    .eq("author_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: "db" };
+  const id = data && typeof (data as { id: string }).id === "string" ? (data as { id: string }).id : postId;
   return { ok: true, id };
 }
 

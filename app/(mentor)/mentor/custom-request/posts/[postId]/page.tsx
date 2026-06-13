@@ -1,10 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
+import { CustomRequestDetailShell } from "@/components/customRequest/customRequestDetailLayout";
 import { MentorCustomRequestDetailCard } from "@/components/customRequest/MentorCustomRequestDetailCard";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { loadCustomPostForPublicDetail, mentorHasApplicationForPost } from "@/lib/customRequest/customRequestQueries";
+import {
+  loadApplicationAttachments,
+  loadCustomPostForPublicDetail,
+  loadMentorApplicationIdForPost,
+  loadPostAttachments,
+  mentorHasApplicationForPost,
+} from "@/lib/customRequest/customRequestQueries";
+import { batchSignApplicationAttachmentImageThumbUrls } from "@/lib/customRequest/applicationAttachmentAccess";
+import { isDraftCustomRequestPost } from "@/lib/customRequest/customRequestPostMappers";
+import "@/app/(public)/custom-request/landing.css";
 
 type PageProps = {
   params: Promise<{ postId: string }>;
@@ -21,41 +31,53 @@ export default async function MentorCustomRequestPostDetailPage(props: PageProps
 
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
-  const post = await loadCustomPostForPublicDetail(supabase, postId);
+  const [post, already, postAttachments, applicationId] = await Promise.all([
+    loadCustomPostForPublicDetail(supabase, postId),
+    mentorHasApplicationForPost(supabase, postId, user.id),
+    loadPostAttachments(supabase, postId),
+    loadMentorApplicationIdForPost(supabase, postId, user.id),
+  ]);
   if (!post.row) {
     notFound();
   }
-  const already = await mentorHasApplicationForPost(supabase, postId, user.id);
+  if (isDraftCustomRequestPost(post.row)) {
+    notFound();
+  }
+
+  const { byApplicationId } = applicationId
+    ? await loadApplicationAttachments(supabase, [applicationId])
+    : { byApplicationId: {} as Record<string, never> };
+  const applicationAttachments = applicationId ? (byApplicationId[applicationId] ?? []) : [];
+  const applicationAttachmentThumbUrls =
+    applicationId && applicationAttachments.length > 0
+      ? await batchSignApplicationAttachmentImageThumbUrls(
+          supabase,
+          { userId: user.id, role: "mentor" },
+          postId,
+          applicationAttachments
+        )
+      : {};
 
   return (
-    <PageScaffold
-      hideFooterPlaceholderCards
-      eyebrow="멘토 / 맞춤의뢰"
-      title="의뢰 상세"
-      description="의뢰 내용을 확인한 뒤, 모집이 열려 있을 때만 지원서를 제출할 수 있어요."
-      ctas={[]}
-      sections={[]}
-      emptyState=""
-    >
-      <div className="-mt-1 mb-4 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-600">
-        <Link href="/mentor/custom-request/posts" className="hover:text-blue-800 hover:underline">
-          의뢰 목록
-        </Link>
-        <Link href="/mentor/custom-request/dashboard" className="hover:text-blue-800 hover:underline">
-          맞춤의뢰 대시보드
-        </Link>
-      </div>
-      {submitted ? (
-        <p className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm font-bold text-emerald-900">
-          지원서가 제출되었습니다. 의뢰자는 가격·납기·제안 내용을 비교한 뒤 한 분의 제안을 선택할 수 있어요.
+    <PageScaffold hideFooterPlaceholderCards hideHero eyebrow="" title="" description="" ctas={[]} sections={[]} emptyState="">
+      <CustomRequestDetailShell className="py-8">
+        <MentorCustomRequestDetailCard
+          postId={postId}
+          row={post.row}
+          alreadyApplied={already}
+          submitted={submitted}
+          applicationId={applicationId}
+          applicationAttachments={applicationAttachments}
+          applicationAttachmentThumbUrls={applicationAttachmentThumbUrls}
+          attachments={postAttachments.rows}
+          attachmentLoadError={postAttachments.error}
+        />
+        <p className="mt-6 text-center text-xs text-[var(--c-tertiary,#8a96a8)]">
+          <Link href="/custom-request" className="font-semibold text-[var(--c-secondary,#3f4b5f)] hover:text-[var(--c-blue,#2563eb)] hover:underline">
+            맞춤의뢰 소개
+          </Link>
         </p>
-      ) : null}
-      <MentorCustomRequestDetailCard postId={postId} row={post.row} alreadyApplied={already} />
-      <p className="mt-6 text-center text-xs text-slate-500">
-        <Link href="/custom-request" className="font-semibold text-blue-800 underline-offset-2 hover:underline">
-          맞춤의뢰 소개
-        </Link>
-      </p>
+      </CustomRequestDetailShell>
     </PageScaffold>
   );
 }

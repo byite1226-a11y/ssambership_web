@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StatusBadge } from "@/components/design-system";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import {
   isOrderRowTerminalForActions,
@@ -7,13 +8,13 @@ import {
   ORDER_ROOM_TERMINAL_MENTOR_NOTICE,
   formatOrderRoomDateTime,
   normalizedPrimaryOrderStatus,
-  orderStatusBadgeLabelForNorm,
   orderWorkspaceCurrentStepIndex,
   ORDER_ROOM_TIMELINE_STEPS,
   formatOrderRoomDate,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import type { AppRole } from "@/lib/types/user";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/customRequest/order/OrderStatusBadge";
+import { mentorCustomOrderBrowseStatus } from "@/lib/design-system/mentorOrderStatusBadge";
 import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type View = "student" | "mentor";
@@ -28,6 +29,15 @@ function ActiveDisputeOrderStatusBadge() {
       분쟁 검토 중
     </span>
   );
+}
+
+function mentorOrderDisputeSetForBadge(orderRow: Record<string, unknown>, hasActiveDispute: boolean): Set<string> {
+  const set = new Set<string>();
+  if (hasActiveDispute) {
+    const id = String(orderRow.id ?? "").trim();
+    if (id) set.add(id);
+  }
+  return set;
 }
 
 function pickPaymentStatusRaw(row: Record<string, unknown> | null | undefined): string {
@@ -503,21 +513,25 @@ type OrderPaymentSettlementBlockProps = {
   orderRow: Record<string, unknown>;
   orderId: string;
   actorRole: AppRole;
+  view?: "student" | "mentor";
 };
+
+const MENTOR_WORKROOM_CARD_CLASS = "rounded-2xl bg-slate-50 p-6";
 
 /**
  * 우측 열: 결제·정산 안내 문장
  */
-export function OrderPaymentSettlementBlock({ detail, orderRow }: OrderPaymentSettlementBlockProps) {
+export function OrderPaymentSettlementBlock({ detail, orderRow, view = "student" }: OrderPaymentSettlementBlockProps) {
   const lines = paymentSettlementNotice(detail, orderRow);
+  const cardClass = view === "mentor" ? MENTOR_WORKROOM_CARD_CLASS : ORDER_ROOM_CARD_CLASS;
 
   if (lines.length === 0) {
     return null;
   }
   return (
-    <div className={ORDER_ROOM_CARD_CLASS} role="status">
-      <p className="text-xs font-semibold text-slate-500">진행 안내</p>
-      <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-sm text-slate-700">
+    <div className={cardClass} role="status">
+      <p className={`${view === "mentor" ? "text-sm font-semibold text-slate-600" : "text-xs font-semibold text-slate-500"}`}>진행 안내</p>
+      <ul className={`mt-2 list-inside list-disc space-y-1 ${view === "mentor" ? "text-sm text-slate-900" : "text-sm text-slate-700"}`}>
         {lines.map((t, i) => (
           <li key={i}>{t}</li>
         ))}
@@ -528,16 +542,18 @@ export function OrderPaymentSettlementBlock({ detail, orderRow }: OrderPaymentSe
 
 type SettlementCardProps = {
   detail: OrderDetailPageData;
+  view?: "student" | "mentor";
 };
 
 /**
  * 정산 행이 있을 때 핵심 금액만(토큰·id 미노출)
  */
-export function OrderSettlementLineCard({ detail }: SettlementCardProps) {
+export function OrderSettlementLineCard({ detail, view = "student" }: SettlementCardProps) {
   const { settlementItem, settlementLoadError } = detail;
+  const cardClass = view === "mentor" ? MENTOR_WORKROOM_CARD_CLASS : ORDER_ROOM_CARD_CLASS;
   if (settlementLoadError) {
     return (
-      <div className={ORDER_ROOM_CARD_CLASS} role="status">
+      <div className={cardClass} role="status">
         <p className="text-sm text-slate-600">정산 항목을 지금은 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.</p>
       </div>
     );
@@ -550,20 +566,20 @@ export function OrderSettlementLineCard({ detail }: SettlementCardProps) {
   const fee = firstAmountish(row, ["platform_fee_amount", "platform_fee", "fee_amount", "fee"]);
   const mentor = firstAmountish(row, ["mentor_amount", "mentor_net", "payout", "mentor_payout", "net"]);
   return (
-    <div className={ORDER_ROOM_CARD_CLASS}>
-      <p className="text-xs font-semibold text-slate-500">금액</p>
-      <dl className="mt-2 space-y-1.5 text-sm">
-        <div className="flex justify-between gap-2">
-          <dt className="text-slate-500">총액(참고)</dt>
-          <dd className="font-medium text-slate-900">{gross != null ? formatKrwWon(gross) : "—"}</dd>
+    <div className={cardClass}>
+      <p className={`${view === "mentor" ? "text-sm font-semibold text-slate-600" : "text-xs font-semibold text-slate-500"}`}>금액</p>
+      <dl className={`mt-3 space-y-2 ${view === "mentor" ? "text-sm" : "text-sm"}`}>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-slate-600">총액(참고)</dt>
+          <dd className="font-semibold tabular-nums text-slate-900">{gross != null ? formatKrwWon(gross) : "—"}</dd>
         </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-slate-500">플랫폼</dt>
-          <dd className="font-medium text-slate-900">{fee != null ? formatKrwWon(fee) : "—"}</dd>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-slate-600">플랫폼</dt>
+          <dd className="font-semibold tabular-nums text-slate-900">{fee != null ? formatKrwWon(fee) : "—"}</dd>
         </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-slate-500">멘토</dt>
-          <dd className="font-medium text-slate-900">{mentor != null ? formatKrwWon(mentor) : "—"}</dd>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-slate-600">멘토</dt>
+          <dd className="font-semibold tabular-nums text-slate-900">{mentor != null ? formatKrwWon(mentor) : "—"}</dd>
         </div>
       </dl>
     </div>
@@ -582,7 +598,7 @@ function OrderRoomPageHeaderMentor({ detail, backHref = "/custom-request" }: Ord
 
   if (o.error && !o.row) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-2xl border border-ds-border-subtle bg-white p-4 text-sm text-slate-600">
         <h2 className="font-bold">주문 정보를 불러오지 못했습니다.</h2>
       </div>
     );
@@ -590,19 +606,13 @@ function OrderRoomPageHeaderMentor({ detail, backHref = "/custom-request" }: Ord
   if (!o.row) return null;
 
   const orderRow = o.row as Record<string, unknown>;
-  const orderNorm = normalizedPrimaryOrderStatus(orderRow);
-  const orderIdRaw = String(orderRow.id ?? "");
-  const orderDisplayId = shortOrderIdForDisplay(orderIdRaw);
-  
-  const orderDate = (orderRow.created_at as string)?.substring(0, 10)?.replaceAll('-', '.') || "—";
   const dueDate = h.dueLine && h.dueLine !== "—" ? h.dueLine : "—";
 
   const backLabel = "수락된 의뢰 상세로 돌아가기";
-  
-  const statusLabel = orderStatusBadgeLabelForNorm(orderNorm); 
+  const status = mentorCustomOrderBrowseStatus(orderRow, mentorOrderDisputeSetForBadge(orderRow, detail.hasActiveDispute));
 
   return (
-    <div className="mb-6 flex flex-col space-y-4">
+    <div className="mb-2 flex flex-col gap-6">
       {/* TOP: Breadcrumb */}
       <div>
         <Link
@@ -620,39 +630,34 @@ function OrderRoomPageHeaderMentor({ detail, backHref = "/custom-request" }: Ord
         <p className="text-[14px] text-slate-500">의뢰자와 1:1로 소통하며 작업을 진행하세요.</p>
       </div>
 
-      {/* Summary Card (White & Rounded) */}
-      <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-        <div className="flex items-start gap-4 min-w-0">
-          {/* Left Icon Box */}
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+      {/* Summary — 과목·상태·마감만 (상세 메타는 우측 의뢰 정보) */}
+      <div className="flex items-start justify-between gap-6 border-b border-ds-border-subtle pb-6">
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
           </div>
 
-          {/* Center Text Content */}
           <div className="min-w-0 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center rounded bg-[#E8F9F1] px-2.5 py-0.5 text-[11px] font-bold text-[#059669]">
-                {statusLabel}
-              </span>
-              <h2 className="text-[18px] font-extrabold text-slate-900 truncate" title={h.requestTitle || ""}>
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge label={status.label} kind={status.kind} size="sm" />
+              <h2 className="truncate text-lg font-bold text-slate-900" title={h.requestTitle || ""}>
                 {h.requestTitle || "제목 정보 없음"}
               </h2>
             </div>
-            <div className="flex items-center divide-x divide-slate-200 text-[13px] text-slate-500 font-medium">
-              <span className="pr-3">의뢰번호 {orderDisplayId}</span>
-              <span className="px-3">의뢰일 {orderDate}</span>
-              <span className="pl-3">마감일 {dueDate}</span>
-            </div>
+            {dueDate !== "—" ? (
+              <p className="text-sm leading-relaxed text-slate-600">
+                마감일 <span className="font-semibold text-slate-900">{dueDate}</span>
+              </p>
+            ) : null}
           </div>
         </div>
 
-        {/* Right Action Cluster */}
-        <div className="flex shrink-0 items-center gap-2 ml-auto">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
             type="button"
-            className="inline-flex items-center justify-center h-9 rounded-lg border border-blue-100 bg-white px-4 text-[13px] font-bold text-blue-600 shadow-[0_1px_3px_rgba(59,130,246,0.08)] hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-ds-border-subtle bg-white px-4 text-[13px] font-bold text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50"
           >
             의뢰 상세 보기
           </button>
@@ -684,105 +689,52 @@ export function OrderRightSidebarMentor({ detail, isTerminalOrder, orderIdDispla
     (orderRow.created_at as string)?.substring(0, 10)?.replaceAll('-', '.') || "—";
   
   const shortId = shortOrderIdForDisplay(String(orderIdDisplay).trim());
+  const status = mentorCustomOrderBrowseStatus(orderRow, mentorOrderDisputeSetForBadge(orderRow, detail.hasActiveDispute));
+  const dueDisplay = h.dueLine && h.dueLine !== "—" ? h.dueLine.split(" ")[0] : "—";
+  const priceDisplay = h.priceLine && h.priceLine !== "—" ? h.priceLine : "—";
+  const sidebarCardClass = "rounded-2xl border border-ds-border-subtle bg-white p-6";
 
   return (
-    <div className="w-full flex flex-col gap-5 pb-8">
+    <div className="flex w-full flex-col gap-6 pb-2">
       {/* Section 1: 진행 단계 */}
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-        <h3 className="text-[15px] font-extrabold text-slate-900 mb-5">진행 단계</h3>
+      <div className={sidebarCardClass}>
+        <h3 className="mb-5 text-base font-bold text-slate-900">진행 단계</h3>
         <OrderStepStripMentor currentIndex={stepIndex} createdDate={orderCreated} orderRow={orderRow} />
       </div>
 
       {/* Section 2: 의뢰 정보 */}
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-        <h3 className="text-[15px] font-extrabold text-slate-900 mb-4">의뢰 정보</h3>
-        <dl className="flex flex-col space-y-3.5 text-[13px]">
-          <div className="flex justify-between items-center">
-            <dt className="font-medium text-slate-500">의뢰번호</dt>
-            <dd className="font-medium text-slate-900">{shortId}</dd>
+      <div className={sidebarCardClass}>
+        <h3 className="mb-5 text-base font-bold text-slate-900">의뢰 정보</h3>
+        <div className="space-y-5">
+          <div>
+            <p className="text-xs font-medium text-slate-500">예상 금액</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{priceDisplay}</p>
           </div>
-          <div className="flex justify-between items-center">
-            <dt className="font-medium text-slate-500">의뢰일</dt>
-            <dd className="font-medium text-slate-900">{orderCreated}</dd>
-          </div>
-          <div className="flex justify-between items-center">
-            <dt className="font-medium text-slate-500">수락일</dt>
-            <dd className="font-medium text-slate-900">{orderCreated}</dd>
-          </div>
-          <div className="flex justify-between items-center">
-            <dt className="font-medium text-slate-500">마감일</dt>
-            <dd className="font-medium text-slate-900">{h.dueLine && h.dueLine !== "—" ? h.dueLine.split(' ')[0] : "—"}</dd>
-          </div>
-          <div className="flex justify-between items-center">
-            <dt className="font-medium text-slate-500">예상 금액</dt>
-            <dd className="font-bold text-slate-900">{h.priceLine && h.priceLine !== "—" ? h.priceLine : "25,000캐시"}</dd>
-          </div>
-          <div className="flex justify-between items-center pt-1">
-            <dt className="font-medium text-slate-500">상태</dt>
-            <dd className="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-bold text-blue-600">
-              {orderStatusBadgeLabelForNorm(orderNorm)}
-            </dd>
-          </div>
-        </dl>
-      </div>
 
-      {/* Section 3: 빠른 메뉴 */}
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-        <h3 className="text-[15px] font-extrabold text-slate-900 mb-4">빠른 메뉴</h3>
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: "의뢰 정보", icon: (
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            )},
-            { label: "요청사항", icon: (
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
-              </svg>
-            )},
-            { label: "작업 파일", icon: (
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            )},
-            { label: "진행 관리", icon: (
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-          ].map((item, idx) => (
-            <button key={idx} className="flex flex-col items-center gap-2 group">
-              <div className="flex h-[50px] w-[50px] items-center justify-center rounded-xl bg-slate-50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition">
-                {item.icon}
-              </div>
-              <span className="text-[11px] font-medium text-slate-600">{item.label}</span>
-            </button>
-          ))}
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-medium text-slate-500">상태</span>
+            <StatusBadge label={status.label} kind={status.kind} size="sm" />
+          </div>
+
+          <dl className="space-y-2 border-t border-ds-border-subtle pt-4 text-xs">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-slate-500">마감일</dt>
+              <dd className="font-semibold text-slate-900">{dueDisplay}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-slate-500">의뢰일</dt>
+              <dd className="font-medium text-slate-700">{orderCreated}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-slate-500">수락일</dt>
+              <dd className="font-medium text-slate-700">{orderCreated}</dd>
+            </div>
+          </dl>
+
+          <p className="border-t border-ds-border-subtle pt-4 font-mono text-xs text-slate-400">
+            의뢰번호 {shortId}
+          </p>
         </div>
-      </div>
-
-      {/* Section 4: 안내 사항 */}
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
-        <h3 className="text-[15px] font-extrabold text-slate-900 mb-4">안내 사항</h3>
-        <ul className="space-y-3 text-[13px] font-medium text-slate-600">
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1 w-1 rounded-full bg-slate-900 shrink-0" />
-            <span className="leading-relaxed">의뢰자와 원활하게 소통하며 작업을 진행해주세요.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1 w-1 rounded-full bg-slate-900 shrink-0" />
-            <span className="leading-relaxed">작업 중 파일은 &apos;작업 파일&apos; 탭에 업로드하세요.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1 w-1 rounded-full bg-slate-900 shrink-0" />
-            <span className="leading-relaxed">모든 작업이 완료되면 &apos;납품하기&apos;를 통해 결과물을 제출해주세요.</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1 w-1 rounded-full bg-slate-900 shrink-0" />
-            <span className="leading-relaxed">의뢰자와의 대화는 소중한 기록으로 남습니다.</span>
-          </li>
-        </ul>
       </div>
     </div>
   );
@@ -818,38 +770,43 @@ function OrderStepStripMentor({
   };
 
   return (
-    <div className="relative flex flex-col space-y-4 pl-2">
+    <div className="relative flex flex-col gap-5 pl-0.5">
       {ORDER_ROOM_TIMELINE_STEPS.map((s, i) => {
         const date = dateForStep(i);
         const isDone = i < currentIndex;
         const isCurrent = i === currentIndex;
+        const isUpcoming = i > currentIndex;
         const isLast = i === ORDER_ROOM_TIMELINE_STEPS.length - 1;
 
-        const circleBg = isCurrent || isDone ? "bg-[#142d61]" : "bg-white border border-slate-200";
-        const circleText = isCurrent || isDone ? "text-white" : "text-slate-400";
-        const lineBg = isDone ? "bg-[#142d61]" : "bg-slate-200";
+        const lineBg = isDone ? "bg-slate-200" : "bg-slate-100";
+        const titleClass = isCurrent
+          ? "text-sm font-semibold text-slate-900"
+          : isDone
+            ? "text-sm text-slate-400"
+            : "text-sm text-slate-300";
+        const dateClass = isCurrent ? "text-xs font-medium text-slate-500" : "text-xs text-slate-400";
 
         return (
-          <div key={i} className="flex items-start gap-4">
-            <div className="flex flex-col items-center relative z-10">
-              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold shadow-sm ${circleBg} ${circleText}`}>
-                {isDone ? (
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+          <div key={i} className={`flex items-start gap-3 ${isCurrent ? "py-0.5" : ""}`}>
+            <div className="relative z-10 flex flex-col items-center pt-0.5">
+              {isDone ? (
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200">
+                  <svg className="h-3 w-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
-                ) : (
-                  i + 1
-                )}
-              </div>
+                </div>
+              ) : isCurrent ? (
+                <div className="h-3.5 w-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100" aria-current="step" />
+              ) : (
+                <div className="h-2 w-2 rounded-full bg-slate-200" aria-hidden />
+              )}
               {!isLast && (
-                <div className={`absolute top-6 bottom-[-16px] w-0.5 ${lineBg} -z-10`} />
+                <div className={`absolute top-5 bottom-[-20px] -z-10 w-px ${lineBg}`} />
               )}
             </div>
-            <div className="flex flex-col">
-              <span className={`text-[13px] font-bold leading-6 ${isCurrent ? "text-[#142d61]" : isDone ? "text-slate-800" : "text-slate-400"}`}>
-                {s.title}
-              </span>
-              {date ? <span className="text-[11px] font-medium text-slate-400">{date}</span> : null}
+            <div className={`flex flex-col pb-0.5 ${isUpcoming ? "opacity-80" : ""}`}>
+              <span className={`leading-snug ${titleClass}`}>{s.title}</span>
+              {date ? <span className={`mt-0.5 ${dateClass}`}>{date}</span> : null}
             </div>
           </div>
         );

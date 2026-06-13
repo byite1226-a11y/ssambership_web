@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "screenshots": "node scripts/capture-screenshots.mjs",
-    "screenshots:extra": "node scripts/capture-screenshots.mjs --extra-only"
+    "screenshots:extra": "node scripts/capture-screenshots.mjs --extra-only",
+    "screenshots:report": "node scripts/generate-review-report.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",

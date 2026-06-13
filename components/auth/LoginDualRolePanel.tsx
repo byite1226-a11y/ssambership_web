@@ -7,7 +7,7 @@ import { RoleLoginForm } from "@/components/auth/RoleLoginForm";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { loginLandingCopy, type AuthLoginRole } from "@/components/auth/loginRoleContent";
 
-const STUDENT_PRIMARY = "#1A56DB";
+const STUDENT_PRIMARY = "#2563eb";
 const MENTOR_PRIMARY = "#16A34A";
 
 function benefitLines(role: AuthLoginRole): string[] {
@@ -15,7 +15,7 @@ function benefitLines(role: AuthLoginRole): string[] {
   return items.map((b) => `${b.line1} ${b.line2}`.trim());
 }
 
-function LoginRoleCard(props: {
+export function LoginRoleCard(props: {
   role: AuthLoginRole;
   initialNext: string | null;
   active: boolean;
@@ -35,14 +35,14 @@ function LoginRoleCard(props: {
   return (
     <article
       className={[
-        "flex h-full min-h-[520px] flex-col rounded-2xl border-2 bg-white p-6 shadow-sm transition sm:p-7",
+        "flex h-full min-h-[520px] flex-col rounded-2xl border bg-white p-6 transition sm:p-7",
         isStudent
           ? active
-            ? "border-[#1A56DB] shadow-[0_8px_32px_-12px_rgba(26,86,219,0.35)] ring-2 ring-[#1A56DB]/15"
-            : "border-blue-100 hover:border-blue-300"
+            ? "border-[#2563eb] ring-2 ring-[#2563eb]/15"
+            : "border-slate-200 hover:border-slate-300"
           : active
-            ? "border-[#16A34A] shadow-[0_8px_32px_-12px_rgba(22,163,74,0.3)] ring-2 ring-[#16A34A]/15"
-            : "border-emerald-100 hover:border-emerald-300",
+            ? "border-[#16A34A] ring-2 ring-[#16A34A]/15"
+            : "border-slate-200 hover:border-slate-300",
       ].join(" ")}
       onFocusCapture={onActivate}
       onMouseEnter={onActivate}
@@ -109,6 +109,25 @@ function LoginRoleCard(props: {
         </p>
       </div>
     </article>
+  );
+}
+
+/** 역할별 `/login/student`·`/login/mentor` — 단일 카드(항상 active, 내부 email/password state) */
+export function LoginSingleRoleCard(props: { role: AuthLoginRole; initialNext: string | null }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  return (
+    <LoginRoleCard
+      role={props.role}
+      initialNext={props.initialNext}
+      active
+      onActivate={() => {}}
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
+    />
   );
 }
 
