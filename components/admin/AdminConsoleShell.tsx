@@ -1,23 +1,29 @@
 import type { ReactNode } from "react";
 import { AdminConsoleNavSidebar, AdminConsoleNavTop } from "@/components/admin/AdminConsoleNav";
+import { AdminConsoleTopBar } from "@/components/admin/AdminConsoleTopBar";
+import type { UserRow } from "@/lib/types/user";
 
 /**
- * 관리자 콘솔 전용 쉘. 일반 AppShell·사용자 상단 메뉴와 분리합니다.
- * `(admin)/admin/(console)/layout.tsx`에서만 사용합니다.
+ * 관리자 콘솔 전용 쉘 — 일반 AppShell과 분리.
  */
-export function AdminConsoleShell({ children }: { children: ReactNode }) {
+export function AdminConsoleShell({
+  children,
+  profile = null,
+}: {
+  children: ReactNode;
+  profile?: UserRow | null;
+}) {
   return (
-    <div className="min-h-screen bg-slate-50/90 text-slate-900">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col lg:flex-row lg:gap-0 lg:px-4 lg:py-6">
-        <div className="sticky top-0 z-20 lg:hidden">
-          <AdminConsoleNavTop />
-        </div>
-        <aside className="sticky top-6 z-10 hidden h-[calc(100vh-3rem)] w-60 shrink-0 self-start lg:block">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <div className="flex min-h-screen w-full">
+        <div className="hidden lg:block">
           <AdminConsoleNavSidebar />
-        </aside>
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-5 lg:min-h-0 lg:px-2 lg:py-0">
-          <div className="mx-auto w-full max-w-7xl">{children}</div>
-        </main>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AdminConsoleNavTop profile={profile} />
+          <AdminConsoleTopBar profile={profile} />
+          <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        </div>
       </div>
     </div>
   );

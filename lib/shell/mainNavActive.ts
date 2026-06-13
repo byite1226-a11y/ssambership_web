@@ -38,9 +38,14 @@ export function isMainNavItemActive(pathname: string, itemHref: string, audience
     case "/community":
       return p === "/community" || p.startsWith("/community/");
     case "/custom-request":
-      return p === "/custom-request" || p.startsWith("/custom-request/");
     case "/mentor/custom-request":
-      return p === "/mentor/custom-request" || p.startsWith("/mentor/custom-request/");
+    case "/mentor/custom-request/dashboard":
+      return (
+        p === "/custom-request" ||
+        p.startsWith("/custom-request/") ||
+        p === "/mentor/custom-request" ||
+        p.startsWith("/mentor/custom-request/")
+      );
     case "/cash":
       return (
         p === "/cash" ||
@@ -56,6 +61,8 @@ export function isMainNavItemActive(pathname: string, itemHref: string, audience
       return p === "/mypage" || p.startsWith("/mypage/");
     case "/mentor/payouts":
       return p === "/mentor/payouts" || p.startsWith("/mentor/payouts/");
+    case "/mentor/reviews":
+      return p === "/mentor/reviews" || p.startsWith("/mentor/reviews/");
     case "/mentor/profile":
       return p === "/mentor/profile" || p.startsWith("/mentor/profile/");
     case "/admin":

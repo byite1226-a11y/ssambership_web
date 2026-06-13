@@ -7,6 +7,8 @@ import {
   ORDER_ROOM_CARD_CLASS,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { OrderStatusBadge } from "@/components/customRequest/order/OrderStatusBadge";
+import { StatusBadge } from "@/components/design-system";
+import { mentorCustomOrderBrowseStatus } from "@/lib/design-system/mentorOrderStatusBadge";
 
 type Row = Record<string, unknown>;
 
@@ -31,61 +33,173 @@ function eventLine(row: Row) {
   };
 }
 
-export function OrderEventsLogPanel({ detail }: { detail: OrderDetailPageData }) {
+export function OrderEventsLogPanel({
+  detail,
+  view = "student",
+  embedded = false,
+}: {
+  detail: OrderDetailPageData;
+  view?: "student" | "mentor";
+  embedded?: boolean;
+}) {
+  if (view === "mentor") {
+    return <OrderEventsLogPanelMentor detail={detail} />;
+  }
   const events = detail.events;
   const order = detail.bundle.order.row as Row | null;
   const hasEvents = Boolean(events.table && (events.rows?.length ?? 0) > 0);
 
   return (
-    <section className={ORDER_ROOM_CARD_CLASS} aria-label="주문 진행 로그">
-      <div className="mb-3">
-        <h3 className="text-sm font-bold text-slate-950">진행 로그</h3>
-        <p className="mt-0.5 text-xs text-slate-500">주문 단계별 기록을 확인합니다.</p>
-      </div>
+    <section className={embedded ? "text-sm text-slate-800" : ORDER_ROOM_CARD_CLASS} aria-label="주문 진행 로그">
+      <details className="group">
+        <summary
+          className={`cursor-pointer list-none [&::-webkit-details-marker]:hidden ${
+            embedded ? "rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5" : ""
+          }`}
+        >
+          {embedded ? (
+            <span className="flex items-center justify-end gap-2">
+              <span className="shrink-0 text-xs font-bold text-blue-700 group-open:hidden">열기</span>
+              <span className="hidden shrink-0 text-xs font-bold text-slate-600 group-open:inline">접기</span>
+            </span>
+          ) : (
+            <span className="flex items-start justify-between gap-2">
+              <span>
+                <h3 className="text-sm font-bold text-slate-950">진행 로그</h3>
+                <p className="mt-0.5 text-xs text-slate-500">펼치면 단계별 기록을 확인할 수 있어요.</p>
+              </span>
+              <span className="mt-1 shrink-0 text-xs font-bold text-blue-700 group-open:hidden">열기</span>
+              <span className="mt-1 hidden shrink-0 text-xs font-bold text-slate-600 group-open:inline">접기</span>
+            </span>
+          )}
+        </summary>
 
-      {events.error && !hasEvents ? (
-        <p className="text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-      ) : null}
+        <div className="mt-3">
+          {events.error && !hasEvents ? (
+            <p className="text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+          ) : null}
 
-      {events.error && hasEvents ? (
-        <p className="mb-2 text-xs text-amber-700/90">일부 기록을 불러오지 못했을 수 있습니다.</p>
-      ) : null}
+          {events.error && hasEvents ? (
+            <p className="mb-2 text-xs text-amber-700/90">일부 기록을 불러오지 못했을 수 있습니다.</p>
+          ) : null}
 
-      <div className="max-h-80 overflow-y-auto rounded-2xl border border-slate-100/90 bg-slate-50/60 px-3 py-2.5">
-        {!order ? (
-          <p className="text-xs text-slate-500">주문 정보를 확인할 수 없습니다.</p>
-        ) : hasEvents ? (
-          <ol className="space-y-1.5 border-l-2 border-blue-200/70 pl-2.5 text-xs text-slate-600">
-            {((events.rows ?? []) as Row[]).map((row, index) => {
-              const { eventLabel, message, at } = eventLine(row);
-              return (
-                <li key={String(row.id ?? `${eventLabel}-${at}-${index}`)} className="leading-relaxed">
-                  <span className="text-slate-400">{at}</span>{" "}
-                  <span className="font-medium text-slate-800">{eventLabel}</span>
-                  {message && message !== "—" ? <span className="text-slate-600"> · {message}</span> : null}
+          <div className="max-h-80 overflow-y-auto rounded-2xl border border-slate-100/90 bg-slate-50/60 px-3 py-2.5">
+            {!order ? (
+              <p className="text-xs text-slate-500">주문 정보를 확인할 수 없습니다.</p>
+            ) : hasEvents ? (
+              <ol className="space-y-1.5 border-l-2 border-blue-200/70 pl-2.5 text-xs text-slate-600">
+                {((events.rows ?? []) as Row[]).map((row, index) => {
+                  const { eventLabel, message, at } = eventLine(row);
+                  return (
+                    <li key={String(row.id ?? `${eventLabel}-${at}-${index}`)} className="leading-relaxed">
+                      <span className="text-slate-400">{at}</span>{" "}
+                      <span className="font-medium text-slate-800">{eventLabel}</span>
+                      {message && message !== "—" ? <span className="text-slate-600"> · {message}</span> : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <ol className="space-y-1.5 text-xs text-slate-600">
+                <li className="flex items-center gap-2">
+                  <span className="text-slate-500">현재 상태</span>
+                  <OrderStatusBadge norm={normalizedPrimaryOrderStatus(order)} />
                 </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <ol className="space-y-1.5 text-xs text-slate-600">
-            <li className="flex items-center gap-2">
-              <span className="text-slate-500">현재 상태</span>
-              <OrderStatusBadge norm={normalizedPrimaryOrderStatus(order)} />
-            </li>
-            {order.created_at != null ? (
-              <li>주문 등록 {formatOrderRoomDateTime(order.created_at)}</li>
-            ) : null}
-            {order.updated_at != null && order.created_at !== order.updated_at ? (
-              <li>마지막 갱신 {formatOrderRoomDateTime(order.updated_at)}</li>
-            ) : null}
-          </ol>
-        )}
-      </div>
+                {order.created_at != null ? (
+                  <li>주문 등록 {formatOrderRoomDateTime(order.created_at)}</li>
+                ) : null}
+                {order.updated_at != null && order.created_at !== order.updated_at ? (
+                  <li>마지막 갱신 {formatOrderRoomDateTime(order.updated_at)}</li>
+                ) : null}
+              </ol>
+            )}
+          </div>
 
-      {!order || hasEvents ? null : (
-        <p className="mt-1.5 text-[11px] text-slate-400">기록이 없을 때는 현재 주문 상태를 기준으로 표시합니다.</p>
-      )}
+          {!order || hasEvents ? null : (
+            <p className="mt-1.5 text-[11px] text-slate-400">기록이 없을 때는 현재 주문 상태를 기준으로 표시합니다.</p>
+          )}
+        </div>
+      </details>
+    </section>
+  );
+}
+
+function OrderEventsLogPanelMentor({ detail }: { detail: OrderDetailPageData }) {
+  const events = detail.events;
+  const order = detail.bundle.order.row as Row | null;
+  const hasEvents = Boolean(events.table && (events.rows?.length ?? 0) > 0);
+  const disputeSet = (() => {
+    const set = new Set<string>();
+    if (detail.hasActiveDispute && order?.id) {
+      const id = String(order.id).trim();
+      if (id) set.add(id);
+    }
+    return set;
+  })();
+  const orderStatus = order ? mentorCustomOrderBrowseStatus(order, disputeSet) : null;
+
+  return (
+    <section className="space-y-4 border-t border-ds-border-subtle pt-8" aria-label="주문 진행 로그">
+      <details className="group">
+        <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+          <span className="flex items-start justify-between gap-2">
+            <span>
+              <h3 className="text-base font-bold text-slate-900">시스템 이벤트 로그</h3>
+              <p className="mt-0.5 text-sm text-slate-600">펼치면 단계별 기록을 확인할 수 있어요.</p>
+            </span>
+            <span className="mt-1 shrink-0 text-xs font-semibold text-blue-600 group-open:hidden">열기</span>
+            <span className="mt-1 hidden shrink-0 text-xs font-semibold text-slate-600 group-open:inline">접기</span>
+          </span>
+        </summary>
+
+        <div className="mt-4">
+          {events.error && !hasEvents ? (
+            <p className="text-sm text-amber-900">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+          ) : null}
+
+          {events.error && hasEvents ? (
+            <p className="mb-2 text-xs text-amber-800">일부 기록을 불러오지 못했을 수 있습니다.</p>
+          ) : null}
+
+          <div className="max-h-80 overflow-y-auto rounded-xl bg-slate-50 px-4 py-4">
+            {!order ? (
+              <p className="text-sm text-slate-600">주문 정보를 확인할 수 없습니다.</p>
+            ) : hasEvents ? (
+              <ol className="space-y-2 border-l-2 border-blue-200 pl-3 text-sm text-slate-700">
+                {((events.rows ?? []) as Row[]).map((row, index) => {
+                  const { eventLabel, message, at } = eventLine(row);
+                  return (
+                    <li key={String(row.id ?? `${eventLabel}-${at}-${index}`)} className="leading-relaxed">
+                      <span className="tabular-nums text-slate-500">{at}</span>{" "}
+                      <span className="font-semibold text-slate-900">{eventLabel}</span>
+                      {message && message !== "—" ? <span className="text-slate-600"> · {message}</span> : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <ol className="space-y-2 text-sm text-slate-700">
+                <li className="flex items-center gap-2">
+                  <span className="text-slate-600">현재 상태</span>
+                  {orderStatus ? (
+                    <StatusBadge label={orderStatus.label} kind={orderStatus.kind} size="sm" />
+                  ) : null}
+                </li>
+                {order.created_at != null ? (
+                  <li className="tabular-nums">주문 등록 {formatOrderRoomDateTime(order.created_at)}</li>
+                ) : null}
+                {order.updated_at != null && order.created_at !== order.updated_at ? (
+                  <li className="tabular-nums">마지막 갱신 {formatOrderRoomDateTime(order.updated_at)}</li>
+                ) : null}
+              </ol>
+            )}
+          </div>
+
+          {!order || hasEvents ? null : (
+            <p className="mt-2 text-xs text-slate-500">기록이 없을 때는 현재 주문 상태를 기준으로 표시합니다.</p>
+          )}
+        </div>
+      </details>
     </section>
   );
 }

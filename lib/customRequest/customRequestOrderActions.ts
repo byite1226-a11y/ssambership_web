@@ -13,10 +13,11 @@ import {
   pickMentorIdFromApplication,
   verifyApplicationForPost,
 } from "@/lib/customRequest/customRequestQueries";
-import { insertCustomRequestOrder } from "@/lib/customRequest/customRequestMutations";
+import { createCustomRequestOrderWithEscrowHold } from "@/lib/customRequest/customOrderEscrowService";
 
 const MSG_NO_PRICE = "제안 가격을 확인할 수 없어 주문을 열 수 없습니다. 잠시 후 다시 시도해 주세요.";
 const MSG_ORDER_FAIL = "주문을 열 수 없습니다. 잠시 후 다시 시도해 주세요.";
+const MSG_ESCROW_FAIL = "예치(캐시 차감)에 실패했습니다. 잠시 후 다시 시도해 주세요.";
 const MSG_NO_APP = "지원서를 찾을 수 없어요. 잠시 후 다시 시도해 주세요.";
 const MSG_NEED_IDS = "의뢰와 지원서를 다시 선택해 주세요.";
 
@@ -54,23 +55,24 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
     backToApplications(postId, MSG_NO_APP);
     return;
   }
+  const appRow = app.row;
   const postMatch = verifyApplicationForPost(app.row, postId);
   if (!postMatch.ok) {
     backToApplications(postId, "이 지원서는 이 의뢰에 해당하지 않아요.");
   }
-  const mentor = pickMentorIdFromApplication(app.row!);
+  const mentor = pickMentorIdFromApplication(appRow);
   if (!mentor) {
     backToApplications(postId, "지원서에서 멘토를 확인할 수 없어요. 잠시 후 다시 시도해 주세요.");
     return;
   }
 
-  const price = getApplicationPriceAmount(app.row!);
+  const price = getApplicationPriceAmount(appRow);
   if (price === null) {
     backToApplications(postId, MSG_NO_PRICE);
     return;
   }
 
-  const r = await insertCustomRequestOrder(supabase, {
+  const r = await createCustomRequestOrderWithEscrowHold(supabase, {
     postId,
     studentId: user.id,
     applicationId,
@@ -81,10 +83,18 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
     revalidatePath("/custom-request");
     revalidatePath(`/custom-request/${postId}`);
     revalidatePath(`/custom-request/${postId}/applications`, "page");
-    revalidatePath(`/custom-request/orders/${r.id}`);
+    revalidatePath(`/custom-request/orders/${r.orderId}`);
+    revalidatePath("/wallet/ledger");
+    revalidatePath("/wallet/charge");
     revalidatePath("/mentor/custom-request/orders");
     revalidatePath("/mentor/custom-request/dashboard");
-    redirect(`/custom-request/orders/${r.id}`);
+    redirect(`/custom-request/orders/${r.orderId}`);
   }
-  backToApplications(postId, MSG_ORDER_FAIL);
+  if (r.code === "CASH_INSUFFICIENT") {
+    backToApplications(postId, r.error);
+  }
+  if (r.code === "ORDER_STATUS") {
+    backToApplications(postId, r.error);
+  }
+  backToApplications(postId, r.code === "ESCROW_RPC" ? MSG_ESCROW_FAIL : MSG_ORDER_FAIL);
 }

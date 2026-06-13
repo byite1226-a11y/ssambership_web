@@ -1,6 +1,6 @@
-export type CommunityMeTab = "overview" | "posts" | "scraps" | "follows";
+export type CommunityMeTab = "overview" | "posts" | "drafts" | "scraps";
 
-const VALID = new Set<string>(["overview", "posts", "scraps", "follows"]);
+const VALID = new Set<string>(["overview", "posts", "drafts", "scraps"]);
 
 /** `?tab=` 값 파싱. 없음·잘못된 값은 overview */
 export function parseCommunityMeTab(tab: string | string[] | undefined | null): CommunityMeTab {

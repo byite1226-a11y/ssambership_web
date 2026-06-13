@@ -1,3 +1,5 @@
+-- [의존 순서] 이 파일은 042_reviews_system.sql 이후 적용할 것
+-- [번호 충돌] 접두 033 — 동일 번호: 033_question_threads_topic.sql (이 파일: reviews 관리자 모더레이션)
 -- =============================================================================
 -- 033_p1_admin_reviews_moderation.sql
 -- 목적: public.reviews 운영 조치 컬럼 + 공개 SELECT 제한(숨김·블라인드 비노출) + 관리자 전체 조회

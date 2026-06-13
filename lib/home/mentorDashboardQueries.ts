@@ -2,8 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import { mentorCustomOrderStatusHeadline } from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { SUBSCRIPTIONS_TABLE } from "@/lib/subscribe/subscriptionsTable";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
-import { loadMentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsQueries";
+import { loadMentorPayoutsBundle } from "@/lib/mentor/mentorPayoutsQueries";
 import { aggregateThreadStatsForRooms } from "@/lib/home/threadStats";
 import { fetchActiveOpenDisputeOrderIdSet } from "@/lib/customRequest/orderDisputeHelpers";
 
@@ -21,8 +22,11 @@ export const MENTOR_DASHBOARD_DATA_MODEL = [
 export type MentorDashboardData = {
   rooms: { rows: Row[]; error: string | null };
   connectedRoomCount: number;
+  activeStudentCount: number;
+  disputeCount: number;
+  monthlyRevenueCash: number;
   threadStats: Awaited<ReturnType<typeof aggregateThreadStatsForRooms>>;
-  payouts: Awaited<ReturnType<typeof loadMentorPayoutsPageData>>;
+  payouts: Awaited<ReturnType<typeof loadMentorPayoutsBundle>>;
   customRecent: {
     table: string | null;
     rows: Row[];
@@ -109,6 +113,27 @@ async function notificationsCountProbe(
   return { label: "알림", detail: "알림 건수를 아직 표시할 수 없어요", status: "skeleton" };
 }
 
+export async function countActiveSubscriptionsForMentor(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<number> {
+  const { error: pe } = await supabase.from(SUBSCRIPTIONS_TABLE).select("id").limit(1);
+  if (pe) return 0;
+  const { column: mc } = await pickExistingColumn(supabase, SUBSCRIPTIONS_TABLE, [
+    "mentor_id",
+    "mentor_user_id",
+  ]);
+  if (!mc) return 0;
+  let q = supabase.from(SUBSCRIPTIONS_TABLE).select("*", { count: "exact", head: true }).eq(mc, mentorId);
+  const { column: sc } = await pickExistingColumn(supabase, SUBSCRIPTIONS_TABLE, ["status", "state"]);
+  if (sc) {
+    q = q.in(sc, ["active", "ACTIVE", "running", "paid"]);
+  }
+  const { count, error } = await q;
+  if (error) return 0;
+  return count ?? 0;
+}
+
 /**
  * /(mentor)/mentor/dashboard: 정산/맞춤의뢰/room/thread 요약(더미 없음)
  */
@@ -123,14 +148,21 @@ export async function loadMentorDashboardData(
 
   const [threadStats, payouts, customRecent, notifyProbe] = await Promise.all([
     aggregateThreadStatsForRooms(supabase, roomIds, { maxRooms: 15, mode: "mentor" }),
-    loadMentorPayoutsPageData(supabase, mentorId),
+    loadMentorPayoutsBundle(supabase, mentorId),
     fetchRecentCustomOrders(supabase, mentorId, 5),
     notificationsCountProbe(supabase, mentorId),
   ]);
 
+  const activeStudentCount = await countActiveSubscriptionsForMentor(supabase, mentorId);
+  const disputeCount = customRecent.activeDisputeOrderIds.size;
+  const monthlyRevenueCash = Math.round(payouts.monthExpectedCents / 100);
+
   return {
     rooms: roomsQ,
     connectedRoomCount: roomsQ.error ? 0 : (roomsQ.rows?.length ?? 0),
+    activeStudentCount,
+    disputeCount,
+    monthlyRevenueCash,
     threadStats,
     payouts,
     customRecent,

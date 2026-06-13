@@ -10,7 +10,15 @@ import {
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { pickMentorIdFromOrderRow } from "@/lib/customRequest/orderDetailQueries";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
-import { mentorCustomOrderWorkroomHref } from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
+import {
+  mentorCustomOrderDisplayTitle,
+  mentorCustomOrderWorkroomHref,
+} from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
+import type { DsStatusTone } from "@/lib/design-system/statusBadge";
+import {
+  classifyStudentOrderBrowseTab,
+  type StudentOrderBrowseTabId,
+} from "@/lib/customRequest/studentOrderBrowseTabClassify";
 import { shortOrderIdForDisplay } from "@/lib/utils/formatOrderIdForDisplay";
 
 type Row = Record<string, unknown>;
@@ -46,6 +54,82 @@ function pickDeadlineRaw(row: Row): unknown {
     }
   }
   return null;
+}
+
+function pickPostIdFromOrderRow(r: Row): string | null {
+  for (const k of ["post_id", "custom_request_post_id", "request_id", "custom_request_id"] as const) {
+    const v = r[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+async function loadPostsByIdsForStudentList(supabase: SupabaseClient, postIds: string[]): Promise<Map<string, Row>> {
+  const postsById = new Map<string, Row>();
+  if (postIds.length === 0) return postsById;
+  const { data, error } = await supabase
+    .from("custom_request_posts")
+    .select("id,title,subject,category,goal")
+    .in("id", postIds);
+  if (error) return postsById;
+  for (const row of (data as Row[]) ?? []) {
+    const pid = typeof row.id === "string" ? row.id : "";
+    if (pid) postsById.set(pid, row);
+  }
+  return postsById;
+}
+
+/** `orderLifecycleConstants` ORDER_STATUS_LABEL_MAP 키 기준 — 라벨과 tone 일치 */
+const STUDENT_ORDER_TONE_TERMINAL = new Set([
+  "completed",
+  "accepted",
+  "finished",
+  "closed",
+  "cancelled",
+  "canceled",
+  "done",
+  "resolved",
+  "rejected",
+  "disputed",
+  "refunded",
+]);
+
+const STUDENT_ORDER_TONE_WAITING = new Set(["pending", "unpaid"]);
+
+const STUDENT_ORDER_TONE_ACTIVE = new Set([
+  "open",
+  "in_progress",
+  "submitted",
+  "paid",
+  "delivered",
+  "in_review",
+  "waiting_review",
+  "delivered_pending_review",
+  "pending_review",
+  "redelivered",
+  "delivery_submitted",
+  "revision_requested",
+]);
+
+function resolveStudentOrderStatusTone(
+  norm: string,
+  orderId: string,
+  activeDisputeOrderIds?: ReadonlySet<string> | null
+): DsStatusTone {
+  if (activeDisputeOrderIds?.has(orderId)) return "danger";
+  const s = norm.trim().toLowerCase();
+  if (!s) return "neutral";
+  if (STUDENT_ORDER_TONE_TERMINAL.has(s)) return "neutral";
+  if (STUDENT_ORDER_TONE_WAITING.has(s)) return "warning";
+  if (STUDENT_ORDER_TONE_ACTIVE.has(s)) return "info";
+  return "neutral";
+}
+
+function resolvePaymentTone(payRaw: string): DsStatusTone {
+  const s = payRaw.trim().toLowerCase();
+  if (s === "paid" || s === "completed" || s === "settled") return "success";
+  if (s === "escrowed" || s === "held") return "info";
+  return "neutral";
 }
 
 function pickPaymentRaw(row: Row): string {
@@ -119,14 +203,18 @@ export type StudentCustomOrderListRowView = {
   id: string;
   idShort: string;
   titleLine: string;
+  subjectLine: string;
   orderStatusLabel: string;
+  statusTone: DsStatusTone;
   paymentStatusLabel: string;
+  paymentTone: DsStatusTone;
   amountLine: string;
   mentorLine: string;
   mentorId: string | null;
   createdLabel: string;
   deadlineLabel: string;
   workroomHref: string;
+  browseTab: Exclude<StudentOrderBrowseTabId, "all">;
 };
 
 export async function enrichStudentCustomOrderListRows(
@@ -144,6 +232,9 @@ export async function enrichStudentCustomOrderListRows(
       userById.set(mid, data);
     })
   );
+
+  const postIds = [...new Set(rows.map(pickPostIdFromOrderRow).filter((x): x is string => !!x))];
+  const postsById = await loadPostsByIdsForStudentList(supabase, postIds);
 
   const out: StudentCustomOrderListRowView[] = [];
   for (const r of rows) {
@@ -173,18 +264,34 @@ export async function enrichStudentCustomOrderListRows(
     const createdLabel = formatOrderRoomDate(r.created_at ?? null);
     const deadlineLabel = formatOrderRoomDate(pickDeadlineRaw(r));
 
+    const postId = pickPostIdFromOrderRow(r);
+    const post = postId ? postsById.get(postId) ?? null : null;
+    let titleLine = pickStudentOrderTitleLine(r);
+    let subjectLine = "—";
+    if (post) {
+      const postTitle = pickDisplayField(post, ["title", "subject", "goal"]);
+      if (postTitle !== "—") {
+        titleLine = mentorCustomOrderDisplayTitle({ ...r, post_title: postTitle });
+      }
+      subjectLine = pickDisplayField(post, ["subject", "category"]);
+    }
+
     out.push({
       id,
       idShort: id.length <= 16 ? id : `${id.slice(0, 8)}…${id.slice(-4)}`,
-      titleLine: pickStudentOrderTitleLine(r),
+      titleLine,
+      subjectLine,
       orderStatusLabel,
+      statusTone: resolveStudentOrderStatusTone(norm, id, activeDisputeOrderIds),
       paymentStatusLabel,
+      paymentTone: resolvePaymentTone(payRaw),
       amountLine: formatAmountLine(r),
       mentorLine,
       mentorId: mid,
       createdLabel,
       deadlineLabel,
       workroomHref: mentorCustomOrderWorkroomHref(id),
+      browseTab: classifyStudentOrderBrowseTab(r, activeDisputeOrderIds ?? new Set<string>()),
     });
   }
   return out;

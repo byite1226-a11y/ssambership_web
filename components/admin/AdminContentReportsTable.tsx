@@ -1,4 +1,4 @@
-import { updateContentReportStatusAction } from "@/lib/admin/adminReportActions";
+import { updateContentReportModerationAction, updateContentReportStatusAction } from "@/lib/admin/adminReportActions";
 import { adminContentTargetDisplay } from "@/lib/admin/adminOperationalLabels";
 import { contentReportRowIsActionable, contentReportStatusLabel } from "@/lib/admin/contentReportLabels";
 import type { AdminListResult } from "@/lib/admin/adminQueries";
@@ -120,6 +120,7 @@ export function AdminContentReportsTable(props: {
                 <td className="whitespace-nowrap px-3 py-2 text-slate-700">{formatTs(row.created_at)}</td>
                 <td className="min-w-[240px] px-3 py-2 align-top">
                   {actionable ? (
+                    <>
                     <form className="space-y-2" action={updateContentReportStatusAction}>
                       <input type="hidden" name="reportId" value={String(row.id ?? "")} />
                       <textarea
@@ -155,6 +156,19 @@ export function AdminContentReportsTable(props: {
                         </button>
                       </div>
                     </form>
+                    <form action={updateContentReportModerationAction} className="flex flex-wrap gap-1 border-t border-slate-100 pt-2">
+                      <input type="hidden" name="reportId" value={String(row.id ?? "")} />
+                      <button type="submit" name="intent" value="hidden" className="rounded-lg border px-2 py-1 text-[11px] font-bold">
+                        숨김
+                      </button>
+                      <button type="submit" name="intent" value="deleted" className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-bold text-red-800">
+                        삭제
+                      </button>
+                      <button type="submit" name="intent" value="restored" className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-800">
+                        정상
+                      </button>
+                    </form>
+                    </>
                   ) : (
                     <span className="text-xs text-slate-500">—</span>
                   )}

@@ -30,6 +30,26 @@ async function insertWithCandidates(
   return { row: null, error: lastError };
 }
 
+async function updateWithCandidates(
+  supabase: SupabaseClient,
+  table: string,
+  postId: string,
+  payloads: Record<string, unknown>[]
+): Promise<{ row: Record<string, unknown> | null; error: string | null }> {
+  let lastError = "update 후보를 모두 실패했습니다.";
+  for (const payload of payloads) {
+    const { data, error } = await supabase.from(table).update(payload).eq("id", postId).select("*").limit(1).maybeSingle();
+    if (!error) {
+      return { row: (data as Record<string, unknown> | null) ?? null, error: null };
+    }
+    lastError = error.message;
+    if (!isMissingColumnError(error)) {
+      return { row: null, error: error.message };
+    }
+  }
+  return { row: null, error: lastError };
+}
+
 function toId(row: Record<string, unknown> | null, err: string | null): MutationResult {
   if (err) return { ok: false, error: err };
   if (!row) return { ok: false, error: "삽입 행이 없습니다." };
@@ -50,22 +70,16 @@ export type NewCustomRequestInput = {
   agreedProhibited: boolean;
   agreedNoExternalContact: boolean;
   authorId: string;
+  status?: "open" | "draft";
 };
 
-export async function insertCustomRequestPost(
-  supabase: SupabaseClient,
-  input: NewCustomRequestInput
-): Promise<MutationResult> {
-  if (!input.agreedProhibited || !input.agreedNoExternalContact) {
-    return { ok: false, error: "필수 동의 항목이 필요합니다." };
-  }
-  const t = "custom_request_posts";
+function buildCustomRequestPostPayloads(input: NewCustomRequestInput): Record<string, unknown>[] {
+  const postStatus = input.status ?? "open";
   const bMin = input.budgetMin ? Number(input.budgetMin) : null;
   const bMax = input.budgetMax ? Number(input.budgetMax) : null;
   const common = {
     subject: input.subject,
     body: input.body,
-    description: input.body,
     category: input.category,
     subcategory: input.goal,
     goal: input.goal,
@@ -78,35 +92,73 @@ export async function insertCustomRequestPost(
     result_format: input.deliverableFormat,
     budget_min: bMin,
     budget_max: bMax,
-    status: "open",
-    state: "open",
+    status: postStatus,
+    state: postStatus,
     author_id: input.authorId,
-    student_id: input.authorId,
-    user_id: input.authorId,
-    requester_id: input.authorId,
   };
 
-  const payloads: Record<string, unknown>[] = [
+  return [
     { ...common },
     {
       category: input.category,
       title: input.subject,
-      content: input.body,
-      author_id: input.authorId,
-      due_at: input.deadline,
-    },
-    {
-      category: input.category,
-      subject: input.subject,
-      goal: input.goal,
       body: input.body,
-      user_id: input.authorId,
-      client_id: input.authorId,
+      author_id: input.authorId,
+      due_at: input.deadline || null,
+      status: postStatus,
+      state: postStatus,
     },
   ];
+}
+
+export async function insertCustomRequestPost(
+  supabase: SupabaseClient,
+  input: NewCustomRequestInput
+): Promise<MutationResult> {
+  const postStatus = input.status ?? "open";
+  if (postStatus !== "draft" && (!input.agreedProhibited || !input.agreedNoExternalContact)) {
+    return { ok: false, error: "필수 동의 항목이 필요합니다." };
+  }
+  const t = "custom_request_posts";
+  const payloads = buildCustomRequestPostPayloads(input);
 
   const { row, error } = await insertWithCandidates(supabase, t, payloads);
   return toId(row, error);
+}
+
+export async function updateCustomRequestDraftPost(
+  supabase: SupabaseClient,
+  postId: string,
+  input: NewCustomRequestInput
+): Promise<MutationResult> {
+  const postStatus = input.status ?? "draft";
+  if (postStatus !== "draft" && (!input.agreedProhibited || !input.agreedNoExternalContact)) {
+    return { ok: false, error: "필수 동의 항목이 필요합니다." };
+  }
+  const { row, error } = await updateWithCandidates(supabase, "custom_request_posts", postId, buildCustomRequestPostPayloads(input));
+  return toId(row, error);
+}
+
+export async function deleteCustomRequestDraftPost(
+  supabase: SupabaseClient,
+  postId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data, error } = await supabase
+    .from("custom_request_posts")
+    .delete()
+    .eq("id", postId)
+    .eq("status", "draft")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  if (!data) {
+    return { ok: false, error: "삭제할 임시저장 글이 없습니다." };
+  }
+  return { ok: true };
 }
 
 export async function insertCustomRequestPostAttachment(
@@ -122,6 +174,31 @@ export async function insertCustomRequestPostAttachment(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { error } = await supabase.from("custom_request_post_attachments").insert({
     custom_request_post_id: input.postId,
+    uploaded_by: input.uploadedBy,
+    storage_path: input.storagePath,
+    original_filename: input.originalFilename,
+    mime_type: input.mimeType,
+    file_size_bytes: input.fileSizeBytes,
+  });
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
+export async function insertCustomRequestApplicationAttachment(
+  supabase: SupabaseClient,
+  input: {
+    applicationId: string;
+    uploadedBy: string;
+    storagePath: string;
+    originalFilename: string;
+    mimeType: string;
+    fileSizeBytes: number;
+  }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase.from("custom_request_application_attachments").insert({
+    application_id: input.applicationId,
     uploaded_by: input.uploadedBy,
     storage_path: input.storagePath,
     original_filename: input.originalFilename,

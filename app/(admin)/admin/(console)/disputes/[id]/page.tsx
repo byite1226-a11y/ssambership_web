@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { loadDisputeActorSummaries, loadDisputeById } from "@/lib/disputes/disputeQueries";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
+import { loadAdminDisputeEscrowSplitPanelState } from "@/lib/admin/adminDisputeEscrowSplitQueries";
+import { CUSTOM_ORDER_PLATFORM_FEE_RATE } from "@/lib/customRequest/orderSettlementAmounts";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -30,10 +32,16 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
           ? "종결 처리했습니다."
           : flashOkRaw === "note"
             ? "운영 메모를 저장했습니다."
-            : null;
+            : flashOkRaw === "dispute_split"
+              ? "예치 분배를 완료했습니다. 분쟁·주문 상태가 갱신되었습니다."
+              : null;
 
   const supabase = await createClient();
   let adminBypass: ReturnType<typeof createServiceRoleClient> | undefined;
+  // [보안 주석] service_role로 RLS 우회
+  // 이 페이지는 (admin)/layout.tsx + (admin)/(console)/layout.tsx
+  // 이중 requireRole("admin") 가드로 보호됨.
+  // service_role 사용은 관리자 업무상 의도된 것임.
   try {
     adminBypass = createServiceRoleClient();
   } catch {
@@ -43,6 +51,16 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
   const row = bundle.dispute.row;
   const actors = row ? await loadDisputeActorSummaries(supabase, row as Record<string, unknown>) : null;
 
+  const escrowReadClient = adminBypass ?? supabase;
+  const escrowSplitPanelState = row
+    ? await loadAdminDisputeEscrowSplitPanelState(
+        escrowReadClient,
+        id,
+        row as Record<string, unknown>,
+        bundle.customOrder.row
+      )
+    : { kind: "unavailable" as const, message: "분쟁 정보가 없어 예치 분배를 표시할 수 없습니다." };
+
   const safeLoadError = row ? null : toAdminDisplayError(bundle.dispute.error, "disputes");
 
   return (
@@ -50,7 +68,7 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="관리자 / 분쟁"
       title="분쟁 상세"
-      description="분쟁 본문·당사자·연결 주문·결제·환불 정보를 확인하고 상태를 조정합니다. 금전·정산·환불 실행은 이 화면에서 자동으로 이루어지지 않습니다."
+      description="분쟁 본문·당사자·연결 주문·결제·환불 정보를 확인하고, 예치(에스크로) 분배·상태 조정을 진행합니다."
       ctas={[
         { href: "/admin/disputes", label: "분쟁 관리", tone: "blue" },
         { href: "/admin/refunds", label: "환불 관리", tone: "slate" },
@@ -82,7 +100,13 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
           <p className="rounded-2xl border border-red-200 bg-red-50/80 p-3 text-sm font-semibold text-red-950">{flashErr}</p>
         ) : null}
         {row ? (
-          <DisputeAdminPageBody bundle={bundle} actors={actors} disputeId={id} />
+          <DisputeAdminPageBody
+            bundle={bundle}
+            actors={actors}
+            disputeId={id}
+            escrowSplitPanelState={escrowSplitPanelState}
+            platformFeeRate={CUSTOM_ORDER_PLATFORM_FEE_RATE}
+          />
         ) : (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950">
             <p className="font-semibold">분쟁을 불러오지 못했습니다.</p>

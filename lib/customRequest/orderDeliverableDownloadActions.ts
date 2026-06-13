@@ -12,6 +12,7 @@ import {
   pickStoragePathFromDeliverableRow,
   validateDeliverableStoragePath,
 } from "@/lib/customRequest/orderDeliverableFiles";
+import { studentCanDownloadDeliverable } from "@/lib/customRequest/orderLifecycleConstants";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/lib/types/user";
@@ -57,6 +58,10 @@ export async function downloadCustomOrderDeliverableAction(formData: FormData): 
   const access = canAccessOrder(orderRow as Row, user.id, role ?? "student");
   if (!access.ok) {
     redirect(orderPath(orderId) + "?error=" + encodeURIComponent("이 납품을 다운로드할 권한이 없습니다."));
+  }
+
+  if (role === "student" && !studentCanDownloadDeliverable(orderRow as Row)) {
+    redirect(orderPath(orderId) + "?error=" + encodeURIComponent("수락(완료) 후에 다운로드할 수 있어요."));
   }
 
   const dT = await firstReadableCustomTable(supabase, ["custom_order_deliverables", "order_deliverables", "request_deliverables"]);

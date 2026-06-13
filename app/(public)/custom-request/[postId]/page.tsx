@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { CustomRequestPublicPostBody } from "@/components/customRequest/CustomRequestPublicPostBody";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
@@ -11,6 +11,10 @@ import {
 } from "@/lib/customRequest/customRequestQueries";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { createClient } from "@/lib/supabase/server";
+import { CustomRequestDetailShell } from "@/components/customRequest/customRequestDetailLayout";
+import { isDraftCustomRequestPost } from "@/lib/customRequest/customRequestPostMappers";
+
+import "@/app/(public)/custom-request/landing.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,6 +57,13 @@ export default async function CustomRequestPostPublicPage(props: Props) {
     notFound();
   }
 
+  if (isDraftCustomRequestPost(post.row)) {
+    if (user && isAuthorOfPost(user.id, post.row).ok) {
+      redirect(`/custom-request/new?draftId=${encodeURIComponent(postId)}`);
+    }
+    notFound();
+  }
+
   const applications = await loadApplicationsForPost(supabase, postId, 40);
 
   const canViewAttachments =
@@ -67,11 +78,11 @@ export default async function CustomRequestPostPublicPage(props: Props) {
 
   return (
     <PageScaffold
-      compactHero
+      hideHero
       hideFooterPlaceholderCards
-      eyebrow="맞춤의뢰"
-      title="맞춤의뢰 상세"
-      description="요청 내용을 확인하고, 멘토님은 여기서 지원을 보낼 수 있어요(로그인·조건이 필요할 수 있어요)."
+      eyebrow=""
+      title=""
+      description=""
       ctas={[
         { href: "/custom-request", label: "목록/소개", tone: "slate" },
         { href: "/mentors", label: "멘토 찾기", tone: "slate" },
@@ -80,11 +91,9 @@ export default async function CustomRequestPostPublicPage(props: Props) {
       dataPoints={[]}
       emptyState=""
     >
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
+      <CustomRequestDetailShell>
         {ok ? (
-          <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3.5 py-2.5 text-sm font-extrabold text-emerald-900">
-            지원이 제출되었어요.
-          </p>
+          <p className="form-alert-info mb-4">지원이 제출되었어요.</p>
         ) : null}
         {err ? (
           <p className="mb-4 rounded-xl border border-red-100 bg-red-50/90 px-3.5 py-2.5 text-sm font-extrabold text-red-900">
@@ -102,12 +111,15 @@ export default async function CustomRequestPostPublicPage(props: Props) {
           attachments={postAttachments.rows}
           attachmentLoadError={postAttachments.error}
         />
-        <p className="mt-8 text-center text-sm font-medium text-slate-500">
-          <Link href="/custom-request" className="font-extrabold text-blue-700 underline decoration-blue-200 underline-offset-2 hover:text-blue-800">
-            맞춤의뢰 허브로
+        <p className="cr-detail-footer-link">
+          <Link
+            href="/custom-request"
+            className="font-extrabold text-[var(--c-blue,#2563eb)] underline decoration-blue-200 underline-offset-2 hover:text-blue-800"
+          >
+            맞춤의뢰 홈으로
           </Link>
         </p>
-      </div>
+      </CustomRequestDetailShell>
     </PageScaffold>
   );
 }

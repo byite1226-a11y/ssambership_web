@@ -2,12 +2,45 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadMentorDirectoryUserRows, loadMentorProfilesForDirectory } from "@/lib/auth/mentorPublicRead";
 import { buildMentorProfileDisplay, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import type { MentorsListFilters, MentorsListSort } from "@/lib/mentor/mentorsListSearchParams";
+import { MENTORS_PAGE_SIZE } from "@/lib/mentor/mentorsListSearchParams";
+import { mentorIsVerified } from "@/lib/mentor/mentorPublicProfileDisplay";
 import { probePublicReviewVisibilityColumns } from "@/lib/mentor/publicReviewVisibility";
-import { getStringField, pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
+import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { loadMentorCapUsageBatch, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
+import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
+import { formatAvgResponseHoursLabel, loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
+import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
+import {
+  cashKrwForSubscribeTier,
+  formatSubscribePlanCashMonthlyLabel,
+  getSubscribeCatalogPlan,
+} from "@/lib/subscribe/subscribePlanCatalog";
+import type {
+  MentorGradeFilter,
+  MentorTypeFilter,
+} from "@/lib/mentor/mentorsListSearchParams";
 type Row = Record<string, unknown>;
 
 export const PUBLIC_MENTORS_RLS_HINT =
   "멘토 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. 문제가 계속되면 고객 지원으로 문의해 주세요.";
+
+export type MentorListStats = {
+  totalAnswers: number | null;
+  connectedStudents: number | null;
+  avgResponseLabel: string;
+  satisfactionLabel: string;
+};
+
+export type MentorTierPrice = {
+  tier: SubscribePlanTier;
+  label: string;
+  cashLabel: string;
+  cashKrw: number;
+  weeklyLabel: string;
+  priorityLabel: string;
+  recommend?: boolean;
+};
 
 export type MentorPublicListCard = {
   mentorId: string;
@@ -18,11 +51,21 @@ export type MentorPublicListCard = {
   avgRating: number | null;
   reviewsProbe: string;
   priceLabel: string | null;
+  byTier: PlansByTier | null;
   plansProbe: string;
+  tierPrices: MentorTierPrice[];
+  minPriceKrw: number | null;
+  stats: MentorListStats;
+  /** cap 마감 여부 (구체 수치는 학생 미노출 — boolean만) */
+  subscriptionClosed: boolean;
 };
 
 export type PublicMentorsListResult = {
   cards: MentorPublicListCard[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
   usersError: string | null;
   profilesError: string | null;
   probes: string[];
@@ -64,7 +107,8 @@ async function batchReviewStats(
     const { data, error } = await supabase.from(table).select("*").in(mid, mentorIds);
     if (error) continue;
     const map = new Map<string, { count: number | null; avg: number | null }>();
-    for (const row of (data as unknown as Row[]) ?? []) {
+    const summaryRows = rowsFromSupabaseData(data) as Row[];
+    for (const row of summaryRows) {
       const id = String(row[mid]);
       const cnt =
         typeof row.review_count === "number"
@@ -106,7 +150,8 @@ async function batchReviewStats(
     const { data, error } = await batchQ;
     if (error) continue;
     const acc = new Map<string, { c: number; rs: number; rn: number }>();
-    for (const row of (data as unknown as Row[]) ?? []) {
+    const reviewRows = rowsFromSupabaseData(data) as Row[];
+    for (const row of reviewRows) {
       const id = String(row[mid]);
       const s = acc.get(id) ?? { c: 0, rs: 0, rn: 0 };
       s.c += 1;
@@ -126,10 +171,12 @@ async function batchReviewStats(
   return { map: empty, probe: "reviews_summary / reviews 계열 미가용 또는 RLS" };
 }
 
+type MentorPlanBatch = { label: string; byTier: PlansByTier; probe: string };
+
 async function batchPlanLabels(
   supabase: SupabaseClient,
   mentorIds: string[]
-): Promise<{ byMentor: Map<string, { label: string; probe: string }>; probe: string }> {
+): Promise<{ byMentor: Map<string, MentorPlanBatch>; probe: string }> {
   let lastProbe = "plans 테이블 없음 또는 RLS";
 
   for (const table of PLAN_TABLES) {
@@ -148,29 +195,36 @@ async function batchPlanLabels(
       lastProbe = `${table}.${fk}: ${error.message}`;
       continue;
     }
-    const rows = (data as unknown as Row[]) ?? [];
-    const byMentor = new Map<string, { min: number; standard: number | null }>();
+    const rows = rowsFromSupabaseData(data) as Row[];
+    const rowsByMentor = new Map<string, Row[]>();
     for (const row of rows) {
       const mid = String(row[fk]);
       if (!mentorIds.includes(mid)) continue;
-      const price = parsePriceNumber(row);
-      if (price == null) continue;
-      const title = getStringField(row, ["title", "name", "label", "plan_name", "tier_name"]) ?? "";
-      const isStd = /standard|스탠다드|basic/i.test(title);
-      const cur = byMentor.get(mid) ?? { min: price, standard: null as number | null };
-      cur.min = Math.min(cur.min, price);
-      if (isStd) {
-        cur.standard = cur.standard == null ? price : Math.min(cur.standard, price);
-      }
-      byMentor.set(mid, cur);
+      const list = rowsByMentor.get(mid) ?? [];
+      list.push(row);
+      rowsByMentor.set(mid, list);
     }
-    const out = new Map<string, { label: string; probe: string }>();
-    for (const [mid, v] of byMentor) {
+    const out = new Map<string, MentorPlanBatch>();
+    for (const [mid, mentorRows] of rowsByMentor) {
+      const { byTier } = assignPlansByTier(mentorRows);
+      const standardPrice = byTier.standard ? parsePriceNumber(byTier.standard) : null;
+      let minPrice: number | null = null;
+      for (const tier of ["limited", "standard", "premium"] as const) {
+        const planRow = byTier[tier];
+        const p = planRow ? parsePriceNumber(planRow) : null;
+        if (p != null) minPrice = minPrice == null ? p : Math.min(minPrice, p);
+      }
       const label =
-        v.standard != null
-          ? `Standard ${formatMoney(v.standard)}`
-          : `대표 ${formatMoney(v.min)}~`;
-      out.set(mid, { label, probe: `${table}.${fk}` });
+        standardPrice != null
+          ? `${getSubscribeCatalogPlan("standard").label} ${formatMoney(standardPrice)}`
+          : minPrice != null
+            ? `대표 ${formatMoney(minPrice)}~`
+            : null;
+      out.set(mid, {
+        label: label ?? "",
+        byTier,
+        probe: `${table}.${fk}`,
+      });
     }
     return { byMentor: out, probe: `${table}.${fk} · 행 ${rows.length}` };
   }
@@ -179,38 +233,126 @@ async function batchPlanLabels(
 }
 
 function formatMoney(n: number): string {
-  if (n >= 1000 && n === Math.floor(n)) return `${Math.round(n).toLocaleString("ko-KR")}원`;
-  return `${n}`;
+  return formatSubscribePlanCashMonthlyLabel(n);
 }
 
-function cardMatchesFilters(f: MentorsListFilters, d: MentorProfileDisplay): boolean {
-  if (f.q) {
-    const blob = [d.displayName, d.intro, d.subjects, d.tags, d.university, d.department, d.highSchool]
-      .join(" ")
-      .toLowerCase();
-    if (!blob.includes(f.q.toLowerCase())) return false;
+function priceKrwFromRow(row: Row | null, tier: SubscribePlanTier): number {
+  return cashKrwFromPlanRow(row, tier);
+}
+
+function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPrice[]; minPriceKrw: number | null } {
+  const tiers: SubscribePlanTier[] = ["limited", "standard", "premium"];
+  const tierPrices: MentorTierPrice[] = tiers.map((tier) => {
+    const row = byTier?.[tier] ?? null;
+    const catalog = getSubscribeCatalogPlan(tier);
+    const krw = cashKrwForSubscribeTier(tier);
+    return {
+      tier,
+      label: catalog.label,
+      cashLabel: formatSubscribePlanCashMonthlyLabel(krw),
+      cashKrw: krw,
+      weeklyLabel: catalog.weeklyLabel,
+      priorityLabel: catalog.priorityLabel,
+      recommend: catalog.recommend,
+    };
+  });
+  const minPriceKrw = tierPrices.length ? Math.min(...tierPrices.map((t) => t.cashKrw)) : null;
+  return { tierPrices, minPriceKrw };
+}
+
+function schoolMatchesPreset(school: string, university: string): boolean {
+  const u = university.toLowerCase();
+  if (school === "서울대") return u.includes("서울");
+  if (school === "연대") return u.includes("연세") || u.includes("연대");
+  if (school === "고대") return u.includes("고려") || u.includes("고대");
+  if (school === "기타") {
+    return !u.includes("서울") && !u.includes("연세") && !u.includes("연대") && !u.includes("고려") && !u.includes("고대");
   }
-  if (f.university && !d.university.toLowerCase().includes(f.university.toLowerCase())) return false;
-  if (f.subject && !d.subjects.toLowerCase().includes(f.subject.toLowerCase())) return false;
+  return true;
+}
+
+function subjectMatchesPreset(subject: string, subjectsText: string): boolean {
+  if (!subject) return true;
+  const blob = subjectsText.toLowerCase();
+  return blob.includes(subject.toLowerCase());
+}
+
+function gradeMatchesFilter(grades: MentorGradeFilter[], blob: string): boolean {
+  if (!grades.length) return true;
+  return grades.some((g) => {
+    if (g === "중등") return /중등|중학|중1|중2|중3/.test(blob);
+    if (g === "고등") return /고등|고1|고2|고3|내신|수능/.test(blob);
+    if (g === "N수") return /n수|재수|검정/.test(blob);
+    return false;
+  });
+}
+
+function mentorTypeMatchesFilter(types: MentorTypeFilter[], blob: string): boolean {
+  if (!types.length) return true;
+  return types.some((t) => {
+    if (t === "메디컬계열") return /의대|한의|약대|수의|메디컬|간호|치대|메디컬계/.test(blob);
+    if (t === "교육학과") return /교육|교대|교원|교직|교육학/.test(blob);
+    if (t === "공대") return /공대|공학|기계|전자|컴공|화공|건축|토목|산공/.test(blob);
+    if (t === "경영경제대") return /경영|경제|상경|회계|금융|무역|경제대/.test(blob);
+    if (t === "문과대") return /문과|인문|국어|영어|사회|법학|정치|행정|언어|철학|역사/.test(blob);
+    if (t === "SKY") return /서울대|연세|고려|서연고|sky/.test(blob);
+    return false;
+  });
+}
+
+function cardMatchesFilters(f: MentorsListFilters, card: MentorPublicListCard): boolean {
+  const d = card.display;
+  const blob = [d.displayName, d.intro, d.subjects, d.tags, d.university, d.department, d.highSchool, d.grade]
+    .join(" ")
+    .toLowerCase();
+
+  if (f.q && !blob.includes(f.q.toLowerCase())) return false;
+  if (f.school && !schoolMatchesPreset(f.school, d.university)) return false;
+  if (!f.school && f.university && !d.university.toLowerCase().includes(f.university.toLowerCase())) return false;
+  if (f.subject && !subjectMatchesPreset(f.subject, d.subjects || d.tags)) return false;
+  if (f.verifiedOnly && !mentorIsVerified(d.verification)) return false;
   if (f.verification && !d.verification.toLowerCase().includes(f.verification.toLowerCase())) return false;
+  if (!gradeMatchesFilter(f.grades, blob)) return false;
+  if (!mentorTypeMatchesFilter(f.mentorTypes, blob)) return false;
+
+  const price = card.minPriceKrw;
+  if (f.priceBand && price != null) {
+    if (f.priceBand === "3to5" && !(price >= 55_000 && price < 100_000)) return false;
+    if (f.priceBand === "5to10" && !(price >= 100_000 && price < 150_000)) return false;
+    if (f.priceBand === "10to20" && !(price >= 150_000 && price < 250_000)) return false;
+    if (f.priceBand === "over20" && !(price >= 249_900)) return false;
+  }
   return true;
 }
 
 function sortKey(f: MentorsListSort): (a: MentorPublicListCard, b: MentorPublicListCard) => number {
   switch (f) {
-    case "rating":
-      return (a, b) => (b.avgRating ?? -1e9) - (a.avgRating ?? -1e9);
-    case "reviews":
-      return (a, b) => (b.reviewCount ?? -1e9) - (a.reviewCount ?? -1e9);
-    case "price": {
-      const parseLabel = (s: string | null) => {
-        if (!s) return Number.POSITIVE_INFINITY;
-        const m = s.match(/[\d,.]+/);
-        if (!m) return Number.POSITIVE_INFINITY;
-        return Number.parseFloat(m[0].replace(/,/g, "")) || Number.POSITIVE_INFINITY;
+    case "popular":
+      return (a, b) => {
+        const scoreA = (a.reviewCount ?? 0) * 10 + (a.avgRating ?? 0);
+        const scoreB = (b.reviewCount ?? 0) * 10 + (b.avgRating ?? 0);
+        return scoreB - scoreA;
       };
-      return (a, b) => parseLabel(a.priceLabel) - parseLabel(b.priceLabel);
-    }
+    case "review":
+      return (a, b) => (b.reviewCount ?? -1e9) - (a.reviewCount ?? -1e9);
+    case "rating":
+      return (a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1);
+    case "response":
+      return (a, b) => {
+        const parseMin = (label: string) => {
+          const m = label.match(/(\d+)\s*분/);
+          if (m) return Number(m[1]);
+          const h = label.match(/(\d+)\s*시간/);
+          if (h) return Number(h[1]) * 60;
+          if (label.includes("48시간 이상")) return 49 * 60;
+          return Number.POSITIVE_INFINITY;
+        };
+        return parseMin(a.stats.avgResponseLabel) - parseMin(b.stats.avgResponseLabel);
+      };
+    case "price_desc":
+      return (a, b) => (b.minPriceKrw ?? -1) - (a.minPriceKrw ?? -1);
+    case "price_asc":
+      return (a, b) => (a.minPriceKrw ?? Number.POSITIVE_INFINITY) - (b.minPriceKrw ?? Number.POSITIVE_INFINITY);
     case "new":
     default:
       return (a, b) => {
@@ -221,6 +363,126 @@ function sortKey(f: MentorsListSort): (a: MentorPublicListCard, b: MentorPublicL
   }
 }
 
+async function batchMentorListStats(
+  supabase: SupabaseClient,
+  mentorIds: string[],
+  reviewMap: Map<string, { count: number | null; avg: number | null }>
+): Promise<Map<string, MentorListStats>> {
+  const out = new Map<string, MentorListStats>();
+  for (const id of mentorIds) {
+    const rev = reviewMap.get(id);
+    const satisfactionLabel =
+      rev?.avg != null && Number.isFinite(rev.avg) ? `${Math.round((rev.avg / 5) * 100)}%` : "—";
+    out.set(id, {
+      totalAnswers: null,
+      connectedStudents: null,
+      avgResponseLabel: "—",
+      satisfactionLabel,
+    });
+  }
+  if (!mentorIds.length) return out;
+
+  const applyProfileStatsRow = (row: Row, mentorUserId: string) => {
+    const prev = out.get(mentorUserId);
+    if (!prev) return;
+    const answers =
+      typeof row.total_answers === "number"
+        ? row.total_answers
+        : typeof row.cumulative_answers === "number"
+          ? row.cumulative_answers
+          : typeof row.answer_count === "number"
+            ? row.answer_count
+            : prev.totalAnswers;
+    const students =
+      typeof row.connected_students === "number"
+        ? row.connected_students
+        : typeof row.student_count === "number"
+          ? row.student_count
+          : prev.connectedStudents;
+    const respMin =
+      typeof row.avg_response_minutes === "number"
+        ? row.avg_response_minutes
+        : typeof row.average_response_minutes === "number"
+          ? row.average_response_minutes
+          : null;
+    const sat =
+      typeof row.satisfaction_percent === "number"
+        ? `${Math.round(row.satisfaction_percent)}%`
+        : typeof row.satisfaction_score === "number"
+          ? `${Math.round(row.satisfaction_score)}%`
+          : prev.satisfactionLabel;
+    out.set(mentorUserId, {
+      totalAnswers: answers,
+      connectedStudents: students,
+      avgResponseLabel: respMin != null ? `${Math.round(respMin)}분` : prev.avgResponseLabel,
+      satisfactionLabel: sat,
+    });
+  };
+
+  {
+    const { error: pe } = await supabase.from("mentor_profiles").select("user_id").limit(1);
+    if (!pe) {
+      const { data, error } = await supabase.from("mentor_profiles").select("*").in("user_id", mentorIds);
+      if (!error) {
+        for (const row of (data as Row[]) ?? []) {
+          const mentorUserId = row.user_id != null ? String(row.user_id) : "";
+          if (mentorUserId) applyProfileStatsRow(row, mentorUserId);
+        }
+      }
+    }
+  }
+
+  for (const table of ["mentor_stats", "mentor_directory_stats"] as const) {
+    const { error: pe } = await supabase.from(table).select("user_id").limit(1);
+    if (pe) continue;
+    const { column: idCol } = await pickExistingColumn(supabase, table, ["user_id", "mentor_id", "mentor_user_id"]);
+    if (!idCol) continue;
+    const { data, error } = await supabase.from(table).select("*").in(idCol, mentorIds);
+    if (error) continue;
+    for (const row of (data as Row[]) ?? []) {
+      const mentorUserId = String(row[idCol]);
+      applyProfileStatsRow(row, mentorUserId);
+    }
+    break;
+  }
+
+  for (const table of ["subscriptions", "mentor_subscriptions", "user_subscriptions"] as const) {
+    const { error: pe } = await supabase.from(table).select("id").limit(1);
+    if (pe) continue;
+    const { column: mid } = await pickExistingColumn(supabase, table, ["mentor_id", "mentor_user_id", "creator_id"]);
+    if (!mid) continue;
+    const { data, error } = await supabase.from(table).select("*").in(mid, mentorIds).limit(3000);
+    if (error) continue;
+    const counts = new Map<string, number>();
+    for (const row of (data as Row[]) ?? []) {
+      const id = String(row[mid]);
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    for (const [id, c] of counts) {
+      const prev = out.get(id);
+      if (prev && prev.connectedStudents == null) {
+        out.set(id, { ...prev, connectedStudents: c });
+      }
+    }
+    break;
+  }
+
+  const responseEntries = await Promise.all(
+    mentorIds.map(async (id) => [id, await loadMentorAvgResponseHours(supabase, id)] as const)
+  );
+  for (const [id, hours] of responseEntries) {
+    if (hours == null) continue;
+    const label = formatAvgResponseHoursLabel(hours);
+    if (label === "—") continue;
+    const prev = out.get(id);
+    if (prev) {
+      out.set(id, { ...prev, avgResponseLabel: `평균 ${label} 답변` });
+    }
+  }
+
+  return out;
+}
+
 /**
  * 공개 멘토 목록: P0 `mentor_directory_list` + `mentor_profiles_for_directory` RPC(005), 미배포 시 RLS(본인만) fallback.
  * RLS로 행이 비면 cards는 빈 배열(더미 없음).
@@ -228,10 +490,11 @@ function sortKey(f: MentorsListSort): (a: MentorPublicListCard, b: MentorPublicL
 export async function loadPublicMentorsList(
   supabase: SupabaseClient,
   filters: MentorsListFilters,
-  opts?: { fetchLimit?: number; resultCap?: number }
+  opts?: { fetchLimit?: number; pageSize?: number }
 ): Promise<PublicMentorsListResult> {
-  const fetchLimit = opts?.fetchLimit ?? 80;
-  const resultCap = opts?.resultCap ?? 36;
+  const fetchLimit = opts?.fetchLimit ?? 200;
+  const pageSize = opts?.pageSize ?? MENTORS_PAGE_SIZE;
+  const page = filters.page;
   const probes: string[] = [];
 
   const { data: authData } = await supabase.auth.getUser();
@@ -254,6 +517,10 @@ export async function loadPublicMentorsList(
     });
     return {
       cards: [],
+      totalCount: 0,
+      page,
+      pageSize,
+      hasMore: false,
       usersError: dir.error,
       profilesError: null,
       probes,
@@ -288,12 +555,21 @@ export async function loadPublicMentorsList(
   probes.push(`reviews: ${revBatch.probe}`);
   probes.push(`plans: ${planBatch.probe}`);
 
+  const statsMap = await batchMentorListStats(supabase, ids, revBatch.map);
+  const capMap =
+    ids.length > 0 ? await loadMentorCapUsageBatch(ids) : new Map<string, MentorCapUsage>();
+
   const cards: MentorPublicListCard[] = [];
   for (const u of users) {
     const prow = profileByUser.get(u.id) ?? null;
+    if (!mentorVerificationStatusAllowsActivity(prow?.verification_status)) {
+      continue;
+    }
     const display = buildMentorProfileDisplay(prow, u);
     const rev = revBatch.map.get(u.id) ?? { count: null, avg: null };
     const plan = planBatch.byMentor.get(u.id);
+    const byTier = plan?.byTier ?? null;
+    const { tierPrices, minPriceKrw } = buildTierPrices(byTier);
     const card: MentorPublicListCard = {
       mentorId: u.id,
       display,
@@ -302,22 +578,44 @@ export async function loadPublicMentorsList(
       reviewCount: rev.count,
       avgRating: rev.avg,
       reviewsProbe: revBatch.probe,
-      priceLabel: plan?.label ?? null,
+      priceLabel: plan?.label ? plan.label : null,
+      byTier,
       plansProbe: plan?.probe ?? planBatch.probe,
+      tierPrices,
+      minPriceKrw,
+      stats: statsMap.get(u.id) ?? {
+        totalAnswers: null,
+        connectedStudents: null,
+        avgResponseLabel: "—",
+        satisfactionLabel: rev.avg != null ? `${Math.round((rev.avg / 5) * 100)}%` : "—",
+      },
+      subscriptionClosed: capMap.get(u.id)?.isFull ?? false,
     };
-    if (cardMatchesFilters(filters, display)) {
+    if (cardMatchesFilters(filters, card)) {
       cards.push(card);
     }
   }
 
   cards.sort(sortKey(filters.sort));
-  const sliced = cards.slice(0, resultCap);
+  const totalCount = cards.length;
+  const start = (page - 1) * pageSize;
+  const sliced = cards.slice(start, start + pageSize);
+  const hasMore = start + pageSize < totalCount;
 
   const onlySelfVisibleHint =
-    Boolean(authId) && sliced.length === 1 && sliced[0]?.mentorId === authId && !filters.q && !filters.university && !filters.subject;
+    Boolean(authId) &&
+    sliced.length === 1 &&
+    sliced[0]?.mentorId === authId &&
+    !filters.q &&
+    !filters.school &&
+    !filters.subject;
 
   return {
     cards: sliced,
+    totalCount,
+    page,
+    pageSize,
+    hasMore,
     usersError: null,
     profilesError,
     probes,

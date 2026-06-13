@@ -1,0 +1,188 @@
+/**
+ * 쌤버십 Design System v1 — semantic tokens
+ * ─────────────────────────────────────────
+ * 기존 화면은 이 토큰을 아직 사용하지 않습니다.
+ * globals.css에서 import만 추가하며, :root 기존 변수(--background 등)는 유지합니다.
+ *
+ * 철학: 무채색 기본 · 강조색(블루/그린) 절제 · box-shadow 없음 · rounded-2xl 계열
+ */
+
+:root {
+  /* ── Typography colors ── */
+  --ds-text-primary: #0f172a; /* slate-900 — 본문·제목 거의 검정 */
+  --ds-text-secondary: #475569; /* slate-600 — 보조 설명 */
+  --ds-text-tertiary: #94a3b8; /* slate-400 — 캡션·메타 */
+
+  /* ── Surfaces & borders ── */
+  --ds-bg-surface: #ffffff;
+  --ds-bg-muted: #f8fafc; /* slate-50 */
+  --ds-border-subtle: #e2e8f0; /* slate-200 */
+  --ds-border-emphasis: #cbd5e1; /* slate-300 — 강조 카드 variant */
+
+  /* ── Accent (한 화면에 primary 1곳 원칙) ── */
+  --ds-accent-student: #2563eb; /* blue-600 */
+  --ds-accent-student-muted: #eff6ff; /* blue-50 */
+  --ds-accent-mentor: #059669; /* emerald-600 */
+  --ds-accent-mentor-muted: #ecfdf5; /* emerald-50 */
+
+  /* ── Status pairs: 연한 배경 + 또렷한 글자 ── */
+  --ds-status-success-bg: #ecfdf5;
+  --ds-status-success-fg: #047857;
+  --ds-status-success-border: #a7f3d0;
+  --ds-status-warning-bg: #fffbeb;
+  --ds-status-warning-fg: #b45309;
+  --ds-status-warning-border: #fde68a;
+  --ds-status-danger-bg: #fef2f2;
+  --ds-status-danger-fg: #b91c1c;
+  --ds-status-danger-border: #fecaca;
+  --ds-status-info-bg: #f0f9ff;
+  --ds-status-info-fg: #0369a1;
+  --ds-status-info-border: #bae6fd;
+  --ds-status-neutral-bg: #f1f5f9;
+  --ds-status-neutral-fg: #334155;
+  --ds-status-neutral-border: #e2e8f0;
+
+  /* ── Spacing scale (px) — Tailwind spacing과 정렬 ── */
+  --ds-space-1: 0.25rem; /* 4 */
+  --ds-space-2: 0.5rem; /* 8 */
+  --ds-space-3: 0.75rem; /* 12 */
+  --ds-space-4: 1rem; /* 16 */
+  --ds-space-5: 1.25rem; /* 20 — 카드 패딩 기본 */
+  --ds-space-6: 1.5rem; /* 24 — 섹션 간격 */
+  --ds-space-8: 2rem; /* 32 */
+  --ds-space-10: 2.5rem; /* 40 */
+
+  /* ── Radius ── */
+  --ds-radius-card: 1rem; /* rounded-2xl */
+  --ds-radius-button: 0.75rem; /* rounded-xl */
+  --ds-radius-badge: 9999px; /* pill */
+}
+
+/**
+ * Tailwind v4 @theme — ds-* 유틸리티 클래스 생성
+ * 예: text-ds-primary, bg-ds-surface, border-ds-subtle, text-ds-display
+ */
+@theme inline {
+  /* Semantic text colors */
+  --color-ds-primary: var(--ds-text-primary);
+  --color-ds-secondary: var(--ds-text-secondary);
+  --color-ds-tertiary: var(--ds-text-tertiary);
+
+  /* Surfaces */
+  --color-ds-surface: var(--ds-bg-surface);
+  --color-ds-muted: var(--ds-bg-muted);
+  --color-ds-border-subtle: var(--ds-border-subtle);
+  --color-ds-border-emphasis: var(--ds-border-emphasis);
+
+  /* Accents */
+  --color-ds-accent-student: var(--ds-accent-student);
+  --color-ds-accent-student-muted: var(--ds-accent-student-muted);
+  --color-ds-accent-mentor: var(--ds-accent-mentor);
+  --color-ds-accent-mentor-muted: var(--ds-accent-mentor-muted);
+
+  /* Status */
+  --color-ds-success-bg: var(--ds-status-success-bg);
+  --color-ds-success-fg: var(--ds-status-success-fg);
+  --color-ds-warning-bg: var(--ds-status-warning-bg);
+  --color-ds-warning-fg: var(--ds-status-warning-fg);
+  --color-ds-danger-bg: var(--ds-status-danger-bg);
+  --color-ds-danger-fg: var(--ds-status-danger-fg);
+  --color-ds-info-bg: var(--ds-status-info-bg);
+  --color-ds-info-fg: var(--ds-status-info-fg);
+  --color-ds-neutral-bg: var(--ds-status-neutral-bg);
+  --color-ds-neutral-fg: var(--ds-status-neutral-fg);
+
+  /**
+   * Typography scale — 위계 대비 (display ≈ body의 2.5~3배)
+   * display: 대시보드 KPI 숫자
+   * h1–h3: 섹션·카드 제목
+   * body/label/caption: 본문·폼·메타
+   */
+  --text-ds-display: 2.25rem;
+  --text-ds-display--line-height: 1.1;
+  --text-ds-display--letter-spacing: -0.025em;
+  --text-ds-display--font-weight: 800;
+
+  --text-ds-h1: 1.5rem;
+  --text-ds-h1--line-height: 1.25;
+  --text-ds-h1--letter-spacing: -0.02em;
+  --text-ds-h1--font-weight: 800;
+
+  --text-ds-h2: 1.125rem;
+  --text-ds-h2--line-height: 1.35;
+  --text-ds-h2--font-weight: 700;
+
+  --text-ds-h3: 1rem;
+  --text-ds-h3--line-height: 1.4;
+  --text-ds-h3--font-weight: 700;
+
+  --text-ds-body: 0.875rem;
+  --text-ds-body--line-height: 1.5;
+  --text-ds-body--font-weight: 500;
+
+  --text-ds-label: 0.75rem;
+  --text-ds-label--line-height: 1.4;
+  --text-ds-label--font-weight: 600;
+
+  --text-ds-caption: 0.6875rem;
+  --text-ds-caption--line-height: 1.45;
+  --text-ds-caption--font-weight: 500;
+
+  /* Radius tokens for rounded-ds-* if needed */
+  --radius-ds-card: var(--ds-radius-card);
+  --radius-ds-button: var(--ds-radius-button);
+}
+
+@layer utilities {
+  /** 타이포 위계 — 숫자·제목·본문 조합 시 함께 사용 */
+  .ds-text-display {
+    font-size: var(--text-ds-display);
+    line-height: var(--text-ds-display--line-height);
+    letter-spacing: var(--text-ds-display--letter-spacing);
+    font-weight: var(--text-ds-display--font-weight);
+    color: var(--ds-text-primary);
+  }
+
+  .ds-text-h1 {
+    font-size: var(--text-ds-h1);
+    line-height: var(--text-ds-h1--line-height);
+    letter-spacing: var(--text-ds-h1--letter-spacing);
+    font-weight: var(--text-ds-h1--font-weight);
+    color: var(--ds-text-primary);
+  }
+
+  .ds-text-h2 {
+    font-size: var(--text-ds-h2);
+    line-height: var(--text-ds-h2--line-height);
+    font-weight: var(--text-ds-h2--font-weight);
+    color: var(--ds-text-primary);
+  }
+
+  .ds-text-h3 {
+    font-size: var(--text-ds-h3);
+    line-height: var(--text-ds-h3--line-height);
+    font-weight: var(--text-ds-h3--font-weight);
+    color: var(--ds-text-primary);
+  }
+
+  .ds-text-body {
+    font-size: var(--text-ds-body);
+    line-height: var(--text-ds-body--line-height);
+    font-weight: var(--text-ds-body--font-weight);
+    color: var(--ds-text-secondary);
+  }
+
+  .ds-text-label {
+    font-size: var(--text-ds-label);
+    line-height: var(--text-ds-label--line-height);
+    font-weight: var(--text-ds-label--font-weight);
+    color: var(--ds-text-secondary);
+  }
+
+  .ds-text-caption {
+    font-size: var(--text-ds-caption);
+    line-height: var(--text-ds-caption--line-height);
+    font-weight: var(--text-ds-caption--font-weight);
+    color: var(--ds-text-tertiary);
+  }
+}

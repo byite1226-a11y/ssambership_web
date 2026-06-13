@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
-import { MentorCustomRequestWorkspaceLayout } from "@/components/customRequest/MentorCustomRequestWorkspaceLayout";
 import { OrderRoomView } from "@/components/customRequest/OrderRoomView";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
@@ -9,6 +8,9 @@ import { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
 import { loadOrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
+import { getMentorStartDisabledByMissingOrderDdl } from "@/lib/customRequest/orderSchemaGate";
+import { fetchMentorStudentDisplayName } from "@/lib/customRequest/mentorDashboardOrderEnrichment";
+import { pickOrderStudentId } from "@/lib/customRequest/orderRoomMutations";
 import type { AppRole } from "@/lib/types/user";
 
 type PageProps = {
@@ -40,6 +42,13 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   const detail = canEnrich ? await loadOrderDetailPageData(supabase, orderId, bundle) : null;
   const view: "student" | "mentor" = role === "mentor" ? "mentor" : "student";
   const isMentor = role === "mentor";
+  const mentorStartDdlDisabledReason = getMentorStartDisabledByMissingOrderDdl();
+
+  let mentorStudentDisplayName: string | undefined;
+  if (isMentor && canEnrich && bundle.order.row) {
+    const studentId = pickOrderStudentId(bundle.order.row as Record<string, unknown>);
+    mentorStudentDisplayName = await fetchMentorStudentDisplayName(supabase, studentId);
+  }
 
   const alerts = (
     <>
@@ -66,6 +75,8 @@ export default async function CustomRequestOrderPage(props: PageProps) {
         actorRole={role}
         accessDenied={accessDenied}
         mentorOrderHubHref={isMentor ? "/mentor/custom-request/orders" : undefined}
+        mentorStartDdlDisabledReason={mentorStartDdlDisabledReason}
+        mentorStudentDisplayName={mentorStudentDisplayName}
       />
     </div>
   );
@@ -73,6 +84,7 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   return (
     <PageScaffold
       compactHero
+      hideHero={true}
       eyebrow={isMentor ? "멘토 · 맞춤의뢰" : "주문방"}
       title={isMentor ? "주문·작업방" : "주문·납품"}
       description={
@@ -82,30 +94,19 @@ export default async function CustomRequestOrderPage(props: PageProps) {
       }
       ctas={
         isMentor
-          ? [
-              { href: "/mentor/custom-request/orders", label: "주문 목록", tone: "slate" },
-              { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰 대시보드", tone: "green" },
-              { href: "/mentor/dashboard", label: "멘토 대시보드", tone: "blue" },
-            ]
+          ? [{ href: "/mentor/custom-request/orders", label: "맞춤의뢰 주문 목록", tone: "slate" }]
           : [
               { href: "/custom-request", label: "맞춤의뢰", tone: "slate" },
-              { href: "/home", label: "대시/홈", tone: "blue" },
+              { href: "/custom-request/orders", label: "내 주문 내역", tone: "blue" },
             ]
       }
       sections={[]}
       hideFooterPlaceholderCards
     >
-      {isMentor ? (
-        <MentorCustomRequestWorkspaceLayout active="orders">
-          {alerts}
-          {room}
-        </MentorCustomRequestWorkspaceLayout>
-      ) : (
-        <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-0">
-          {alerts}
-          {room}
-        </div>
-      )}
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-0">
+        {alerts}
+        {room}
+      </div>
     </PageScaffold>
   );
 }

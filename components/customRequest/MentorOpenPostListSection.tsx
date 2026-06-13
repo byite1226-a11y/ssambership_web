@@ -1,15 +1,23 @@
 import Link from "next/link";
+import { EmptyState, LinkButton } from "@/components/design-system";
 import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
-import { formatDateYMDOrDash } from "@/lib/customRequest/mentorCustomRequestDisplay";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
-import { MentorPostStatusBadge } from "@/components/customRequest/MentorPostStatusBadge";
 
 type Row = Record<string, unknown>;
 
-function chipClass(tone: "slate" | "violet") {
-  return tone === "violet"
-    ? "rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-violet-900"
-    : "rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-700";
+function timeAgo(dateStr: string): string {
+  if (!dateStr || dateStr === "—") return "";
+  try {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMin = Math.round((now.getTime() - d.getTime()) / (1000 * 60));
+    if (diffMin < 1) return "방금 전";
+    if (diffMin < 60) return `${diffMin}분 전`;
+    if (diffMin < 60 * 24) return `${Math.round(diffMin / 60)}시간 전`;
+    return `${Math.round(diffMin / (60 * 24))}일 전`;
+  } catch {
+    return "";
+  }
 }
 
 export function MentorOpenPostListSection(props: {
@@ -18,86 +26,51 @@ export function MentorOpenPostListSection(props: {
 }) {
   if (props.listStatus === "rpc_unavailable") {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm text-slate-700 sm:px-5 sm:py-5">
-        <p className="font-extrabold text-slate-900">모집 목록을 잠시 불러올 수 없어요</p>
-        <p className="mt-2 leading-relaxed text-slate-600">
-          운영 환경에 맞춰 연결 중이에요. 잠시 후 다시 열어 보시거나, 아래「내가 지원한 의뢰」를 확인해 주세요.
+      <div className="rounded-2xl border border-ds-border-subtle bg-white px-5 py-5">
+        <p className="text-sm font-bold text-slate-900">모집 목록을 잠시 불러올 수 없어요</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          운영 환경에 맞춰 연결 중이에요. 잠시 후 다시 열어 보시거나, 제안한 의뢰 탭을 확인해 주세요.
         </p>
       </div>
     );
   }
   if (!props.rows.length) {
     return (
-      <p className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-5 text-center text-sm font-bold text-slate-700 sm:px-6">
-        모집 중인 맞춤의뢰가 아직 없어요
-      </p>
+      <EmptyState
+        title="모집 중인 맞춤의뢰가 아직 없어요"
+        description="새로운 의뢰가 등록되면 여기에 표시됩니다."
+      />
     );
   }
   return (
-    <ul className="space-y-3 text-sm text-slate-800">
+    <ul className="space-y-3">
       {props.rows.map((r, i) => {
         const d = mapPostRowToPublicDetail(r);
         const id = String(r.id ?? i);
-        const gradeRaw = pickDisplayField(r, ["grade", "학년", "school_level", "target_grade", "level"]);
-        const periodRaw = pickDisplayField(r, ["expected_duration", "duration_weeks", "timeline", "period"]);
-        const showGrade = gradeRaw !== "—" && gradeRaw.trim().length > 0;
-        const showPeriod = periodRaw !== "—" && periodRaw.trim().length > 0;
         const detailHref = `/mentor/custom-request/posts/${id}`;
         const applyHref = `/mentor/custom-request/posts/${id}/apply`;
+        const createdAt = String(r.created_at ?? "");
+        const timeLabel = timeAgo(createdAt);
+        const categoryLabel = d.category !== "—" ? d.category : "";
+        const metaParts = [
+          categoryLabel || null,
+          d.budgetLine !== "—" ? `예상 ${d.budgetLine}` : null,
+          d.deadline !== "—" ? `마감 ${d.deadline}` : null,
+          timeLabel || null,
+        ].filter(Boolean);
+
         return (
-          <li
-            key={id}
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-          >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-5">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={chipClass("slate")}>{d.category !== "—" ? d.category : "분야 미정"}</span>
-                  {showGrade ? <span className={chipClass("violet")}>{gradeRaw}</span> : null}
-                  <MentorPostStatusBadge row={r} />
-                </div>
-                <Link href={detailHref} className="mt-2 block text-lg font-extrabold leading-snug text-slate-900 hover:text-blue-700">
-                  {d.title}
-                </Link>
-                <p className="mt-1.5 text-sm text-slate-600">
-                  <span className="font-extrabold text-slate-700">희망 전공·분야</span> {d.subject}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 sm:text-sm">
-                  <span>
-                    <span className="font-extrabold text-slate-500">예상 금액</span> {d.budgetLine}
-                  </span>
-                  {showPeriod ? (
-                    <span>
-                      <span className="font-extrabold text-slate-500">예상 기간</span> {periodRaw}
-                    </span>
-                  ) : null}
-                  <span>
-                    <span className="font-extrabold text-slate-500">마감</span> {d.deadline}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-xs tabular-nums text-slate-400">등록 {formatDateYMDOrDash(r.created_at)}</p>
-              </div>
-              <div className="flex w-full shrink-0 flex-col gap-3 border-t border-slate-100 pt-4 sm:w-auto sm:border-0 sm:pt-0 lg:w-52 lg:border-l lg:border-slate-100 lg:pl-5">
-                <div className="flex justify-end sm:justify-start lg:justify-end">
-                  <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-900">
-                    NEW
-                  </span>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:flex-col">
-                  <Link
-                    className="inline-flex min-h-[42px] flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50"
-                    href={detailHref}
-                  >
-                    상세 보기
-                  </Link>
-                  <Link
-                    className="inline-flex min-h-[42px] flex-1 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
-                    href={applyHref}
-                  >
-                    제안하기
-                  </Link>
-                </div>
-              </div>
+          <li key={id}>
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-ds-border-subtle border-l-[3px] border-l-blue-600 bg-white px-5 py-4 transition hover:bg-slate-50/80">
+              <Link href={detailHref} className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900">{d.title}</p>
+                {metaParts.length > 0 ? (
+                  <p className="mt-1 truncate text-sm text-slate-600">{metaParts.join(" · ")}</p>
+                ) : null}
+              </Link>
+              <LinkButton href={applyHref} variant="secondary" className="shrink-0 text-xs">
+                제안하기
+              </LinkButton>
             </div>
           </li>
         );

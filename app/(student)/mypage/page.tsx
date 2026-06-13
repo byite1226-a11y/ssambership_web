@@ -1,10 +1,32 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Bell, HelpCircle, Star } from "lucide-react";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
+import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
+import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
-import { MypageMetricLine } from "@/components/mypage/MypageMetricLine";
-import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
+import { loadWalletChargePageData } from "@/lib/cash/walletRouteData";
+import {
+  ledgerAmountLabel,
+  ledgerAt,
+  ledgerIsCredit,
+  ledgerReasonLabel,
+} from "@/lib/cash/ledgerRowDisplay";
+import { countActiveSubscriptionsForStudent } from "@/lib/mypage/studentActiveSubscriptions";
+import { MypageSubscriptionsCard } from "@/components/mypage/MypageSubscriptionsCard";
+
+function SectionTitle(props: { title: string; hint?: string }) {
+  return (
+    <div>
+      <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
+        <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+        {props.title}
+      </h2>
+      {props.hint ? <p className="mt-1 text-xs font-medium leading-relaxed text-[#8a96a8]">{props.hint}</p> : null}
+    </div>
+  );
+}
 
 export default async function StudentMyPage() {
   const { user, profile, error: profileLoadError } = await getServerUserWithProfile();
@@ -13,143 +35,196 @@ export default async function StudentMyPage() {
   }
 
   const supabase = await createClient();
-  const bundle = await loadStudentMypageBundle(
-    supabase,
-    user.id,
-    profile,
-    profileLoadError?.message ?? null
-  );
+  const [bundle, activeSubs, balance, walletData] = await Promise.all([
+    loadStudentMypageBundle(supabase, user.id, profile, profileLoadError?.message ?? null),
+    countActiveSubscriptionsForStudent(supabase, user.id),
+    fetchWalletBalanceByUserId(supabase, user.id),
+    loadWalletChargePageData(supabase, user.id),
+  ]);
+  const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
+
+  const activeMentorCount = activeSubs.error ? 0 : activeSubs.count;
+  const paymentCount = bundle.payments.valueText || "0";
 
   const { roomCount } = bundle;
+  const displayName = profile?.full_name?.trim() || profile?.nickname?.trim() || user.email || "학생";
+  const emailLine = profile?.email?.trim() || user.email || "";
+  const schoolLine = [profile?.grade_level?.trim(), profile?.student_status?.trim()].filter(Boolean).join(" · ");
+  const initial = displayName.trim().charAt(0).toUpperCase() || "S";
   const roomText = roomCount.error
     ? "질문방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
     : roomCount.n === 0
       ? "아직 열린 질문방이 없습니다. 멘토와 맺은 방이 여기에 이어집니다."
-      : `연결된 질문방 ${roomCount.n}개입니다.`;
+      : `연결된 질문방 ${roomCount.n}개 · 최근 질문과 답변을 확인하세요.`;
+
+  const ledgerPreview = (
+    <>
+      <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+        <SectionTitle title="결제·캐시" hint="충전 잔액과 최근 원장을 확인하세요." />
+        <p className="mt-5 text-3xl font-black tabular-nums text-[#0f172a]">
+          {cashBalanceKrw.toLocaleString("ko-KR")}
+          <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
+        </p>
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-bold text-slate-500">최근 내역</p>
+          {walletData.ledgerPreview.error ? (
+            <p className="text-xs text-red-700">내역을 불러오지 못했습니다.</p>
+          ) : walletData.ledgerPreview.rows.length === 0 ? (
+            <p className="text-xs text-slate-500">최근 사용 내역이 없습니다.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 text-sm">
+              {walletData.ledgerPreview.rows.slice(0, 5).map((row, i) => {
+                const r = row as Record<string, unknown>;
+                const credit = ledgerIsCredit(r);
+                return (
+                  <li
+                    key={typeof r.id === "string" ? r.id : `ledger-${i}`}
+                    className="flex items-center justify-between gap-2 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-medium text-slate-700">{ledgerReasonLabel(r)}</p>
+                      <p className="text-[11px] text-slate-400">{ledgerAt(r)}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-[13px] font-bold tabular-nums ${credit ? "text-[#047857]" : "text-[#dc2626]"}`}
+                    >
+                      {ledgerAmountLabel(r)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        <div className="mt-4 flex flex-col gap-2">
+          <Link
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]"
+            href="/wallet/charge"
+          >
+            충전하기
+          </Link>
+          <Link
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-[#d8e0ec] bg-white px-4 py-2.5 text-sm font-bold text-[#3f4b5f] transition hover:border-[#c4cedd] hover:text-[#0f172a]"
+            href="/wallet/ledger"
+          >
+            사용내역 전체
+          </Link>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+        <SectionTitle title="알림·지원·리뷰" />
+        <ul className="divide-y divide-slate-100 text-sm">
+          <li className="flex items-center justify-between gap-2 py-2.5">
+            <span className="inline-flex items-center gap-2 font-medium text-slate-700">
+              <Bell className="h-4 w-4 text-[#2563eb]" strokeWidth={2} aria-hidden />
+              알림
+            </span>
+            <Link href="/notifications" className="text-xs font-bold text-blue-600 hover:underline">
+              {bundle.notifications.valueText} · 센터 →
+            </Link>
+          </li>
+          <li className="flex items-center justify-between gap-2 py-2.5">
+            <span className="inline-flex items-center gap-2 font-medium text-slate-700">
+              <HelpCircle className="h-4 w-4 text-[#2563eb]" strokeWidth={2} aria-hidden />
+              고객지원
+            </span>
+            <Link href="/support/disputes" className="text-xs font-bold text-blue-600 hover:underline">
+              분쟁·환불 →
+            </Link>
+          </li>
+          <li className="flex items-center justify-between gap-2 py-2.5">
+            <span className="inline-flex items-center gap-2 font-medium text-slate-700">
+              <Star className="h-4 w-4 text-amber-500" strokeWidth={2} aria-hidden />
+              리뷰 · 신고
+            </span>
+            <span className="text-right text-xs text-slate-500">
+              {bundle.reviews.valueText} · {bundle.reports.valueText}
+            </span>
+          </li>
+        </ul>
+      </section>
+    </>
+  );
 
   return (
-    <StudentDashboardShell
-      activeTab="home"
-      user={user}
-      profile={profile}
-      profileLoadError={profileLoadError?.message ?? null}
-      bundle={bundle}
-    >
-      <div className="space-y-6">
+    <main className="min-h-screen bg-white px-4 py-8 antialiased sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1120px]">
         <header>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">마이페이지</h1>
-          <p className="mt-1 text-sm text-slate-500">내 프로필, 구독, 질문방, 결제, 알림 현황을 한곳에서 보세요.</p>
+          <span className="inline-block rounded-full bg-[#e9f0ff] px-3.5 py-1.5 text-[13px] font-extrabold text-[#2563eb]">
+            마이페이지
+          </span>
+          <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+            <h1 className="min-w-0 flex-1 text-[clamp(1.35rem,2.5vw,1.75rem)] font-extrabold leading-tight tracking-[-0.03em] text-[#0f172a]">
+              내 학습과 결제를 한곳에서 확인하세요
+            </h1>
+          </div>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-[#3f4b5f]">진행 중인 질문, 구독 현황, 캐시 잔액과 지원 링크를 한 화면에 정리했어요.</p>
         </header>
 
-        {/* Top Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">내 질문방</p>
-            <h3 className="text-xl font-black text-slate-900">{roomCount.n ?? 0} <span className="text-xs font-normal text-slate-400">개</span></h3>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">구독 중인 멘토</p>
-            <h3 className="text-xl font-black text-slate-900">{bundle.subscriptions.valueText || "0"} <span className="text-xs font-normal text-slate-400">명</span></h3>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24 transition hover:border-slate-300">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">결제 및 주문</p>
-            <h3 className="text-xl font-black text-slate-900">{bundle.payments.valueText || "0"} <span className="text-xs font-normal text-slate-400">건</span></h3>
-          </div>
-        </div>
-
-        {/* Section 1: 최근 질문 및 상담 */}
-        <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[144px]">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">최근 질문 및 상담</h2>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed font-medium">{roomText}</p>
-            {roomCount.error ? (
-              <p className="mt-1 text-xs text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-            ) : null}
-          </div>
-          <div className="mt-3">
-            <Link
-              className="inline-block rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition shadow-sm select-none"
-              href="/question-room"
-            >
-              질문방 바로가기
-            </Link>
-          </div>
-        </section>
-
-        {/* Section 2: Detailed Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">구독 · 멤버십 관리</h2>
-              <div className="mt-2">
-                <MypageMetricLine metric={bundle.subscriptions} />
+        <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 space-y-6">
+            <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#e9f0ff] text-xl font-black text-[#2563eb]"
+                    aria-hidden
+                  >
+                    {initial}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-[#2563eb]">학생 프로필</p>
+                    <h2 className="mt-1 truncate text-xl font-black text-[#0f172a]">{displayName}</h2>
+                    <p className="mt-1 truncate text-sm font-medium text-slate-500">
+                      {[emailLine, schoolLine].filter(Boolean).join(" · ")}
+                    </p>
+                    {profileLoadError ? (
+                      <p className="mt-2 text-xs font-semibold text-amber-700">{profileLoadError.message}</p>
+                    ) : null}
+                  </div>
+                </div>
+                <dl className="grid grid-cols-3 overflow-hidden rounded-2xl border border-[#bfdbfe] bg-[#eef4ff]">
+                  {[
+                    { label: "질문방", value: String(roomCount.n ?? 0) },
+                    { label: "구독", value: String(activeMentorCount) },
+                    { label: "의뢰·결제", value: paymentCount },
+                  ].map((item) => (
+                    <div key={item.label} className="border-r border-[#dbeafe] px-4 py-3 last:border-r-0">
+                      <dt className="text-[11px] font-bold text-[#2563eb]">{item.label}</dt>
+                      <dd className="mt-1 text-lg font-black tabular-nums text-[#0f172a]">{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2 select-none">
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/subscriptions">
-                구독 관리
-              </Link>
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/mentors">
-                멘토 찾기·구독
-              </Link>
-            </div>
-          </section>
+            </section>
 
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">결제 · 캐시 정보</h2>
-              <div className="mt-2">
-                <MypageMetricLine metric={bundle.payments} />
+            <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <SectionTitle title="진행 중인 질문" hint={roomText} />
+                  {roomCount.error ? (
+                    <p className="mt-2 text-xs font-semibold text-amber-800">정보를 불러오지 못했습니다.</p>
+                  ) : null}
+                </div>
+                <p className="shrink-0 text-2xl font-black tabular-nums text-[#0f172a]">
+                  {roomCount.n ?? 0}
+                  <span className="ml-1 text-xs font-normal text-slate-500">질문방</span>
+                </p>
               </div>
-            </div>
-            <p className="text-xs text-slate-500 mt-2 font-medium leading-tight select-none">캐시 충전 및 이용 내역 바로가기</p>
-            <div className="mt-4 flex flex-wrap gap-2 select-none">
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/wallet/charge">
-                캐시 충전
-              </Link>
-              <Link className="rounded-xl bg-white border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm" href="/wallet/ledger">
-                캐시 원장
-              </Link>
-            </div>
-          </section>
-        </div>
+              <div className="mt-5">
+                <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]" href="/question-room">
+                  질문방 바로가기
+                </Link>
+              </div>
+            </section>
 
-        {/* Section 3: 알림 & 고객지원 & 리뷰 */}
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">알림</h2>
-              <MypageMetricLine metric={bundle.notifications} />
-            </div>
-            <div className="mt-4 select-none">
-              <Link className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1" href="/notifications">
-                알림 센터 &rarr;
-              </Link>
-            </div>
-          </section>
+            <MypageSubscriptionsCard />
+          </div>
 
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">고객지원</h2>
-              <p className="mt-2 text-xs text-slate-600 leading-relaxed font-medium">맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있어요.</p>
-            </div>
-            <div className="mt-4 select-none">
-              <Link className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1" href="/support/disputes">
-                분쟁·환불 현황 &rarr;
-              </Link>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px] md:col-span-2 lg:col-span-1">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">리뷰 · 신고</h2>
-              <MypageMetricLine metric={bundle.reviews} />
-              <MypageMetricLine metric={bundle.reports} />
-            </div>
-            <p className="text-[10px] text-slate-400 leading-tight mt-2 select-none">작성한 리뷰와 제출한 신고는 운영 정책에 따라 안내됩니다.</p>
-          </section>
+          <aside className="space-y-6 lg:sticky lg:top-8">{ledgerPreview}</aside>
         </div>
       </div>
-    </StudentDashboardShell>
+    </main>
   );
 }

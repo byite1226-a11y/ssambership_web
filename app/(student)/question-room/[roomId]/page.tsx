@@ -1,9 +1,22 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { threadDetailPath } from "@/lib/qna/formatQuestionRoomDisplay";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { QuestionRoomWorkspace } from "@/components/qna/QuestionRoomWorkspace";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
-import { loadQuestionRoomDetailBundle, userCanAccessMentorStudentRoom } from "@/lib/qna/questionRoomQueries";
+import {
+  loadQuestionRoomDetailBundle,
+  loadQuestionRoomListBundle,
+  userCanAccessMentorStudentRoom,
+} from "@/lib/qna/questionRoomQueries";
+import { loadMentorDisplaysForQuestionRooms, roomSubjectChips } from "@/lib/qna/questionRoomStudentDisplay";
+import {
+  loadInitialWeeklyUsageSnapshots,
+  loadLastMessageByThreadId,
+  loadMessageCountsByThreadId,
+  loadQuestionRoomSubscriptionContext,
+  loadUnreadCountsByRoomId,
+} from "@/lib/qna/questionRoomStudentContext";
 import { extractNoteText } from "@/lib/qna/questionRoomMutations";
 import { paramToDraft } from "@/lib/qna/draftQuery";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
@@ -26,6 +39,9 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
   const { roomId } = await props.params;
   const sp = (await props.searchParams) ?? {};
   const threadFromQuery = typeof sp.thread === "string" && sp.thread.length ? sp.thread : null;
+  if (threadFromQuery) {
+    redirect(threadDetailPath("/question-room", roomId, threadFromQuery));
+  }
   const okMessage = typeof sp.ok === "string" && sp.ok.length ? sp.ok : null;
   const rawActionError = typeof sp.error === "string" && sp.error.length ? sp.error : null;
   const errorMessageUi = rawActionError ? mapDataErrorMessage(rawActionError) : null;
@@ -45,10 +61,33 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
   if (!allowed) {
     notFound();
   }
-  const detail = await loadQuestionRoomDetailBundle(supabase, user.id, "student", roomId, threadFromQuery);
-  const { resolvedThreadId, ...bundle } = detail;
 
-  const activeThreadId = resolvedThreadId;
+  const [listBundle, detail] = await Promise.all([
+    loadQuestionRoomListBundle(supabase, "student", user.id),
+    loadQuestionRoomDetailBundle(supabase, user.id, "student", roomId, null),
+  ]);
+  const { ...bundle } = detail;
+  const mentorDisplays = await loadMentorDisplaysForQuestionRooms(supabase, listBundle.rooms.rows);
+  const currentRoom = listBundle.rooms.rows.find((r) => r && String(r.id) === String(roomId)) ?? null;
+
+  const threadIds = bundle.threads.rows
+    .map((t) => (t?.id != null ? String(t.id) : ""))
+    .filter((id) => id.length > 0);
+  const roomIds = listBundle.rooms.rows
+    .map((r) => (r?.id != null ? String(r.id) : ""))
+    .filter((id) => id.length > 0);
+
+  const [subscriptionContext, initialUsageByMentorId, messageCountsByThreadId, lastMessageByThreadId, unreadCountsByRoomId] =
+    await Promise.all([
+      loadQuestionRoomSubscriptionContext(supabase, user.id, currentRoom),
+      loadInitialWeeklyUsageSnapshots(supabase, user.id, listBundle.rooms.rows),
+      loadMessageCountsByThreadId(supabase, threadIds),
+      loadLastMessageByThreadId(supabase, threadIds),
+      loadUnreadCountsByRoomId(supabase, roomIds),
+    ]);
+
+  const subjectOptions = currentRoom ? roomSubjectChips(currentRoom, mentorDisplays, 8) : [];
+
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
   return (
@@ -62,7 +101,6 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
       dataPoints={[]}
       hideFooterPlaceholderCards
     >
-      <div className="rounded-2xl bg-slate-50/50 p-3 sm:p-4">
       <QuestionRoomWorkspace
         variant="student"
         surface="detail"
@@ -70,12 +108,21 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
         actionFeedback={{ kind: feedbackKind, ok: okMessage, error: errorMessageUi }}
         title="질문방"
         subtitle=""
-        rooms={bundle.rooms}
+        rooms={listBundle.rooms}
         threads={bundle.threads}
         messages={bundle.messages}
         notes={bundle.notes}
         roomId={roomId}
-        threadId={activeThreadId}
+        threadId={null}
+        showChatPanel={false}
+        listPreviewsByRoomId={listBundle.listPreviewsByRoomId}
+        mentorDisplays={mentorDisplays}
+        initialUsageByMentorId={initialUsageByMentorId}
+        messageCountsByThreadId={messageCountsByThreadId}
+        lastMessageByThreadId={lastMessageByThreadId}
+        unreadCountsByRoomId={unreadCountsByRoomId}
+        subscriptionContext={subscriptionContext}
+        subjectOptions={subjectOptions}
         roomHrefBase="/question-room"
         initialNoteText={initialNoteText}
         draftThreadTitle={draftThreadTitle}
@@ -83,7 +130,6 @@ export default async function StudentQuestionRoomDetailPage(props: Props) {
         draftNoteBody={draftNoteBody}
         formRevision={formRevision}
       />
-      </div>
     </PageScaffold>
   );
 }

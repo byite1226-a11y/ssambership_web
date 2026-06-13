@@ -226,10 +226,10 @@ export function QuestionRoomListCatalog(props: {
               ) : (
                 <>
                   <Link
-                    href="/mentor/dashboard"
+                    href="/mentor/mypage"
                     className="block rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-bold text-slate-800 hover:border-emerald-200 hover:bg-emerald-50/60"
                   >
-                    대시보드
+                    마이페이지
                   </Link>
                   <Link
                     href="/mentor/channel"

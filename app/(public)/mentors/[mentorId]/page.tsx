@@ -1,8 +1,16 @@
-import { PageScaffold } from "@/components/shell/PageScaffold";
+import { MentorRecentRecorder } from "@/components/mentor/MentorRecentRecorder";
 import { PublicMentorDetailBody, PublicMentorNotFoundBody } from "@/components/mentor/PublicMentorDetailBody";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
+import { loadFavoriteMentorIdsForUser } from "@/lib/mentor/mentorFavorites";
 import { loadPublicMentorBundle } from "@/lib/mentor/publicMentorBundle";
 import { createClient } from "@/lib/supabase/server";
+import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { loadFreeQuestionRemainingForMentor } from "@/lib/qna/freeQuestionUsage";
+import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
+import { loadMentorCapUsage } from "@/lib/subscribe/mentorCapService";
+import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
+import { loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
+
 type Props = {
   params: Promise<{ mentorId: string }>;
 };
@@ -12,58 +20,73 @@ export default async function MentorDetailByIdPage(props: Props) {
   const supabase = await createClient();
   const bundle = await loadPublicMentorBundle(supabase, mentorId);
 
+  const { user, profile } = await getServerUserWithProfile();
+  const viewer =
+    user && profile?.role
+      ? { userId: user.id, role: profile.role as "student" | "mentor" | "admin" }
+      : null;
+
+  let reviewEligibility = null;
+  if (viewer?.role === "student" && viewer.userId) {
+    reviewEligibility = await checkReviewEligibility(supabase, viewer.userId, mentorId);
+  }
+
+  let initialFavorited = false;
+  let freeQuestionRemaining: number | null = null;
+  if (user) {
+    const fav = await loadFavoriteMentorIdsForUser(supabase, user.id);
+    initialFavorited = fav.ids.has(mentorId);
+    if (profile?.role === "student") {
+      freeQuestionRemaining = await loadFreeQuestionRemainingForMentor(supabase, user.id, mentorId);
+    }
+  }
+
   if (bundle.kind === "not_found") {
     return (
-      <PageScaffold
-        hideFooterPlaceholderCards
-        eyebrow="멤버십"
-        title="멘토를 찾을 수 없어요"
-        description={bundle.message}
-        ctas={[{ href: "/mentors", label: "멘토 찾기", tone: "slate" }]}
-        sections={[]}
-        emptyState=""
-        dataPoints={[]}
-      >
+      <div className="mx-auto max-w-lg px-4 py-16">
         <PublicMentorNotFoundBody title="404" message={bundle.message} />
-      </PageScaffold>
+      </div>
     );
   }
 
   if (bundle.kind === "not_mentor") {
     return (
-      <PageScaffold
-        hideFooterPlaceholderCards
-        eyebrow="멤버십"
-        title="멘토 프로필이 아니에요"
-        description={bundle.message}
-        ctas={[{ href: "/mentors", label: "멘토 찾기", tone: "slate" }]}
-        sections={[]}
-        emptyState=""
-        dataPoints={[]}
-      >
+      <div className="mx-auto max-w-lg px-4 py-16">
         <PublicMentorNotFoundBody title="표시 불가" message={bundle.message} />
-      </PageScaffold>
+      </div>
     );
   }
 
   const display = buildMentorProfileDisplay(bundle.profileRow, bundle.userRow);
+  const canViewUnapproved = viewer?.role === "admin" || viewer?.userId === mentorId;
+  if (!canViewUnapproved && !mentorVerificationStatusAllowsActivity(bundle.profileRow?.verification_status)) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16">
+        <PublicMentorNotFoundBody title="표시 불가" message="아직 승인되지 않은 멘토 프로필입니다." />
+      </div>
+    );
+  }
+  const [capUsage, avgResponseHours] = await Promise.all([
+    loadMentorCapUsage(mentorId),
+    loadMentorAvgResponseHours(supabase, mentorId),
+  ]);
 
   return (
-    <PageScaffold
-      compactHero
-      hideHero
-      hideFooterPlaceholderCards
-      eyebrow="멘토"
-      title={display.displayName}
-      description="멘토 소개·콘텐츠·리뷰·멤버십 플랜을 확인할 수 있어요."
-      ctas={[]}
-      sections={[]}
-      dataPoints={[]}
-      emptyState=""
-      loadingState=""
-      errorState=""
-    >
-      <PublicMentorDetailBody mentorId={mentorId} userRow={bundle.userRow} display={display} bundle={bundle} />
-    </PageScaffold>
+    <div className="min-h-screen bg-[#F9FAFB] py-6 sm:py-8">
+      <MentorRecentRecorder mentorId={mentorId} />
+      <PublicMentorDetailBody
+        mentorId={mentorId}
+        userRow={bundle.userRow}
+        display={display}
+        bundle={bundle}
+        viewer={viewer}
+        reviewEligibility={reviewEligibility}
+        isLoggedIn={Boolean(user)}
+        initialFavorited={initialFavorited}
+        freeQuestionRemaining={freeQuestionRemaining}
+        subscriptionClosed={capUsage.isFull}
+        avgResponseHours={avgResponseHours}
+      />
+    </div>
   );
 }

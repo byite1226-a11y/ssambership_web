@@ -12,11 +12,13 @@ type Row = Record<string, unknown>;
 
 export type OrderRoomEventKind =
   | "order_started"
+  | "order_cancelled"
   | "deliverable_submitted"
   | "deliverable_accepted"
   | "message_created"
   | "revision_requested"
   | "dispute_opened"
+  | "dispute_split_applied"
   | "settlement_item_created"
   | "payment_confirmed";
 
@@ -28,7 +30,7 @@ const REVISION_TABLES = ["custom_order_revisions"] as const;
 
 const EVENT_TYPE_KEYS = ["event", "kind", "type", "event_type", "action"] as const;
 const EVENT_ACTOR_KEYS = ["actor_id", "user_id", "author_id", "created_by"] as const;
-const MESSAGE_AUTHOR_KEYS = ["author_id", "user_id", "sender_id"] as const;
+const MESSAGE_AUTHOR_KEYS = ["author_id"] as const;
 const MESSAGE_ROLE_KEYS = ["sender_role", "role", "actor_role", "party"] as const;
 
 /**
@@ -171,12 +173,7 @@ export async function insertOrderRoomMessage(
     }
   }
 
-  const withBodies: Record<string, unknown>[] = [
-    { ...idBase, body: text },
-    { ...idBase, content: text },
-    { ...idBase, message: text },
-    { ...idBase, text: text },
-  ];
+  const withBodies: Record<string, unknown>[] = [{ ...idBase, body: text }];
   for (const payload of withBodies) {
     const { error } = await supabase.from(t).insert(payload).select("id").limit(1);
     if (!error) {
@@ -278,7 +275,7 @@ export function orderPartyLabelForMessage(
   studentId: string,
   mentorId: string
 ): "학생" | "멘토" | "참여자" {
-  for (const k of ["author_id", "user_id", "sender_id"]) {
+  for (const k of ["author_id"]) {
     const v = message[k];
     if (typeof v === "string" && v) {
       if (v === studentId) {

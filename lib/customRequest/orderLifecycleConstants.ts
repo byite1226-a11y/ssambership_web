@@ -56,6 +56,31 @@ export function normalizedPrimaryOrderStatus(row: Record<string, unknown>): stri
 /** 멘토 「작업 시작」직전 — insert 직후 primary만 허용 */
 export const ORDER_STATUSES_MENTOR_START_WORK_ALLOWED = new Set<string>([ORDER_INSERT_STATUS_PENDING]);
 
+/** 학생 직접 취소(예치 반환) — 멘토 작업 시작 전과 동일: primary `pending` + payment `escrowed` */
+export function isOrderStatusBeforeMentorWorkStarted(norm: string): boolean {
+  return ORDER_STATUSES_MENTOR_START_WORK_ALLOWED.has(String(norm ?? "").trim().toLowerCase());
+}
+
+const ORDER_PAYMENT_ESCROWED_FOR_REFUND = new Set(["escrowed"]);
+
+/** 학생 직접 취소 가능한 결제 상태(예치 완료, 아직 환불·지급 전) */
+export function isOrderPaymentEscrowedForStudentCancel(row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) {
+    return false;
+  }
+  for (const k of ["payment_status", "payment_state", "pay_status"] as const) {
+    const v = row[k];
+    if (v == null) {
+      continue;
+    }
+    const s = String(v).trim().toLowerCase();
+    if (s && ORDER_PAYMENT_ESCROWED_FOR_REFUND.has(s)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * 학생 납품 수락 직전 — `insertCustomRequestOrder`에는 납품 후 상태가 없음.
  * 운영 DB·이전 스텁에서만 쓰이던 값은 legacy로 유지한다.
@@ -72,6 +97,39 @@ export const ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY = new Set<string>([
 
 export function isOrderStatusAllowingStudentAccept(norm: string): boolean {
   return ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY.has(norm);
+}
+
+export const ORDER_STATUSES_ALLOWING_STUDENT_DELIVERABLE_DOWNLOAD = new Set<string>([
+  "completed",
+  "accepted",
+  "finished",
+]);
+
+const ORDER_STATUSES_BLOCKING_STUDENT_DELIVERABLE_DOWNLOAD = new Set<string>([
+  "cancelled",
+  "canceled",
+  "refunded",
+  "rejected",
+  "disputed",
+  "dispute_resolved",
+]);
+
+export function studentCanDownloadDeliverable(row: Record<string, unknown> | null | undefined): boolean {
+  if (!row) {
+    return false;
+  }
+  const norm = normalizedPrimaryOrderStatus(row);
+  if (ORDER_STATUSES_BLOCKING_STUDENT_DELIVERABLE_DOWNLOAD.has(norm)) {
+    return false;
+  }
+  if (ORDER_STATUSES_ALLOWING_STUDENT_DELIVERABLE_DOWNLOAD.has(norm)) {
+    return true;
+  }
+  if (ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY.has(norm) || norm === "paid") {
+    return false;
+  }
+  const completedAt = row.completed_at;
+  return completedAt != null && String(completedAt).trim() !== "";
 }
 
 /** 종료·취소 등 — `orderStudentActions` + 흔한 취소류 + `threadStats` 종료 패턴 일부 */
@@ -146,30 +204,30 @@ export const ORDER_ROOM_TERMINAL_MENTOR_NOTICE =
 // —— 주문방 UI: DB 토큰·ISO를 사용자 문구로만 변환(로직 판정에는 사용하지 않음)
 
 const ORDER_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
-  pending: "진행 대기",
-  open: "진행 중",
+  pending: "작업 대기",
+  open: "작업 중",
   in_progress: "작업 중",
-  completed: "주문 완료",
-  delivered: "납품 완료",
-  submitted: "제출됨",
-  closed: "종료",
-  cancelled: "취소됨",
-  canceled: "취소됨",
-  unpaid: "미결제",
-  paid: "결제 완료",
-  in_review: "검토 중",
-  waiting_review: "검토 대기",
-  delivered_pending_review: "납품 검토 중",
-  pending_review: "검토 대기",
-  redelivered: "재납품",
-  delivery_submitted: "납품 제출됨",
-  accepted: "수락 완료",
-  revision_requested: "수정 요청됨",
-  disputed: "분쟁 접수됨",
-  refunded: "환불됨",
-  done: "처리 완료",
-  resolved: "해결됨",
-  rejected: "거절됨",
+  completed: "완료",
+  delivered: "납품 대기",
+  submitted: "작업 중",
+  closed: "종료됨",
+  cancelled: "종료됨",
+  canceled: "종료됨",
+  unpaid: "작업 대기",
+  paid: "수락됨",
+  in_review: "납품 대기",
+  waiting_review: "납품 대기",
+  delivered_pending_review: "납품 대기",
+  pending_review: "납품 대기",
+  redelivered: "납품 대기",
+  delivery_submitted: "납품 대기",
+  accepted: "완료",
+  revision_requested: "수정 요청",
+  disputed: "종료됨",
+  refunded: "종료됨",
+  done: "종료됨",
+  resolved: "종료됨",
+  rejected: "종료됨",
   finished: "완료",
 };
 
@@ -229,7 +287,8 @@ export function orderStatusBadgeLabelForNorm(norm: string): string {
     return "—";
   }
   if (Object.prototype.hasOwnProperty.call(ORDER_STATUS_LABEL_MAP, s)) {
-    return ORDER_STATUS_LABEL_MAP[s]!;
+    const label = ORDER_STATUS_LABEL_MAP[s];
+    if (label) return label;
   }
   return "준비 중";
 }
@@ -241,6 +300,7 @@ const PAYMENT_STATUS_LABEL_MAP: Readonly<Record<string, string>> = {
   completed: "결제 완료",
   failed: "결제 실패",
   refunded: "환불됨",
+  dispute_resolved: "분쟁 분배 완료",
   partial_refund: "부분 환불",
   cancelled: "결제 취소",
   canceled: "결제 취소",
@@ -272,7 +332,7 @@ export function paymentStatusUiToneForRaw(raw: string): PaymentStatusUiTone {
   if (s === "failed") {
     return "red";
   }
-  if (s === "refunded" || s === "partial_refund") {
+  if (s === "refunded" || s === "partial_refund" || s === "dispute_resolved") {
     return "gray";
   }
   if (s === "cancelled" || s === "canceled") {
@@ -288,7 +348,8 @@ export function paymentStatusBadgeLabelForRaw(raw: string): string {
     return "—";
   }
   if (Object.prototype.hasOwnProperty.call(PAYMENT_STATUS_LABEL_MAP, s)) {
-    return PAYMENT_STATUS_LABEL_MAP[s]!;
+    const label = PAYMENT_STATUS_LABEL_MAP[s];
+    if (label) return label;
   }
   return "준비 중";
 }
@@ -340,8 +401,10 @@ export function orderEventKindLabelForUi(raw: string): string {
     settlement_item_created: "정산 항목 생성",
     message_created: "메시지 작성",
     revision_requested: "수정 요청",
-    dispute_opened: "분쟁 접수",
+    dispute_opened: "해결 요청",
+    dispute_split_applied: "분쟁 분배 완료",
     payment_confirmed: "결제 확인",
+    order_cancelled: "주문 취소",
   };
   return map[s] ?? orderStatusLabelForUi(s);
 }
@@ -393,13 +456,16 @@ export function deliverableVersionLabelKorean(version: unknown, zeroBasedIndex: 
   return `${step}차 납품`;
 }
 
-export const ORDER_WORKSPACE_STEP_LABELS = [
-  "주문 생성",
-  "진행 중",
-  "납품 완료",
-  "검토 중",
-  "주문 완료",
+/** 주문방 좌측 타임라인 5단계 */
+export const ORDER_ROOM_TIMELINE_STEPS = [
+  { id: "waiting", title: "작업 대기", desc: "멘토 작업 시작을 기다리고 있어요." },
+  { id: "in_progress", title: "작업 중", desc: "멘토가 작업을 진행하고 있어요." },
+  { id: "delivered", title: "납품 대기", desc: "납품 파일을 확인해 주세요." },
+  { id: "revision", title: "수정 요청", desc: "수정 요청이 접수되었어요." },
+  { id: "completed", title: "완료", desc: "주문이 완료되었어요." },
 ] as const;
+
+export const ORDER_WORKSPACE_STEP_LABELS = ORDER_ROOM_TIMELINE_STEPS.map((s) => s.title);
 
 export function orderWorkspaceCurrentStepIndex(
   norm: string,
@@ -411,21 +477,25 @@ export function orderWorkspaceCurrentStepIndex(
     return 4;
   }
 
+  if (n === "revision_requested") {
+    return 3;
+  }
+
   if (
     isOrderStatusAllowingStudentAccept(n) ||
     n === "in_review" ||
     n === "waiting_review" ||
     n === "delivered_pending_review" ||
-    n === "pending_review"
+    n === "pending_review" ||
+    n === "delivered" ||
+    n === "redelivered" ||
+    n === "delivery_submitted" ||
+    hasDeliverable
   ) {
-    return 3;
-  }
-
-  if (hasDeliverable) {
     return 2;
   }
 
-  if (n === ORDER_INSERT_STATUS_PENDING) {
+  if (n === ORDER_INSERT_STATUS_PENDING || n === "unpaid") {
     return 0;
   }
 
@@ -433,20 +503,17 @@ export function orderWorkspaceCurrentStepIndex(
     n === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS ||
     n === "in_progress" ||
     n === "open" ||
-    n === "delivered" ||
-    n === "redelivered" ||
-    n === "delivery_submitted" ||
     n === "submitted"
   ) {
     return 1;
   }
 
-  return 1;
+  return 0;
 }
 
 // —— W19 주문방: 앱형 작업공간 표시용(도메인 로직 없음)
 
-export const ORDER_ROOM_APP_SURFACE_CLASS = "bg-[#F3F7FF]";
+export const ORDER_ROOM_APP_SURFACE_CLASS = "bg-white";
 
 export const ORDER_ROOM_CONTENT_MAX = "mx-auto w-full max-w-7xl";
 

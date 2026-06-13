@@ -1,50 +1,168 @@
 import Link from "next/link";
-import { LayoutDashboard, ListOrdered, ClipboardList } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileText,
+  Send,
+  CheckCircle,
+  BookOpen,
+  HelpCircle,
+  MessageCircle,
+} from "lucide-react";
 
 export type MentorCustomRequestNavKey = "dashboard" | "posts" | "orders";
 
-const ITEMS: { href: string; label: string; key: MentorCustomRequestNavKey; Icon: typeof LayoutDashboard }[] = [
-  { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰 대시보드", key: "dashboard", Icon: LayoutDashboard },
-  { href: "/mentor/custom-request/posts", label: "새 의뢰 목록", key: "posts", Icon: ListOrdered },
-  { href: "/mentor/custom-request/orders", label: "맞춤의뢰 주문", key: "orders", Icon: ClipboardList },
-];
+interface NavItem {
+  href: string;
+  label: string;
+  key: string;
+  Icon: React.ElementType;
+  badgeKey?: string;
+}
 
-export function MentorCustomRequestSubNav(props: { active: MentorCustomRequestNavKey }) {
-  const active = props.active;
+interface MentorCustomRequestSubNavProps {
+  active: MentorCustomRequestNavKey;
+  tab?: string;
+  counts?: Record<string, number>;
+  /** 멘토 가이드·도움 카드 — 대시보드에서만 표시 */
+  showAuxCards?: boolean;
+}
+
+function isItemActive(itemKey: string, active: MentorCustomRequestNavKey, tab?: string): boolean {
+  if (itemKey === "dashboard") return active === "dashboard";
+  if (itemKey === "posts-open") return active === "posts" && (!tab || tab === "open");
+  if (itemKey === "posts-applied") return active === "posts" && tab === "applied";
+  if (itemKey === "orders-all") return active === "orders";
+  return false;
+}
+
+export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps) {
+  const { active, tab, counts = {}, showAuxCards = false } = props;
+
+  const navItems: NavItem[] = [
+    {
+      href: "/mentor/custom-request/dashboard",
+      label: "대시보드",
+      key: "dashboard",
+      Icon: LayoutDashboard,
+    },
+    {
+      href: "/mentor/custom-request/posts",
+      label: "새 의뢰 목록",
+      key: "posts-open",
+      Icon: FileText,
+      badgeKey: "open",
+    },
+    {
+      href: "/mentor/custom-request/posts?tab=applied",
+      label: "제안한 의뢰",
+      key: "posts-applied",
+      Icon: Send,
+      badgeKey: "applied",
+    },
+    {
+      href: "/mentor/custom-request/orders",
+      label: "수락된 의뢰",
+      key: "orders-all",
+      Icon: CheckCircle,
+      badgeKey: "ordersTotal",
+    },
+    {
+      href: "/legal/no-offplatform-contact",
+      label: "의뢰 가이드",
+      key: "guide",
+      Icon: BookOpen,
+    },
+  ];
+
   return (
-    <nav
-      className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"
-      aria-label="맞춤의뢰 하위 메뉴"
-    >
-      <ul className="space-y-1">
-        {ITEMS.map(({ href, label, key, Icon }) => {
-          const isActive = active === key;
-          return (
-            <li key={href}>
-              <Link
-                href={href}
-                className={[
-                  "flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold transition",
-                  isActive
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-700 hover:bg-slate-50",
-                ].join(" ")}
-              >
-                <span
+    <div className="flex flex-col gap-4">
+      <nav
+        className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+        aria-label="맞춤의뢰 하위 메뉴"
+      >
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
+          <h2 className="text-[13px] font-black tracking-tight text-slate-800">
+            맞춤의뢰 (멘토용)
+          </h2>
+        </div>
+
+        <ul className="p-2 space-y-0.5">
+          {navItems.map((item) => {
+            const isActive = isItemActive(item.key, active, tab);
+            const count = item.badgeKey ? counts[item.badgeKey] : undefined;
+            const showBadge = count !== undefined && count > 0;
+
+            return (
+              <li key={item.key}>
+                <Link
+                  href={item.href}
                   className={[
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border [&>svg]:h-4 [&>svg]:w-4",
-                    isActive ? "border-white/30 bg-white/15 text-white" : "border-slate-200 bg-slate-50 text-slate-600",
+                    "flex min-h-[38px] items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all duration-150",
+                    isActive
+                      ? "bg-[#142d61] text-white shadow-sm"
+                      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900",
                   ].join(" ")}
-                  aria-hidden
                 >
-                  <Icon />
-                </span>
-                <span className="min-w-0 leading-snug">{label}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+                  <item.Icon
+                    className={["h-4 w-4 shrink-0", isActive ? "text-white/90" : "text-slate-400"].join(" ")}
+                  />
+                  <span className="flex-1 leading-tight">{item.label}</span>
+                  {showBadge && (
+                    <span
+                      className={[
+                        "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black",
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-100 text-[#142d61]",
+                      ].join(" ")}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {showAuxCards ? (
+        <>
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <BookOpen className="h-4 w-4 text-[#142d61]" />
+              <h3 className="text-[13px] font-black text-slate-900">멘토 가이드</h3>
+            </div>
+            <p className="text-[12px] leading-relaxed text-slate-500 mb-3">
+              맞춤의뢰 진행 방법과<br />유의사항을 확인해보세요.
+            </p>
+            <Link
+              href="/legal/no-ghostwriting"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-slate-400" />
+              운영 정책 안내
+            </Link>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <HelpCircle className="h-4 w-4 text-slate-500" />
+              <h3 className="text-[13px] font-black text-slate-900">도움이 필요하신가요?</h3>
+            </div>
+            <p className="text-[12px] leading-relaxed text-slate-500 mb-3">
+              궁금한 점은 언제든 문의해주세요.
+            </p>
+            <Link
+              href="/notifications"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-[12px] font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
+            >
+              <MessageCircle className="h-3.5 w-3.5 text-slate-400" />
+              알림 센터
+            </Link>
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }

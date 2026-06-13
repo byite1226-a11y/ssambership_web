@@ -65,8 +65,8 @@ export function MentorChannelPageBody(props: {
           >
             프로필·연결 정보 편집
           </Link>
-          <Link href="/mentor/dashboard" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-            대시보드로 돌아가기
+          <Link href="/mentor/mypage" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+            마이페이지로 돌아가기
           </Link>
         </div>
       </div>

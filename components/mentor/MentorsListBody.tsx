@@ -1,21 +1,43 @@
 import Link from "next/link";
+import { SearchX } from "lucide-react";
 import type { MentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
-import { filtersToHrefRecord } from "@/lib/mentor/mentorsListSearchParams";
+import { filtersToHrefRecord, mentorsListHref } from "@/lib/mentor/mentorsListSearchParams";
 import type { PublicMentorsListResult } from "@/lib/mentor/publicMentorsListQueries";
-import { MentorFilterPanel } from "@/components/mentor/MentorFilterPanel";
 import { MentorGrid } from "@/components/mentor/MentorGrid";
+import { MentorsListFilterSidebar } from "@/components/mentor/MentorsListFilterSidebar";
 import { MentorsListSidebar } from "@/components/mentor/MentorsListSidebar";
-import { MentorResultsSummaryBar } from "@/components/mentor/MentorResultsSummaryBar";
-import { MentorSearchBar } from "@/components/mentor/MentorSearchBar";
-import { MentorSortBar } from "@/components/mentor/MentorSortBar";
+import { MentorsListTopFilterBar } from "@/components/mentor/MentorsListTopFilterBar";
 
 const COPY_PUBLIC_LIST_HINT =
   "현재 공개된 멘토 정보만 표시하고 있어요. 더 많은 멘토는 순차적으로 준비 중이에요.";
 
-export function MentorsListBody(props: { filters: MentorsListFilters; list: PublicMentorsListResult }) {
+function mentorsListFiltersApplied(filters: MentorsListFilters): boolean {
+  return Boolean(
+    filters.q.trim() ||
+      filters.subject ||
+      filters.school ||
+      filters.university.trim() ||
+      filters.verification ||
+      filters.verifiedOnly ||
+      filters.grades.length > 0 ||
+      filters.mentorTypes.length > 0 ||
+      filters.priceBand
+  );
+}
+
+export function MentorsListBody(props: {
+  filters: MentorsListFilters;
+  list: PublicMentorsListResult;
+  favoriteIds: string[];
+  isLoggedIn: boolean;
+}) {
   const { filters, list } = props;
   const hrefBase = filtersToHrefRecord(filters);
+  const favoriteSet = new Set(props.favoriteIds);
+  const favoriteCards = list.cards.filter((c) => favoriteSet.has(c.mentorId));
   const showListHint = list.onlySelfVisibleHint && list.cards.length === 0;
+  const from = list.totalCount === 0 ? 0 : (list.page - 1) * list.pageSize + 1;
+  const to = Math.min(list.page * list.pageSize, list.totalCount);
 
   if (list.usersError) {
     return (
@@ -29,86 +51,115 @@ export function MentorsListBody(props: { filters: MentorsListFilters; list: Publ
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] min-w-0 px-4 sm:px-5 lg:px-6">
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
-        {/* 좌: 검색·필터 */}
-        <aside className="order-1 min-w-0 lg:col-span-3 lg:sticky lg:top-6 lg:self-start">
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-4 shadow-[0_4px_24px_rgba(15,23,42,0.06)] sm:p-5">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-blue-700/90">탐색</p>
-            <h2 className="mt-1 text-lg font-black text-slate-900">검색·필터</h2>
-            <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">키워드와 학교·과목·인증으로 멘토를 좁혀요.</p>
-            <form method="get" action="/mentors" className="mt-5 space-y-4">
-              <MentorSearchBar defaultValue={filters.q} />
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-3.5 sm:p-4">
-                <h3 className="text-sm font-extrabold text-slate-900">상세 필터</h3>
-                <div className="mt-3">
-                  <MentorFilterPanel
-                    universityDefault={filters.university}
-                    subjectDefault={filters.subject}
-                    verificationDefault={filters.verification}
-                  />
-                </div>
-              </div>
-              {filters.sort !== "new" ? <input type="hidden" name="sort" value={filters.sort} /> : null}
-              <div className="flex flex-wrap gap-2 pt-1">
-                <button
-                  type="submit"
-                  className="min-h-[48px] flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-slate-800 sm:flex-none sm:px-6"
-                >
-                  필터 적용
-                </button>
-                <Link
-                  href="/mentors"
-                  className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl border-2 border-slate-200 bg-white px-4 py-2.5 text-sm font-extrabold text-slate-800 transition hover:border-slate-300 sm:flex-none sm:px-6"
-                >
-                  초기화
-                </Link>
-              </div>
-            </form>
+    <div className="mx-auto w-full max-w-[1600px] min-w-0 px-4 pb-12 sm:px-5 lg:px-6">
+      <header className="mb-6">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#1A56DB]">쌤버십</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">멘토 찾기</h1>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+          과목·학년·요금으로 멘토를 찾고, 베이직·스탠다드·프리미엄 플랜으로 구독을 시작하세요.
+        </p>
+      </header>
+
+      <MentorsListTopFilterBar
+        filters={filters}
+        favoriteCount={props.favoriteIds.length}
+        totalCount={list.totalCount}
+      />
+
+      <div className="mt-6 flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:items-start">
+        <aside className="hidden xl:col-span-2 xl:block">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-[14px] font-black text-slate-900">필터</h2>
+            <div className="mt-3">
+              <MentorsListFilterSidebar filters={filters} totalCount={list.totalCount} />
+            </div>
           </div>
         </aside>
 
-        {/* 중: 요약 + 정렬 + 리스트 */}
-        <div className="order-2 min-w-0 space-y-4 lg:col-span-6 lg:min-w-0">
-          <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-4 shadow-[0_6px_28px_rgba(15,23,42,0.07)] sm:p-5">
-            <MentorResultsSummaryBar filters={filters} total={list.cards.length} profilesError={Boolean(list.profilesError)} />
-            <div className="mt-4">
-              <MentorSortBar current={hrefBase} active={filters.sort} />
-            </div>
-
-            {showListHint ? (
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/90 px-3.5 py-2.5 text-sm text-slate-700 sm:px-4 sm:py-3">
-                <p>{COPY_PUBLIC_LIST_HINT}</p>
-              </div>
-            ) : null}
-
-            {list.profilesError ? (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/90 px-3.5 py-2.5 text-sm text-amber-950 sm:px-4 sm:py-3">
-                <p>
-                  <span className="font-bold">일부 멘토</span>의 상세는 아직 이어지지 않았을 수 있어요. 보이는 항목 기준으로 목록이
-                  표시돼요.
-                </p>
-              </div>
-            ) : null}
-
-            <div className="mt-5">
-              {list.cards.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center sm:p-10">
-                  <p className="text-lg font-black text-slate-900">조건에 맞는 멘토가 없어요</p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    필터를 조정하거나, 나중에 다시 확인해 주세요. {COPY_PUBLIC_LIST_HINT}
-                  </p>
-                </div>
+        <main className="min-w-0 xl:col-span-7">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <p className="text-sm font-bold text-slate-700">
+              {list.totalCount > 0 ? (
+                <>
+                  검색 결과 <span className="font-black text-[#1A56DB]">{list.totalCount}</span>명 · {from}–{to}
+                  번째
+                </>
               ) : (
-                <MentorGrid cards={list.cards} />
+                "조건에 맞는 멘토 0명"
               )}
-            </div>
+            </p>
+            {list.profilesError ? (
+              <p className="text-[11px] font-medium text-amber-800">일부 프로필 정보가 누락될 수 있어요.</p>
+            ) : null}
           </div>
-        </div>
 
-        {/* 우: 안내·태그·CTA */}
-        <aside className="order-3 min-w-0 lg:col-span-3 lg:sticky lg:top-6 lg:self-start">
-          <MentorsListSidebar cards={list.cards} />
+          {showListHint ? (
+            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-700">
+              {COPY_PUBLIC_LIST_HINT}
+            </div>
+          ) : null}
+
+          {list.cards.length === 0 && mentorsListFiltersApplied(filters) ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-16 text-center">
+              <SearchX className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+              <h3 className="mt-4 text-lg font-black text-slate-900">조건에 맞는 멘토가 없어요</h3>
+              <p className="mt-2 max-w-sm text-sm font-medium text-slate-600">
+                필터를 바꾸거나 검색어를 수정해보세요.
+              </p>
+              <Link
+                href="/mentors"
+                className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+              >
+                필터 초기화
+              </Link>
+            </div>
+          ) : list.cards.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-10 text-center">
+              <p className="text-lg font-black text-slate-900">아직 데이터가 없어요</p>
+              <p className="mt-2 text-sm text-slate-600">필터를 조정하거나 검색어를 바꿔 보세요.</p>
+              <Link href="/mentors" className="mt-4 inline-block text-sm font-bold text-[#1A56DB] underline">
+                필터 초기화
+              </Link>
+            </div>
+          ) : (
+            <>
+              <MentorGrid
+                cards={list.cards}
+                favoriteIds={favoriteSet}
+                isLoggedIn={props.isLoggedIn}
+                view={filters.view}
+              />
+
+              {list.hasMore ? (
+                <div className="mt-6">
+                  <Link
+                    href={mentorsListHref(hrefBase, { page: String(list.page + 1) })}
+                    className="flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-dashed border-[#1A56DB]/40 bg-blue-50/50 text-sm font-extrabold text-[#1A56DB] transition hover:bg-blue-50"
+                  >
+                    더 많은 멘토 보기
+                  </Link>
+                </div>
+              ) : null}
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                {list.page > 1 ? (
+                  <Link
+                    href={mentorsListHref(hrefBase, { page: String(list.page - 1) })}
+                    className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-5 text-sm font-extrabold text-slate-800 hover:bg-slate-50"
+                  >
+                    이전
+                  </Link>
+                ) : null}
+                <span className="text-sm font-bold text-slate-500">
+                  {list.page} / {Math.max(1, Math.ceil(list.totalCount / list.pageSize))}
+                </span>
+              </div>
+            </>
+          )}
+        </main>
+
+        <aside className="min-w-0 xl:col-span-3">
+          <MentorsListSidebar favoriteCards={favoriteCards} />
         </aside>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import { submitCustomOrderRevisionRequestAction } from "@/lib/customRequest/orderRevisionActions";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
-import { formatOrderRoomDateTime, ORDER_ROOM_CARD_CLASS } from "@/lib/customRequest/orderLifecycleConstants";
+import { formatOrderRoomDateTime } from "@/lib/customRequest/orderLifecycleConstants";
+import { EmptyState } from "@/components/design-system";
 import type { AppRole } from "@/lib/types/user";
 
 type Row = Record<string, unknown>;
@@ -19,6 +20,8 @@ type Props = {
   workspaceCompact?: boolean;
   /** 멘토 작업방: 수정 요청 블록 톤(reference 보라 계열) */
   revisionAccent?: "default" | "violet";
+  view?: "student" | "mentor";
+  embedded?: boolean;
 };
 
 function revisionBody(r: Row) {
@@ -34,29 +37,54 @@ export function OrderRevisionsPanel({
   orderTerminal = false,
   workspaceCompact = false,
   revisionAccent = "default",
+  view = "student",
+  embedded = false,
 }: Props) {
   const rev = detail.revisions;
   const rows = (rev.rows ?? []) as Row[];
   const hasTable = Boolean(rev.table) && !rev.error;
   const canShowComposer = actorRole === "student" && hasOrderPartyAccess && Boolean(String(orderId).trim());
+  const mentorWorkroom = view === "mentor";
 
   const accentSection =
-    revisionAccent === "violet" ? "bg-gradient-to-br from-violet-50/40 via-white to-white ring-2 ring-violet-200/60" : "";
+    !mentorWorkroom && revisionAccent === "violet" ? "bg-gradient-to-br from-violet-50/40 via-white to-white ring-2 ring-violet-200/60" : "";
+  const sectionClass = mentorWorkroom
+    ? "space-y-5 rounded-2xl border border-ds-border-subtle p-6 text-sm text-slate-800"
+    : embedded
+      ? "text-sm text-slate-800"
+    : `rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:border-blue-200 hover:shadow-md transition-all duration-300 relative overflow-hidden text-sm text-slate-800 ${accentSection}`.trim();
 
   return (
     <section
       id="order-revisions"
-      className={`${ORDER_ROOM_CARD_CLASS} text-sm text-slate-800 ${accentSection}`.trim()}
+      className={sectionClass}
     >
-      <h3 className="text-sm font-bold text-slate-900">수정 요청</h3>
-      <p className="mt-1 text-xs text-slate-500">
+      {mentorWorkroom ? (
+        <div className="space-y-2">
+          <h3 className="text-base font-bold text-slate-900">수정 요청 내역</h3>
+          <p className="text-sm leading-relaxed text-slate-600">
+            {workspaceCompact
+              ? "의뢰자 → 멘토(납품·검토 중)"
+              : "납품·검토 중 의뢰자가 멘토에게 보내는 수정 사항이 여기 누적됩니다(완료된 주문은 제외)."}
+          </p>
+        </div>
+      ) : embedded ? null : (
+        <>
+      <div className="mb-3 flex items-center justify-between border-b border-ds-border-subtle pb-2.5">
+        <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">
+          수정 요청 내역
+        </h3>
+      </div>
+      <p className="mt-1 text-xs font-semibold leading-normal text-slate-500">
         {workspaceCompact
           ? "의뢰자 → 멘토(납품·검토 중)"
           : "납품·검토 중 의뢰자가 멘토에게 보내는 수정 사항이 여기 누적됩니다(완료된 주문은 제외)."}
       </p>
+        </>
+      )}
 
       {!orderTerminal && canShowComposer && studentRevisionRequestDisabledReason == null ? (
-        <form action={submitCustomOrderRevisionRequestAction} className="mt-4 space-y-2">
+        <form action={submitCustomOrderRevisionRequestAction} className="mt-4 space-y-3">
           <input type="hidden" name="orderId" value={orderId} />
           <label className="sr-only" htmlFor="order-revision-note">
             수정 요청 내용
@@ -64,7 +92,7 @@ export function OrderRevisionsPanel({
           <textarea
             id="order-revision-note"
             name="requestNote"
-            className="min-h-[100px] w-full rounded-lg border border-slate-200 bg-slate-50/50 px-2.5 py-2 text-slate-900"
+            className="min-h-[100px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-violet-400 focus:ring-1 focus:ring-violet-400 transition"
             maxLength={8000}
             placeholder="수정이 필요한 부분을 구체적으로 적어 주세요."
             required
@@ -72,14 +100,14 @@ export function OrderRevisionsPanel({
           />
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+            className="rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white hover:bg-violet-700 shadow-md shadow-violet-500/10 transition"
           >
             수정 요청 보내기
           </button>
         </form>
       ) : !orderTerminal && actorRole === "student" && canShowComposer && studentRevisionRequestDisabledReason ? (
         <p
-          className={`mt-3 rounded-xl border px-3 py-2.5 text-sm leading-relaxed ${
+          className={`mt-3 rounded-xl border px-3 py-2.5 text-xs leading-relaxed font-bold ${
             revisionAccent === "violet"
               ? "border-violet-200 bg-violet-50/80 text-violet-950"
               : "border-slate-200 bg-slate-50 text-slate-600"
@@ -93,18 +121,18 @@ export function OrderRevisionsPanel({
       <div className="mt-4">
         {workspaceCompact && hasTable && rows.length > 0 ? (
           <details className="group mt-1">
-            <summary className="cursor-pointer list-none text-xs font-semibold text-slate-600 marker:hidden [&::-webkit-details-marker]:hidden">
-              <span className="inline-flex items-center gap-1">
-                <span className="text-slate-400">▸</span> 수정 요청 히스토리 ({rows.length})
+            <summary className="cursor-pointer list-none text-xs font-extrabold text-slate-500 marker:hidden [&::-webkit-details-marker]:hidden flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-slate-400 group-open:rotate-90 transition-transform">▸</span> 수정 요청 히스토리 ({rows.length})
               </span>
             </summary>
-            <ul className="mt-2 max-h-60 space-y-2 overflow-y-auto">
+            <ul className="mt-3 max-h-60 space-y-2.5 overflow-y-auto">
               {rows.map((r, i) => {
                 const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
                 return (
-                  <li key={String(r.id ?? i)} className="rounded-lg border border-slate-200/60 bg-slate-50/50 px-2.5 py-2">
-                    <p className="text-[11px] text-slate-400">{at}</p>
-                    <p className="mt-1 whitespace-pre-wrap text-slate-800">{revisionBody(r)}</p>
+                  <li key={String(r.id ?? i)} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 hover:border-violet-100 transition duration-200">
+                    <p className="text-[10px] font-bold text-violet-400">{at}</p>
+                    <p className="mt-1.5 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-semibold">{revisionBody(r)}</p>
                   </li>
                 );
               })}
@@ -112,30 +140,42 @@ export function OrderRevisionsPanel({
           </details>
         ) : (
           <>
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">내역</h4>
+        <h4 className={`${mentorWorkroom ? "text-sm font-semibold text-slate-600" : "text-xs font-black uppercase tracking-wider text-slate-400"}`}>내역</h4>
         {hasTable && rows.length > 0 ? (
-          <ul className="mt-2 max-h-72 space-y-3 overflow-y-auto">
+          <ul className="mt-2.5 max-h-72 space-y-3 overflow-y-auto">
             {rows.map((r, i) => {
               const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
               return (
                 <li
                   key={String(r.id ?? i)}
-                  className={`rounded-xl border px-3 py-2.5 ${
-                    revisionAccent === "violet"
-                      ? "border-violet-100 bg-violet-50/40"
-                      : "border-blue-100/50 bg-blue-50/20"
+                  className={`rounded-xl px-4 py-4 transition duration-200 ${
+                    mentorWorkroom
+                      ? "bg-slate-50"
+                      : revisionAccent === "violet"
+                        ? "border border-violet-100 bg-violet-50/20 hover:border-violet-300 hover:shadow-sm"
+                        : "border border-blue-100/50 bg-blue-50/10 hover:border-blue-300 hover:shadow-sm"
                   }`}
                 >
-                  <p className="text-[11px] text-slate-400">{at}</p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-slate-800">{revisionBody(r)}</p>
+                  <p className={`text-xs font-medium ${mentorWorkroom ? "tabular-nums text-slate-500" : "text-[10px] font-bold text-slate-400"}`}>{at}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-900">{revisionBody(r)}</p>
                 </li>
               );
             })}
           </ul>
         ) : hasTable && rows.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">수정 요청이 아직 없습니다.</p>
+          mentorWorkroom ? (
+            <EmptyState title="수정 요청이 아직 없습니다." className="mt-2 py-8" />
+          ) : (
+            <p className="mt-2 rounded-xl bg-slate-50/30 py-4 text-center text-xs font-semibold text-slate-400">수정 요청이 아직 없습니다.</p>
+          )
+        ) : mentorWorkroom ? (
+          <EmptyState
+            title={rev.error ? "수정 요청을 불러올 수 없습니다." : "수정 요청 내역을 불러올 수 없습니다."}
+            description="잠시 후 다시 시도해 주세요."
+            className="mt-2 py-8"
+          />
         ) : (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 rounded-xl bg-slate-50/30 py-4 text-center text-xs font-semibold text-slate-400">
             {rev.error
               ? "수정 요청을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."
               : "수정 요청 내역을 불러올 수 없습니다. 잠시 후 다시 시도해 주세요."}

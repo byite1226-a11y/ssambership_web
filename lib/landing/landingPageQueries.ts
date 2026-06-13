@@ -30,6 +30,32 @@ export type TrustMetric = {
   probe: string;
 };
 
+export type LandingPublicStats = {
+  mentorCount: number | null;
+  shortformCount: number | null;
+  boardCount: number | null;
+  mentorProbe: string;
+  shortformProbe: string;
+  boardProbe: string;
+};
+
+async function fetchLandingPublicStats(supabase: SupabaseClient): Promise<LandingPublicStats> {
+  const [mentors, shortforms, boards] = await Promise.all([
+    supabase.from("mentor_profiles").select("*", { count: "exact", head: true }),
+    supabase.from("shortform_posts").select("*", { count: "exact", head: true }),
+    supabase.from("community_posts").select("*", { count: "exact", head: true }),
+  ]);
+
+  return {
+    mentorCount: mentors.error ? null : mentors.count,
+    shortformCount: shortforms.error ? null : shortforms.count,
+    boardCount: boards.error ? null : boards.count,
+    mentorProbe: mentors.error ? mentors.error.message : "mentor_profiles count",
+    shortformProbe: shortforms.error ? shortforms.error.message : "shortform_posts count",
+    boardProbe: boards.error ? boards.error.message : "community_posts count",
+  };
+}
+
 async function fetchNoticesHome(supabase: SupabaseClient): Promise<NoticeBannerLoad> {
   for (const table of NOTICE_TABLES) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
@@ -109,17 +135,51 @@ export type HomeLandingData = {
   pricingByTier: PlansByTier;
   pricingFillProbe: string;
   trust: TrustMetric[];
+  publicStats: LandingPublicStats;
 };
+
+/** loadHomeLandingData 실패 시 `/` 랜딩 폴백(500 방지) */
+export function emptyHomeLandingData(): HomeLandingData {
+  return {
+    notices: { rows: [], table: null, probe: "fallback", error: null },
+    mentors: {
+      cards: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 6,
+      hasMore: false,
+      usersError: null,
+      profilesError: null,
+      probes: [],
+      onlySelfVisibleHint: false,
+    },
+    shorts: { rows: [], table: null, error: null },
+    boards: { rows: [], table: null, error: null },
+    plans: { rows: [], table: null, probe: "fallback", error: null },
+    pricingByTier: { limited: null, standard: null, premium: null },
+    pricingFillProbe: "fallback",
+    trust: [],
+    publicStats: {
+      mentorCount: null,
+      shortformCount: null,
+      boardCount: null,
+      mentorProbe: "fallback",
+      shortformProbe: "fallback",
+      boardProbe: "fallback",
+    },
+  };
+}
 
 export async function loadHomeLandingData(supabase: SupabaseClient): Promise<HomeLandingData> {
   const filters = parseMentorsListFilters({});
-  const [notices, mentors, shorts, boards, plans, trust] = await Promise.all([
+  const [notices, mentors, shorts, boards, plans, trust, publicStats] = await Promise.all([
     fetchNoticesHome(supabase),
-    loadPublicMentorsList(supabase, filters, { fetchLimit: 14, resultCap: 6 }),
+    loadPublicMentorsList(supabase, { ...filters, page: 1 }, { fetchLimit: 14, pageSize: 6 }),
     listShortformPosts(supabase, 4),
     listBoardPosts(supabase, 4),
     fetchGlobalPlansSample(supabase),
     fetchTrustMetrics(supabase),
+    fetchLandingPublicStats(supabase),
   ]);
   const { byTier, fillProbe } = assignPlansByTier(plans.rows as Row[]);
   return {
@@ -131,5 +191,6 @@ export async function loadHomeLandingData(supabase: SupabaseClient): Promise<Hom
     pricingByTier: byTier,
     pricingFillProbe: fillProbe,
     trust,
+    publicStats,
   };
 }

@@ -8,4 +8,13 @@
 *.log
 
 .env.local.production-backup
+*.production-backup
 *.tsbuildinfo
+screenshots/
+
+# 보고서 생성 스크립트 (개발용, 배포 불필요)
+generate_report.mjs
+*.docx
+
+# 스크린샷 스크립트
+scripts/

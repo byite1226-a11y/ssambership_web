@@ -1,10 +1,11 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { CommunityMeTabNav } from "@/components/community/CommunityMeTabNav";
 import { CommunityMeTabPanels, type CommunityMeActivityPayload } from "@/components/community/CommunityMeTabPanels";
+import { CommunityMeOverviewSections } from "@/components/community/CommunityMeOverviewSections";
 import { CommunityPageHero } from "@/components/community/CommunityPageHero";
+import { LoginRequiredState } from "@/components/common/LoginRequiredState";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
 import {
+  buildCommunityMeDraftsList,
   buildCommunityMePostsList,
   countMyCommunityBoardPosts,
   countMyShortformPosts,
@@ -12,17 +13,25 @@ import {
   loadMyShortformPosts,
 } from "@/lib/community/communityQueries";
 import { communityMePath, parseCommunityMeTab } from "@/lib/community/communityMeTab";
+import type { CommunityNavActive } from "@/components/community/CommunityNavTypes";
 import { createClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/lib/types/user";
 
 function meDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
   if (role === "mentor") {
-    return "게시글·숏폼 작성과 목록 탐색, 내 활동을 한곳에서 이어가 보세요.";
+    return "작성한 글·숏폼과 활동 요약을 탭으로 나눠 확인해 보세요.";
   }
   if (!loggedIn) {
-    return "스크랩, 댓글, 팔로우 등 내 커뮤니티 활동은 로그인 후 이용할 수 있어요.";
+    return "내 커뮤니티 활동은 로그인 후 이어갈 수 있어요.";
   }
-  return "스크랩, 댓글, 팔로우 등 내 커뮤니티 활동을 확인하세요.";
+  return "참여한 활동과 내 글을 탭에서 확인하세요.";
+}
+
+function activeNavForMeTab(tab: ReturnType<typeof parseCommunityMeTab>): CommunityNavActive {
+  if (tab === "posts") return "my-posts";
+  if (tab === "drafts") return "my-posts";
+  if (tab === "scraps") return "scraps";
+  return "me";
 }
 
 type PageProps = {
@@ -38,8 +47,24 @@ export default async function CommunityMePage(props: PageProps) {
   const loggedIn = user != null;
   const role = profile?.role;
 
+  if (!loggedIn) {
+    return (
+      <CommunityLayoutShell activeNav={activeNavForMeTab(tab)}>
+        <CommunityPageHero
+          eyebrow="커뮤니티"
+          title="내 활동"
+          description="내 게시글·스크랩은 로그인 후 이용할 수 있어요."
+        />
+        <LoginRequiredState
+          nextPath={loginNextPath}
+          description="로그인하면 작성한 글과 스크랩 활동을 확인할 수 있어요."
+        />
+      </CommunityLayoutShell>
+    );
+  }
+
   let activity: CommunityMeActivityPayload | null = null;
-  if (loggedIn && user?.id) {
+  if (user?.id) {
     const supabase = await createClient();
     const uid = user.id;
     const [boardRes, shortRes, boardCount, shortCount] = await Promise.all([
@@ -53,6 +78,7 @@ export default async function CommunityMePage(props: PageProps) {
     const loadFailed = Boolean(boardRes.error || shortRes.error);
     activity = {
       myPosts: buildCommunityMePostsList(boardRes.rows, shortRes.rows, 200),
+      myDrafts: buildCommunityMeDraftsList(boardRes.rows, shortRes.rows, 50),
       boardCount: boardCount,
       shortformCount: shortCount,
       recent: buildCommunityMePostsList(boardRes.rows, shortRes.rows, 3),
@@ -61,36 +87,25 @@ export default async function CommunityMePage(props: PageProps) {
   }
 
   return (
-    <CommunityLayoutShell
-      activeNav="me"
-      meTab={tab}
-      hero={
-        <CommunityPageHero
-          eyebrow="커뮤니티"
-          title="내 공간"
-          description={meDescription(role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
-            surface: "me",
-            role,
-            loggedIn,
-            nextPath: loginNextPath,
-          })}
-        />
-      }
-    >
+    <CommunityLayoutShell activeNav={activeNavForMeTab(tab)}>
+      <CommunityPageHero
+        eyebrow="커뮤니티"
+        title="내 활동"
+        description={meDescription(role, loggedIn)}
+      />
+
       <div className="space-y-5">
-        <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-700 shadow-inner">
-          <p className="font-extrabold text-slate-900">내 활동 안내</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
-            {loggedIn
-              ? "내 게시글·숏폼은 「내 게시글」 탭과 아래 요약에서 확인할 수 있어요. 스크랩·팔로우 목록은 데이터가 연결되면 각 탭에 표시됩니다."
-              : "탭으로 영역을 나눠 두었어요. 실제 스크랩·팔로우 목록은 데이터가 연결되면 각 탭에 표시됩니다."}
-          </p>
-        </div>
-
-        <CommunityMeTabNav active={tab} />
-
-        <CommunityMeTabPanels tab={tab} loggedIn={loggedIn} role={role} loginNextPath={loginNextPath} activity={activity} />
+        {tab === "overview" ? (
+          <CommunityMeOverviewSections activity={activity} />
+        ) : (
+          <CommunityMeTabPanels
+            tab={tab}
+            loggedIn={loggedIn}
+            role={role}
+            loginNextPath={loginNextPath}
+            activity={activity}
+          />
+        )}
       </div>
     </CommunityLayoutShell>
   );

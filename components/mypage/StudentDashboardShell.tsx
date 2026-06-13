@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React from "react";
+import { SURFACE_CARD, PAGE_COL_GAP } from "@/lib/ui/surfaceCard";
 
 interface UserLike {
   email?: string | null;
@@ -11,199 +12,144 @@ interface ProfileLike {
   grade_level?: string | null;
   student_status?: string | null;
 }
-interface BundleLike {
-  payments: { valueText: string };
-}
 
 type Props = {
   activeTab: "home" | "subscriptions" | "wallet" | "questions" | "custom" | "notifications" | "support";
   user: UserLike | null;
   profile: ProfileLike | null;
   profileLoadError: string | null;
-  bundle: BundleLike;
+  /** ledgerPreview 없을 때 우측 간단 캐시 카드용 */
+  cashBalanceKrw?: number;
+  /** 좌측 프로필 아래 미니 학습 요약 */
+  learningSummary?: {
+    roomCount: number;
+    activeMentorCount: number;
+    paymentCount: string;
+  };
+  /** 우측 결제·캐시 최근 내역 */
+  ledgerPreview?: React.ReactNode;
   children: React.ReactNode;
 };
+
+/** 상단 AppShell 네비와 겹치지 않는 보조 메뉴만 유지 */
+const NAV_ITEMS: { tab: Props["activeTab"]; href: string; label: string; icon: string }[] = [
+  { tab: "home", href: "/mypage", label: "마이페이지", icon: "📑" },
+  { tab: "subscriptions", href: "/subscriptions", label: "구독 현황", icon: "📅" },
+  { tab: "notifications", href: "/notifications", label: "알림", icon: "🔔" },
+  { tab: "support", href: "/support/disputes", label: "분쟁·환불 현황", icon: "⚠️" },
+];
 
 export function StudentDashboardShell({
   activeTab,
   user,
   profile,
   profileLoadError,
-  bundle,
+  cashBalanceKrw = 0,
+  learningSummary,
+  ledgerPreview,
   children,
 }: Props) {
   const name = profile?.full_name?.trim() || profile?.nickname?.trim() || user?.email || "—";
-  const sub = [profile?.email?.trim() || user?.email, profile?.grade_level].filter(Boolean).join(" · ");
-  const cashVal = bundle?.payments?.valueText || "0";
+  const emailLine = profile?.email?.trim() || user?.email || "";
+  const schoolLine = profile?.grade_level?.trim() || "";
 
   return (
-    <div className="max-w-[1320px] mx-auto px-4 py-8 antialiased">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        
-        {/* Left Sidebar */}
-        <aside className="lg:col-span-1 space-y-5">
-          {/* Profile Block Card */}
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">마이페이지</p>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-xl font-bold text-blue-600 select-none flex-shrink-0">
+    <div className="mx-auto max-w-[1320px] px-4 py-8 antialiased">
+      <div className={`grid grid-cols-1 items-start lg:grid-cols-[200px_minmax(0,1fr)_300px] ${PAGE_COL_GAP}`}>
+        <aside className={`flex flex-col self-start ${PAGE_COL_GAP} lg:col-span-1`}>
+          <section className={SURFACE_CARD}>
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">마이페이지</p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xl font-bold text-blue-600">
                 {name.charAt(0)}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <h3 className="text-base font-extrabold text-slate-900 leading-tight truncate">{name}</h3>
-                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-600 border border-blue-100 flex-shrink-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <h3 className="truncate text-base font-extrabold leading-tight text-slate-900">{name}</h3>
+                  <span className="shrink-0 rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-600">
                     학생
                   </span>
                 </div>
-                {sub ? <p className="mt-1 text-xs text-slate-500 font-medium truncate leading-tight">{sub}</p> : null}
+                {emailLine ? (
+                  <p className="mt-1 truncate text-xs font-medium leading-tight text-slate-500">{emailLine}</p>
+                ) : null}
+                {schoolLine ? (
+                  <p className="truncate text-xs font-medium leading-tight text-slate-500">{schoolLine}</p>
+                ) : null}
               </div>
             </div>
-            <Link href="/mypage" className="text-xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-0.5 select-none">
-              프로필 보기 &gt;
-            </Link>
             {profileLoadError ? (
-              <p className="mt-2 text-xs font-semibold text-amber-600 leading-tight">{profileLoadError}</p>
+              <p className="mt-2 text-xs font-semibold leading-tight text-amber-600">{profileLoadError}</p>
             ) : null}
           </section>
 
-          {/* Vertical Menu Navigation */}
-          <nav className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm space-y-1">
-            <Link 
-              href="/home" 
-              className={`flex items-center gap-3 px-3.5 py-2.5 text-sm font-semibold rounded-xl transition duration-150 ${activeTab === "support" && false ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              🏠 <span>홈</span>
-            </Link>
-            <Link 
-              href="/mypage" 
-              className={`flex items-center gap-3 px-3.5 py-2.5 text-sm font-bold rounded-xl transition duration-150 ${activeTab === "home" ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              📑 <span>마이페이지</span>
-            </Link>
-            <Link 
-              href="/subscriptions" 
-              className={`flex items-center justify-between px-3.5 py-2.5 text-sm font-bold rounded-xl transition duration-150 ${activeTab === "subscriptions" ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              <div className="flex items-center gap-3">
-                📅 <span>구독 현황</span>
-              </div>
-            </Link>
-            <Link 
-              href="/wallet/charge" 
-              className={`flex items-center justify-between px-3.5 py-2.5 text-sm font-bold rounded-xl transition duration-150 ${activeTab === "wallet" ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              <div className="flex items-center gap-3">
-                💰 <span>내 캐시</span>
-              </div>
-              <span className="text-xs font-semibold text-slate-400">{cashVal}건</span>
-            </Link>
-            <Link 
-              href="/question-room" 
-              className={`flex items-center gap-3 px-3.5 py-2.5 text-sm font-bold rounded-xl transition duration-150 ${activeTab === "questions" ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              💬 <span>내 질문 & 답변</span>
-            </Link>
-            <Link 
-              href="/custom-request/orders" 
-              className={`flex items-center gap-3 px-3.5 py-2.5 text-sm font-bold rounded-xl transition duration-150 ${activeTab === "custom" ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              📋 <span>맞춤의뢰 내역</span>
-            </Link>
-            <Link 
-              href="/notifications" 
-              className={`flex items-center justify-between px-3.5 py-2.5 text-sm font-bold rounded-xl transition duration-150 ${activeTab === "notifications" ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              <div className="flex items-center gap-3">
-                🔔 <span>알림</span>
-              </div>
-              <span className="rounded-full bg-red-500 w-2 h-2"></span>
-            </Link>
-            <Link 
-              href="/support/disputes" 
-              className={`flex items-center gap-3 px-3.5 py-2.5 text-sm font-bold rounded-xl transition duration-150 ${activeTab === "support" ? "bg-blue-50 text-blue-700 font-extrabold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-            >
-              ⚠️ <span>분쟁·환불 현황</span>
-            </Link>
+          {learningSummary ? (
+            <section className={SURFACE_CARD}>
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">내 학습 요약</p>
+              <dl className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <dt className="text-[10px] font-semibold text-slate-400">질문방</dt>
+                  <dd className="mt-0.5 text-lg font-black text-slate-900">{learningSummary.roomCount}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-semibold text-slate-400">구독</dt>
+                  <dd className="mt-0.5 text-lg font-black text-slate-900">{learningSummary.activeMentorCount}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-semibold text-slate-400">의뢰·결제</dt>
+                  <dd className="mt-0.5 text-lg font-black text-slate-900">{learningSummary.paymentCount}</dd>
+                </div>
+              </dl>
+            </section>
+          ) : null}
+
+          <nav className={`space-y-1 ${SURFACE_CARD} !py-3`}>
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold transition duration-150 ${
+                  activeTab === item.tab
+                    ? "bg-blue-50 font-extrabold text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <span aria-hidden>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </nav>
-
-          {/* Additional bottom sidebar cards exactly matching reference */}
-          <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5 space-y-3">
-            <h4 className="text-sm font-extrabold text-blue-900 leading-tight">더 현명하게<br />질문하고 성장하세요!</h4>
-            <p className="text-xs text-blue-700 leading-relaxed">구독 중인 멘토에게 질문하고 빠른 답변을 받아보세요.</p>
-            <Link href="/question-room" className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition shadow-sm w-full select-none">
-              질문하러 가기 &gt;
-            </Link>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-3 shadow-sm">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide">고객센터</h4>
-            <p className="text-xs text-slate-600 font-medium">문의는 언제나 환영이에요.</p>
-            <div className="space-y-2 pt-1 border-t border-slate-100">
-              <Link href="/support/disputes" className="flex items-center justify-between text-xs font-bold text-slate-700 hover:text-blue-600 transition">
-                <span>1:1 문의하기</span> <span className="text-slate-400 font-normal">&gt;</span>
-              </Link>
-              <Link href="/support/faq" className="flex items-center justify-between text-xs font-bold text-slate-700 hover:text-blue-600 transition">
-                <span>자주 묻는 질문 (FAQ)</span> <span className="text-slate-400 font-normal">&gt;</span>
-              </Link>
-            </div>
-          </section>
         </aside>
 
-        {/* Center content flexible area */}
-        <div className="lg:col-span-2 min-w-0">
-          {children}
-        </div>
+        <div className={`min-w-0 ${PAGE_COL_GAP} flex flex-col`}>{children}</div>
 
-        {/* Right Rail Sidebar Column */}
-        <aside className="lg:col-span-1 space-y-6">
-          {/* Cash Status Card */}
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm flex flex-col justify-between min-h-[160px]">
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">내 캐시</p>
-              <h3 className="text-3xl font-black text-slate-900 mt-2 flex items-baseline gap-1">
-                {cashVal} <span className="text-sm font-semibold text-slate-400">건</span>
-              </h3>
-              <Link href="/wallet/ledger" className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-0.5 mt-2">
-                충전 내역 &gt;
-              </Link>
-            </div>
-            <Link href="/wallet/charge" className="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700 transition shadow-sm w-full select-none text-center">
-              캐시 충전하기
-            </Link>
-          </section>
-
-          {/* Quick Shortcuts Card */}
-          <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide">바로가기</h3>
-            <div className="space-y-1">
-              <Link href="/question-room" className="flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition duration-150">
-                <span>💬 내 질문 & 답변</span>
-                <span className="text-slate-400">&gt;</span>
-              </Link>
-              <Link href="/custom-request/orders" className="flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition duration-150">
-                <span>📋 맞춤의뢰 내역</span>
-                <span className="text-slate-400">&gt;</span>
-              </Link>
-              <Link href="/support/disputes" className="flex items-center justify-between px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600 rounded-lg transition duration-150">
-                <span>⚠️ 분쟁·환불 현황</span>
-                <span className="text-slate-400">&gt;</span>
-              </Link>
-            </div>
-          </section>
-
-          {/* Promotional / Soft info Card */}
-          <section className="rounded-2xl border border-blue-100 bg-blue-50/30 p-6 flex flex-col justify-between min-h-[180px]">
-            <div>
-              <h4 className="text-base font-extrabold text-blue-900 select-none">활동할수록<br />성장이 가속화돼요!</h4>
-              <p className="mt-1.5 text-xs text-blue-700 leading-relaxed">
-                질문, 답변, 리뷰를 남기고 쌤버십에서 더 많은 성장 경험을 쌓아보세요.
+        <aside className={`flex flex-col self-start ${PAGE_COL_GAP}`}>
+          {ledgerPreview ? (
+            ledgerPreview
+          ) : (
+            <section className={SURFACE_CARD}>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">결제 · 캐시</p>
+              <p className="mt-2 text-2xl font-black tabular-nums text-[#1A56DB]">
+                {cashBalanceKrw.toLocaleString("ko-KR")}
+                <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
               </p>
-            </div>
-            <div className="flex justify-center mt-3 text-4xl select-none leading-none">🏆</div>
-          </section>
+              <div className="mt-4 flex flex-col gap-2">
+                <Link
+                  href="/wallet/charge"
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+                >
+                  충전하기
+                </Link>
+                <Link
+                  href="/wallet/ledger"
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  사용내역 전체
+                </Link>
+              </div>
+            </section>
+          )}
         </aside>
-
       </div>
     </div>
   );

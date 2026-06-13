@@ -10,6 +10,7 @@ export type MentorProfileFormInput = {
   intro: string;
   university: string;
   department: string;
+  grade: string;
   subjects: string;
   highSchool: string;
   tags: string;
@@ -55,8 +56,13 @@ export async function updateMentorProfile(
       accept_subscriptions: input.subscribeOpen,
       accepts_subscriptions: input.subscribeOpen,
       is_open_for_subscriptions: input.subscribeOpen,
+      grade: input.grade || null,
+      grade_level: input.grade || null,
+      academic_year: input.grade || null,
     },
     { tags, featured_tags: tags.join(", ") },
+    { grade: input.grade || null },
+    { grade_level: input.grade || null },
   ];
 
   for (const patch of extras) {

@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
-import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueries";
+import {
+  firstReadableCustomTable,
+  ORDER_TO_DELIVERABLE_FK_CANDIDATES,
+} from "@/lib/customRequest/customRequestQueries";
 import {
   isOrderStatusAllowingStudentAccept,
   isOrderRowTerminalForActions,
@@ -14,10 +17,14 @@ import {
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
 import { hasDeliverableRowsForOrder } from "@/lib/customRequest/orderStudentActions";
 import { insertOrderRevisionRequest, recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
+import { patchCustomOrderOrderStatus } from "@/lib/customRequest/orderStatusColumnPatch";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 
 type Row = Record<string, unknown>;
+
+const REVISION_TABLES = ["custom_order_revisions"] as const;
+const MAX_REVISION_REQUESTS_PER_ORDER = 2;
 
 function orderPath(orderId: string) {
   return `/custom-request/orders/${encodeURIComponent(orderId)}`;
@@ -95,10 +102,40 @@ export async function submitCustomOrderRevisionRequestAction(formData: FormData)
     redirectWithError(orderId, "등록된 납품이 있어야 수정 요청을 할 수 있습니다.");
   }
 
+  const revT = await firstReadableCustomTable(supabase, [...REVISION_TABLES]);
+  if (revT.table) {
+    const { column: revFk } = await pickExistingColumn(supabase, revT.table, [...ORDER_TO_DELIVERABLE_FK_CANDIDATES]);
+    if (revFk) {
+      const { count: revisionCount, error: revCountErr } = await supabase
+        .from(revT.table)
+        .select("id", { count: "exact", head: true })
+        .eq(revFk, orderId);
+      if (revCountErr) {
+        redirectWithError(orderId, "수정 요청 횟수를 확인하지 못했습니다.");
+      }
+      if ((revisionCount ?? 0) >= MAX_REVISION_REQUESTS_PER_ORDER) {
+        redirectWithError(orderId, "수정 요청 횟수를 초과했습니다. (최대 2회)");
+      }
+    }
+  }
+
   const ins = await insertOrderRevisionRequest(supabase, orderId, user.id, note);
   if (ins.error) {
     redirectWithError(orderId, "수정 요청 저장에 실패했습니다. " + ins.error);
   }
+
+  const statusPatch = await patchCustomOrderOrderStatus(
+    supabase,
+    table,
+    orderId,
+    { column: stuCol, userId: user.id },
+    "revision_requested",
+    { requireOrderStatus: "delivered" }
+  );
+  if (!statusPatch.ok) {
+    redirectWithError(orderId, statusPatch.error);
+  }
+
   await recordOrderEventBestEffort(supabase, orderId, "revision_requested", user.id, { noteLength: note.length });
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");

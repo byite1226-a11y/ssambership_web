@@ -1,9 +1,21 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { CommunityCategoryChips } from "@/components/community/CommunityCategoryChips";
 import { submitMentorCommunityPost } from "@/lib/community/communityComposeActions";
+import { COMMUNITY_POST_CATEGORIES } from "@/lib/community/communityBoardConstants";
+import { SHORTFORM_CATEGORIES } from "@/lib/community/communityShortformConstants";
+
+type PostType = "board" | "shortform";
 
 export function MentorCommunityComposeForm(props: { errorMessage: string | null }) {
+  const [postType, setPostType] = useState<PostType>("board");
+  const categories = useMemo(
+    () => (postType === "board" ? COMMUNITY_POST_CATEGORIES : SHORTFORM_CATEGORIES),
+    [postType]
+  );
+
   return (
     <form action={submitMentorCommunityPost} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
       <h1 className="text-xl font-black text-slate-900">게시물 작성 (멘토)</h1>
@@ -20,6 +32,8 @@ export function MentorCommunityComposeForm(props: { errorMessage: string | null 
         <select
           name="postType"
           required
+          value={postType}
+          onChange={(e) => setPostType(e.target.value as PostType)}
           className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         >
           <option value="board">게시판 글</option>
@@ -27,15 +41,12 @@ export function MentorCommunityComposeForm(props: { errorMessage: string | null 
         </select>
       </label>
 
-      <label className="block text-sm font-extrabold text-slate-800">
-        카테고리
-        <input
-          name="category"
-          required
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-          placeholder="예: 공지, 정보"
-        />
-      </label>
+      <CommunityCategoryChips
+        categories={categories}
+        name="category"
+        defaultSlug="study"
+        resetKey={postType}
+      />
 
       <label className="block text-sm font-extrabold text-slate-800">
         제목

@@ -306,7 +306,7 @@ export type MentorPayoutsBundle = {
   periodEnd: string;
 };
 
-export async function loadMentorPayoutsPageData(supabase: SupabaseClient, mentorId: string): Promise<MentorPayoutsBundle> {
+export async function loadMentorPayoutsBundle(supabase: SupabaseClient, mentorId: string): Promise<MentorPayoutsBundle> {
   const { start, end } = monthBounds();
   const settlementPayouts = await loadMentorSettlementItemsForPayouts(supabase, mentorId);
   const pt = await firstPayoutsTable(supabase);

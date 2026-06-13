@@ -2,32 +2,32 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { UserNameWithRoleBadge } from "@/components/shell/UserNameWithRoleBadge";
 import { ADMIN_CONSOLE_NAV, adminNavItemIsActive } from "@/components/admin/adminConsoleNavConfig";
 
-function NavLinks({ layout }: { layout: "sidebar" | "top" }) {
+function NavLinks({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname() || "";
 
-  const linkBase =
-    layout === "sidebar"
-      ? "block rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 select-none cursor-pointer"
-      : "shrink-0 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 select-none cursor-pointer";
-
   return (
-    <div className={layout === "sidebar" ? "space-y-1" : "flex gap-1"}>
+    <div className="space-y-0.5">
       {ADMIN_CONSOLE_NAV.map((item) => {
         const active = adminNavItemIsActive(pathname, item.href);
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={
-              active
-                ? `${linkBase} bg-blue-50/80 text-blue-600 hover:bg-blue-50 hover:text-blue-600`
-                : linkBase
-            }
+            title={collapsed ? item.label : undefined}
+            className={[
+              "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold transition select-none",
+              active ? "bg-[#1A56DB] text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+              collapsed ? "justify-center px-2" : "",
+            ].join(" ")}
             aria-current={active ? "page" : undefined}
           >
-            {item.label}
+            <span className="h-2 w-2 shrink-0 rounded-full bg-current opacity-60" aria-hidden />
+            {!collapsed ? <span className="truncate">{item.label}</span> : null}
           </Link>
         );
       })}
@@ -35,60 +35,65 @@ function NavLinks({ layout }: { layout: "sidebar" | "top" }) {
   );
 }
 
-function BrandBlock({ compact }: { compact?: boolean }) {
+function BrandBlock({ collapsed }: { collapsed: boolean }) {
   return (
-    <div className={compact ? "min-w-0" : ""}>
-      <Link href="/admin" className="block text-lg font-black tracking-tight text-blue-600 hover:text-blue-500 transition-colors">
-        쌤버십 Admin
-      </Link>
-      {!compact ? <p className="mt-1 text-[11px] font-bold text-slate-400">운영 백오피스 콘솔</p> : null}
-    </div>
+    <Link href="/admin/dashboard" className="block">
+      <p className={["font-black tracking-tight text-[#1A56DB]", collapsed ? "text-center text-sm" : "text-lg"].join(" ")}>
+        {collapsed ? "S" : "쌤버십 Admin"}
+      </p>
+      {!collapsed ? <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">운영 백오피스</p> : null}
+    </Link>
   );
 }
 
-function AdminUserRow({ compact }: { compact?: boolean }) {
-  return (
-    <div className={`flex items-center gap-2 ${compact ? "shrink-0" : "mt-auto flex-wrap border-t border-slate-100 pt-4"}`}>
-      <span className="rounded-lg bg-blue-50/50 border border-blue-100 px-2 py-0.5 text-xs font-bold text-blue-600">
-        관리자
-      </span>
-      <a
-        href="/logout"
-        className="text-xs font-bold text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline transition-colors"
-      >
-        로그아웃
-      </a>
-    </div>
-  );
-}
-
-/** 좌측 고정 사이드바용 */
 export function AdminConsoleNavSidebar() {
+  const [collapsed, setCollapsed] = useState(false);
+  const w = collapsed ? "w-[72px]" : "w-[240px]";
+
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white px-4 pb-5 pt-6 lg:rounded-2xl lg:border lg:border-slate-200/80 shadow-sm">
-      <div className="px-2">
-        <BrandBlock />
+    <aside className={`flex h-full min-h-0 shrink-0 flex-col border-r border-slate-200 bg-white ${w} transition-[width]`}>
+      <div className="flex min-h-0 flex-1 flex-col px-3 py-5">
+        <div className={collapsed ? "px-0" : "px-1"}>
+          <BrandBlock collapsed={collapsed} />
+        </div>
+        <nav className="mt-6 flex-1 overflow-y-auto" aria-label="관리자 메뉴">
+          <NavLinks collapsed={collapsed} />
+        </nav>
+        <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
+          {!collapsed ? (
+            <a href="/logout" className="block text-center text-xs font-bold text-slate-400 hover:text-slate-600">
+              로그아웃
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            className="flex w-full items-center justify-center gap-1 rounded-xl border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+            aria-label={collapsed ? "메뉴 펼치기" : "메뉴 접기"}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {!collapsed ? <span>메뉴 접기</span> : null}
+          </button>
+        </div>
       </div>
-      <nav className="mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto" aria-label="관리자 메뉴">
-        <NavLinks layout="sidebar" />
-      </nav>
-      <div className="px-1 pt-4">
-        <AdminUserRow />
-      </div>
-    </div>
+    </aside>
   );
 }
 
-/** 좁은 화면: 상단 바 + 가로 스크롤 메뉴 */
-export function AdminConsoleNavTop() {
+export function AdminConsoleNavTop(props: { profile?: import("@/lib/types/user").UserRow | null }) {
   return (
-    <div className="border-b border-slate-200/80 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <BrandBlock compact />
-        <AdminUserRow compact />
+    <div className="border-b border-slate-200 bg-white lg:hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
+        <BrandBlock collapsed={false} />
+        <div className="flex shrink-0 items-center gap-2">
+          <UserNameWithRoleBadge profile={props.profile ?? null} role="admin" nameClassName="text-xs" />
+          <a href="/logout" className="text-xs font-bold text-slate-500 underline">
+            로그아웃
+          </a>
+        </div>
       </div>
-      <nav className="flex gap-1 overflow-x-auto px-3 pb-3 pt-0.5" aria-label="관리자 메뉴">
-        <NavLinks layout="top" />
+      <nav className="flex gap-1 overflow-x-auto px-3 pb-3" aria-label="관리자 메뉴">
+        <NavLinks collapsed={false} />
       </nav>
     </div>
   );

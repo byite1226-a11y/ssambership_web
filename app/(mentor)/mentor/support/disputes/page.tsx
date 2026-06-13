@@ -23,7 +23,7 @@ export default async function MentorDisputesListPage() {
       title="분쟁·환불 현황"
       description="맞춤의뢰 등으로 접수된 분쟁을 확인하고, 진행 상태를 살펴볼 수 있습니다. 새 건 처리는 운영자가 담당합니다."
       ctas={[
-        { href: "/mentor/dashboard", label: "대시보드", tone: "green" },
+        { href: "/mentor/mypage", label: "마이페이지", tone: "green" },
         { href: "/mentor/payouts", label: "정산", tone: "slate" },
       ]}
       sections={[

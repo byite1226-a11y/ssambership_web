@@ -12,8 +12,8 @@ import { MentorSignupForm, type MentorSignupFormValues } from "@/components/auth
 import { SignupTrustBlock } from "@/components/auth/SignupTrustBlock";
 import { buildSignupUserMetadata } from "@/lib/auth/buildSignupUserMetadata";
 import { syncAfterSignUpWithSession } from "@/lib/auth/syncAfterSignUpSession";
-import { getSignUpSuccessPath, safeInternalNextPath } from "@/lib/auth/getPostLoginPath";
-import { validateMentorSignup, validateStudentSignup } from "@/lib/auth/signupValidation";
+import { safeInternalNextPath } from "@/lib/auth/getPostLoginPath";
+import { signupFieldErrorsByRole, type SignupFieldErrors } from "@/lib/auth/signupValidation";
 import { mapSupabaseAuthError } from "@/lib/utils/mapSupabaseAuthError";
 import type { AppRole } from "@/lib/types/user";
 
@@ -63,6 +63,19 @@ const profileMentor =
 const accountSection = "rounded-2xl border border-slate-200/50 bg-sky-50/15 px-4 py-4 sm:rounded-3xl sm:px-5 sm:py-5";
 const accountSectionMentor = "rounded-2xl border border-slate-200/50 bg-emerald-50/20 px-4 py-4 sm:rounded-3xl sm:px-5 sm:py-5";
 
+const fieldErrorClass = "mt-1.5 text-sm text-red-600";
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) {
+    return null;
+  }
+  return (
+    <p className={fieldErrorClass} role="alert">
+      {message}
+    </p>
+  );
+}
+
 function stepDescription(s: 1 | 2 | 3) {
   switch (s) {
     case 1:
@@ -76,23 +89,12 @@ function stepDescription(s: 1 | 2 | 3) {
   }
 }
 
-/** 가입 완료 스텝(짧은 안내) — 목적지에 맞는 한 줄 */
-function afterSignUpRedirectMessage(path: string) {
-  if (path === "/home" || path.startsWith("/home?")) {
-    return "잠시 후 홈으로 이동합니다.";
-  }
-  if (path.startsWith("/mentor/profile")) {
-    return "잠시 후 멘토 프로필로 이동합니다.";
-  }
-  return "잠시 후 이어집니다.";
-}
-
 function SignupPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [role, setRole] = useState<SignupRole | null>(null);
-  const [postSignUpRedirect, setPostSignUpRedirect] = useState<string | null>(null);
+  const [completedRole, setCompletedRole] = useState<SignupRole | null>(null);
 
   const [studentEmail, setStudentEmail] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
@@ -110,6 +112,7 @@ function SignupPageContent() {
   const [marketingAgree, setMarketingAgree] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
   const [loading, setLoading] = useState(false);
 
   const termsUrl = process.env.NEXT_PUBLIC_LEGAL_TERMS_URL;
@@ -128,20 +131,9 @@ function SignupPageContent() {
     target.focus({ preventScroll: true });
   }, [role, step]);
 
-  useEffect(() => {
-    if (step !== 3 || !postSignUpRedirect) {
-      return;
-    }
-    const t = window.setTimeout(() => {
-      router.replace(postSignUpRedirect);
-      router.refresh();
-      setPostSignUpRedirect(null);
-    }, 400);
-    return () => window.clearTimeout(t);
-  }, [step, postSignUpRedirect, router]);
-
   function goNext() {
     setError(null);
+    setFieldErrors({});
     if (step === 1) {
       if (!role) {
         setError("학생 또는 멘토를 선택해 주세요.");
@@ -153,6 +145,7 @@ function SignupPageContent() {
 
   function goBackToRoleSelect() {
     setError(null);
+    setFieldErrors({});
     setStep(1);
   }
 
@@ -161,32 +154,33 @@ function SignupPageContent() {
       return;
     }
     setError(null);
+    setFieldErrors({});
 
     const currentRole = forcedRole ?? role;
     if (!currentRole) {
       setError("학생 또는 멘토를 선택해 주세요.");
       return;
     }
-    const v =
-      currentRole === "student"
-        ? validateStudentSignup({
-            email: studentEmail,
-            password: studentPassword,
-            passwordConfirm: studentPasswordConfirm,
-            student,
-            termsAgree,
-            privacyAgree,
-          })
-        : validateMentorSignup({
-            email: mentorEmail,
-            password: mentorPassword,
-            passwordConfirm: mentorPasswordConfirm,
-            mentor,
-            termsAgree,
-            privacyAgree,
-          });
-    if (v) {
-      setError(v);
+    const studentPayload = {
+      email: studentEmail,
+      password: studentPassword,
+      passwordConfirm: studentPasswordConfirm,
+      student,
+      termsAgree,
+      privacyAgree,
+    };
+    const mentorPayload = {
+      email: mentorEmail,
+      password: mentorPassword,
+      passwordConfirm: mentorPasswordConfirm,
+      mentor,
+      termsAgree,
+      privacyAgree,
+    };
+    const nextFieldErrors = signupFieldErrorsByRole(currentRole, studentPayload, mentorPayload);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setError(Object.values(nextFieldErrors)[0] ?? "입력 내용을 확인해 주세요.");
       return;
     }
 
@@ -297,9 +291,8 @@ function SignupPageContent() {
       if (w.warningMessages.length > 0) {
         console.warn("[signup] post-signup sync warnings (비차단):", w.warningMessages);
       }
-      const path = getSignUpSuccessPath(currentRole, nextRaw);
       setLoading(false);
-      setPostSignUpRedirect(path);
+      setCompletedRole(currentRole);
       setStep(3);
       return;
     }
@@ -350,18 +343,37 @@ function SignupPageContent() {
           </p>
         ) : null}
 
-        {step === 3 && postSignUpRedirect ? (
+        {step === 3 && completedRole ? (
           <div
             className="mx-auto w-full max-w-lg rounded-3xl border-2 border-blue-200/80 bg-white p-8 text-center shadow-[0_8px_40px_-12px_rgba(37,99,235,0.2)] sm:p-10"
             role="status"
           >
-            <p className="break-keep text-2xl font-extrabold text-[#0b2b6c] sm:text-3xl">가입이 완료되었습니다</p>
-            <p className="mt-3 break-keep text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
-              {afterSignUpRedirectMessage(postSignUpRedirect)}
-            </p>
-            <div className="mt-5 flex justify-center" aria-hidden>
-              <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
-            </div>
+            <p className="break-keep text-2xl font-extrabold text-[#0b2b6c] sm:text-3xl">가입을 환영합니다!</p>
+            {completedRole === "student" ? (
+              <>
+                <p className="mt-3 break-keep text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
+                  이제 멘토를 찾아 질문·학습을 시작해 보세요.
+                </p>
+                <Link
+                  href="/mentors"
+                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-blue-600 px-8 text-base font-extrabold text-white shadow-sm transition hover:bg-blue-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
+                >
+                  멘토 찾기
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 break-keep text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
+                  관리자 승인 전까지 멘토 활동은 대기 상태입니다. 프로필을 먼저 작성해 주세요.
+                </p>
+                <Link
+                  href="/mentor/profile"
+                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-emerald-700 px-8 text-base font-extrabold text-white shadow-sm transition hover:bg-emerald-800 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
+                >
+                  프로필 관리
+                </Link>
+              </>
+            )}
           </div>
         ) : null}
 
@@ -373,7 +385,7 @@ function SignupPageContent() {
               <p className="mt-3 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-4 sm:text-lg md:text-xl">
                 역할에 따라 혜택·입력 항목·이후 흐름(인증, 심사)이 달라요. 한 가지를 골라 주세요.
               </p>
-              <div className="mt-6 rounded-2xl border border-slate-200/50 bg-slate-50/40 p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_16px_40px_-20px_rgba(15,23,42,0.1)] sm:mt-8 sm:rounded-3xl sm:p-5 md:p-7 lg:p-8">
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:mt-8 sm:p-6">
                 <RoleSelector value={role} onChange={setRole} disabled={loading} />
               </div>
             </div>
@@ -447,7 +459,7 @@ function SignupPageContent() {
                     <div className={`${accountSection} mt-3 space-y-4 sm:mt-4`}>
                     <div>
                       <label htmlFor="sg-email-student" className={labelClass}>
-                        이메일
+                        이메일 <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="sg-email-student"
@@ -457,12 +469,13 @@ function SignupPageContent() {
                         value={studentEmail}
                         onChange={(e) => setStudentEmail(e.target.value)}
                         autoComplete="email"
-                        required
+                        aria-invalid={!!fieldErrors.email}
                       />
+                      <FieldError message={fieldErrors.email} />
                     </div>
                     <div>
                       <label htmlFor="sg-pw-student" className={labelClass}>
-                        비밀번호
+                        비밀번호 <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="sg-pw-student"
@@ -472,11 +485,13 @@ function SignupPageContent() {
                         value={studentPassword}
                         onChange={(e) => setStudentPassword(e.target.value)}
                         autoComplete="new-password"
+                        aria-invalid={!!fieldErrors.password}
                       />
+                      <FieldError message={fieldErrors.password} />
                     </div>
                     <div>
                       <label htmlFor="sg-pw2-student" className={labelClass}>
-                        비밀번호 확인
+                        비밀번호 확인 <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="sg-pw2-student"
@@ -486,14 +501,27 @@ function SignupPageContent() {
                         value={studentPasswordConfirm}
                         onChange={(e) => setStudentPasswordConfirm(e.target.value)}
                         autoComplete="new-password"
+                        aria-invalid={!!fieldErrors.passwordConfirm}
                       />
-                      <p className={subhelper}>6자 이상, 영문/숫자/특수문자 조합을 권장해요.</p>
+                      {fieldErrors.passwordConfirm ? (
+                        <FieldError message={fieldErrors.passwordConfirm} />
+                      ) : (
+                        <p className={subhelper}>6자 이상, 영문/숫자/특수문자 조합을 권장해요.</p>
+                      )}
                     </div>
                     </div>
                   </div>
 
                   <div className="mt-7 border-t border-sky-200/30 pt-6 sm:mt-8 sm:pt-7">
-                    <StudentSignupForm value={student} onChange={setStudent} disabled={loading} />
+                    <StudentSignupForm
+                      value={student}
+                      onChange={setStudent}
+                      disabled={loading}
+                      fieldErrors={{
+                        nickname: fieldErrors.nickname,
+                        gradeLevel: fieldErrors.gradeLevel,
+                      }}
+                    />
                   </div>
 
                   <div className="mt-7 sm:mt-8">
@@ -509,6 +537,7 @@ function SignupPageContent() {
                       termsUrl,
                       privacyUrl
                     )}
+                    <FieldError message={fieldErrors.terms} />
                   </div>
 
                   <button
@@ -541,7 +570,7 @@ function SignupPageContent() {
                       멘토 회원가입
                     </h2>
                     <p className="mt-2.5 text-sm leading-relaxed text-slate-600 sm:mt-3 sm:text-base md:text-[1.05rem]">
-                      대학·전공·서류·소개를 한 번에 맞추면, 인증·활동 준비까지 수월해요.
+                      대학·전공·서류를 입력하면 인증·활동 준비까지 수월해요.
                     </p>
                   </header>
 
@@ -551,7 +580,7 @@ function SignupPageContent() {
                     <div className={`${accountSectionMentor} mt-3 space-y-4 sm:mt-4`}>
                     <div>
                       <label htmlFor="sg-email-mentor" className={labelClass}>
-                        이메일
+                        이메일 <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="sg-email-mentor"
@@ -561,12 +590,13 @@ function SignupPageContent() {
                         value={mentorEmail}
                         onChange={(e) => setMentorEmail(e.target.value)}
                         autoComplete="email"
-                        required
+                        aria-invalid={!!fieldErrors.email}
                       />
+                      <FieldError message={fieldErrors.email} />
                     </div>
                     <div>
                       <label htmlFor="sg-pw-mentor" className={labelClass}>
-                        비밀번호
+                        비밀번호 <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="sg-pw-mentor"
@@ -576,11 +606,13 @@ function SignupPageContent() {
                         value={mentorPassword}
                         onChange={(e) => setMentorPassword(e.target.value)}
                         autoComplete="new-password"
+                        aria-invalid={!!fieldErrors.password}
                       />
+                      <FieldError message={fieldErrors.password} />
                     </div>
                     <div>
                       <label htmlFor="sg-pw2-mentor" className={labelClass}>
-                        비밀번호 확인
+                        비밀번호 확인 <span className="text-red-500">*</span>
                       </label>
                       <input
                         id="sg-pw2-mentor"
@@ -590,14 +622,31 @@ function SignupPageContent() {
                         value={mentorPasswordConfirm}
                         onChange={(e) => setMentorPasswordConfirm(e.target.value)}
                         autoComplete="new-password"
+                        aria-invalid={!!fieldErrors.passwordConfirm}
                       />
-                      <p className={subhelper}>6자 이상, 영문/숫자/특수문자 조합을 권장해요.</p>
+                      {fieldErrors.passwordConfirm ? (
+                        <FieldError message={fieldErrors.passwordConfirm} />
+                      ) : (
+                        <p className={subhelper}>6자 이상, 영문/숫자/특수문자 조합을 권장해요.</p>
+                      )}
                     </div>
                     </div>
                   </div>
 
                   <div className="mt-7 border-t border-emerald-200/30 pt-6 sm:mt-8 sm:pt-7">
-                    <MentorSignupForm value={mentor} onChange={setMentor} disabled={loading} />
+                    <MentorSignupForm
+                      value={mentor}
+                      onChange={setMentor}
+                      disabled={loading}
+                      fieldErrors={{
+                        nickname: fieldErrors.nickname,
+                        universityName: fieldErrors.universityName,
+                        departmentName: fieldErrors.departmentName,
+                        teachingSubjectsCsv: fieldErrors.teachingSubjectsCsv,
+                        highSchoolName: fieldErrors.highSchoolName,
+                        studentIdFile: fieldErrors.studentIdFile,
+                      }}
+                    />
                   </div>
 
                   <div className="mt-7 sm:mt-8">
@@ -613,6 +662,7 @@ function SignupPageContent() {
                       termsUrl,
                       privacyUrl
                     )}
+                    <FieldError message={fieldErrors.terms} />
                   </div>
 
                   <button
@@ -637,7 +687,7 @@ function SignupPageContent() {
                 type="button"
                 onClick={goNext}
                 disabled={loading || !role}
-                className="min-h-[3.6rem] min-w-[11.5rem] rounded-2xl bg-blue-600 px-11 py-4 text-lg font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:rounded-3xl md:min-w-[12.5rem]"
+                className="min-h-[3.6rem] min-w-[11.5rem] rounded-2xl bg-[#2563eb] px-11 py-4 text-lg font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:min-w-[12.5rem]"
               >
                 다음 — 정보 입력
               </button>
@@ -772,6 +822,12 @@ function termsBlock(
         {!termsUrl && !privacyUrl && (
           <p className="text-sm text-slate-500">문서 URL은 `NEXT_PUBLIC_LEGAL_TERMS_URL` · `NEXT_PUBLIC_LEGAL_PRIVACY_URL`로 연결할 수 있어요.</p>
         )}
+        <p className="text-xs leading-relaxed text-slate-600">
+          만 14세 미만은 보호자 동의 절차가 필요할 수 있어요.{" "}
+          <Link href="/legal/minor-consent" className={`font-bold underline underline-offset-2 ${link}`}>
+            보호자 동의 안내(초안)
+          </Link>
+        </p>
       </div>
     </section>
   );

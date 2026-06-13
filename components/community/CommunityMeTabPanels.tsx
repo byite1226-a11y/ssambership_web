@@ -1,20 +1,17 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import type { CommunityMePostListItem } from "@/lib/community/communityQueries";
+import type { CommunityMeDraftItem, CommunityMePostListItem } from "@/lib/community/communityQueries";
 import type { CommunityMeTab } from "@/lib/community/communityMeTab";
 import { communityMePath } from "@/lib/community/communityMeTab";
 import type { AppRole } from "@/lib/types/user";
 
 const linkSlate =
   "inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300";
-const linkBlue =
-  "inline-flex rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-900 shadow-sm hover:bg-blue-100";
 const btnMentor = "inline-flex rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700";
-const btnMentorSoft =
-  "inline-flex rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50";
 
 export type CommunityMeActivityPayload = {
   myPosts: CommunityMePostListItem[];
+  myDrafts: CommunityMeDraftItem[];
   boardCount: number | null;
   shortformCount: number | null;
   recent: CommunityMePostListItem[];
@@ -30,20 +27,8 @@ function Panel(props: { title: string; children: ReactNode }) {
   );
 }
 
-function ExploreLinks() {
-  return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      <Link href="/community" className={linkBlue}>
-        커뮤니티 홈
-      </Link>
-      <Link href="/community/board" className={linkSlate}>
-        게시판 보기
-      </Link>
-      <Link href="/community/shortform" className={linkSlate}>
-        숏폼 보기
-      </Link>
-    </div>
-  );
+function NavHint() {
+  return <p className="mt-3 text-xs text-slate-500">숏폼·게시판은 왼쪽 메뉴에서 바로 열 수 있어요.</p>;
 }
 
 function KindBadge(props: { kind: "board" | "shortform" }) {
@@ -57,7 +42,29 @@ function KindBadge(props: { kind: "board" | "shortform" }) {
   );
 }
 
-function MePostsList(props: { items: CommunityMePostListItem[] }) {
+export function MeDraftsList(props: { items: CommunityMeDraftItem[] }) {
+  if (props.items.length === 0) return null;
+  return (
+    <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/40">
+      {props.items.map((item) => (
+        <li key={`${item.kind}-${item.id}`} className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            <KindBadge kind={item.kind} />
+            <div className="min-w-0 flex-1">
+              <span className="font-bold text-slate-900 line-clamp-2">{item.title}</span>
+              {item.dateLabel ? <p className="mt-0.5 text-xs text-slate-500">{item.dateLabel}</p> : null}
+            </div>
+          </div>
+          <Link href={item.continueHref} className={linkSlate}>
+            이어서 작성
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function MePostsList(props: { items: CommunityMePostListItem[] }) {
   if (props.items.length === 0) return null;
   return (
     <ul className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/40">
@@ -101,38 +108,30 @@ export function CommunityMeTabPanels(props: {
   const act = activity;
 
   if (!loggedIn) {
-    const loginHref = `/login?next=${encodeURIComponent(props.loginNextPath)}`;
     const tabHint: Record<CommunityMeTab, string> = {
-      overview: "전체 요약과 탭별 활동은 로그인 후 이용할 수 있어요.",
+      overview: "요약과 탭별 화면은 로그인 후 이용할 수 있어요.",
       posts: "내 게시글 탭은 로그인 후 이용할 수 있어요.",
-      scraps: "스크랩 탭은 로그인 후 이용할 수 있어요.",
-      follows: "팔로우 탭은 로그인 후 이용할 수 있어요.",
+      drafts: "임시저장 목록은 로그인 후 이용할 수 있어요.",
+      scraps: "스크랩 목록은 데이터 연결 후 표시될 예정이에요. 로그인 후에도 내용이 비어 있을 수 있어요.",
     };
     return (
       <Panel title="로그인이 필요해요">
         <p>{tabHint[tab]}</p>
-        <p className="mt-2">로그인하면 댓글·스크랩 활동을 이어갈 수 있어요.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link href={loginHref} className={btnMentor}>
-            로그인하고 댓글·스크랩 활동을 확인하기
-          </Link>
-          <Link href="/community" className={linkSlate}>
-            커뮤니티 홈
-          </Link>
-        </div>
+        <NavHint />
       </Panel>
     );
   }
 
   const overviewCounts = act ? countLine(act.boardCount, act.shortformCount) : null;
   const hasPosts = (act?.myPosts.length ?? 0) > 0;
+  const hasDrafts = (act?.myDrafts.length ?? 0) > 0;
 
   if (isMentor) {
     if (tab === "overview") {
       return (
         <div className="space-y-4">
           <Panel title="내 커뮤니티 활동 요약">
-            <p>게시글·숏폼 작성과 스크랩·팔로우를 탭으로 나눠 확인할 수 있어요.</p>
+            <p>작성한 글·숏폼은 「내 게시글」 탭에서 모아 볼 수 있어요.</p>
             {act?.loadFailed ? (
               <p className="mt-2 text-xs font-semibold text-amber-800">내 글 개수·목록을 일시적으로 불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>
             ) : null}
@@ -145,35 +144,12 @@ export function CommunityMeTabPanels(props: {
             ) : !act?.loadFailed && !overviewCounts ? (
               <p className="mt-2 text-xs text-slate-500">아직 반영할 활동 요약이 없어요. 글을 작성하면 여기에 모입니다.</p>
             ) : null}
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Link
-                href={communityMePath("posts")}
-                className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-bold text-slate-900 hover:border-slate-300"
-              >
-                내 게시글
-              </Link>
-              <Link href="/community/shortform" className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-bold text-slate-900 hover:border-slate-300">
-                숏폼 탐색
-              </Link>
-              <Link
-                href={communityMePath("scraps")}
-                className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-bold text-slate-900 hover:border-slate-300"
-              >
-                스크랩
-              </Link>
-              <Link
-                href={communityMePath("follows")}
-                className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-bold text-slate-900 hover:border-slate-300"
-              >
-                팔로우
-              </Link>
-            </div>
-            <p className="mt-3 text-xs text-slate-500">스크랩·팔로우 목록은 데이터 연결 후 이 탭들에 표시될 예정이에요.</p>
             <div className="mt-4">
-              <Link href="/mentor/community/new" className={btnMentorSoft}>
-                멘토 글쓰기
+              <Link href={communityMePath("posts")} className={linkSlate}>
+                내 게시글 탭으로 이동
               </Link>
             </div>
+            <NavHint />
           </Panel>
         </div>
       );
@@ -186,41 +162,47 @@ export function CommunityMeTabPanels(props: {
           ) : hasPosts ? (
             <p className="text-slate-600">작성한 게시판 글과 숏폼이 최신순으로 표시됩니다.</p>
           ) : (
-            <p>작성한 게시글이 아직 없어요. 게시판에서 글을 확인하고 새 글을 이어 쓸 수 있어요.</p>
+            <p>작성한 게시글이 아직 없어요. 첫 글은 작성 화면에서 시작할 수 있어요.</p>
           )}
           <MePostsList items={act?.myPosts ?? []} />
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/community/board" className={linkSlate}>
-              게시판 보기
-            </Link>
-            <Link href="/mentor/community/new" className={btnMentor}>
+          <div className="mt-4">
+            <Link href="/community/new" className={btnMentor}>
               게시글 작성
             </Link>
           </div>
         </Panel>
       );
     }
-    if (tab === "scraps") {
+    if (tab === "drafts") {
       return (
-        <Panel title="스크랩">
-          <p>스크랩한 콘텐츠 목록은 데이터 연결 후 이 탭에 표시될 예정이에요.</p>
-          <ExploreLinks />
+        <Panel title="임시저장">
+          {act?.loadFailed ? (
+            <p className="text-amber-900">목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+          ) : hasDrafts ? (
+            <p className="text-slate-600">임시저장한 게시글·숏폼을 이어서 작성할 수 있어요.</p>
+          ) : (
+            <p>임시저장된 글이 없어요. 작성 중 「임시저장」을 누르면 여기에 모입니다.</p>
+          )}
+          <MeDraftsList items={act?.myDrafts ?? []} />
         </Panel>
       );
     }
-    return (
-      <Panel title="팔로우">
-        <p>팔로우한 멘토 목록은 데이터 연결 후 이 탭에 표시될 예정이에요. 숏폼과 게시판에서 멘토 콘텐츠를 둘러보세요.</p>
-        <ExploreLinks />
-      </Panel>
-    );
+    if (tab === "scraps") {
+      return (
+        <Panel title="스크랩">
+          <p className="text-sm">스크랩한 콘텐츠 목록은 데이터 연결 후 이 탭에 표시될 예정이에요.</p>
+          <NavHint />
+        </Panel>
+      );
+    }
+    return null;
   }
 
   /* student · admin · 기타 로그인 — 작성 CTA 없음 */
   if (tab === "overview") {
     return (
       <Panel title="커뮤니티 활동 요약">
-        <p>댓글로 소통하고, 스크랩으로 정리하고, 팔로우로 관심 멘토를 모아 보세요.</p>
+        <p>댓글로 소통하는 등 참여 활동은 이 허브에서 이어 확인할 수 있어요.</p>
         {act?.loadFailed ? (
           <p className="mt-2 text-xs font-semibold text-amber-800">내 글 요약을 일시적으로 불러오지 못했어요.</p>
         ) : null}
@@ -231,8 +213,7 @@ export function CommunityMeTabPanels(props: {
             <MePostsList items={act.recent} />
           </div>
         ) : null}
-        <p className="mt-3 text-xs text-slate-500">스크랩·팔로우·댓글 내역은 데이터 연결 후 각 탭에 표시될 예정이에요.</p>
-        <ExploreLinks />
+        <NavHint />
       </Panel>
     );
   }
@@ -247,22 +228,36 @@ export function CommunityMeTabPanels(props: {
           <p>작성 가능한 커뮤니티 게시글이 없거나, 아직 작성한 글이 없어요. 멘토의 게시글과 숏폼을 둘러보세요.</p>
         )}
         <MePostsList items={act?.myPosts ?? []} />
-        <ExploreLinks />
+        <NavHint />
+      </Panel>
+    );
+  }
+  if (tab === "drafts") {
+    return (
+      <Panel title="임시저장">
+        {act?.loadFailed ? (
+          <p className="text-amber-900">목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>
+        ) : hasDrafts ? (
+          <p className="text-slate-600">임시저장한 게시글을 이어서 작성할 수 있어요.</p>
+        ) : (
+          <p>임시저장된 글이 없어요. 작성 중 「임시저장」을 누르면 여기에 모입니다.</p>
+        )}
+        <MeDraftsList items={act?.myDrafts ?? []} />
+        <div className="mt-4">
+          <Link href="/community/new" className={linkSlate}>
+            새 글 작성
+          </Link>
+        </div>
       </Panel>
     );
   }
   if (tab === "scraps") {
     return (
       <Panel title="스크랩">
-        <p>스크랩한 콘텐츠 목록은 데이터 연결 후 이 탭에 표시될 예정이에요.</p>
-        <ExploreLinks />
+        <p className="text-sm">스크랩한 콘텐츠 목록은 데이터 연결 후 이 탭에 표시될 예정이에요.</p>
+        <NavHint />
       </Panel>
     );
   }
-  return (
-    <Panel title="팔로우">
-      <p>팔로우한 멘토 목록은 데이터 연결 후 이 탭에 표시될 예정이에요.</p>
-      <ExploreLinks />
-    </Panel>
-  );
+  return null;
 }

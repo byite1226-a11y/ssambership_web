@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
+import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
+import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
 import { loadStudentMypageBundle } from "@/lib/mypage/mypageQueries";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
 
@@ -12,12 +14,11 @@ export default async function StudentSubscriptionsPage() {
   }
 
   const supabase = await createClient();
-  const bundle = await loadStudentMypageBundle(
-    supabase,
-    user.id,
-    profile,
-    profileLoadError?.message ?? null
-  );
+  const [bundle, balance] = await Promise.all([
+    loadStudentMypageBundle(supabase, user.id, profile, profileLoadError?.message ?? null),
+    fetchWalletBalanceByUserId(supabase, user.id),
+  ]);
+  const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
 
   return (
     <StudentDashboardShell
@@ -25,7 +26,7 @@ export default async function StudentSubscriptionsPage() {
       user={user}
       profile={profile}
       profileLoadError={profileLoadError?.message ?? null}
-      bundle={bundle}
+      cashBalanceKrw={cashBalanceKrw}
     >
       <div className="space-y-6">
         <header>
@@ -51,18 +52,38 @@ export default async function StudentSubscriptionsPage() {
 
         {/* Tab Menu */}
         <div className="border-b border-slate-200 flex gap-1 select-none">
-          <span className="px-4 py-2 text-sm font-extrabold border-b-2 border-blue-600 text-blue-600 cursor-pointer">
+          <button
+            type="button"
+            disabled
+            title="필터 API 연결 후 활성화됩니다."
+            className="px-4 py-2 text-sm font-extrabold border-b-2 border-blue-600 text-blue-600 cursor-default"
+          >
             전체
-          </span>
-          <span className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 cursor-pointer transition">
+          </button>
+          <button
+            type="button"
+            disabled
+            title="필터 API 연결 후 활성화됩니다."
+            className="px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
+          >
             구독 중
-          </span>
-          <span className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 cursor-pointer transition">
+          </button>
+          <button
+            type="button"
+            disabled
+            title="필터 API 연결 후 활성화됩니다."
+            className="px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
+          >
             만료 예정
-          </span>
-          <span className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800 cursor-pointer transition">
+          </button>
+          <button
+            type="button"
+            disabled
+            title="필터 API 연결 후 활성화됩니다."
+            className="px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
+          >
             만료됨
-          </span>
+          </button>
         </div>
 
         {/* Empty State / Subscription Content card */}

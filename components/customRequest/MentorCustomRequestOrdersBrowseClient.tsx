@@ -1,225 +1,189 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import {
-  isOrderRowPaymentConfirmedForMentorWork,
-  isOrderRowTerminalForActions,
-  normalizedPrimaryOrderStatus,
-  orderStatusUiToneForNorm,
-} from "@/lib/customRequest/orderLifecycleConstants";
+import { useMemo, useState, useEffect } from "react";
+import { EmptyState, LinkButton, StatusBadge } from "@/components/design-system";
+import { mentorCustomOrderBrowseStatus } from "@/lib/design-system/mentorOrderStatusBadge";
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import {
+  mentorCustomOrderDisplayTitle,
   mentorCustomOrderPaymentLine,
-  mentorCustomOrderStatusHeadline,
   mentorCustomOrderWorkroomHref,
 } from "@/lib/customRequest/mentorCustomOrderBrowseDisplay";
+import { classifyMentorOrderBrowseTab, type MentorOrderBrowseTabId } from "@/lib/customRequest/mentorOrderBrowseTabClassify";
+import { paymentLabelClassName } from "@/lib/customRequest/paymentLabelTone";
 
 type Row = Record<string, unknown>;
 
-type TabId = "all" | "dispute" | "billing" | "work" | "delivery" | "revision" | "done";
-
-const TABS: { id: TabId; label: string }[] = [
+const TABS: { id: MentorOrderBrowseTabId; label: string }[] = [
   { id: "all", label: "전체" },
-  { id: "dispute", label: "분쟁·검토" },
-  { id: "billing", label: "수락·결제 대기" },
-  { id: "work", label: "작업 중" },
-  { id: "delivery", label: "납품·검토 대기" },
-  { id: "revision", label: "수정 요청" },
-  { id: "done", label: "완료·종료" },
+  { id: "billing", label: "작업 대기" },
+  { id: "work", label: "작업 진행 중" },
+  { id: "delivery", label: "납품 대기" },
+  { id: "done", label: "종료됨" },
 ];
-
-function classifyTab(row: Row, disputeIds: ReadonlySet<string>): TabId {
-  const id = typeof row.id === "string" ? row.id.trim() : "";
-  if (id && disputeIds.has(id)) {
-    return "dispute";
-  }
-  if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
-    return "billing";
-  }
-  if (isOrderRowTerminalForActions(row)) {
-    return "done";
-  }
-  const norm = normalizedPrimaryOrderStatus(row);
-  if (norm === "revision_requested") {
-    return "revision";
-  }
-  if (
-    norm === "delivered" ||
-    norm === "delivered_pending_review" ||
-    norm === "waiting_review" ||
-    norm === "pending_review" ||
-    norm === "in_review" ||
-    norm === "delivery_submitted" ||
-    norm === "redelivered"
-  ) {
-    return "delivery";
-  }
-  return "work";
-}
-
-const TONE_RING: Record<string, string> = {
-  gray: "border-slate-200 bg-slate-50 text-slate-800",
-  blue: "border-sky-200 bg-sky-50 text-sky-950",
-  amber: "border-amber-200 bg-amber-50 text-amber-950",
-  green: "border-emerald-200 bg-emerald-50 text-emerald-950",
-  orange: "border-orange-200 bg-orange-50 text-orange-950",
-  red: "border-red-200 bg-red-50 text-red-950",
-};
-
-function statusChipClass(row: Row, disputeIds: ReadonlySet<string>): string {
-  if (typeof row.id === "string" && row.id.trim() && disputeIds.has(row.id.trim())) {
-    return TONE_RING.red;
-  }
-  if (!isOrderRowPaymentConfirmedForMentorWork(row)) {
-    return TONE_RING.amber;
-  }
-  const norm = normalizedPrimaryOrderStatus(row);
-  const tone = orderStatusUiToneForNorm(norm);
-  return TONE_RING[tone] ?? TONE_RING.gray;
-}
 
 function studentLine(row: Row): string {
   const name = pickDisplayField(row, ["student_name", "buyer_name", "client_name", "requester_name"]);
-  if (name !== "—") {
-    return name;
-  }
+  if (name !== "—") return name;
   const sid = pickDisplayField(row, ["student_id", "buyer_id", "user_id", "client_id", "requester_id"]);
-  if (sid !== "—" && sid.length > 10) {
-    return `의뢰자 ····${sid.slice(-6)}`;
-  }
+  if (sid !== "—" && sid.length > 10) return `의뢰자 ····${sid.slice(-6)}`;
   return sid !== "—" ? `의뢰자 ${sid}` : "의뢰자 정보 준비 중";
 }
 
-function postInfoHref(row: Row): string | null {
-  const pid = pickDisplayField(row, [
-    "custom_request_post_id",
-    "post_id",
-    "request_post_id",
-    "custom_request_id",
-  ]);
-  const t = pid !== "—" ? pid.trim() : "";
-  if (t.length >= 8) {
-    return `/mentor/custom-request/posts/${encodeURIComponent(t)}`;
-  }
-  return null;
+function getAcceptDate(row: Row): string {
+  const raw = pickDisplayField(row, ["accepted_at", "created_at", "started_at"]);
+  if (raw === "—") return "";
+  const match = raw.match(/\d{4}-\d{2}-\d{2}/);
+  if (match) return match[0].replace(/-/g, ".");
+  return "";
 }
 
 export function MentorCustomRequestOrdersBrowseClient(props: {
   rows: Row[];
   activeDisputeOrderIds: string[];
+  initialTab?: string;
+  counts?: Record<string, number>;
 }) {
   const disputeSet = useMemo(() => new Set(props.activeDisputeOrderIds), [props.activeDisputeOrderIds]);
-  const [tab, setTab] = useState<TabId>("all");
+
+  const resolveDefaultTab = (t: string | undefined): MentorOrderBrowseTabId => {
+    if (t === "billing") return "billing";
+    if (t === "work" || t === "revision") return "work";
+    if (t === "delivery") return "delivery";
+    if (t === "done") return "done";
+    return "all";
+  };
+  const defaultTab = resolveDefaultTab(props.initialTab);
+
+  const [tab, setTab] = useState<MentorOrderBrowseTabId>(defaultTab);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTab(resolveDefaultTab(props.initialTab));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.initialTab]);
+
+  const tabCounts = useMemo(() => {
+    const c: Record<string, number> = { all: props.rows.length };
+    for (const r of props.rows) {
+      const t = classifyMentorOrderBrowseTab(r, disputeSet);
+      const displayTab = t === "revision" ? "work" : t;
+      c[displayTab] = (c[displayTab] ?? 0) + 1;
+    }
+    return c;
+  }, [props.rows, disputeSet]);
 
   const filtered = useMemo(() => {
-    if (tab === "all") {
-      return props.rows;
+    if (tab === "all") return props.rows;
+    if (tab === "work") {
+      return props.rows.filter((r) => {
+        const t = classifyMentorOrderBrowseTab(r as Row, disputeSet);
+        return t === "work" || t === "revision";
+      });
     }
-    return props.rows.filter((r) => classifyTab(r as Row, disputeSet) === tab);
+    return props.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === tab);
   }, [props.rows, tab, disputeSet]);
 
   return (
     <div>
       <div
-        className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/90 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mb-5 flex items-center gap-0 overflow-x-auto border-b border-ds-border-subtle [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="tablist"
-        aria-label="주문 상태 필터"
+        aria-label="수락된 의뢰 필터"
       >
         {TABS.map((t) => {
-          const active = tab === t.id;
+          const isActive = tab === t.id;
+          const count = t.id === "all" ? tabCounts.all : tabCounts[t.id] ?? 0;
           return (
             <button
               key={t.id}
               type="button"
               role="tab"
-              aria-selected={active}
+              aria-selected={isActive}
               onClick={() => setTab(t.id)}
               className={[
-                "shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm",
-                active ? "bg-white text-blue-900 shadow-sm ring-1 ring-slate-200/80" : "text-slate-600 hover:bg-white/70",
+                "flex shrink-0 items-center gap-1.5 border-b-2 px-4 pb-3 pt-1 text-sm font-semibold whitespace-nowrap transition-colors",
+                isActive ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-800",
               ].join(" ")}
             >
               {t.label}
+              <span
+                className={[
+                  "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums",
+                  isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500",
+                ].join(" ")}
+              >
+                {count}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <ul className="mt-5 space-y-3">
-        {filtered.length === 0 ? (
-          <li className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-8 text-center text-sm font-semibold text-slate-600">
-            이 조건에 해당하는 주문이 없습니다.
-          </li>
-        ) : (
-          filtered.map((raw) => {
+      {filtered.length === 0 ? (
+        <EmptyState
+          title="이 단계에 해당하는 의뢰가 없어요"
+          description="새 의뢰 목록에서 관심 있는 의뢰에 제안해 보세요."
+          action={
+            <LinkButton href="/mentor/custom-request/posts" accent="student">
+              새 의뢰 보기
+            </LinkButton>
+          }
+        />
+      ) : (
+        <ul className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
+          {filtered.map((raw) => {
             const r = raw as Row;
             const id = typeof r.id === "string" && r.id.trim() ? r.id.trim() : null;
             if (!id) return null;
-            const title = pickDisplayField(r, ["title", "subject", "label", "name"]);
-            const titleLine = title !== "—" ? title : "맞춤의뢰 주문";
+            const titleLine = mentorCustomOrderDisplayTitle(r);
             const href = mentorCustomOrderWorkroomHref(id);
-            const headline = mentorCustomOrderStatusHeadline(r, disputeSet);
             const pay = mentorCustomOrderPaymentLine(r);
-            const deadline = pickDisplayField(r, ["deadline", "due_at", "due_date", "close_at"]);
-            const postHref = postInfoHref(r);
-            const chipClass = statusChipClass(r, disputeSet);
+            const acceptDate = getAcceptDate(r);
+            const status = mentorCustomOrderBrowseStatus(r, disputeSet);
+            const isDispute = disputeSet.has(id);
+            const student = studentLine(r);
+            const acceptPart = acceptDate ? `수락 ${acceptDate}` : null;
+            const payPart = pay !== "—" ? pay : null;
+            const hasMeta = Boolean(student || acceptPart || payPart);
 
             return (
-              <li key={id}>
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex max-w-full rounded-full border px-2.5 py-0.5 text-xs font-bold ${chipClass}`}>
-                          {headline}
-                        </span>
-                      </div>
-                      <h3 className="mt-2 text-base font-extrabold leading-snug text-slate-900 sm:text-lg">{titleLine}</h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        <span className="font-extrabold text-slate-700">의뢰자</span> {studentLine(r)}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 sm:text-sm">
-                        <span>
-                          <span className="font-extrabold text-slate-500">결제</span> {pay}
-                        </span>
-                        {deadline !== "—" ? (
-                          <span>
-                            <span className="font-extrabold text-slate-500">일정</span> {deadline}
-                          </span>
+              <li key={id} className="min-h-0">
+                <Link
+                  href={href}
+                  className={[
+                    "flex h-full items-start justify-between gap-3 rounded-2xl border border-ds-border-subtle bg-white px-5 py-4 transition hover:bg-slate-50/80",
+                    isDispute ? "border-l-[3px] border-l-red-600" : "border-l-[3px] border-l-violet-600",
+                  ].join(" ")}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-slate-900">{titleLine}</p>
+                    {hasMeta ? (
+                      <p className="mt-1 truncate text-sm text-slate-600">
+                        <span>{student}</span>
+                        {acceptPart ? (
+                          <>
+                            {" · "}
+                            <span>{acceptPart}</span>
+                          </>
                         ) : null}
-                      </div>
-                    </div>
-                    <div className="flex w-full shrink-0 flex-col gap-2 border-t border-slate-100 pt-3 sm:w-auto sm:border-0 sm:pt-0 sm:pl-4 md:min-w-[11rem]">
-                      <Link
-                        href={href}
-                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-500"
-                      >
-                        작업방 입장
-                      </Link>
-                      {postHref ? (
-                        <Link
-                          href={postHref}
-                          className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 hover:bg-slate-50"
-                        >
-                          의뢰 글 보기
-                        </Link>
-                      ) : (
-                        <Link
-                          href={href}
-                          className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 hover:bg-slate-50"
-                        >
-                          상세 보기
-                        </Link>
-                      )}
-                    </div>
+                        {payPart ? (
+                          <>
+                            {" · "}
+                            <span className={paymentLabelClassName(payPart)}>{payPart}</span>
+                          </>
+                        ) : null}
+                      </p>
+                    ) : null}
                   </div>
-                </div>
+                  <StatusBadge label={status.label} kind={status.kind} size="sm" className="shrink-0" />
+                </Link>
               </li>
             );
-          })
-        )}
-      </ul>
+          })}
+        </ul>
+      )}
     </div>
   );
 }

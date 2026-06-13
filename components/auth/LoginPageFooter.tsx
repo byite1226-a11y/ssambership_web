@@ -58,7 +58,9 @@ export function LoginPageFooter({ termsUrl, privacyUrl, supportUrl }: LoginPageF
                 이용약관
               </a>
             ) : (
-              <span className="text-slate-500">이용약관</span>
+              <Link className="font-semibold text-slate-700 underline decoration-slate-300/80 underline-offset-[3px] hover:text-slate-900" href="/legal/terms">
+                이용약관(안내)
+              </Link>
             )}
             <span className="text-slate-300" aria-hidden>
               ·
@@ -73,7 +75,12 @@ export function LoginPageFooter({ termsUrl, privacyUrl, supportUrl }: LoginPageF
                 개인정보처리방침
               </a>
             ) : (
-              <span className="text-slate-500">개인정보처리방침</span>
+              <Link
+                className="font-semibold text-slate-700 underline decoration-slate-300/80 underline-offset-[3px] hover:text-slate-900"
+                href="/legal/privacy"
+              >
+                개인정보(안내)
+              </Link>
             )}
             <span className="text-slate-300" aria-hidden>
               ·
@@ -88,7 +95,12 @@ export function LoginPageFooter({ termsUrl, privacyUrl, supportUrl }: LoginPageF
                 고객센터
               </a>
             ) : (
-              <span className="text-slate-500">고객센터</span>
+              <Link
+                className="font-semibold text-slate-700 underline decoration-slate-300/80 underline-offset-[3px] hover:text-slate-900"
+                href="/support#contact"
+              >
+                고객센터
+              </Link>
             )}
           </nav>
         </div>

@@ -1,18 +1,24 @@
 import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 import { downloadCustomOrderDeliverableAction } from "@/lib/customRequest/orderDeliverableDownloadActions";
-import { pickStoragePathFromDeliverableRow } from "@/lib/customRequest/orderDeliverableFiles";
+import { getStringField } from "@/lib/qna/safeSelect";
 import { submitMentorOrderDeliverableAction } from "@/lib/customRequest/orderMentorActions";
 import {
   deliverableVersionLabelKorean,
   formatOrderRoomDateTime,
   orderStatusLabelForUi,
-  ORDER_ROOM_CARD_CLASS,
+  studentCanDownloadDeliverable,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { EmptyState } from "@/components/design-system";
+import { File } from "lucide-react";
 import type { AppRole } from "@/lib/types/user";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 
 type Row = Record<string, unknown>;
+
+function pickStoragePathFromDeliverableRow(r: Row): string | null {
+  return getStringField(r, ["storage_path", "file_path", "file_storage_path", "object_path", "file_url"]);
+}
 type Props = {
   detail: OrderDetailPageData;
   orderId: string;
@@ -22,6 +28,7 @@ type Props = {
   mentorDeliverableBlockReason: string | null;
   /** 종료 주문: 멘토 납품 등록 블록 전체 비표시(목록·다운로드는 유지) */
   orderTerminal?: boolean;
+  embedded?: boolean;
 };
 
 function formatBytes(n: unknown): string {
@@ -73,31 +80,41 @@ function submittedAt(r: Row): string {
   return formatOrderRoomDateTime(v);
 }
 
-export function OrderDeliverablesPanel({
-  detail,
-  orderId,
-  view,
-  actorRole,
-  mentorDeliverableBlockReason,
-  orderTerminal = false,
-}: Props) {
+export function OrderDeliverablesPanel(props: Props) {
+  if (props.view === "mentor") {
+    return <OrderDeliverablesPanelMentor {...props} />;
+  }
+  const {
+    detail,
+    orderId,
+    view,
+    actorRole,
+    mentorDeliverableBlockReason,
+    orderTerminal = false,
+    embedded = false,
+  } = props;
   const d = detail.bundle.deliverables;
   const err = d.error;
-  const showMentorForm =
-    view === "mentor" && actorRole === "mentor" && !orderTerminal && !mentorDeliverableBlockReason;
+  const showMentorForm = false;
   const rows = (d.rows ?? []) as Row[];
   const canDownload = (actorRole === "student" || actorRole === "mentor" || actorRole === "admin") && orderId.trim().length > 0;
+  const studentDownloadAllowed = actorRole !== "student" || studentCanDownloadDeliverable(detail.bundle.order.row as Row);
+  const sectionClass = embedded
+    ? "space-y-3"
+    : "rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:border-blue-200 hover:shadow-md transition-all duration-300 relative overflow-hidden";
 
   return (
-    <section className={ORDER_ROOM_CARD_CLASS}>
+    <section className={sectionClass}>
       <div className="space-y-3">
-        <div className="mb-3">
-          <h3 className="text-sm font-bold text-slate-950">납품</h3>
-          <p className="mt-0.5 text-xs text-slate-500">버전별 납품물·멘토 등록</p>
+        {!embedded ? (
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+          <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">납품 완료물</h3>
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-black text-blue-600">파일 보관함</span>
         </div>
-      {err ? <p className="text-sm text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p> : null}
+        ) : null}
+      {err ? <p className="text-sm font-bold text-amber-800">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p> : null}
       {d.table && rows.length > 0 ? (
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {rows.map((r, i) => {
             const id = String(r.id ?? i);
             const statusRaw = pickDisplayField(r, ["state", "status", "label"]);
@@ -105,31 +122,32 @@ export function OrderDeliverablesPanel({
               statusRaw === "—" || !String(statusRaw).trim() ? "—" : orderStatusLabelForUi(String(statusRaw));
             const fileName = displayFileName(r);
             const dl = hasDownloadableFile(r);
+            const studentDownloadBlocked = actorRole === "student" && !studentDownloadAllowed;
             const hasNamedFile = fileName !== "—" && String(fileName).trim().length > 0;
             return (
               <li
                 key={id}
-                className="rounded-xl border border-blue-100/50 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm"
+                className="group/item rounded-xl border border-slate-100 bg-slate-50/50 p-3 text-sm text-slate-800 hover:bg-slate-50 hover:border-blue-100 transition-all duration-200"
               >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-xs font-semibold text-slate-700">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
                     {deliverableVersionLabelKorean((r as Row).version, i)}
                   </span>
+                  <span className="text-[10px] font-bold text-slate-400">{submittedAt(r)}</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-600">
-                  <span className="text-slate-500">등록일: </span>
-                  <span className="font-medium text-slate-800">{submittedAt(r)}</span>
-                </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  상태: <span className="font-medium text-slate-800">{status}</span>
-                </p>
-                {dl && canDownload ? (
-                  <div className="mt-2">
+                <div className="mt-2.5">
+                  <p className="text-xs font-bold text-slate-800">상태: <span className="font-extrabold text-slate-900">{status}</span></p>
+                </div>
+                {dl && canDownload && !studentDownloadBlocked ? (
+                  <div className="mt-3 border-t border-slate-100/50 pt-2.5">
                     {hasNamedFile || pickSize(r) != null ? (
-                      <p className="mb-1.5 break-all text-slate-900">
-                        {hasNamedFile ? fileName : "첨부 파일"}
+                      <p className="mb-2 break-all text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <svg className="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="truncate">{hasNamedFile ? fileName : "첨부 파일"}</span>
                         {pickSize(r) != null ? (
-                          <span className="ml-2 text-xs text-slate-500">({formatBytes(pickSize(r))})</span>
+                          <span className="shrink-0 text-[10px] font-bold text-slate-400">({formatBytes(pickSize(r))})</span>
                         ) : null}
                       </p>
                     ) : null}
@@ -138,78 +156,181 @@ export function OrderDeliverablesPanel({
                       <input type="hidden" name="deliverableId" value={id} />
                       <button
                         type="submit"
-                        className="inline-flex min-h-[36px] items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50"
+                        className="inline-flex min-h-[32px] w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-700 shadow-sm hover:border-blue-300 hover:text-blue-600 transition"
                       >
-                        첨부 파일 다운로드
+                        다운로드 받기
                       </button>
                     </form>
                   </div>
+                ) : dl && canDownload && studentDownloadBlocked ? (
+                  <div className="mt-3 border-t border-slate-100/50 pt-2.5">
+                    {hasNamedFile || pickSize(r) != null ? (
+                      <p className="mb-2 break-all text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <svg className="h-4 w-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="truncate">{hasNamedFile ? fileName : "첨부 파일"}</span>
+                        {pickSize(r) != null ? (
+                          <span className="shrink-0 text-[10px] font-bold text-slate-400">({formatBytes(pickSize(r))})</span>
+                        ) : null}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex min-h-[32px] w-full cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-[11px] font-bold text-slate-400 shadow-sm"
+                    >
+                      다운로드
+                    </button>
+                    <p className="mt-2 text-[11px] font-semibold text-slate-500">수락(완료) 후 다운로드할 수 있어요.</p>
+                  </div>
                 ) : hasNamedFile || pickSize(r) != null ? (
-                  <p className="mt-0.5 break-all text-slate-900">
-                    {hasNamedFile ? fileName : "첨부"}
+                  <p className="mt-2.5 break-all text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <span className="truncate">{hasNamedFile ? fileName : "첨부"}</span>
                     {pickSize(r) != null ? (
-                      <span className="ml-2 text-xs text-slate-500">({formatBytes(pickSize(r))})</span>
+                      <span className="shrink-0 text-[10px] font-bold text-slate-400">({formatBytes(pickSize(r))})</span>
                     ) : null}
                   </p>
                 ) : (
-                  <p className="mt-0.5 text-sm text-slate-600">첨부 파일 없음</p>
+                  <p className="mt-2 text-xs text-slate-400 font-semibold">첨부 파일이 없습니다</p>
                 )}
               </li>
             );
           })}
         </ul>
       ) : d.table ? (
-        <p className="text-sm text-slate-600">아직 등록된 납품물이 없습니다.</p>
+        <p className="text-xs font-bold text-slate-400 text-center py-4 bg-slate-50/50 rounded-xl">아직 등록된 납품물이 없습니다.</p>
       ) : (
-        <p className="text-sm text-slate-600">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <p className="text-xs font-bold text-slate-400 text-center py-4 bg-slate-50/50 rounded-xl">정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       )}
 
-      {!orderTerminal && view === "mentor" && actorRole === "mentor" ? (
-        <div className="mt-2 rounded-xl border border-blue-100/60 bg-blue-50/50 p-3">
-          <p className="text-xs font-extrabold text-slate-800">멘토 납품 등록 (파일 + 설명)</p>
-          <p className="mt-1 text-xs text-slate-600">
-            PDF·이미지·ZIP·docx·pptx, 최대 20MB. 파일만 또는 설명만도 가능(둘 중 하나 이상).
-          </p>
-          {mentorDeliverableBlockReason ? (
-            <p className="mt-1 text-sm text-amber-900" title={mentorDeliverableBlockReason}>
-              {mentorDeliverableBlockReason}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * ========================================================
+ * MENTOR ONLY VISUAL UPGRADES (SAFETY ENCAPSULATED)
+ * ========================================================
+ */
+
+function OrderDeliverablesPanelMentor({
+  detail,
+  orderId,
+  actorRole,
+  mentorDeliverableBlockReason,
+  orderTerminal = false,
+}: Props) {
+  const d = detail.bundle.deliverables;
+  const err = d.error;
+  const showMentorForm =
+    actorRole === "mentor" && !orderTerminal && !mentorDeliverableBlockReason;
+  const rows = (d.rows ?? []) as Row[];
+  const canDownload = (actorRole === "student" || actorRole === "mentor" || actorRole === "admin") && orderId.trim().length > 0;
+
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-bold text-slate-900">납품 파일</h3>
+        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">총 {rows.length}건</span>
+      </div>
+      {err ? <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-900">정보를 불러오지 못했습니다.</p> : null}
+      {d.table && rows.length > 0 ? (
+        <ul className="space-y-4">
+          {rows.map((r, i) => {
+            const id = String(r.id ?? i);
+            const fileName = displayFileName(r);
+            const dl = hasDownloadableFile(r);
+            const hasNamedFile = fileName !== "—" && String(fileName).trim().length > 0;
+            return (
+              <li
+                key={id}
+                className="rounded-2xl border border-ds-border-subtle p-5"
+              >
+                <div className="flex items-center justify-between gap-2 pb-3">
+                  <span className="text-sm font-semibold text-slate-900">
+                    {deliverableVersionLabelKorean((r as Row).version, i)}
+                  </span>
+                  <span className="text-xs font-medium tabular-nums text-slate-400">{submittedAt(r)}</span>
+                </div>
+
+                {dl && canDownload ? (
+                  <div className="mt-3">
+                    <div className="mb-3 flex items-center gap-2">
+                      <File className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2} aria-hidden />
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900" title={fileName}>
+                        {hasNamedFile ? fileName : "첨부 파일"}
+                      </p>
+                    </div>
+                    <form action={downloadCustomOrderDeliverableAction} className="w-full">
+                      <input type="hidden" name="orderId" value={orderId} />
+                      <input type="hidden" name="deliverableId" value={id} />
+                      <button
+                        type="submit"
+                        className="flex w-full items-center justify-center rounded-xl border border-ds-border-subtle bg-white py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                      >
+                        다운로드
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center gap-2">
+                    <File className="h-4 w-4 shrink-0 text-slate-300" strokeWidth={2} aria-hidden />
+                    <p className="truncate text-sm text-slate-400">
+                      {hasNamedFile ? fileName : "(파일 정보 없음)"}
+                    </p>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : d.table ? (
+        <EmptyState title="아직 납품물이 없습니다." className="py-8" />
+      ) : null}
+
+      {!orderTerminal && actorRole === "mentor" ? (
+        <div className="border-t border-dashed border-ds-border-subtle pt-6">
+          <div className="rounded-2xl border border-ds-border-subtle p-5">
+            <p className="text-sm font-bold text-slate-900">신규 납품 등록</p>
+            <p className="mt-1 text-xs font-medium leading-relaxed text-slate-600">
+              PDF, ZIP, DOCX 등 (최대 20MB).
             </p>
-          ) : null}
-          {showMentorForm && orderId ? (
-            <form
-              action={submitMentorOrderDeliverableAction}
-              encType="multipart/form-data"
-              className="mt-2 space-y-2"
-            >
-              <input type="hidden" name="orderId" value={orderId} />
-              <label className="block text-sm font-bold text-slate-800">
-                납품 파일
+
+            {mentorDeliverableBlockReason ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-2 text-xs font-medium text-amber-900">
+                {mentorDeliverableBlockReason}
+              </p>
+            ) : showMentorForm && orderId ? (
+              <form
+                action={submitMentorOrderDeliverableAction}
+                encType="multipart/form-data"
+                className="mt-3 space-y-2"
+              >
+                <input type="hidden" name="orderId" value={orderId} />
                 <input
                   type="file"
                   name="deliverableFile"
-                  className="mt-1 block w-full max-w-md text-sm text-slate-800 file:mr-2 file:rounded file:border file:border-slate-300 file:bg-white file:px-2 file:py-1"
-                  accept=".pdf,.zip,.docx,.pptx,image/png,image/jpeg,image/webp,application/pdf,application/zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                  className="block w-full cursor-pointer text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700"
+                  required
                 />
-              </label>
-              <label className="block text-sm font-bold text-slate-800">
-                납품 설명 (선택, 텍스트-only 납품 시 필수)
                 <textarea
                   name="deliverableBody"
-                  rows={4}
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 text-sm text-slate-900"
-                  placeholder="파일에 덧붙일 설명 또는 텍스트-only 납품"
+                  rows={2}
+                  className="w-full rounded-xl border border-ds-border-subtle bg-white px-3 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-500 outline-none focus:border-blue-400"
+                  placeholder="납품 설명 (옵션)"
                 />
-              </label>
-              <FormSubmitButton
-                idleLabel="납품 등록"
-                pendingLabel="등록 중…"
-                className="min-h-[44px] rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm enabled:hover:bg-blue-500"
-              />
-            </form>
-          ) : null}
+                <FormSubmitButton
+                  idleLabel="제출하기"
+                  pendingLabel="제출 중"
+                  className="w-full rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700"
+                />
+              </form>
+            ) : null}
+          </div>
         </div>
       ) : null}
-      </div>
     </section>
   );
 }

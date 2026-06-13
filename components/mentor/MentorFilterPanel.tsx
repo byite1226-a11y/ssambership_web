@@ -21,15 +21,6 @@ export function MentorFilterPanel(props: {
             className="mt-1 min-h-[40px] w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
           />
         </label>
-        <label className="text-xs font-extrabold text-slate-700">
-          인증 상태(부분 일치)
-          <input
-            name="verification"
-            defaultValue={props.verificationDefault}
-            className="mt-1 min-h-[40px] w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
-            placeholder="인증·상태 키워드"
-          />
-        </label>
     </div>
   );
 }

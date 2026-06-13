@@ -6,6 +6,11 @@ const LEDGER_TYPE_KO: Record<string, string> = {
   refund_approved: "환불 승인",
   subscription_payment: "구독 결제",
   staging_manual_cash_topup_for_subscription_repair_test: "운영 조정(수동 충전)",
+  custom_order_escrow_hold: "맞춤의뢰 예치",
+  custom_order_escrow_payout: "맞춤의뢰 정산 지급",
+  custom_order_escrow_refund: "맞춤의뢰 예치 반환",
+  custom_order_dispute_payout: "맞춤의뢰 분쟁 분배(멘토)",
+  custom_order_dispute_refund: "맞춤의뢰 분쟁 분배(학생)",
   cash_topup: "캐시 충전",
   topup: "충전",
   debit: "차감",
@@ -57,10 +62,44 @@ export function ledgerAmountLabel(row: Row): string {
 }
 
 export function ledgerReasonLabel(row: Row): string {
-  return getStringField(row, ["reason", "description", "note", "memo", "summary", "label", "title"]) ?? "—";
+  for (const field of ["ref_type", "reason", "description", "note", "memo", "summary", "label", "title"] as const) {
+    const raw = getStringField(row, [field]);
+    if (!raw || raw === "—") continue;
+    const key = raw.trim().toLowerCase();
+    if (LEDGER_TYPE_KO[key]) return LEDGER_TYPE_KO[key];
+  }
+  return ledgerTypeLabel(row);
 }
 
 /** 주문/결제 연결(있다면) — UUID는 축약 표기 */
+export type LedgerUiKind = "charge" | "subscription" | "custom_request" | "other";
+
+export function ledgerUiKind(row: Row): LedgerUiKind {
+  const typeRaw = getStringField(row, ["type", "entry_type", "kind", "category"]) ?? "";
+  const reasonRaw = getStringField(row, ["reason", "description", "note", "memo", "summary"]) ?? "";
+  const blob = `${typeRaw} ${reasonRaw}`.toLowerCase();
+  if (/custom.?request|맞춤|의뢰|order/.test(blob)) return "custom_request";
+  if (/subscription|구독|subscribe|멤버십/.test(blob)) return "subscription";
+  if (/topup|charge|충전|credit|deposit|staging/.test(blob)) return "charge";
+  return "other";
+}
+
+export function ledgerIsCredit(row: Row): boolean {
+  const label = ledgerAmountLabel(row);
+  return !label.startsWith("-") && label !== "—";
+}
+
+export function ledgerBalanceAfter(row: Row): string {
+  for (const k of ["balance_after_cents", "balance_cents", "balance_after", "running_balance_cents"] as const) {
+    const v = row[k];
+    if (typeof v === "number" && Number.isFinite(v)) {
+      const n = k.includes("cents") ? v / 100 : v;
+      return `${Math.round(n).toLocaleString("ko-KR")}캐시`;
+    }
+  }
+  return "—";
+}
+
 export function ledgerOrderOrPaymentRef(row: Row): string {
   const a = getStringField(row, [
     "payment_id",

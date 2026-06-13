@@ -9,6 +9,8 @@ import {
   setDisputeUnderReviewAction,
 } from "@/lib/admin/adminDisputeActions";
 import { adminDisputeStatusLabel } from "@/lib/admin/disputeLabels";
+import type { AdminDisputeEscrowSplitPanelState } from "@/lib/admin/adminDisputeEscrowSplitTypes";
+import { DisputeEscrowSplitPanel } from "@/components/disputes/DisputeEscrowSplitPanel";
 
 type Row = Record<string, unknown>;
 
@@ -43,6 +45,8 @@ export function DisputeAdminPageBody(props: {
   bundle: DisputeBundle;
   actors: { reporter: DisputeActorSummary; student: DisputeActorSummary; mentor: DisputeActorSummary } | null;
   disputeId: string;
+  escrowSplitPanelState: AdminDisputeEscrowSplitPanelState;
+  platformFeeRate: number;
 }) {
   const d = props.bundle.dispute.row;
   const stRaw = statusBadgeText(d, ["status", "state", "phase", "resolution", "outcome"]);
@@ -71,14 +75,16 @@ export function DisputeAdminPageBody(props: {
         </div>
       </section>
 
+      <DisputeEscrowSplitPanel panelState={props.escrowSplitPanelState} platformFeeRate={props.platformFeeRate} />
+
       <section className="rounded-2xl border border-amber-800/30 bg-amber-950/5 p-4">
-        <h2 className="text-sm font-extrabold text-amber-950">금전·환불·정산</h2>
+        <h2 className="text-sm font-extrabold text-amber-950">금전·환불·정산 안내</h2>
         <p className="mt-1 text-xs text-amber-950/90">
-          이 화면의 <strong>해결·종결</strong>은 분쟁 상태만 바꿉니다. 실제 환불 승인·정산 반영·주문 강제 완료는 수동 후속 처리가 필요할 수 있습니다. 환불은{" "}
+          맞춤의뢰 <strong>예치 분배</strong>는 위 섹션에서 실행합니다. 구독·기타 환불은{" "}
           <Link className="font-extrabold underline" href="/admin/refunds" prefetch={false}>
             환불 관리
           </Link>
-          에서 진행하세요.
+          에서 진행하세요. 아래 <strong>해결·종결</strong> 버튼은 분쟁 상태만 바꾸며, 예치 분배와 별개입니다.
         </p>
       </section>
 

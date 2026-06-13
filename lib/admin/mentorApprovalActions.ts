@@ -8,9 +8,10 @@ import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { MENTOR_PENDING_STATUS_VALUES_FOR_IN } from "@/lib/admin/mentorApprovalConstants";
+import { logAdminAction } from "@/lib/admin/adminActionLog";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 
-const PATH = "/admin/mentor-approvals";
+const PATH = "/admin/mentor-approval";
 const TABLE = "mentor_profiles";
 
 function textFromForm(v: FormDataEntryValue | null): string {
@@ -99,7 +100,7 @@ async function runMentorProfileUpdate(
 export async function approveMentorApplicationAction(formData: FormData) {
   const { user } = await requireRole("admin");
   const mentorUserId = textFromForm(formData.get("mentorUserId"));
-  const adminNote = textFromForm(formData.get("note"));
+  const adminNote = textFromForm(formData.get("adminNote") ?? formData.get("note"));
 
   if (!mentorUserId) {
     redirect(errUrl(safeActionMsg("신청을 식별할 수 없습니다.")));
@@ -130,15 +131,24 @@ export async function approveMentorApplicationAction(formData: FormData) {
     redirect(errUrl(safeActionMsg("이미 처리되었거나 승인 대기 상태가 아닙니다.")));
   }
 
+  const session = await createClient();
+  await logAdminAction(session, {
+    adminId: user.id,
+    actionType: "mentor_approve",
+    targetType: "mentor_profile",
+    targetId: mentorUserId,
+    detail: { note: adminNote },
+  });
+
   revalidatePath(PATH);
-  revalidatePath("/admin");
+  revalidatePath("/admin/dashboard");
   redirect(okUrl("approve"));
 }
 
 export async function rejectMentorApplicationAction(formData: FormData) {
   const { user } = await requireRole("admin");
   const mentorUserId = textFromForm(formData.get("mentorUserId"));
-  const reason = textFromForm(formData.get("note"));
+  const reason = textFromForm(formData.get("rejectionReason") ?? formData.get("note"));
 
   if (!mentorUserId) {
     redirect(errUrl(safeActionMsg("신청을 식별할 수 없습니다.")));
@@ -169,7 +179,55 @@ export async function rejectMentorApplicationAction(formData: FormData) {
     redirect(errUrl(safeActionMsg("이미 처리되었거나 승인 대기 상태가 아닙니다.")));
   }
 
+  const session = await createClient();
+  await logAdminAction(session, {
+    adminId: user.id,
+    actionType: "mentor_reject",
+    targetType: "mentor_profile",
+    targetId: mentorUserId,
+    detail: { reason },
+  });
+
   revalidatePath(PATH);
-  revalidatePath("/admin");
+  revalidatePath("/admin/dashboard");
   redirect(okUrl("reject"));
+}
+
+/** 추가 서류 요청 — under_review 상태로 표시 */
+export async function requestMentorDocumentsAction(formData: FormData) {
+  const { user } = await requireRole("admin");
+  const mentorUserId = textFromForm(formData.get("mentorUserId"));
+  const adminNote = textFromForm(formData.get("adminNote") ?? formData.get("note"));
+
+  if (!mentorUserId) redirect(errUrl(safeActionMsg("신청을 식별할 수 없습니다.")));
+
+  let admin: SupabaseClient;
+  try {
+    admin = createServiceRoleClient();
+  } catch {
+    admin = await createClient();
+  }
+
+  const st = await statusColumn(admin);
+  if (!st) redirect(errUrl("상태 컬럼을 찾지 못했습니다."));
+
+  const patch: Record<string, unknown> = { [st]: "under_review" };
+  const noteCol = await pickExistingColumn(admin, TABLE, ["admin_note", "review_note", "note"]);
+  if (noteCol.column && adminNote) patch[noteCol.column] = adminNote;
+
+  const { touched, errorMsg } = await runMentorProfileUpdate(mentorUserId, st, patch);
+  if (errorMsg) redirect(errUrl(safeActionMsg(errorMsg)));
+  if (!touched) redirect(errUrl(safeActionMsg("처리할 수 없는 상태입니다.")));
+
+  const session = await createClient();
+  await logAdminAction(session, {
+    adminId: user.id,
+    actionType: "mentor_request_documents",
+    targetType: "mentor_profile",
+    targetId: mentorUserId,
+    detail: { note: adminNote },
+  });
+
+  revalidatePath(PATH);
+  redirect(okUrl("documents"));
 }

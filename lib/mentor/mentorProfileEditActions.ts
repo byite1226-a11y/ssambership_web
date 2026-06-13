@@ -21,6 +21,7 @@ export async function submitMentorProfileEdit(formData: FormData) {
   const intro = String(formData.get("intro") ?? "").trim();
   const university = String(formData.get("university") ?? "").trim();
   const department = String(formData.get("department") ?? "").trim();
+  const grade = String(formData.get("grade") ?? "").trim();
   const subjects = String(formData.get("subjects") ?? "").trim();
   const highSchool = String(formData.get("highSchool") ?? "").trim();
   const tags = String(formData.get("tags") ?? "").trim();
@@ -31,6 +32,7 @@ export async function submitMentorProfileEdit(formData: FormData) {
     intro,
     university,
     department,
+    grade,
     subjects,
     highSchool,
     tags,

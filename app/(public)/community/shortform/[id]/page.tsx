@@ -1,102 +1,60 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { CommunityPageHero } from "@/components/community/CommunityPageHero";
-import { CommunityPostDetail } from "@/components/community/CommunityPostDetail";
+import { CommunityShortformDetailView } from "@/components/community/CommunityShortformDetailView";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
 import { createClient } from "@/lib/supabase/server";
-import { getShortformPost, isCommunityPostUuid, loadCommunityComments, pickTitle } from "@/lib/community/communityQueries";
-import type { AppRole } from "@/lib/types/user";
+import { isCommunityPostUuid, loadCommunityComments } from "@/lib/community/communityQueries";
+import { getShortformDetail, incrementShortformView } from "@/lib/community/communityShortformQueries";
+import Link from "next/link";
+import { VideoOff } from "lucide-react";
 
-function shortformDetailDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
-  if (role === "mentor") {
-    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요. 새 숏폼은 업로드 메뉴에서 등록할 수 있어요.";
-  }
-  if (!loggedIn) {
-    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 확인해 보세요. 댓글·스크랩은 로그인 후 이용할 수 있습니다.";
-  }
-  return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요.";
-}
-
-type Props = {
-  params: Promise<{ id: string }>;
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
+type Props = { params: Promise<{ id: string }> };
 
 export default async function CommunityShortformDetailPage(props: Props) {
   const { id } = await props.params;
-  const sp = (await props.searchParams) ?? {};
-  const cErr = sp.commentError;
-  const commentErrorCode = typeof cErr === "string" ? cErr : Array.isArray(cErr) ? cErr[0] : null;
-  const reportOkRaw = sp.reportOk;
-  const reportOk =
-    reportOkRaw === "1" ||
-    reportOkRaw === "true" ||
-    (Array.isArray(reportOkRaw) && (reportOkRaw[0] === "1" || reportOkRaw[0] === "true"));
-  const rErr = sp.reportError;
-  const reportErrorCode = typeof rErr === "string" ? rErr : Array.isArray(rErr) ? rErr[0] : null;
-
   const supabase = await createClient();
-  const { user, profile } = await getServerUserWithProfile();
-  const loggedIn = user != null;
-  const canComment = loggedIn;
-  const canReport = loggedIn;
-
+  const { user } = await getServerUserWithProfile();
   const idOk = isCommunityPostUuid(id);
-  let row: Record<string, unknown> | null = null;
-  let loadError: string | null = null;
 
+  let item = null;
+  let loadError: string | null = null;
   if (idOk) {
-    const res = await getShortformPost(supabase, id);
-    if (res.error) {
-      console.error("[community/shortform/detail] getShortformPost", id, res.error);
-      loadError = "숏폼을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
-    } else {
-      row = res.row;
+    const res = await getShortformDetail(supabase, id);
+    if (res.error) loadError = "숏폼\uC744 \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
+    else if (res.item) {
+      item = res.item;
+      await incrementShortformView(supabase, id);
     }
   }
 
-  const missingPost = !idOk || (idOk && !row && !loadError);
-  const { rows: comments, error: commentsQueryError } = row
-    ? await loadCommunityComments(supabase, "shortform", id)
-    : { rows: [], error: null as string | null };
+  const { rows: comments } = item ? await loadCommunityComments(supabase, "shortform", id) : { rows: [] };
   const returnPath = `/community/shortform/${id}`;
 
   return (
-    <CommunityLayoutShell
-      activeNav="shortform"
-      hero={
-        <CommunityPageHero
-          eyebrow="커뮤니티 · 숏폼"
-          title="숏폼"
-          description={shortformDetailDescription(profile?.role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
-            surface: "shortform_detail",
-            role: profile?.role,
-            loggedIn,
-            nextPath: returnPath,
-          })}
-        />
-      }
-    >
-      <div className="min-w-0">
-        <CommunityPostDetail
-          variant="shortform"
-          postId={id}
-          returnPath={returnPath}
-          title={row ? pickTitle(row) : "숏폼"}
-          row={row}
-          loadError={loadError}
-          missingPost={missingPost}
-          backHref="/community/shortform"
-          listLabel="숏폼 목록"
-          comments={comments}
-          commentsQueryError={commentsQueryError}
-          canComment={canComment}
-          canReport={canReport}
-          commentErrorCode={commentErrorCode}
-          reportOk={reportOk}
-          reportErrorCode={reportErrorCode}
-        />
+    <CommunityLayoutShell activeNav="shortform">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        {loadError ? <p className="text-sm font-semibold text-red-800">{loadError}</p> : null}
+        {!item && !loadError ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <VideoOff className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
+            <h2 className="mt-4 text-xl font-black text-slate-900">숏폼을 찾을 수 없어요</h2>
+            <p className="mt-2 text-sm font-medium text-slate-600">삭제되었거나 존재하지 않는 콘텐츠예요.</p>
+            <Link
+              href="/community/shortform"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            >
+              숏폼 목록으로
+            </Link>
+          </div>
+        ) : null}
+        {item ? (
+          <CommunityShortformDetailView
+            item={item}
+            postId={id}
+            returnPath={returnPath}
+            comments={comments}
+            canComment={user != null}
+          />
+        ) : null}
       </div>
     </CommunityLayoutShell>
   );

@@ -1,4 +1,9 @@
 import type { ReactNode } from "react";
+import {
+  FREE_QUESTION_EXPIRY_DAYS,
+  FREE_QUESTION_PER_MENTOR_LIMIT,
+  FREE_QUESTION_TOTAL_LIMIT,
+} from "@/lib/mentor/freeQuestionPolicy";
 
 function Cell({
   title,
@@ -39,7 +44,7 @@ function Cell({
 }
 
 /**
- * 최종 시안: 안내 4칸(무료 질문권 15 / 멘토당 3 / 복수 멘토) — 복제 시안용 노출
+ * 최종 시안: 안내 4칸(무료 질문권 7 / 멘토당 3 / 복수 멘토) — 복제 시안용 노출
  */
 export function LoginInformationBlock() {
   return (
@@ -78,7 +83,7 @@ export function LoginInformationBlock() {
           안내를 봐 주세요.
         </Cell>
         <Cell
-          title="무료 질문권 15장 제공"
+          title={`무료 질문권 ${FREE_QUESTION_TOTAL_LIMIT}장 제공`}
           icon={
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-sky-600" aria-hidden>
               <rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" strokeWidth="1.4" />
@@ -86,8 +91,9 @@ export function LoginInformationBlock() {
             </svg>
           }
         >
-          회원가입·정책이 정한 절차를 완료하면, 안내에 따라 <strong className="font-extrabold text-slate-800">15장</strong>이 부여돼
-          요.
+          회원가입·정책이 정한 절차를 완료하면, 안내에 따라{" "}
+          <strong className="font-extrabold text-slate-800">{FREE_QUESTION_TOTAL_LIMIT}장</strong>이 부여돼 요. 가입 후{" "}
+          {FREE_QUESTION_EXPIRY_DAYS}일간 사용할 수 있어요.
         </Cell>
         <Cell
           title="한 멘토당 최대 3개 질문"
@@ -125,8 +131,8 @@ export function LoginInformationBlock() {
             </svg>
           }
         >
-          15장은 <strong className="font-extrabold text-slate-800">다른 멘토들</strong>에게로 나누어 쓰며, 한 멘토당
-          3개 한도는 멘토마다 별도로 집계돼요.
+          {FREE_QUESTION_TOTAL_LIMIT}장은 <strong className="font-extrabold text-slate-800">다른 멘토들</strong>에게로 나누어 쓰며, 한 멘토당
+          {FREE_QUESTION_PER_MENTOR_LIMIT}개 한도는 멘토마다 별도로 집계돼요.
         </Cell>
       </ol>
     </section>

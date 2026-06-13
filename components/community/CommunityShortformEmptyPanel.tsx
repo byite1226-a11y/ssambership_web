@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { AppRole } from "@/lib/types/user";
 
 export function CommunityShortformEmptyPanel(props: {
@@ -24,19 +23,15 @@ export function CommunityShortformEmptyPanel(props: {
         {desc}
       </p>
       {isMentor ? (
-        <Link
-          href="/mentor/community/new"
-          className="mt-5 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-700"
-        >
-          숏폼 업로드
-        </Link>
-      ) : null}
-      {!props.loggedIn && !isMentor ? (
-        <p className="mt-4 text-xs text-slate-500">
-          <Link href={`/login?next=${encodeURIComponent("/community/shortform")}`} className="font-bold text-blue-800 underline">
-            로그인
-          </Link>
-          후 댓글·스크랩을 이용할 수 있어요.
+        <p className={`mx-auto max-w-md text-xs leading-relaxed text-slate-600 ${props.compact ? "mt-4" : "mt-5"}`}>
+          {props.compact ? (
+            <>첫 숏폼 영상은 화면 우측 하단의 「숏폼 올리기」 버튼으로 업로드할 수 있어요.</>
+          ) : (
+            <>
+              업로드는 숏폼 목록 우측 하단의 <span className="font-semibold text-slate-800">숏폼 올리기</span> 버튼으로
+              진행하면 돼요.
+            </>
+          )}
         </p>
       ) : null}
     </div>

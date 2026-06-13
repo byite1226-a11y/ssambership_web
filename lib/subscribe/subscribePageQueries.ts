@@ -1,9 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
+import {
+  cashKrwForSubscribeTier,
+  formatSubscribePlanCashMonthlyLabel,
+  getSubscribeCatalogPlan,
+} from "@/lib/subscribe/subscribePlanCatalog";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { buildMentorProfileDisplay, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { fetchPlansForMentor, type MentorPlansLoad } from "@/lib/mentor/publicMentorBundle";
 import { getStringField, pickExistingColumn } from "@/lib/qna/safeSelect";
+import {
+  SUBSCRIPTIONS_ORDER_COLUMN,
+  SUBSCRIPTIONS_SELECT,
+  SUBSCRIPTIONS_TABLE,
+} from "@/lib/subscribe/subscriptionsTable";
 import type { UserRow } from "@/lib/types/user";
 
 type Row = Record<string, unknown>;
@@ -38,7 +49,11 @@ export type PaymentsProbeLoad = {
 };
 
 function detectTier(row: Row): SubscribePlanTier | null {
-  const title = (getStringField(row, ["title", "name", "label", "plan_name", "tier_name", "slug"]) ?? "").toLowerCase();
+  const tierCol = (getStringField(row, ["plan_tier", "tier", "slug", "code"]) ?? "").toLowerCase();
+  if (tierCol === "limited" || tierCol === "standard" || tierCol === "premium") {
+    return tierCol;
+  }
+  const title = (getStringField(row, ["title", "name", "label", "plan_name", "tier_name"]) ?? "").toLowerCase();
   if (/limited|리미티드|라이트|light/.test(title)) return "limited";
   if (/standard|스탠다드/.test(title)) return "standard";
   if (/premium|프리미엄|pro|프로/.test(title)) return "premium";
@@ -69,14 +84,25 @@ export function assignPlansByTier(rows: Row[]): { byTier: PlansByTier; fillProbe
   };
 }
 
-export function priceLabelFromPlanRow(row: Row | null): string {
-  if (!row) return "—";
-  for (const k of ["price", "monthly_price", "amount", "price_krw", "amount_cents"]) {
-    const v = row[k];
-    if (typeof v === "number" && Number.isFinite(v)) return `${v.toLocaleString("ko-KR")}원`;
-    if (typeof v === "string" && v.trim()) return v;
+export function priceLabelFromPlanRow(row: Row | null, tier?: SubscribePlanTier): string {
+  const resolvedTier = tier ?? (row ? detectTier(row) : null);
+
+  let krw = 0;
+  if (row) {
+    krw = cashKrwFromPlanRow(row, resolvedTier ?? undefined);
   }
-  return "가격 컬럼 미매칭";
+  if (krw <= 0 && resolvedTier) {
+    krw = cashKrwForSubscribeTier(resolvedTier);
+  }
+  if (krw <= 0 && row) {
+    const tierFromRow = detectTier(row);
+    if (tierFromRow) {
+      krw = cashKrwForSubscribeTier(tierFromRow);
+    }
+  }
+
+  if (krw <= 0) return "가격 확인";
+  return formatSubscribePlanCashMonthlyLabel(krw);
 }
 
 export function weeklyQuestionsLabel(row: Row | null): string {
@@ -88,11 +114,21 @@ export function weeklyQuestionsLabel(row: Row | null): string {
     "quota_per_week",
     "new_questions_per_week",
   ]);
-  if (s) return s;
-  for (const k of ["weekly_new_questions", "questions_per_week"]) {
-    const v = row[k];
-    if (typeof v === "number") return `주 ${v}회`;
+  if (s) {
+    const trimmed = s.trim();
+    if (/^주\s*\d/.test(trimmed) || trimmed.includes("무제한")) return trimmed;
+    const n = Number(trimmed.replace(/[^\d]/g, ""));
+    if (Number.isFinite(n) && n > 0) return `주 ${n}개 질문`;
+    return trimmed;
   }
+  for (const k of ["weekly_new_questions", "questions_per_week", "weekly_question_limit"] as const) {
+    const v = row[k];
+    if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+      return v >= 999 ? "주 무제한 질문" : `주 ${v}개 질문`;
+    }
+  }
+  const tier = detectTier(row);
+  if (tier) return getSubscribeCatalogPlan(tier).weeklyLabel;
   return "질문 한도는 구독 플랜에 따라 달라요";
 }
 
@@ -125,6 +161,32 @@ async function fetchSubscriptionForPair(
   for (const table of SUB_TABLES) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
     if (pe) continue;
+
+    if (table === SUBSCRIPTIONS_TABLE) {
+      const { data, error } = await supabase
+        .from(SUBSCRIPTIONS_TABLE)
+        .select(SUBSCRIPTIONS_SELECT)
+        .eq("student_id", studentId)
+        .eq("mentor_id", mentorId)
+        .order(SUBSCRIPTIONS_ORDER_COLUMN, { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        return {
+          row: null,
+          table: SUBSCRIPTIONS_TABLE,
+          probe: `${SUBSCRIPTIONS_TABLE}: ${error.message}`,
+          error: error.message,
+        };
+      }
+      return {
+        row: data ? ((data as unknown) as Row) : null,
+        table: SUBSCRIPTIONS_TABLE,
+        probe: `${SUBSCRIPTIONS_TABLE} · student_id+mentor_id · 최신 1건(created_at)`,
+        error: null,
+      };
+    }
+
     const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
     const { column: mc } = await pickExistingColumn(supabase, table, MEN_FK);
     if (!sc || !mc) {
@@ -167,7 +229,11 @@ async function fetchLatestPaymentProbe(
     const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
     const { column: mc } = await pickExistingColumn(supabase, table, MEN_FK);
     if (!sc) continue;
-    const { column: createdCol } = await pickExistingColumn(supabase, table, ["created_at", "inserted_at"]);
+    const { column: createdCol } = await pickExistingColumn(supabase, table, [
+      "created_at",
+      "inserted_at",
+      "updated_at",
+    ]);
     const two = mc
       ? supabase.from(table).select("*").eq(sc, studentId).eq(mc, mentorId)
       : supabase.from(table).select("*").eq(sc, studentId);

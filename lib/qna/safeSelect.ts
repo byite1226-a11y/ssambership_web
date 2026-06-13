@@ -21,3 +21,13 @@ export function getStringField(row: Record<string, unknown>, keys: string[]): st
   }
   return null;
 }
+
+function isSupabaseRow(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !("error" in value && (value as { error?: unknown }).error === true);
+}
+
+/** Supabase `.select()` 결과 배열을 안전하게 Record 행 배열로 정규화 */
+export function rowsFromSupabaseData(data: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(data)) return [];
+  return data.filter(isSupabaseRow);
+}

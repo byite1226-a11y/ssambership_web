@@ -41,7 +41,7 @@ export async function loadWalletChargePageData(
   const [balance, packages, ledgerPreview, payments] = await Promise.all([
     fetchWalletBalanceByUserId(supabase, userId),
     fetchCashTopupPackages(supabase),
-    fetchCashLedgerForUser(supabase, userId, 8),
+    fetchCashLedgerForUser(supabase, userId, 80),
     fetchRecentPaymentsForUser(supabase, userId, 5),
   ]);
   return { balance, packages, ledgerPreview, payments };

@@ -74,31 +74,12 @@ function pickShortformExtraTags(row: Record<string, unknown>): string | null {
   return null;
 }
 
-function ShortformExploreStrip() {
+function ShortformMoreHint() {
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/90 p-3">
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">더 둘러보기</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <Link
-          href="/community/shortform"
-          className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
-        >
-          숏폼 목록
-        </Link>
-        <Link
-          href="/community/board"
-          className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
-        >
-          게시판 보기
-        </Link>
-        <Link
-          href="/community"
-          className="inline-flex rounded-lg border border-blue-100 bg-blue-50/80 px-3 py-1.5 text-xs font-bold text-blue-900 shadow-sm hover:bg-blue-100"
-        >
-          커뮤니티 홈
-        </Link>
-      </div>
-    </div>
+    <p className="rounded-xl border border-slate-100 bg-slate-50/90 px-3 py-2.5 text-xs leading-relaxed text-slate-600">
+      다른 영상은 위의 목록으로 돌아가거나, 왼쪽 메뉴의 <span className="font-bold text-slate-800">숏폼</span>에서 이어서 살펴볼 수
+      있어요.
+    </p>
   );
 }
 
@@ -229,7 +210,7 @@ export function CommunityPostDetail(props: {
                 )}
               </section>
 
-              <ShortformExploreStrip />
+              <ShortformMoreHint />
             </div>
           </div>
         </article>
@@ -277,28 +258,9 @@ export function CommunityPostDetail(props: {
         <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm">
           <h2 className="text-base font-extrabold text-slate-900">관련 콘텐츠</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            관련 숏폼·게시글 추천 데이터를 준비 중입니다. 아래에서 커뮤니티 안을 더 둘러보세요.
+            관련 숏폼·게시글 추천 데이터를 준비 중입니다. 다른 글은 왼쪽 메뉴의 <span className="font-bold text-slate-800">숏폼</span>·
+            <span className="font-bold text-slate-800">게시판</span>에서 이어서 둘러보세요.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/community/shortform"
-              className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
-            >
-              숏폼 보기
-            </Link>
-            <Link
-              href="/community/board"
-              className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:border-slate-300"
-            >
-              게시판 보기
-            </Link>
-            <Link
-              href="/community"
-              className="inline-flex rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-900 shadow-sm hover:bg-blue-100"
-            >
-              커뮤니티 홈
-            </Link>
-          </div>
         </section>
       ) : null}
 

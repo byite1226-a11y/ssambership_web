@@ -2,10 +2,19 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { cashKrwForSubscribeTier, SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import {
+  SUBSCRIPTIONS_ORDER_COLUMN,
+  SUBSCRIPTIONS_SELECT,
+  SUBSCRIPTIONS_TABLE,
+  buildSubscriptionsInsertPayload,
+} from "@/lib/subscribe/subscriptionsTable";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { loadMentorCapUsage, wouldExceedCap } from "@/lib/subscribe/mentorCapService";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
+import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 
 type Row = Record<string, unknown>;
 
@@ -35,6 +44,24 @@ export async function findActiveSubscriptionForPair(
   for (const table of SUB_TABLES) {
     const { error: pe } = await supabase.from(table).select("id").limit(1);
     if (pe) continue;
+    if (table === SUBSCRIPTIONS_TABLE) {
+      const { data, error } = await supabase
+        .from(SUBSCRIPTIONS_TABLE)
+        .select(SUBSCRIPTIONS_SELECT)
+        .eq("student_id", studentId)
+        .eq("mentor_id", mentorId)
+        .order(SUBSCRIPTIONS_ORDER_COLUMN, { ascending: false })
+        .limit(20);
+      if (error) continue;
+      const rows = rowsFromSupabaseData(data) as Row[];
+      for (const r of rows) {
+        if (isRowSubscriptionActive(r)) {
+          return { table: SUBSCRIPTIONS_TABLE, row: r };
+        }
+      }
+      continue;
+    }
+
     const { column: sc } = await pickExistingColumn(supabase, table, STU_FK);
     const { column: mc } = await pickExistingColumn(supabase, table, MEN_FK);
     if (!sc || !mc) continue;
@@ -98,6 +125,43 @@ function planRowDebitAmountCents(planRow: Row): number {
   return Math.round(krwDisplay * 100);
 }
 
+/** DB mentor_plans 금액과 잠금 카탈로그(55k/114.9k/249.9k) 교차검증 — 불일치 시 차감·구독 차단 */
+function assertPlanDebitMatchesCatalog(
+  planRow: Row,
+  planTier: SubscribePlanTier,
+  context: string
+): { ok: true; amountCents: number } | { ok: false; error: string } {
+  const amountCents = planRowDebitAmountCents(planRow);
+  const expectedCents = cashKrwForSubscribeTier(planTier) * 100;
+  if (amountCents <= 0) {
+    console.error(`[assertPlanDebitMatchesCatalog:${context}] non-positive debit`, {
+      planTier,
+      amountCents,
+      planRowId: planRow.id ?? planRow.plan_id,
+    });
+    return {
+      ok: false,
+      error:
+        "구독 플랜에서 캐시 차감할 유효 금액을 찾을 수 없습니다. 멘토 플랜 금액 설정을 확인하거나 잠시 후 다시 시도해 주세요.",
+    };
+  }
+  if (amountCents !== expectedCents) {
+    console.error(`[assertPlanDebitMatchesCatalog:${context}] plan_price_catalog_mismatch`, {
+      planTier,
+      amountCents,
+      expectedCents,
+      mentorId: planRow.mentor_id,
+      planRowId: planRow.id ?? planRow.plan_id,
+    });
+    return {
+      ok: false,
+      error:
+        "구독 플랜 금액이 시스템 기준과 일치하지 않아 결제를 진행할 수 없습니다. 고객센터에 문의해 주세요.",
+    };
+  }
+  return { ok: true, amountCents };
+}
+
 /** DB `record_subscription_cash_debit`: idempotency_key = 'sub_debit_' || payment_id */
 function subscriptionCashDebitIdempotencyKey(paymentId: string): string {
   return `sub_debit_${paymentId}`;
@@ -157,27 +221,35 @@ async function repairMissingSubscriptionCashLedgerIfNeeded(
     const { byTier } = assignPlansByTier(plans.rows);
     planRow = byTier[planTier];
   }
-  const amountCents = planRow ? planRowDebitAmountCents(planRow) : 0;
-  if (amountCents <= 0) {
-    const details = {
-      studentId,
-      paymentId,
-      mentorId,
-      planTier,
-      hasPlanRow: Boolean(planRow),
-      amountCents,
-    };
+  if (!planRow) {
+    const details = { studentId, paymentId, mentorId, planTier, hasPlanRow: false };
     if (mode === "newSubscription") {
-      console.error(`${logTag} non-positive debit amount (blocking new subscription)`, details);
+      console.error(`${logTag} missing plan row (blocking new subscription)`, details);
       return {
         ok: false,
         error:
           "구독 플랜에서 캐시 차감할 유효 금액을 찾을 수 없습니다. 멘토 플랜 금액 설정을 확인하거나 잠시 후 다시 시도해 주세요.",
       };
     }
-    console.warn(`${logTag} skip ledger repair: non-positive debit amount (no subscription cash debit for this path)`, details);
+    console.warn(`${logTag} skip ledger repair: no plan row`, details);
     return { ok: true };
   }
+
+  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, mode);
+  if (!debitCheck.ok) {
+    if (mode === "newSubscription") {
+      return { ok: false, error: debitCheck.error };
+    }
+    console.warn(`${logTag} skip ledger repair: catalog mismatch`, {
+      studentId,
+      paymentId,
+      mentorId,
+      planTier,
+      error: debitCheck.error,
+    });
+    return { ok: true };
+  }
+  const amountCents = debitCheck.amountCents;
   if (!subscriptionId) {
     const details = {
       studentId,
@@ -310,12 +382,24 @@ export async function createSubscriptionPaymentIntent(
   if (mUser.error || !mUser.data || mUser.data.role !== "mentor") {
     return { ok: false, error: "멘토를 확인할 수 없습니다.", code: "mentor" };
   }
+  const mentorGate = await assertMentorApprovedForAction(supabase, mentorId);
+  if (!mentorGate.ok) {
+    return { ok: false, error: mentorGate.error, code: "mentor" };
+  }
   const dup = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
   if (dup) {
     return {
       ok: false,
       error: "이미 해당 멘토에 활성 구독이 있습니다. 중복 구독을 막았습니다.",
       code: "dup",
+    };
+  }
+  const capUsage = await loadMentorCapUsage(mentorId);
+  if (wouldExceedCap(capUsage, planTier)) {
+    return {
+      ok: false,
+      error: "이 멘토는 현재 구독이 마감되었습니다. 다른 멘토를 찾아보거나 잠시 후 다시 시도해 주세요.",
+      code: "mentor",
     };
   }
   const plans = await fetchPlansForMentor(supabase, mentorId);
@@ -396,11 +480,120 @@ type CompleteResult =
  * pending 등 비확정 상태는 SUBSCRIBE_CHECKOUT_ALLOW_PENDING=true 일 때만 허용(로컬·스테이징 전용).
  * PG·웹훅에서 결제 확정 후 동일 함수를 호출하는 것이 출시 기준 흐름.
  */
+export function isSubscribeCheckoutPendingBypassAllowed(): boolean {
+  const on =
+    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "true" ||
+    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "1";
+  if (process.env.NODE_ENV === "production" && on) {
+    throw new Error("SUBSCRIBE_CHECKOUT_ALLOW_PENDING: 프로덕션에서는 허용되지 않습니다");
+  }
+  if (on) {
+    console.warn(
+      "[subscribeCheckout] SUBSCRIBE_CHECKOUT_ALLOW_PENDING=true — 미결제 구독 완료 우회가 허용됩니다(개발·스테이징 전용)."
+    );
+  }
+  return on;
+}
+
+const PLAN_TABLE_CANDIDATES = ["plans", "mentor_plans", "subscription_plans", "mentor_subscription_plans"] as const;
+const PLAN_FK_CANDIDATES = ["mentor_id", "mentor_user_id", "user_id", "owner_id"] as const;
+
+/**
+ * 구독 카탈로그 티어 행이 DB에 없으면 service role로 생성(캐시 구독 전용).
+ */
+export async function ensureMentorCatalogPlanRows(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<{ ok: true; table: string | null } | { ok: false; error: string }> {
+  const plans = await fetchPlansForMentor(supabase, mentorId);
+  const { byTier } = assignPlansByTier(plans.rows);
+  const missing = SUBSCRIBE_PLAN_CATALOG.filter((p) => !byTier[p.tier]);
+  if (missing.length === 0) {
+    return { ok: true, table: plans.table };
+  }
+
+  let admin: ReturnType<typeof createServiceRoleClient>;
+  try {
+    admin = createServiceRoleClient();
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: `서비스 설정 오류: ${m}` };
+  }
+
+  let table = plans.table;
+  if (!table) {
+    for (const t of PLAN_TABLE_CANDIDATES) {
+      const { error } = await admin.from(t).select("id").limit(1);
+      if (!error) {
+        table = t;
+        break;
+      }
+    }
+  }
+  if (!table) {
+    return { ok: false, error: "플랜 테이블을 찾을 수 없습니다. 스키마를 확인해 주세요." };
+  }
+
+  const { column: fk } = await pickExistingColumn(admin, table, PLAN_FK_CANDIDATES);
+  if (!fk) {
+    return { ok: false, error: `${table}: 멘토 FK 컬럼이 없습니다.` };
+  }
+  const tierCol = (await pickExistingColumn(admin, table, ["plan_tier", "tier", "slug", "code"])).column;
+  const amtCol = (await pickExistingColumn(admin, table, ["amount_cents", "price_cents", "amount", "price"])).column;
+  const labelCol = (await pickExistingColumn(admin, table, ["label", "title", "name"])).column;
+
+  for (const item of missing) {
+    const row: Record<string, unknown> = { [fk]: mentorId };
+    if (tierCol) row[tierCol] = item.tier;
+    if (amtCol) row[amtCol] = item.cashKrw * 100;
+    if (labelCol) row[labelCol] = item.label;
+    const { error } = await admin.from(table).insert(row);
+    if (error) {
+      return { ok: false, error: `${table} 플랜(${item.tier}) 생성 실패: ${error.message}` };
+    }
+  }
+  return { ok: true, table };
+}
+
+/**
+ * 캐시 지갑 즉시 차감 구독: intent 생성 → subscriptions + record_subscription_cash_debit
+ */
+export async function finalizeSubscriptionCashWalletCheckout(
+  supabase: SupabaseClient,
+  args: { studentId: string; mentorId: string; planTier: SubscribePlanTier }
+): Promise<CompleteResult> {
+  const ensured = await ensureMentorCatalogPlanRows(supabase, args.mentorId);
+  if (!ensured.ok) {
+    return { ok: false, error: ensured.error, code: "db" };
+  }
+
+  const intent = await createSubscriptionPaymentIntent(supabase, args);
+  if (!intent.ok) {
+    const code =
+      intent.code === "dup" ? ("dup" as const) : intent.code === "mentor" ? ("not_found" as const) : ("db" as const);
+    return { ok: false, error: intent.error, code };
+  }
+
+  return finalizeSubscriptionCheckout(supabase, {
+    studentId: args.studentId,
+    paymentId: intent.paymentId,
+    mentorId: args.mentorId,
+    planTier: args.planTier,
+    cashWallet: true,
+  });
+}
+
 export async function finalizeSubscriptionCheckout(
   supabase: SupabaseClient,
-  args: { studentId: string; paymentId: string; mentorId: string; planTier: SubscribePlanTier }
+  args: {
+    studentId: string;
+    paymentId: string;
+    mentorId: string;
+    planTier: SubscribePlanTier;
+    cashWallet?: boolean;
+  }
 ): Promise<CompleteResult> {
-  const { studentId, paymentId, mentorId, planTier } = args;
+  const { studentId, paymentId, mentorId, planTier, cashWallet } = args;
   const payTable = await firstPayTable(supabase);
   if (!payTable) {
     return { ok: false, error: "payments 테이블 없음", code: "db" };
@@ -422,6 +615,10 @@ export async function finalizeSubscriptionCheckout(
   const mcol = (await pickExistingColumn(supabase, payTable, ["mentor_id", "mentor_user_id"])).column;
   if (mcol && p[mcol] != null && String(p[mcol]) !== mentorId) {
     return { ok: false, error: "멘토 정보가 결제와 일치하지 않습니다.", code: "forbidden" };
+  }
+  const mentorGate = await assertMentorApprovedForAction(supabase, mentorId);
+  if (!mentorGate.ok) {
+    return { ok: false, error: mentorGate.error, code: "forbidden" };
   }
 
   const stCol = (await pickExistingColumn(supabase, payTable, ["status", "state", "payment_status"])).column;
@@ -472,9 +669,7 @@ export async function finalizeSubscriptionCheckout(
     }
   }
 
-  const allowPendingComplete =
-    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "true" ||
-    process.env.SUBSCRIBE_CHECKOUT_ALLOW_PENDING === "1";
+  const allowPendingComplete = cashWallet === true || isSubscribeCheckoutPendingBypassAllowed();
   if (stCol && !allowPendingComplete) {
     const st = String(p[stCol] ?? "").toLowerCase();
     const paidLike =
@@ -504,6 +699,23 @@ export async function finalizeSubscriptionCheckout(
     (planRow as Row).id ?? (planRow as Row).plan_id ?? (planRow as Row).uuid ?? ""
   );
 
+  // cap 재검증(서버): 멘토 used_cap + 신청 플랜 cap_weight > cap_limit 이면 결제 거부.
+  // (DB 트리거 trg_enforce_mentor_cap가 동시성 최종 방어. 여기서는 친절한 메시지로 선차단.)
+  const capUsage = await loadMentorCapUsage(mentorId);
+  if (wouldExceedCap(capUsage, planTier)) {
+    return {
+      ok: false,
+      error: "이 멘토는 현재 구독이 마감되었습니다. 다른 멘토를 찾아보거나 잠시 후 다시 시도해 주세요.",
+      code: "forbidden",
+    };
+  }
+
+  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, "finalizeSubscriptionCheckout");
+  if (!debitCheck.ok) {
+    return { ok: false, error: debitCheck.error, code: "db" };
+  }
+  const amountCents = debitCheck.amountCents;
+
   let subId: string | null = null;
   const subInsert = await insertSubscriptionRow(
     supabase,
@@ -514,7 +726,6 @@ export async function finalizeSubscriptionCheckout(
   }
   subId = subInsert.subscriptionId;
 
-  const amountCents = planRowDebitAmountCents(planRow);
   const debit = await repairMissingSubscriptionCashLedgerIfNeeded(supabase, {
     mode: "newSubscription",
     studentId,
@@ -581,7 +792,29 @@ async function insertSubscriptionRow(
 ): Promise<InsSub> {
   void supabase;
   const admin = createServiceRoleClient();
+
+  const canonical = await admin
+    .from(SUBSCRIPTIONS_TABLE)
+    .insert(
+      buildSubscriptionsInsertPayload({
+        studentId: ctx.studentId,
+        mentorId: ctx.mentorId,
+        planId: ctx.planId,
+        planTier: ctx.planTier,
+        paymentId: ctx.paymentId,
+      })
+    )
+    .select("id")
+    .maybeSingle();
+  if (!canonical.error && canonical.data && (canonical.data as Row).id != null) {
+    return { ok: true, subscriptionId: String((canonical.data as Row).id) };
+  }
+  if (canonical.error) {
+    console.error("[insertSubscriptionRow] subscriptions insert", canonical.error);
+  }
+
   for (const table of SUB_TABLES) {
+    if (table === SUBSCRIPTIONS_TABLE) continue;
     const { error: pe } = await admin.from(table).select("id").limit(1);
     if (pe) continue;
     const { column: sc } = await pickExistingColumn(admin, table, STU_FK);
@@ -601,7 +834,10 @@ async function insertSubscriptionRow(
       return { ok: true, subscriptionId: String((data as Row).id) };
     }
   }
-  return { ok: false, error: "subscriptions insert 후보 전부 실패" };
+  return {
+    ok: false,
+    error: canonical.error?.message ?? "subscriptions insert 후보 전부 실패",
+  };
 }
 
 async function markPaymentSucceeded(

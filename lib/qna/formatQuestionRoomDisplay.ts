@@ -39,14 +39,27 @@ export function formatQuestionRoomDateTime(iso: unknown): string | null {
     const ap = isAm ? "오전" : "오후";
     let h12 = h % 12;
     if (h12 === 0) h12 = 12;
-    const monthNum = Number.parseInt(mo, 10);
-    const dayNum = Number.parseInt(d, 10);
-    const mLabel = Number.isFinite(monthNum) ? String(monthNum) : mo;
-    const dLabel = Number.isFinite(dayNum) ? String(dayNum) : d;
-    return `${y}. ${mLabel}. ${dLabel}. ${ap} ${h12}:${minute}`;
+    return `${y}. ${Number(mo)}. ${Number(d)}. ${ap} ${h12}:${minute}`;
   } catch {
     return null;
   }
+}
+
+/** 상대 시간 — N분 전, N시간 전, N일 전 */
+export function formatMinutesAgo(iso: unknown): string {
+  if (typeof iso !== "string") return "—";
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return "—";
+  const diff = Date.now() - ms;
+  if (diff < 0) return "방금";
+  const min = Math.floor(diff / 60_000);
+  if (min < 1) return "방금";
+  if (min < 60) return `${min}분 전`;
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}일 전`;
+  return formatQuestionRoomDateTime(iso) ?? "—";
 }
 
 export function normalizeRoomHrefBase(base: string): string {
@@ -58,6 +71,9 @@ export function roomDetailPath(roomHrefBase: string, roomId: string): string {
 }
 
 export function threadInRoomPath(roomHrefBase: string, roomId: string, threadId: string): string {
-  const roomPath = roomDetailPath(roomHrefBase, roomId);
-  return `${roomPath}?thread=${encodeURIComponent(threadId)}`;
+  return threadDetailPath(roomHrefBase, roomId, threadId);
+}
+
+export function threadDetailPath(roomHrefBase: string, roomId: string, threadId: string): string {
+  return `${roomDetailPath(roomHrefBase, roomId)}/thread/${encodeURIComponent(threadId)}`;
 }

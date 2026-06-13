@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { NotificationsHubView } from "@/components/notifications/NotificationsHubView";
+import { NotificationSettingsPanel } from "@/components/notifications/NotificationSettingsPanel";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
 import { createClient } from "@/lib/supabase/server";
@@ -59,6 +60,7 @@ export default async function NotificationsPage(props: Props) {
       dataPoints={[...NOTIFICATIONS_HUB_DATA_MODEL]}
     >
       <NotificationsHubView hub={hub} filter={f} role={role} />
+      <NotificationSettingsPanel />
     </PageScaffold>
   );
 }

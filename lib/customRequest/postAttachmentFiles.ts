@@ -4,9 +4,12 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { inferStorageFileExtension } from "@/lib/customRequest/orderDeliverableFiles";
 
-export const POST_ATTACHMENT_STORAGE_BUCKET = "custom-request-post-attachments" as const;
-
-export { DELIVERABLE_MAX_FILE_BYTES as POST_ATTACHMENT_MAX_FILE_BYTES } from "@/lib/customRequest/orderDeliverableFiles";
+export {
+  POST_ATTACHMENT_MAX_FILE_BYTES,
+  POST_ATTACHMENT_MAX_FILES,
+  POST_ATTACHMENT_STORAGE_BUCKET,
+} from "@/lib/customRequest/postAttachmentConstants";
+import { POST_ATTACHMENT_MAX_FILES, POST_ATTACHMENT_STORAGE_BUCKET } from "@/lib/customRequest/postAttachmentConstants";
 
 const ORDER_ID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** object key 2nd segment: `{timestamp}-{8hex}.ext` — ASCII */
@@ -59,6 +62,13 @@ export {
 } from "@/lib/customRequest/orderDeliverableFiles";
 
 export { getDeliverableFileFromFormData as getPostAttachmentFileFromFormData } from "@/lib/customRequest/orderDeliverableFiles";
+
+export function getPostAttachmentFilesFromFormData(formData: FormData, fieldName: string): File[] {
+  const files = formData
+    .getAll(fieldName)
+    .filter((x): x is File => x instanceof File && x.size > 0);
+  return files.slice(0, POST_ATTACHMENT_MAX_FILES);
+}
 
 /**
  * `remove` 실패 시 `ORPHAN_STORAGE_OBJECT` 로 남겨 수동 정리/모니터링에 사용.

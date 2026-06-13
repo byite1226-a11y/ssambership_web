@@ -5,15 +5,19 @@ import {
   weeklyQuestionsLabel,
   type SubscribePlanTier,
 } from "@/lib/subscribe/subscribePageQueries";
+import { getSubscribeCatalogPlan, SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
-const TIERS: { id: SubscribePlanTier; label: string; recommend?: boolean }[] = [
-  { id: "limited", label: "Limited" },
-  { id: "standard", label: "Standard", recommend: true },
-  { id: "premium", label: "Premium" },
-];
+const TIERS = SUBSCRIBE_PLAN_CATALOG.map((p) => ({
+  id: p.tier,
+  label: p.label,
+  recommend: p.recommend,
+}));
 
-export type PlanComparisonLayout = "checkout" | "rail" | "grid";
+/** 멘토 상세 사이드바: 스탠다드 → 베이직 → 프리미엄 */
+const RADIO_RAIL_ORDER: SubscribePlanTier[] = ["standard", "limited", "premium"];
+
+export type PlanComparisonLayout = "checkout" | "rail" | "grid" | "radio-rail";
 
 function tierGlyphClass(id: SubscribePlanTier): string {
   if (id === "limited") return "border-emerald-200 bg-emerald-50 text-emerald-800";
@@ -58,12 +62,14 @@ export function PlanComparisonCards(props: {
   mentorId: string;
   byTier: PlansByTier;
   selectedTier: SubscribePlanTier;
+  onSelectTier?: (tier: SubscribePlanTier) => void;
   plansError: string | null;
   plansProbe: string;
   fillProbe: string;
   /**
    * checkout: 구독 본문 — 3열 비교, 선택 플랜 강조, CTA 하단 정렬.
-   * rail: 멘토 상세 우측 — 세로 compact, Standard 추천 강조.
+   * rail: 멘토 상세 우측 — 세로 compact, 링크형 카드.
+   * radio-rail: 멘토 상세 — 라디오 선택형 카드 3개.
    * grid: checkout과 동일(하위 호환).
    */
   layout?: PlanComparisonLayout;
@@ -72,6 +78,7 @@ export function PlanComparisonCards(props: {
     mentorId,
     byTier,
     selectedTier,
+    onSelectTier,
     plansError,
     plansProbe,
     fillProbe,
@@ -84,6 +91,57 @@ export function PlanComparisonCards(props: {
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
         <p className="text-sm font-extrabold text-red-900">플랜 조회 오류</p>
         <p className="mt-1 text-sm text-red-800">{USER_UI_LOAD_FAILED}</p>
+      </div>
+    );
+  }
+
+  if (layout === "radio-rail") {
+    return (
+      <div className="w-full min-w-0 space-y-2.5" role="radiogroup" aria-label="구독 요금제 선택">
+        {RADIO_RAIL_ORDER.map((tierId) => {
+          const t = TIERS.find((x) => x.id === tierId);
+          if (!t) return null;
+          const catalog = getSubscribeCatalogPlan(tierId);
+          const row = byTier[tierId];
+          const selected = selectedTier === tierId;
+          const isRec = Boolean(t.recommend);
+          const price = priceLabelFromPlanRow(row, tierId);
+
+          return (
+            <label
+              key={tierId}
+              className={[
+                "relative flex cursor-pointer flex-col rounded-xl border p-3.5 transition",
+                selected
+                  ? "border-2 border-[#1A56DB] bg-blue-50/50 ring-1 ring-[#1A56DB]/20"
+                  : "border-slate-200 bg-white hover:border-slate-300",
+              ].join(" ")}
+            >
+              <input
+                type="radio"
+                name="mentor-plan-tier"
+                value={tierId}
+                checked={selected}
+                onChange={() => onSelectTier?.(tierId)}
+                className="absolute right-3 top-3 h-4 w-4 accent-[#1A56DB]"
+              />
+              <div className="pr-8">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-sm font-black text-slate-900">{t.label}</span>
+                  {isRec ? (
+                    <span className="rounded bg-[#1A56DB] px-1.5 py-px text-[9px] font-bold text-white">
+                      추천
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-base font-black tabular-nums text-slate-900">{price}</p>
+                <p className="mt-0.5 text-[11px] font-semibold text-slate-600">
+                  {catalog.weeklyLabel}
+                </p>
+              </div>
+            </label>
+          );
+        })}
       </div>
     );
   }
@@ -125,7 +183,7 @@ export function PlanComparisonCards(props: {
                       isRec ? "text-blue-700" : "text-slate-900"
                     }`}
                   >
-                    {priceLabelFromPlanRow(row)}
+                    {priceLabelFromPlanRow(row, t.id)}
                   </p>
                 </div>
                 <p className="mt-1 break-keep text-[11px] font-bold leading-snug text-slate-600">
@@ -213,7 +271,7 @@ export function PlanComparisonCards(props: {
                     selected ? "text-blue-700" : "text-slate-900"
                   }`}
                 >
-                  {priceLabelFromPlanRow(row)}
+                  {priceLabelFromPlanRow(row, t.id)}
                 </p>
               </div>
 

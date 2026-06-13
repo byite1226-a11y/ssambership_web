@@ -13,6 +13,7 @@ type StudentSignupFormProps = {
   value: StudentSignupFormValues;
   onChange: (v: StudentSignupFormValues) => void;
   disabled?: boolean;
+  fieldErrors?: Partial<Record<"nickname" | "gradeLevel", string>>;
 };
 
 const input =
@@ -44,7 +45,7 @@ function SectionHeader({ n, id, children }: { n: string; id: string; children: R
   );
 }
 
-export function StudentSignupForm({ value, onChange, disabled }: StudentSignupFormProps) {
+export function StudentSignupForm({ value, onChange, disabled, fieldErrors }: StudentSignupFormProps) {
   function h<K extends keyof StudentSignupFormValues>(k: K, ev: ChangeEvent<HTMLInputElement>) {
     onChange(patch(value, { [k]: ev.target.value } as Pick<StudentSignupFormValues, K>));
   }
@@ -58,7 +59,7 @@ export function StudentSignupForm({ value, onChange, disabled }: StudentSignupFo
         <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2">
           <div>
             <label htmlFor="st-nick" className={label}>
-              닉네임
+              닉네임 <span className="text-red-500">*</span>
             </label>
             <input
               id="st-nick"
@@ -68,12 +69,19 @@ export function StudentSignupForm({ value, onChange, disabled }: StudentSignupFo
               disabled={disabled}
               autoComplete="nickname"
               placeholder="서비스에 표시될 호칭"
+              aria-invalid={!!fieldErrors?.nickname}
             />
-            <p className={hint}>멘토·학생에게 노출되는 이름이에요.</p>
+            {fieldErrors?.nickname ? (
+              <p className="mt-1.5 text-sm text-red-600" role="alert">
+                {fieldErrors.nickname}
+              </p>
+            ) : (
+              <p className={hint}>멘토·학생에게 노출되는 이름이에요.</p>
+            )}
           </div>
           <div>
             <label htmlFor="st-school" className={label}>
-              학교
+              소속학교 <span className="font-normal text-slate-500">(선택)</span>
             </label>
             <input
               id="st-school"

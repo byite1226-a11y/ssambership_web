@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StudentCustomRequestOrdersBrowseClient } from "@/components/customRequest/StudentCustomRequestOrdersBrowseClient";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
@@ -22,19 +23,35 @@ export default async function StudentCustomRequestOrdersListPage() {
   return (
     <PageScaffold
       compactHero
-      eyebrow="맞춤의뢰"
-      title="내 주문 내역"
-      description="결제·진행·납품 중인 맞춤의뢰 주문을 한눈에 확인하고 작업방에서 멘토와 대화하세요."
-      ctas={[
-        { href: "/custom-request", label: "맞춤의뢰 홈", tone: "slate" },
-        { href: "/custom-request/new", label: "새 의뢰 등록", tone: "blue" },
-        { href: "/home", label: "학생 홈", tone: "slate" },
-      ]}
+      hideHero
       sections={[]}
       dataPoints={[]}
       hideFooterPlaceholderCards
     >
       <div className="space-y-6 select-none max-w-6xl mx-auto py-2">
+        <div className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">맞춤의뢰</p>
+            <h1 className="ds-text-h1 mt-1.5 text-slate-900">내 주문 내역</h1>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              결제·진행·납품 중인 맞춤의뢰 주문을 한눈에 확인하고 작업방에서 멘토와 대화하세요.
+            </p>
+          </div>
+          <div className="flex flex-none gap-2">
+            <Link
+              href="/custom-request"
+              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+            >
+              맞춤의뢰 홈
+            </Link>
+            <Link
+              href="/custom-request/new"
+              className="inline-flex items-center rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+            >
+              새 의뢰 등록
+            </Link>
+          </div>
+        </div>
         {error ? (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-950" role="alert">
             주문 목록을 불러오지 못했습니다. {error}
@@ -42,16 +59,16 @@ export default async function StudentCustomRequestOrdersListPage() {
         ) : null}
 
         {enriched.length === 0 && !error ? (
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/40 p-12 text-center select-none">
+          <div className="rounded-2xl border border-ds-border-subtle bg-ds-muted p-12 text-center select-none">
             <div className="text-4xl">📄</div>
-            <p className="mt-3 text-base font-bold text-slate-800">진행 중인 주문이 없습니다.</p>
-            <p className="mt-1 text-sm font-medium text-slate-500">
+            <p className="mt-3 text-base font-bold text-ds-primary">진행 중인 주문이 없습니다.</p>
+            <p className="mt-1 text-sm font-medium text-ds-secondary">
               의뢰를 올리고 멘토들의 제안서를 확인하여 작업을 시작해 보세요.
             </p>
             <div className="mt-5">
               <Link
                 href="/custom-request/new"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 transition"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-extrabold text-white transition hover:bg-blue-700"
               >
                 의뢰 요청하기
               </Link>
@@ -59,59 +76,9 @@ export default async function StudentCustomRequestOrdersListPage() {
           </div>
         ) : null}
 
-        <ul className="space-y-5">
-          {enriched.map((card) => {
-            const { id } = card;
-            return (
-              <li key={id}>
-                <div className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-sm transition hover:shadow-md hover:border-slate-200">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100/80 pb-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-lg border border-blue-50 bg-blue-50/50 px-2.5 py-1 text-xs font-bold text-blue-700 select-none">
-                          맞춤의뢰 주문
-                        </span>
-                        <span className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-700">
-                          {card.orderStatusLabel}
-                        </span>
-                      </div>
-                      <p className="mt-2.5 text-base sm:text-lg font-bold text-slate-900 line-clamp-1">{card.titleLine}</p>
-                      <p className="mt-1 text-xs text-slate-400 font-mono font-medium">주문 ID: {card.idShort}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 bg-slate-50/50 rounded-xl p-4 sm:p-5 border border-slate-100/80">
-                    <div className="flex items-center justify-between sm:justify-start gap-4">
-                      <span className="text-xs font-bold text-slate-400 w-20">결제 상태</span>
-                      <span className="text-sm font-semibold text-slate-800">{card.paymentStatusLabel}</span>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-start gap-4">
-                      <span className="text-xs font-bold text-slate-400 w-20">총 결제 금액</span>
-                      <span className="text-sm font-bold text-slate-900">{card.amountLine}</span>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-start gap-4">
-                      <span className="text-xs font-bold text-slate-400 w-20">담당 멘토</span>
-                      <span className="text-sm font-semibold text-slate-800 truncate">{card.mentorLine}</span>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-start gap-4">
-                      <span className="text-xs font-bold text-slate-400 w-20">생성 일시</span>
-                      <span className="text-sm font-medium text-slate-700">{card.createdLabel}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center justify-end gap-3 pt-1">
-                    <Link
-                      href={card.workroomHref}
-                      className="inline-flex min-h-[46px] w-full sm:w-auto items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 transition"
-                    >
-                      작업방 열기 &rarr;
-                    </Link>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        {!error && enriched.length > 0 ? (
+          <StudentCustomRequestOrdersBrowseClient cards={enriched} />
+        ) : null}
       </div>
     </PageScaffold>
   );

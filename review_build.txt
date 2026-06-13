@@ -1,0 +1,172 @@
+﻿
+> ssambership_web@0.1.0 build
+> next build
+
+▲ Next.js 16.2.4 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  · serverActions
+
+node.exe : ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org
+/docs/messages/middleware-to-proxy
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (⚠ The "middlewa...leware-to-proxy:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Creating an optimized production build ...
+✓ Compiled successfully in 23.6s
+  Running TypeScript ...
+  Finished TypeScript in 22.1s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/72) ...
+  Generating static pages using 7 workers (18/72) 
+  Generating static pages using 7 workers (36/72) 
+  Generating static pages using 7 workers (54/72) 
+✓ Generating static pages using 7 workers (72/72) in 2.2s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/audit-logs
+├ ƒ /admin/dashboard
+├ ƒ /admin/disputes
+├ ƒ /admin/disputes/[id]
+├ ƒ /admin/login
+├ ƒ /admin/mentor-approval
+├ ƒ /admin/mentor-approvals
+├ ƒ /admin/mentor-approvals/[id]
+├ ƒ /admin/mentors
+├ ƒ /admin/moderation
+├ ƒ /admin/notices
+├ ƒ /admin/refunds
+├ ƒ /admin/refunds-settlement
+├ ƒ /admin/refunds/[id]
+├ ƒ /admin/reports
+├ ƒ /admin/reports/[id]
+├ ƒ /admin/reviews
+├ ƒ /admin/reviews/[reviewId]
+├ ƒ /admin/settings
+├ ƒ /admin/settlements
+├ ƒ /api/community/posts
+├ ƒ /api/mentor/payouts/detail
+├ ƒ /api/mentor/payouts/monthly
+├ ƒ /api/mentor/payouts/summary
+├ ƒ /api/mentors/favorites
+├ ƒ /api/mypage/active-subscriptions
+├ ƒ /api/notifications/bell
+├ ƒ /api/question-room/threads
+├ ƒ /api/question-room/threads/[threadId]/answer
+├ ƒ /api/question-room/threads/[threadId]/confirm
+├ ƒ /api/question-room/weekly-usage
+├ ƒ /api/reviews
+├ ƒ /api/reviews/[id]/hide
+├ ƒ /api/reviews/[id]/reply
+├ ƒ /api/reviews/eligibility
+├ ƒ /api/subscribe/checkout
+├ ƒ /api/subscribe/complete
+├ ƒ /api/subscribe/intent
+├ ƒ /api/toss/confirm
+├ ƒ /auth/update-password
+├ ƒ /cash
+├ ƒ /cash-history
+├ ƒ /community
+├ ƒ /community/board
+├ ƒ /community/board/[id]
+├ ƒ /community/me
+├ ƒ /community/new
+├ ƒ /community/posts
+├ ƒ /community/shortform
+├ ƒ /community/shortform/[id]
+├ ƒ /community/shortform/new
+├ ƒ /community/shorts
+├ ƒ /community/shorts/[id]
+├ ƒ /community/write
+├ ƒ /custom-request
+├ ƒ /custom-request/[postId]
+├ ƒ /custom-request/[postId]/applications
+├ ƒ /custom-request/[postId]/applications/waiting
+├ ƒ /custom-request/new
+├ ƒ /custom-request/orders
+├ ƒ /custom-request/orders/[orderId]
+├ ƒ /custom-request/orders/[orderId]/complete
+├ ƒ /custom-request/orders/[orderId]/review
+├ ƒ /custom-request/posts
+├ ƒ /forgot-password
+├ ƒ /home
+├ ƒ /legal/community-guidelines
+├ ƒ /legal/copyright
+├ ƒ /legal/minor-consent
+├ ƒ /legal/no-ghostwriting
+├ ƒ /legal/no-offplatform-contact
+├ ƒ /legal/privacy
+├ ƒ /legal/refund
+├ ƒ /legal/terms
+├ ƒ /login
+├ ƒ /login/mentor
+├ ƒ /login/student
+├ ƒ /logout
+├ ƒ /mentor/channel
+├ ƒ /mentor/community/new
+├ ƒ /mentor/custom-request
+├ ƒ /mentor/custom-request/dashboard
+├ ƒ /mentor/custom-request/orders
+├ ƒ /mentor/custom-request/orders/[orderId]
+├ ƒ /mentor/custom-request/orders/[orderId]/files
+├ ƒ /mentor/custom-request/orders/[orderId]/revision
+├ ƒ /mentor/custom-request/orders/[orderId]/room
+├ ƒ /mentor/custom-request/orders/[orderId]/waiting-review
+├ ƒ /mentor/custom-request/posts
+├ ƒ /mentor/custom-request/posts/[postId]
+├ ƒ /mentor/custom-request/posts/[postId]/apply
+├ ƒ /mentor/dashboard
+├ ƒ /mentor/payouts
+├ ƒ /mentor/payouts/detail
+├ ƒ /mentor/profile
+├ ƒ /mentor/profile/edit
+├ ƒ /mentor/question-room
+├ ƒ /mentor/question-room/[roomId]
+├ ƒ /mentor/questions
+├ ƒ /mentor/questions/[roomId]
+├ ƒ /mentor/reviews
+├ ƒ /mentor/support/disputes
+├ ƒ /mentor/support/disputes/[id]
+├ ƒ /mentor/verification
+├ ƒ /mentors
+├ ƒ /mentors/[mentorId]
+├ ƒ /mypage
+├ ƒ /notes
+├ ƒ /notifications
+├ ƒ /payments
+├ ƒ /pricing
+├ ƒ /question-room
+├ ƒ /question-room/[roomId]
+├ ƒ /question-room/[roomId]/thread/[threadId]
+├ ƒ /questions
+├ ƒ /questions/[roomId]
+├ ○ /signup
+├ ƒ /subscribe
+├ ƒ /subscribe/cancelled
+├ ƒ /subscribe/fail
+├ ƒ /subscribe/failed
+├ ƒ /subscribe/success
+├ ƒ /subscriptions
+├ ƒ /support/disputes
+├ ƒ /support/disputes/[id]
+├ ƒ /support/refunds
+├ ƒ /support/reports
+├ ƒ /wallet
+├ ƒ /wallet/charge
+├ ƒ /wallet/charge/fail
+├ ƒ /wallet/charge/success
+└ ƒ /wallet/ledger
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

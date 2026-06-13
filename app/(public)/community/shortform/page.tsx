@@ -1,91 +1,54 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
-import { CommunityPageHero } from "@/components/community/CommunityPageHero";
+import { CommunityShortformCategoryTabs } from "@/components/community/CommunityShortformCategoryTabs";
 import { CommunityShortformTabs, parseShortformTab } from "@/components/community/CommunityShortformTabs";
 import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
-import { CommunityShortformEmptyPanel } from "@/components/community/CommunityShortformEmptyPanel";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
-import { buildCommunityHeroCtas } from "@/lib/community/communityHeroActions";
-import type { AppRole } from "@/lib/types/user";
 import { createClient } from "@/lib/supabase/server";
-import { listShortformPosts } from "@/lib/community/communityQueries";
-
-function shortformListDescription(role: AppRole | null | undefined, loggedIn: boolean): string {
-  if (role === "mentor") {
-    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요. 새 숏폼은 아래에서 업로드할 수 있어요.";
-  }
-  if (!loggedIn) {
-    return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 둘러볼 수 있어요. 댓글·스크랩은 로그인 후 이용할 수 있습니다.";
-  }
-  return "멘토가 올린 짧은 영상으로 학습 팁, 후기, 포트폴리오 노하우를 빠르게 확인해 보세요.";
-}
+import { listShortformFeed } from "@/lib/community/communityShortformQueries";
+import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
+import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
+import { CommunityShortformUploadFab } from "@/components/community/CommunityShortformUploadFab";
 
 type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function CommunityShortformPage(props: Props) {
-  const { user, profile } = await getServerUserWithProfile();
-  const loggedIn = user != null;
-  const role = profile?.role;
-
   const sp = (await props.searchParams) ?? {};
-  const tabRaw = typeof sp.tab === "string" ? sp.tab : Array.isArray(sp.tab) ? sp.tab[0] : undefined;
-  const activeTab = parseShortformTab(tabRaw);
-
+  const category = (typeof sp.category === "string" ? sp.category : "all") as ShortformCategorySlug;
+  const sortTab = parseShortformTab(typeof sp.tab === "string" ? sp.tab : undefined);
+  const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
-  const { rows, error } = await listShortformPosts(supabase, 30);
-  if (error) console.error("[community/shortform] listShortformPosts", error);
 
-  const listFailed = Boolean(error);
-  const empty = !listFailed && rows.length === 0;
+  const { items, error } = await listShortformFeed(supabase, { category, limit: 48, sort: sortTab });
+
+  const isLoggedIn = Boolean(user);
+  const isMentor = profile?.role === "mentor";
 
   return (
-    <CommunityLayoutShell
-      activeNav="shortform"
-      hero={
-        <CommunityPageHero
-          eyebrow="숏폼"
-          title="숏폼"
-          description={shortformListDescription(role, loggedIn)}
-          ctas={buildCommunityHeroCtas({
-            surface: "shortform_list",
-            role,
-            loggedIn,
-            nextPath: "/community/shortform",
-          })}
-        />
-      }
-    >
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">탐색</p>
-            <p className="mt-1 text-sm font-semibold text-slate-800">추천 · 최신 · 인기 · 전체</p>
-            <p className="mt-0.5 text-xs text-slate-500">원하는 탭으로 이동해 숏폼을 빠르게 탐색해 보세요.</p>
-          </div>
+    <CommunityLayoutShell activeNav="shortform">
+      <header className={SURFACE_CARD}>
+        <div>
+          <h1 className="text-xl font-black text-slate-900">숏폼</h1>
+          <p className="mt-1 text-sm text-slate-700">멘토의 짧은 학습 영상을 둘러보세요.</p>
         </div>
-        <div className="mt-4">
-          <CommunityShortformTabs active={activeTab} />
-        </div>
-        {listFailed ? (
-          <p className="mt-6 text-sm text-slate-600">숏폼 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-        ) : empty ? (
-          <div className="mt-6">
-            <CommunityShortformEmptyPanel role={role} loggedIn={loggedIn} />
-          </div>
-        ) : (
-          <ul className="mt-6 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((r, i) => {
-              const id = typeof r.id === "string" ? r.id : null;
-              return id ? (
-                <CommunityShortformVideoCard key={id} row={r} href={`/community/shortform/${id}`} linkLabel="자세히 보기" />
-              ) : (
-                <li key={`sf-${i}`} className="list-none rounded-2xl border border-slate-200 p-4 text-sm text-slate-500">
-                  항목을 표시할 수 없습니다.
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      </header>
+
+      <CommunityShortformTabs active={sortTab} />
+      <CommunityShortformCategoryTabs active={category} />
+
+      {error ? (
+        <p className="text-sm text-slate-600">숏폼 목록을 불러오지 못했습니다.</p>
+      ) : items.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-slate-200 py-16 text-center text-sm text-slate-500">
+          등록된 숏폼이 없습니다.
+        </p>
+      ) : (
+        <ul className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3">
+          {items.map((item) => (
+            <CommunityShortformVideoCard key={item.id} item={item} href={`/community/shortform/${item.id}`} />
+          ))}
+        </ul>
+      )}
+      <CommunityShortformUploadFab isLoggedIn={isLoggedIn} isMentor={isMentor} />
     </CommunityLayoutShell>
   );
 }

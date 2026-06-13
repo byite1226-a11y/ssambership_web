@@ -29,7 +29,7 @@ export default async function MentorDisputeDetailPage(props: PageProps) {
       description="관련 분쟁의 진행 상태와 요약을 확인할 수 있습니다."
       ctas={[
         { href: "/mentor/support/disputes", label: "분쟁·환불 현황", tone: "blue" },
-        { href: "/mentor/dashboard", label: "대시보드", tone: "green" },
+        { href: "/mentor/mypage", label: "마이페이지", tone: "green" },
         { href: "/mentor/payouts", label: "정산", tone: "slate" },
       ]}
       sections={[

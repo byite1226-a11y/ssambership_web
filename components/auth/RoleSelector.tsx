@@ -46,12 +46,6 @@ const cards: {
   },
 ];
 
-const cardShadow = "shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_36px_-12px_rgba(15,23,42,0.14)]";
-const cardShadowSelectedBlue =
-  "shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_48px_-12px_rgba(14,165,233,0.28),0_8px_20px_-8px_rgba(2,132,199,0.2)]";
-const cardShadowSelectedEmerald =
-  "shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_48px_-12px_rgba(16,185,129,0.26),0_8px_20px_-8px_rgba(4,120,87,0.18)]";
-
 const studentIcons = [StudentBenefitIcon1, StudentBenefitIcon2, StudentBenefitIcon3] as const;
 const mentorIcons = [MentorBenefitIcon1, MentorBenefitIcon2, MentorBenefitIcon3] as const;
 
@@ -63,37 +57,22 @@ type RoleSelectorProps = {
 
 export function RoleSelector({ value, onChange, disabled }: RoleSelectorProps) {
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:gap-8" role="group" aria-label="가입 유형">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6" role="group" aria-label="가입 유형">
       {cards.map((c) => {
         const selected = value === c.id;
         const isBlue = c.tone === "blue";
-        const base = [
-          "group relative flex w-full min-w-0 overflow-hidden text-left",
-          "min-h-0 sm:min-h-[200px] lg:min-h-[220px]",
-          "rounded-[1.75rem] border-2 p-4 transition sm:rounded-2xl sm:p-5 md:p-6 lg:p-7",
-        ].join(" ");
-        const focus =
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
-          (isBlue ? "focus-visible:ring-sky-500" : "focus-visible:ring-emerald-500");
-        const unselected = isBlue
-          ? "border-slate-200/80 bg-gradient-to-br from-sky-50/90 via-white to-white hover:border-sky-300/90"
-          : "border-slate-200/80 bg-gradient-to-br from-emerald-50/80 via-white to-white hover:border-emerald-300/80";
-        const selectedStyles = selected
-          ? isBlue
-            ? `border-sky-500/95 bg-gradient-to-br from-sky-100/55 via-sky-50/40 to-white ${
-                cardShadowSelectedBlue
-              } ring-2 ring-sky-500/30 ring-offset-[3px] ring-offset-sky-50/30`
-            : `border-emerald-600/95 bg-gradient-to-br from-emerald-100/50 via-emerald-50/35 to-white ${
-                cardShadowSelectedEmerald
-              } ring-2 ring-emerald-500/30 ring-offset-[3px] ring-offset-emerald-50/20`
-          : cardShadow;
-        const icons = c.id === "student" ? studentIcons : mentorIcons;
+        const accent = isBlue ? "#2563eb" : "#16A34A";
+        const focusRing = isBlue ? "focus-visible:ring-[#2563eb]/40" : "focus-visible:ring-[#16A34A]/40";
+        const chipClass = isBlue
+          ? "bg-blue-50 text-[#2563eb] ring-1 ring-blue-100"
+          : "bg-emerald-50 text-[#16A34A] ring-1 ring-emerald-100";
         const heroBox = isBlue
-          ? "border-sky-200/60 bg-gradient-to-b from-sky-100/75 via-sky-50/70 to-white"
-          : "border-emerald-200/60 bg-gradient-to-b from-emerald-100/70 via-emerald-50/70 to-white";
-        const benefitShell = isBlue
-          ? "border-sky-200/50 bg-sky-50/40 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset] shadow-sky-200/20"
-          : "border-emerald-200/50 bg-emerald-50/30 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset] shadow-emerald-200/20";
+          ? "border-slate-200 bg-blue-50/40"
+          : "border-slate-200 bg-emerald-50/40";
+        const footerBorder = "border-slate-200";
+        const footerSelected = isBlue ? "text-[#2563eb]" : "text-[#16A34A]";
+        const footerHint = isBlue ? "text-slate-500" : "text-slate-500";
+        const icons = c.id === "student" ? studentIcons : mentorIcons;
 
         return (
           <button
@@ -101,78 +80,80 @@ export function RoleSelector({ value, onChange, disabled }: RoleSelectorProps) {
             type="button"
             disabled={disabled}
             onClick={() => onChange(c.id)}
-            className={`${base} ${focus} ${selected ? "" : unselected} ${selectedStyles} ${
-              disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-            }`}
+            className={[
+              "group relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border bg-white p-5 text-left transition sm:p-6",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+              focusRing,
+              selected
+                ? isBlue
+                  ? "border-[#2563eb] ring-2 ring-[#2563eb]/15"
+                  : "border-[#16A34A] ring-2 ring-[#16A34A]/15"
+                : "border-slate-200 hover:border-slate-300",
+              disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+            ].join(" ")}
             aria-pressed={selected}
           >
             {selected ? (
               <span
-                className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold shadow-md sm:right-4 sm:top-4 sm:h-10 sm:w-10 ${
-                  isBlue ? "bg-sky-600 text-white" : "bg-emerald-600 text-white"
-                }`}
+                className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white"
+                style={{ backgroundColor: accent }}
                 aria-hidden
               >
                 ✓
               </span>
             ) : null}
-            <div className="flex w-full min-h-0 flex-col sm:flex-row sm:items-stretch sm:gap-4 md:gap-5">
-              <div
-                className={`mb-3 h-[min(9rem,38vw)] shrink-0 overflow-hidden rounded-2xl border sm:mb-0 sm:h-auto sm:min-h-[9.5rem] sm:w-[44%] sm:max-w-[13.5rem] md:min-h-[10.5rem] ${heroBox}`}
-              >
-                {c.id === "student" ? (
-                  <RoleStudentCardIllustration className="h-full w-full min-h-[7.5rem] object-cover" />
-                ) : (
-                  <RoleMentorCardIllustration className="h-full w-full min-h-[7.5rem] object-cover" />
-                )}
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col sm:min-h-0 sm:justify-center sm:pl-0">
-                <span
-                  className={`inline-flex w-fit max-w-full rounded-full px-3 py-1.5 text-xs font-extrabold tracking-wide ${
-                    isBlue ? "bg-sky-100 text-sky-900 ring-1 ring-sky-200/60" : "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200/60"
-                  }`}
-                >
-                  {c.shortLabel}
-                </span>
-                <span className="mt-2.5 block break-words text-2xl font-extrabold leading-snug text-slate-900 sm:mt-3 sm:text-[1.65rem] md:text-3xl">
-                  {c.title}
-                </span>
-                <span className="mt-2 block text-sm leading-7 text-slate-600 sm:mt-2.5 sm:text-base sm:leading-7">
-                  {c.lead}
-                </span>
-                <ul className="mt-4 grid list-none grid-cols-1 gap-2.5 sm:mt-4 sm:grid-cols-3 sm:gap-2 md:gap-2.5" role="list">
-                  {c.benefits.map((b, i) => {
-                    const Icon = icons[i]!;
-                    return (
-                      <li
-                        key={b}
-                        className={`flex min-h-[4.5rem] items-start gap-2.5 rounded-xl border px-2.5 py-2.5 sm:min-h-[5.5rem] md:px-3 md:py-2.5 ${benefitShell}`}
-                      >
-                        <span className="mt-0.5 shrink-0" aria-hidden>
-                          <Icon />
-                        </span>
-                        <span className="min-w-0 text-left text-[12px] font-medium leading-5 text-slate-800 sm:text-[11px] md:text-[13px]">
-                          {b}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
+
             <div
-              className={`mt-4 border-t sm:mt-4 md:mt-5 ${
-                isBlue ? "border-sky-200/50" : "border-emerald-200/50"
-              } pt-3.5 sm:pt-4`}
+              className={`mb-4 h-36 w-full shrink-0 overflow-hidden rounded-xl border sm:h-40 ${heroBox}`}
             >
+              {c.id === "student" ? (
+                <RoleStudentCardIllustration className="h-full w-full object-cover" />
+              ) : (
+                <RoleMentorCardIllustration className="h-full w-full object-cover" />
+              )}
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span
+                className={`inline-flex w-fit max-w-full items-center rounded-full px-3 py-1 text-xs font-extrabold tracking-wide ${chipClass}`}
+              >
+                {c.shortLabel}
+              </span>
+              <span className="mt-2 block text-xl font-extrabold leading-snug text-slate-900 sm:text-2xl">
+                {c.title}
+              </span>
+              <span className="mt-2 block text-sm leading-relaxed text-slate-600 sm:text-base">
+                {c.lead}
+              </span>
+
+              <ul className="mt-4 flex list-none flex-col gap-2" role="list">
+                {c.benefits.map((b, i) => {
+                  const Icon = icons[i] ?? icons[0];
+                  if (!Icon) return null;
+                  return (
+                    <li
+                      key={b}
+                      className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5"
+                    >
+                      <span className="flex shrink-0 items-center justify-center" aria-hidden>
+                        <Icon />
+                      </span>
+                      <span className="min-w-0 flex-1 text-left text-sm font-medium leading-snug text-slate-800">
+                        {b}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className={`mt-5 border-t ${footerBorder} pt-4`}>
               {selected ? (
-                <span className={`text-sm font-bold sm:text-base ${isBlue ? "text-sky-800" : "text-emerald-800"}`}>
+                <span className={`text-sm font-bold ${footerSelected}`}>
                   선택됨 — 아래 {c.id === "student" ? "학생" : "멘토"} 가입서를 이어갈 수 있어요
                 </span>
               ) : (
-                <span
-                  className={`text-sm font-semibold sm:text-base ${isBlue ? "text-sky-600" : "text-emerald-700"}`}
-                >
+                <span className={`text-sm font-medium ${footerHint}`}>
                   카드를 눌러 이 유형을 선택하세요
                 </span>
               )}
