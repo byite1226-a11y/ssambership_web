@@ -128,8 +128,13 @@ export function studentCanDownloadDeliverable(row: Record<string, unknown> | nul
   if (ORDER_STATUSES_ALLOWING_STUDENT_ACCEPT_LEGACY.has(norm) || norm === "paid") {
     return false;
   }
-  const completedAt = row.completed_at;
-  return completedAt != null && String(completedAt).trim() !== "";
+  for (const k of ["completed_at", "accepted_at"] as const) {
+    const v = row[k];
+    if (v != null && String(v).trim() !== "") {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** 종료·취소 등 — `orderStudentActions` + 흔한 취소류 + `threadStats` 종료 패턴 일부 */
