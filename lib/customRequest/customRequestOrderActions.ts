@@ -90,6 +90,13 @@ export async function selectMentorApplicationForOrder(formData: FormData) {
     revalidatePath("/mentor/custom-request/dashboard");
     redirect(`/custom-request/orders/${r.orderId}`);
   }
+  if (r.code === "ORDER_DUPLICATE") {
+    const duplicate = await findOrderForPostAndStudent(supabase, postId, user.id);
+    if (duplicate.orderId) {
+      redirect(`/custom-request/orders/${duplicate.orderId}`);
+    }
+    backToApplications(postId, "이미 주문이 생성되었습니다. 주문 목록에서 확인해 주세요.");
+  }
   if (r.code === "CASH_INSUFFICIENT") {
     backToApplications(postId, r.error);
   }

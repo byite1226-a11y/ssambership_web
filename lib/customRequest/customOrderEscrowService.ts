@@ -11,6 +11,7 @@ import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueri
 
 export type CustomOrderEscrowErrorCode =
   | "ORDER_INSERT"
+  | "ORDER_DUPLICATE"
   | "CASH_INSUFFICIENT"
   | "ESCROW_RPC"
   | "ESCROW_REFUND_RPC"
@@ -33,6 +34,10 @@ const MSG_ALREADY_PAID_OUT =
   "멘토에게 이미 지급된 주문은 환불할 수 없습니다. 문의·분쟁을 이용해 주세요.";
 const MSG_NOT_ESCROWED = "예치(에스크로) 상태가 아니어서 취소·환불할 수 없습니다.";
 const MSG_HOLD_MISSING = "예치 내역이 없어 환불할 수 없습니다.";
+
+function isUniqueViolationMessage(message: string | undefined): boolean {
+  return /23505|duplicate key|unique constraint|ux_cro_active_application_once/i.test(message ?? "");
+}
 
 /**
  * 맞춤의뢰 주문 금액(원, agreed_price) → cash_ledger / cash_wallets minor units (원×100).
@@ -136,6 +141,13 @@ export async function createCustomRequestOrderWithEscrowHold(
 ): Promise<CreateCustomRequestOrderWithEscrowResult> {
   const inserted = await insertCustomRequestOrder(supabase, input);
   if (!inserted.ok) {
+    if (isUniqueViolationMessage(inserted.error)) {
+      return {
+        ok: false,
+        error: "이미 주문이 생성되었습니다.",
+        code: "ORDER_DUPLICATE",
+      };
+    }
     return {
       ok: false,
       error: inserted.error ?? "주문을 열 수 없습니다.",

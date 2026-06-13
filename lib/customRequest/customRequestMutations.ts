@@ -335,6 +335,8 @@ export async function insertCustomRequestOrder(
     student_id: input.studentId,
     mentor_id: input.mentorId,
     application_id: input.applicationId,
+    custom_request_application_id: input.applicationId,
+    selected_application_id: input.applicationId,
     status: "pending",
     state: "pending",
     order_status: "open",

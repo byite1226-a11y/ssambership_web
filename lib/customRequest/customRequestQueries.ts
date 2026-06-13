@@ -16,6 +16,21 @@ function fmt(e: PostgrestError | null): string | null {
   return e ? e.message : null;
 }
 
+const INACTIVE_CUSTOM_ORDER_STATUSES = new Set(["cancelled", "canceled", "refunded", "rejected"]);
+
+function normOrderStatusValue(v: unknown): string {
+  return String(v ?? "").trim().toLowerCase();
+}
+
+function isActiveCustomRequestOrderRow(row: Row): boolean {
+  return (
+    !INACTIVE_CUSTOM_ORDER_STATUSES.has(normOrderStatusValue(row.payment_status)) &&
+    !INACTIVE_CUSTOM_ORDER_STATUSES.has(normOrderStatusValue(row.status)) &&
+    !INACTIVE_CUSTOM_ORDER_STATUSES.has(normOrderStatusValue(row.state)) &&
+    !INACTIVE_CUSTOM_ORDER_STATUSES.has(normOrderStatusValue(row.order_status))
+  );
+}
+
 /** insert: 첫으로 존재하는 열에 주문 id. 003는 custom_request_order_id NOT NULL. */
 export const ORDER_TO_DELIVERABLE_FK_CANDIDATES = [
   "custom_request_order_id",
@@ -243,11 +258,18 @@ export async function findOrderForPostAndStudent(
   if (!postCol || !stuCol) {
     return { row: null, table: t, orderId: null, probe: "post+student FK 미식별", error: "order 테이블 FK로 필터 불가" };
   }
-  const { data, error } = await supabase.from(t).select("*").eq(postCol, postId).eq(stuCol, studentId).limit(1).maybeSingle();
+  const { data, error } = await supabase
+    .from(t)
+    .select("*")
+    .eq(postCol, postId)
+    .eq(stuCol, studentId)
+    .order("created_at", { ascending: false })
+    .limit(20);
   if (error) {
     return { row: null, table: t, orderId: null, probe: error.message, error: error.message };
   }
-  const row = (data as Row) ?? null;
+  const rows = ((data as Row[] | null) ?? []).filter(isActiveCustomRequestOrderRow);
+  const row = rows[0] ?? null;
   const rid = row ? pickOrderIdFromRow(row) : null;
   return { row, table: t, orderId: rid, probe: `${t}.${postCol}+${stuCol}`, error: null };
 }
