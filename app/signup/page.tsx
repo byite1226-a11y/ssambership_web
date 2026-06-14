@@ -3,9 +3,9 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpen, Check, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { AuthPageLayout } from "@/components/auth/AuthPageLayout";
-import { RoleSelector } from "@/components/auth/RoleSelector";
 import { SignupStepBar } from "@/components/auth/SignupStepBar";
 import { StudentSignupForm, type StudentSignupFormValues } from "@/components/auth/StudentSignupForm";
 import { MentorSignupForm, type MentorSignupFormValues } from "@/components/auth/MentorSignupForm";
@@ -37,31 +37,24 @@ const emptyMentor: MentorSignupFormValues = {
   studentIdFile: null,
 };
 
+const STUDENT_PRIMARY = "#2563eb";
+const MENTOR_PRIMARY = "#16A34A";
+
+const signupInputBase =
+  "mt-2 w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 sm:min-h-[3.1rem] sm:px-5";
 const inputClassStudent =
-  "mt-2.5 w-full min-h-[3.4rem] rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 text-base text-slate-900 shadow-sm outline-none transition " +
-  "placeholder:text-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-200/55 " +
-  "sm:min-h-[3.55rem] sm:rounded-3xl sm:px-5 sm:py-4 sm:text-lg md:text-[1.05rem]";
+  `${signupInputBase} focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20`;
 const inputClassMentor =
-  "mt-2.5 w-full min-h-[3.4rem] rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 text-base text-slate-900 shadow-sm outline-none transition " +
-  "placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200/55 " +
-  "sm:min-h-[3.55rem] sm:rounded-3xl sm:px-5 sm:py-4 sm:text-lg md:text-[1.05rem]";
+  `${signupInputBase} focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20`;
 const labelClass =
-  "mb-0 block break-keep text-sm font-bold text-slate-800 sm:text-[0.95rem] md:text-base";
-const subhelper = "mt-1.5 text-sm text-slate-500 sm:mt-2 sm:text-base";
+  "mb-0 block break-keep text-sm font-bold text-slate-800 sm:text-base";
+const subhelper = "mt-1.5 text-sm leading-relaxed text-slate-500";
 const profileStudent =
-  "relative overflow-hidden rounded-[1.75rem] border-2 border-sky-200/50 bg-gradient-to-b from-sky-50/70 via-white to-white " +
-  "p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_40px_-8px_rgba(14,165,233,0.14),0_2px_0_0_rgba(255,255,255,0.9)_inset] " +
-  "sm:rounded-[2rem] sm:p-8 md:p-10 md:px-10 md:py-9 xl:px-11 " +
-  "before:pointer-events-none before:absolute before:left-0 before:top-0 before:h-1.5 before:w-full before:bg-gradient-to-r " +
-  "before:from-sky-500/50 before:via-sky-400/40 before:to-sky-300/20";
+  "rounded-2xl border border-[#2563eb] bg-white p-6 ring-2 ring-[#2563eb]/15 sm:p-7";
 const profileMentor =
-  "relative overflow-hidden rounded-[1.75rem] border-2 border-emerald-200/55 bg-gradient-to-b from-emerald-50/50 via-white to-sky-50/20 " +
-  "p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_40px_-8px_rgba(5,150,105,0.12),0_2px_0_0_rgba(255,255,255,0.85)_inset] " +
-  "sm:rounded-[2rem] sm:p-8 md:p-10 md:px-10 md:py-9 xl:px-11 " +
-  "before:pointer-events-none before:absolute before:left-0 before:top-0 before:h-1.5 before:w-full before:bg-gradient-to-r " +
-  "before:from-emerald-600/45 before:via-emerald-500/30 before:to-emerald-300/15";
-const accountSection = "rounded-2xl border border-slate-200/50 bg-sky-50/15 px-4 py-4 sm:rounded-3xl sm:px-5 sm:py-5";
-const accountSectionMentor = "rounded-2xl border border-slate-200/50 bg-emerald-50/20 px-4 py-4 sm:rounded-3xl sm:px-5 sm:py-5";
+  "rounded-2xl border border-[#16A34A] bg-white p-6 ring-2 ring-[#16A34A]/15 sm:p-7";
+const accountSection = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
+const accountSectionMentor = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
 
 const fieldErrorClass = "mt-1.5 text-sm text-red-600";
 
@@ -87,6 +80,85 @@ function stepDescription(s: 1 | 2 | 3) {
     default:
       return "";
   }
+}
+
+const signupRoleBenefits: Record<SignupRole, string[]> = {
+  student: ["가입 시 무료 질문권 7장 제공", "무료 질문은 한 멘토당 최대 3개", "질문방·맞춤의뢰를 한곳에서 관리"],
+  mentor: ["질문방 관리 및 답변 작성", "요금제 직접 설정", "정산 확인 및 수익 관리"],
+};
+
+function SignupRoleChoiceCard({
+  role,
+  active,
+  disabled,
+  onSelect,
+}: {
+  role: SignupRole;
+  active: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+}) {
+  const isStudent = role === "student";
+  const primary = isStudent ? STUDENT_PRIMARY : MENTOR_PRIMARY;
+  const title = isStudent ? "학생으로 가입" : "멘토로 가입";
+  const description = isStudent
+    ? "질문권과 맞춤의뢰로 필요한 도움을 바로 받을 수 있어요."
+    : "답변·콘텐츠·맞춤의뢰를 운영하고 수익을 관리해요.";
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={disabled}
+      aria-pressed={active}
+      className={[
+        "relative flex h-full min-h-[270px] flex-col rounded-2xl border bg-white p-6 text-left transition sm:p-7",
+        isStudent
+          ? active
+            ? "border-[#2563eb] ring-2 ring-[#2563eb]/15"
+            : "border-slate-200 hover:border-slate-300"
+          : active
+            ? "border-[#16A34A] ring-2 ring-[#16A34A]/15"
+            : "border-slate-200 hover:border-slate-300",
+        disabled ? "cursor-not-allowed opacity-60" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {active ? (
+        <span
+          className="absolute right-5 top-5 flex h-7 w-7 items-center justify-center rounded-full text-white"
+          style={{ backgroundColor: primary }}
+          aria-hidden
+        >
+          <Check className="h-4 w-4" />
+        </span>
+      ) : null}
+
+      <div
+        className="flex h-12 w-12 items-center justify-center rounded-xl"
+        style={{ backgroundColor: `${primary}14` }}
+        aria-hidden
+      >
+        {isStudent ? (
+          <BookOpen className="h-6 w-6" style={{ color: primary }} />
+        ) : (
+          <GraduationCap className="h-6 w-6" style={{ color: primary }} />
+        )}
+      </div>
+      <h3 className="mt-3 text-xl font-black text-slate-900 sm:text-2xl">{title}</h3>
+      <p className="mt-1.5 text-sm font-medium leading-relaxed text-slate-600">{description}</p>
+
+      <ul className="mt-5 space-y-2 border-y border-slate-100 py-4">
+        {signupRoleBenefits[role].map((line) => (
+          <li key={line} className="flex items-start gap-2 text-sm text-slate-700">
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: primary }} aria-hidden />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    </button>
+  );
 }
 
 function SignupPageContent() {
@@ -317,7 +389,7 @@ function SignupPageContent() {
   return (
     <AuthPageLayout
       title="회원가입"
-      titleClassName="!text-[#0b2b6c] text-[1.6rem] sm:text-3xl sm:!text-4xl md:text-[2.4rem] md:!text-[#0b2b6c] xl:text-[2.5rem] tracking-tight"
+      titleClassName="!text-[#111827]"
       description={stepDescription(step)}
       signupLayout
       headerPrefix={
@@ -345,10 +417,10 @@ function SignupPageContent() {
 
         {step === 3 && completedRole ? (
           <div
-            className="mx-auto w-full max-w-lg rounded-3xl border-2 border-blue-200/80 bg-white p-8 text-center shadow-[0_8px_40px_-12px_rgba(37,99,235,0.2)] sm:p-10"
+            className="mx-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-10"
             role="status"
           >
-            <p className="break-keep text-2xl font-extrabold text-[#0b2b6c] sm:text-3xl">가입을 환영합니다!</p>
+            <p className="break-keep text-2xl font-extrabold text-slate-900 sm:text-3xl">가입을 환영합니다!</p>
             {completedRole === "student" ? (
               <>
                 <p className="mt-3 break-keep text-base leading-relaxed text-slate-600 sm:mt-4 sm:text-lg">
@@ -356,7 +428,7 @@ function SignupPageContent() {
                 </p>
                 <Link
                   href="/mentors"
-                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-blue-600 px-8 text-base font-extrabold text-white shadow-sm transition hover:bg-blue-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
+                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#2563eb] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
                 >
                   멘토 찾기
                 </Link>
@@ -368,7 +440,7 @@ function SignupPageContent() {
                 </p>
                 <Link
                   href="/mentor/profile"
-                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-emerald-700 px-8 text-base font-extrabold text-white shadow-sm transition hover:bg-emerald-800 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
+                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#16A34A] px-8 text-base font-extrabold text-white transition hover:bg-emerald-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
                 >
                   프로필 관리
                 </Link>
@@ -379,25 +451,36 @@ function SignupPageContent() {
 
         {step === 1 ? (
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
+              <h2 className="text-center text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
                 어떤 계정으로 가입하시나요?
               </h2>
-              <p className="mt-3 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-4 sm:text-lg md:text-xl">
+              <p className="mx-auto mt-3 max-w-2xl text-center text-base font-medium leading-relaxed text-slate-500 sm:text-lg">
                 역할에 따라 혜택·입력 항목·이후 흐름(인증, 심사)이 달라요. 한 가지를 골라 주세요.
               </p>
-              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:mt-8 sm:p-6">
-                <RoleSelector value={role} onChange={setRole} disabled={loading} />
+              <div className="mt-6 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2 lg:gap-8">
+                <SignupRoleChoiceCard
+                  role="student"
+                  active={role === "student"}
+                  disabled={loading}
+                  onSelect={() => setRole("student")}
+                />
+                <SignupRoleChoiceCard
+                  role="mentor"
+                  active={role === "mentor"}
+                  disabled={loading}
+                  onSelect={() => setRole("mentor")}
+                />
               </div>
             </div>
         ) : null}
 
         {step === 2 ? (
-            <div className="space-y-8 sm:space-y-10 md:space-y-12">
+            <div className="space-y-8 sm:space-y-10">
               {role ? (
                 <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-                  <div className="min-w-0 rounded-2xl border border-slate-200/60 bg-white px-4 py-3.5 shadow-sm sm:rounded-3xl sm:px-6 sm:py-4">
+                  <div className="min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 sm:px-5">
                     <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">선택한 가입 유형</p>
-                    <p className="mt-1 break-keep text-xl font-extrabold text-[#0b2b6c] sm:text-2xl">
+                    <p className="mt-1 break-keep text-xl font-extrabold text-slate-900 sm:text-2xl">
                       {role === "student" ? "학생" : "멘토"}
                     </p>
                   </div>
@@ -409,7 +492,7 @@ function SignupPageContent() {
                       type="button"
                       onClick={goBackToRoleSelect}
                       disabled={loading}
-                      className="inline-flex min-h-11 items-center justify-center rounded-2xl border-2 border-slate-200/90 bg-white px-5 text-sm font-bold text-slate-800 transition hover:border-blue-200 hover:bg-blue-50/50 disabled:opacity-50 sm:min-h-12 sm:px-6 sm:text-base"
+                      className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-800 transition hover:border-slate-300 disabled:opacity-50 sm:min-h-12 sm:px-6 sm:text-base"
                     >
                       ← 역할 다시 선택
                     </button>
@@ -419,14 +502,14 @@ function SignupPageContent() {
 
               {!role ? (
                 <div
-                  className="rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-4 text-amber-950 sm:rounded-3xl sm:px-5 sm:py-5"
+                  className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-amber-950 sm:px-5 sm:py-5"
                   role="status"
                 >
                   <p className="font-bold">1단계에서 가입 유형이 선택되지 않았어요.</p>
                   <button
                     type="button"
                     onClick={goBackToRoleSelect}
-                    className="mt-3 min-h-11 w-full rounded-2xl bg-blue-600 py-2.5 text-sm font-extrabold text-white sm:text-base"
+                    className="mt-3 min-h-11 w-full rounded-2xl bg-[#2563eb] py-2.5 text-sm font-extrabold text-white sm:text-base"
                   >
                     역할 선택으로
                   </button>
@@ -438,17 +521,17 @@ function SignupPageContent() {
                   ref={formSectionRef}
                   key="signup-student"
                   tabIndex={-1}
-                  className={`${profileStudent} z-[1] ring-2 ring-sky-500/50 ring-offset-2 ring-offset-slate-100/50 outline-none mx-auto w-full max-w-2xl`}
+                  className={`${profileStudent} z-[1] mx-auto w-full max-w-2xl outline-none`}
                   aria-label="학생 회원가입 폼"
                 >
-                  <header className="border-b border-sky-200/35 pb-5 sm:pb-6">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-sky-800/90 sm:text-xs md:text-sm">
+                  <header className="border-b border-slate-100 pb-5">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#2563eb]">
                       Student signup
                     </p>
-                    <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl md:text-[2.1rem]">
+                    <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
                       학생 회원가입
                     </h2>
-                    <p className="mt-2.5 text-sm leading-relaxed text-slate-600 sm:mt-3 sm:text-base md:text-[1.05rem]">
+                    <p className="mt-2.5 text-sm leading-relaxed text-slate-600 sm:text-base">
                       이메일·비밀번호와 프로필을 같이 완성하면 쌤버십에 바로 들어갈 수 있어요.
                     </p>
                   </header>
@@ -512,7 +595,7 @@ function SignupPageContent() {
                     </div>
                   </div>
 
-                  <div className="mt-7 border-t border-sky-200/30 pt-6 sm:mt-8 sm:pt-7">
+                  <div className="mt-7 border-t border-slate-100 pt-6 sm:mt-8 sm:pt-7">
                     <StudentSignupForm
                       value={student}
                       onChange={setStudent}
@@ -547,7 +630,7 @@ function SignupPageContent() {
                       void handleSignUp("student");
                     }}
                     disabled={loading}
-                    className="mt-7 w-full min-h-[3.65rem] rounded-2xl bg-sky-600 px-8 py-3.5 text-base font-extrabold text-white shadow-[0_4px_14px_-2px_rgba(2,132,199,0.4)] transition hover:bg-sky-700 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.85rem] sm:rounded-3xl sm:py-4 sm:text-lg"
+                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#2563eb] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
                   >
                     {loading ? "처리 중…" : "학생으로 가입하기"}
                   </button>
@@ -559,17 +642,17 @@ function SignupPageContent() {
                   ref={formSectionRef}
                   key="signup-mentor"
                   tabIndex={-1}
-                  className={`${profileMentor} z-[1] ring-2 ring-emerald-500/50 ring-offset-2 ring-offset-slate-100/50 outline-none mx-auto w-full max-w-2xl`}
+                  className={`${profileMentor} z-[1] mx-auto w-full max-w-2xl outline-none`}
                   aria-label="멘토 회원가입 폼"
                 >
-                  <header className="border-b border-emerald-200/40 pb-5 sm:pb-6">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-emerald-900/90 sm:text-xs md:text-sm">
+                  <header className="border-b border-slate-100 pb-5">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#16A34A]">
                       Mentor signup
                     </p>
-                    <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl md:text-[2.1rem]">
+                    <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
                       멘토 회원가입
                     </h2>
-                    <p className="mt-2.5 text-sm leading-relaxed text-slate-600 sm:mt-3 sm:text-base md:text-[1.05rem]">
+                    <p className="mt-2.5 text-sm leading-relaxed text-slate-600 sm:text-base">
                       대학·전공·서류를 입력하면 인증·활동 준비까지 수월해요.
                     </p>
                   </header>
@@ -633,7 +716,7 @@ function SignupPageContent() {
                     </div>
                   </div>
 
-                  <div className="mt-7 border-t border-emerald-200/30 pt-6 sm:mt-8 sm:pt-7">
+                  <div className="mt-7 border-t border-slate-100 pt-6 sm:mt-8 sm:pt-7">
                     <MentorSignupForm
                       value={mentor}
                       onChange={setMentor}
@@ -672,7 +755,7 @@ function SignupPageContent() {
                       void handleSignUp("mentor");
                     }}
                     disabled={loading}
-                    className="mt-7 w-full min-h-[3.65rem] rounded-2xl bg-emerald-700 px-8 py-3.5 text-base font-extrabold text-white shadow-[0_4px_16px_-2px_rgba(4,120,87,0.4)] transition hover:bg-emerald-800 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.9rem] sm:rounded-3xl sm:py-4 sm:text-lg"
+                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#16A34A] px-8 text-base font-extrabold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A34A] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
                   >
                     {loading ? "처리 중…" : "멘토로 가입하기"}
                   </button>
@@ -687,7 +770,7 @@ function SignupPageContent() {
                 type="button"
                 onClick={goNext}
                 disabled={loading || !role}
-                className="min-h-[3.6rem] min-w-[11.5rem] rounded-2xl bg-[#2563eb] px-11 py-4 text-lg font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 md:min-w-[12.5rem]"
+                className="min-h-14 min-w-[11.5rem] rounded-2xl bg-[#2563eb] px-10 text-base font-extrabold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg md:min-w-[12.5rem]"
               >
                 다음 — 정보 입력
               </button>
@@ -741,26 +824,24 @@ function termsBlock(
   };
   const allRequired = termsAgree && privacyAgree;
   const isSky = tone === "sky";
-  const skin = isSky
-    ? "border-sky-200/55 bg-sky-50/40 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_6px_28px_-4px_rgba(14,165,233,0.08)]"
-    : "border-emerald-200/55 bg-emerald-50/30 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_6px_28px_-4px_rgba(5,150,105,0.1)]";
-  const sub = isSky ? "text-sky-800/90" : "text-emerald-900/85";
-  const headerBorder = isSky ? "border-sky-200/50" : "border-emerald-200/50";
-  const kicker = isSky ? "text-sky-700" : "text-emerald-800";
-  const link = isSky ? "text-sky-700 hover:text-sky-900" : "text-emerald-800 hover:text-emerald-950";
+  const skin = "border-slate-200 bg-white";
+  const sub = "text-slate-500";
+  const headerBorder = "border-slate-100";
+  const kicker = isSky ? "text-[#2563eb]" : "text-[#16A34A]";
+  const link = isSky ? "text-[#2563eb] hover:text-blue-700" : "text-[#16A34A] hover:text-emerald-700";
   const chk = isSky
-    ? "text-sky-600 focus:ring-sky-500"
-    : "text-emerald-600 focus:ring-emerald-500";
+    ? "text-[#2563eb] focus:ring-[#2563eb]"
+    : "text-[#16A34A] focus:ring-[#16A34A]";
 
   return (
     <section
-      className={`rounded-2xl border p-4 sm:rounded-3xl sm:p-5 md:px-6 md:py-5 ${skin}`}
+      className={`rounded-2xl border p-5 sm:p-6 ${skin}`}
       aria-label="약관 동의"
     >
-      <header className={`border-b ${headerBorder} pb-4 sm:pb-4`}>
+      <header className={`border-b ${headerBorder} pb-4`}>
         <p className={`text-xs font-extrabold tracking-wide sm:text-sm ${kicker}`}>03 · 약관</p>
-        <h2 className="mt-1.5 text-xl font-extrabold text-slate-900 sm:text-2xl md:text-[1.6rem]">필수·선택 동의</h2>
-        <p className={`mt-1.5 text-sm leading-relaxed sm:mt-2 sm:text-base ${isSky ? "text-slate-600" : "text-slate-700"}`}>
+        <h2 className="mt-1.5 text-lg font-extrabold text-slate-900 sm:text-xl">필수·선택 동의</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
           필수에 동의해야 가입이 완료돼요. 약관·개인정보 링크는 `NEXT_PUBLIC_*` 환경 변수로 붙일 수 있어요.
         </p>
         <p className={`mt-0.5 text-xs sm:text-sm ${sub}`}>

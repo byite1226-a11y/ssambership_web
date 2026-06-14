@@ -23,7 +23,7 @@ type AuthPageLayoutProps = {
 };
 
 const signupShadow =
-  "shadow-[0_1px_2px_rgba(15,23,42,0.03),0_10px_32px_-12px_rgba(15,23,42,0.10)]";
+  "shadow-[0_1px_3px_rgba(15,23,42,0.06)]";
 
 export function AuthPageLayout({
   title,
@@ -45,7 +45,7 @@ export function AuthPageLayout({
       : "max-w-6xl xl:max-w-7xl"
     : "max-w-6xl";
   const signupOuter =
-    "flex w-full min-w-0 flex-1 flex-col items-stretch px-2 py-3 sm:px-4 sm:py-4 md:px-6 md:py-5 xl:px-10 xl:py-6 2xl:px-14";
+    "flex w-full min-w-0 flex-1 flex-col items-stretch px-4 py-8 sm:items-center sm:px-6 sm:py-10 md:py-12";
   const loginOuter = loginLandingCompact
     ? `flex w-full min-w-0 flex-1 flex-col items-stretch bg-white sm:items-center ${
         loginLandingWideCanvas
@@ -57,11 +57,11 @@ export function AuthPageLayout({
     signupLayout ? "" : loginLayout ? "px-4 py-8 sm:px-6" : "px-4 py-8 sm:px-6"
   }`;
   const cardClass = signupLayout
-    ? `w-full min-w-0 max-w-7xl ${signupShadow} rounded-[2rem] border border-slate-200/50 bg-white/98 p-6 backdrop-blur-sm sm:mx-auto sm:rounded-[2.25rem] sm:p-9 md:p-12 xl:px-16 xl:pb-14 xl:pt-12 2xl:px-20`
+    ? `w-full min-w-0 max-w-6xl ${signupShadow} rounded-2xl border border-slate-200 bg-white p-6 sm:mx-auto sm:p-7 lg:p-8`
     : "rounded-2xl border border-blue-100/90 bg-white/90 p-6 shadow-lg shadow-blue-200/20 backdrop-blur-sm sm:p-8";
   const h1Class = [
     signupLayout
-      ? "text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-[2.5rem] md:leading-tight xl:text-[2.65rem]"
+      ? "text-center text-3xl font-extrabold tracking-tight text-[#111827] sm:text-4xl sm:leading-tight md:text-5xl md:leading-[1.15] lg:text-[2.75rem]"
       : loginLayout
         ? loginLandingCompact
           ? loginLandingWideCanvas
@@ -74,7 +74,7 @@ export function AuthPageLayout({
     .filter(Boolean)
     .join(" ");
   const descClass = signupLayout
-    ? "mt-3 max-w-5xl text-base leading-relaxed text-slate-500 sm:text-lg md:text-xl"
+    ? "mx-auto mt-2.5 max-w-xl text-center text-base font-medium leading-relaxed text-slate-500 sm:mt-3 sm:text-lg md:mt-4 md:text-[1.125rem]"
     : loginLayout
       ? loginLandingCompact
         ? loginLandingWideCanvas
@@ -87,7 +87,7 @@ export function AuthPageLayout({
     <div
       className={
         signupLayout
-          ? "flex min-h-full w-full flex-1 flex-col bg-[#f4f7fb]"
+          ? "flex min-h-full w-full flex-1 flex-col bg-white"
           : loginLayout
             ? "flex min-h-full w-full flex-1 flex-col bg-white"
             : "flex min-h-full w-full flex-1 flex-col bg-gradient-to-b from-slate-50 via-blue-50/60 to-slate-100/90"
