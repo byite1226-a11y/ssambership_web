@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { insertNotificationBestEffort } from "@/lib/notifications/notificationInsert";
+import { fetchUserDisplayName, insertNotificationBestEffort } from "@/lib/notifications/notificationInsert";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { mentorPlanDebitAmountCents } from "@/lib/subscribe/mentorPlanPricing";
 import { assignPlansByTier, isSubscribePlanTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
@@ -12,6 +12,7 @@ type Row = Record<string, unknown>;
 const RENEWABLE_STATUSES = ["active", "past_due"] as const;
 const DEFAULT_BATCH_LIMIT = 50;
 const MAX_BATCH_LIMIT = 100;
+const DEFAULT_RENEWAL_NOTICE_DAYS = 3;
 
 type RpcRenewalResult = {
   ok: boolean;
@@ -27,6 +28,8 @@ type RpcRenewalResult = {
 
 export type SubscriptionRenewalBatchSummary = {
   at: string;
+  upcomingScanned: number;
+  preRenewalNotices: number;
   scanned: number;
   renewed: number;
   alreadyProcessed: number;
@@ -67,6 +70,12 @@ function batchLimitFromEnv(): number {
   return Math.min(raw, MAX_BATCH_LIMIT);
 }
 
+function renewalNoticeDaysFromEnv(): number {
+  const raw = Number.parseInt(process.env.SUBSCRIPTION_RENEWAL_NOTICE_DAYS ?? "", 10);
+  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_RENEWAL_NOTICE_DAYS;
+  return Math.min(raw, 14);
+}
+
 function getSubscriptionId(row: Row): string | null {
   return typeof row.id === "string" && row.id.trim() ? row.id : null;
 }
@@ -78,6 +87,85 @@ function getUserId(row: Row, key: "student_id" | "mentor_id"): string | null {
 
 function getTier(row: Row): SubscribePlanTier | null {
   return isSubscribePlanTier(row.plan_tier) ? row.plan_tier : null;
+}
+
+function addDaysUtc(value: Date, days: number): Date {
+  return new Date(value.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function formatCashFromCents(amountCents: number): string {
+  const cash = Math.max(0, Math.round(amountCents / 100));
+  return `${cash.toLocaleString("ko-KR")}캐시`;
+}
+
+function formatNoticeDate(value: string | null): string {
+  if (!value) return "예정일";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "예정일";
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
+function noticeMentorLabel(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "멘토";
+  return trimmed.endsWith("멘토") ? trimmed : `${trimmed} 멘토`;
+}
+
+async function mentorNameForNotice(supabase: SupabaseClient, row: Row): Promise<string> {
+  const mentorId = getUserId(row, "mentor_id");
+  if (!mentorId) return "멘토";
+  try {
+    return noticeMentorLabel(await fetchUserDisplayName(supabase, mentorId));
+  } catch (error) {
+    console.error("[subscriptionRenewal] mentor name lookup failed", { mentorId, error });
+    return "멘토";
+  }
+}
+
+async function notifyStudentBestEffort(
+  supabase: SupabaseClient,
+  row: Row,
+  input: {
+    type: string;
+    title: string;
+    body: string;
+    link: string;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<void> {
+  const studentId = getUserId(row, "student_id");
+  const subscriptionId = getSubscriptionId(row);
+  if (!studentId || !subscriptionId) return;
+  try {
+    await insertNotificationBestEffort({
+      recipientUserId: studentId,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      link: input.link,
+      metadata: {
+        subscriptionId,
+        ...(input.metadata ?? {}),
+      },
+    });
+  } catch (error) {
+    console.error("[subscriptionRenewal] notification failed", {
+      subscriptionId,
+      type: input.type,
+      error,
+    });
+  }
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  const maybe = error as { code?: string; message?: string } | null;
+  const message = maybe?.message ?? "";
+  return maybe?.code === "23505" || /duplicate key|unique constraint/i.test(message);
 }
 
 async function upsertTerminalBillingEvent(
@@ -159,17 +247,14 @@ async function markCanceledAtPeriodEnd(
     return false;
   }
 
-  const studentId = getUserId(row, "student_id");
-  if (studentId) {
-    await insertNotificationBestEffort({
-      recipientUserId: studentId,
-      type: "subscription_cancelled_at_period_end",
-      title: "구독이 기간 종료로 해지됐어요",
-      body: "요청한 구독 해지가 현재 이용 기간 종료와 함께 반영됐어요.",
-      link: "/subscriptions",
-      metadata: { subscriptionId },
-    });
-  }
+  const mentorName = await mentorNameForNotice(supabase, row);
+  await notifyStudentBestEffort(supabase, row, {
+    type: "subscription_expired",
+    title: "구독이 만료되었어요",
+    body: `${mentorName} 구독이 만료되었어요. 다시 구독하려면 멘토 페이지에서 재구독할 수 있어요.`,
+    link: "/subscriptions",
+    metadata: { reason: "cancel_at_period_end" },
+  });
   return true;
 }
 
@@ -201,17 +286,14 @@ async function markExpired(
     return false;
   }
 
-  const studentId = getUserId(row, "student_id");
-  if (studentId) {
-    await insertNotificationBestEffort({
-      recipientUserId: studentId,
-      type: "subscription_expired_insufficient_cash",
-      title: "구독이 만료됐어요",
-      body: "갱신일 이후 유예 기간 동안 캐시 결제가 완료되지 않아 구독이 만료됐어요.",
-      link: "/subscriptions",
-      metadata: { subscriptionId },
-    });
-  }
+  const mentorName = await mentorNameForNotice(supabase, row);
+  await notifyStudentBestEffort(supabase, row, {
+    type: "subscription_expired",
+    title: "구독이 만료되었어요",
+    body: `${mentorName} 구독이 만료되었어요. 다시 구독하려면 멘토 페이지에서 재구독할 수 있어요.`,
+    link: "/subscriptions",
+    metadata: { reason: "insufficient_cash" },
+  });
   return true;
 }
 
@@ -240,19 +322,19 @@ async function resolveRenewalAmountCents(
   return { ok: true, amountCents };
 }
 
-async function notifyRenewalSuccess(row: Row, result: RpcRenewalResult): Promise<void> {
-  const studentId = getUserId(row, "student_id");
-  const subscriptionId = getSubscriptionId(row);
-  if (!studentId || !subscriptionId) return;
-
-  await insertNotificationBestEffort({
-    recipientUserId: studentId,
+async function notifyRenewalSuccess(
+  supabase: SupabaseClient,
+  row: Row,
+  result: RpcRenewalResult,
+  amountCents: number
+): Promise<void> {
+  const mentorName = await mentorNameForNotice(supabase, row);
+  await notifyStudentBestEffort(supabase, row, {
     type: "subscription_renewal_succeeded",
-    title: "구독이 갱신됐어요",
-    body: "이번 달 구독 캐시 결제가 완료되어 질문방 이용 기간이 연장됐어요.",
+    title: "구독이 갱신되었어요",
+    body: `${mentorName} 구독이 갱신되었어요. ${formatCashFromCents(amountCents)} 결제가 완료됐고, 다음 결제일은 ${formatNoticeDate(result.next_period_end)}입니다.`,
     link: "/subscriptions",
     metadata: {
-      subscriptionId,
       billingEventId: result.billing_event_id,
       ledgerId: result.ledger_id,
       nextPeriodEnd: result.next_period_end,
@@ -260,23 +342,110 @@ async function notifyRenewalSuccess(row: Row, result: RpcRenewalResult): Promise
   });
 }
 
-async function notifyRenewalFailure(row: Row, result: RpcRenewalResult): Promise<void> {
-  const studentId = getUserId(row, "student_id");
-  const subscriptionId = getSubscriptionId(row);
-  if (!studentId || !subscriptionId) return;
-
-  await insertNotificationBestEffort({
-    recipientUserId: studentId,
+async function notifyRenewalFailure(
+  supabase: SupabaseClient,
+  row: Row,
+  result: RpcRenewalResult,
+  atIso: string
+): Promise<void> {
+  const mentorName = await mentorNameForNotice(supabase, row);
+  const graceDate = formatNoticeDate(addDaysUtc(new Date(atIso), 2).toISOString());
+  await notifyStudentBestEffort(supabase, row, {
     type: "subscription_renewal_failed_insufficient_cash",
-    title: "구독 갱신에 필요한 캐시가 부족해요",
-    body: "캐시 잔액 부족으로 구독 갱신이 보류됐어요. 유예 기간 안에 충전하면 다음 갱신 배치에서 다시 시도됩니다.",
+    title: "구독 갱신에 실패했어요",
+    body: `${mentorName} 구독 갱신에 실패했어요(캐시 부족). ${graceDate}까지 충전하면 구독이 유지됩니다.`,
     link: "/wallet/charge",
     metadata: {
-      subscriptionId,
       billingEventId: result.billing_event_id,
       attemptCount: result.attempt_count,
     },
   });
+}
+
+async function insertPreRenewalNoticeMarker(
+  supabase: SupabaseClient,
+  args: {
+    row: Row;
+    amountCents: number;
+    idempotencyKey: string;
+    atIso: string;
+  }
+): Promise<"inserted" | "duplicate" | "failed"> {
+  const subscriptionId = getSubscriptionId(args.row);
+  const studentId = getUserId(args.row, "student_id");
+  const mentorId = getUserId(args.row, "mentor_id");
+  if (!subscriptionId || !studentId || !mentorId) return "failed";
+
+  const payload: Row = {
+    subscription_id: subscriptionId,
+    student_id: studentId,
+    mentor_id: mentorId,
+    event_type: "renewal",
+    status: "skipped",
+    period_start: isoFromUnknown(args.row.current_period_start),
+    period_end: isoFromUnknown(args.row.current_period_end),
+    billing_at: isoFromUnknown(args.row.next_billing_at) ?? args.atIso,
+    amount_cents: args.amountCents,
+    plan_tier: typeof args.row.plan_tier === "string" ? args.row.plan_tier : null,
+    plan_id: typeof args.row.plan_id === "string" ? args.row.plan_id : null,
+    idempotency_key: args.idempotencyKey,
+    failure_code: "pre_renewal_notice_sent",
+    failure_message: "pre-renewal notice marker",
+    attempt_count: 0,
+    created_at: args.atIso,
+    processed_at: args.atIso,
+  };
+
+  const { error } = await supabase.from("subscription_billing_events").insert(payload);
+  if (!error) return "inserted";
+  if (isDuplicateKeyError(error)) return "duplicate";
+  console.error("[subscriptionRenewal] pre-renewal notice marker failed", {
+    subscriptionId,
+    error: error.message,
+  });
+  return "failed";
+}
+
+async function sendPreRenewalNotice(
+  supabase: SupabaseClient,
+  row: Row,
+  atIso: string
+): Promise<{ code: "sent" | "already" | "skipped"; message?: string }> {
+  const subscriptionId = getSubscriptionId(row);
+  if (!subscriptionId) return { code: "skipped", message: "missing_subscription_id" };
+
+  const price = await resolveRenewalAmountCents(supabase, row);
+  if (!price.ok) return { code: "skipped", message: price.error };
+
+  const nextBillingAt = isoFromUnknown(row.next_billing_at);
+  const periodEnd = isoFromUnknown(row.current_period_end) ?? nextBillingAt;
+  if (!nextBillingAt || !periodEnd) {
+    return { code: "skipped", message: "missing_billing_date" };
+  }
+
+  const marker = await insertPreRenewalNoticeMarker(supabase, {
+    row,
+    amountCents: price.amountCents,
+    idempotencyKey: `sub_renewal_notice:${subscriptionId}:${periodEnd.slice(0, 10)}`,
+    atIso,
+  });
+  if (marker === "duplicate") return { code: "already" };
+  if (marker === "failed") return { code: "skipped", message: "notice_marker_failed" };
+
+  const mentorName = await mentorNameForNotice(supabase, row);
+  await notifyStudentBestEffort(supabase, row, {
+    type: "subscription_renewal_upcoming",
+    title: "구독이 곧 갱신돼요",
+    body: `${mentorName} 구독이 곧 갱신돼요. ${formatNoticeDate(nextBillingAt)}에 ${formatCashFromCents(price.amountCents)}가 결제됩니다. 잔액을 확인해 주세요.`,
+    link: "/wallet/charge",
+    metadata: {
+      nextBillingAt,
+      amountCents: price.amountCents,
+      noticeDays: renewalNoticeDaysFromEnv(),
+    },
+  });
+
+  return { code: "sent" };
 }
 
 async function processRenewal(
@@ -310,7 +479,7 @@ async function processRenewal(
   if (!result) return { code: "error", message: "empty_rpc_result" };
 
   if (result.ok && result.code === "succeeded") {
-    await notifyRenewalSuccess(row, result);
+    await notifyRenewalSuccess(supabase, row, result, price.amountCents);
     return { code: "renewed" };
   }
   if (result.ok && result.code === "already_succeeded") {
@@ -318,7 +487,7 @@ async function processRenewal(
   }
   if (!result.ok && result.code === "insufficient_cash") {
     if ((result.attempt_count ?? 0) <= 1) {
-      await notifyRenewalFailure(row, result);
+      await notifyRenewalFailure(supabase, row, result, atIso);
     }
     return { code: "insufficient" };
   }
@@ -332,6 +501,8 @@ export async function runSubscriptionRenewalBatch(
   const atIso = at.toISOString();
   const summary: SubscriptionRenewalBatchSummary = {
     at: atIso,
+    upcomingScanned: 0,
+    preRenewalNotices: 0,
     scanned: 0,
     renewed: 0,
     alreadyProcessed: 0,
@@ -341,6 +512,32 @@ export async function runSubscriptionRenewalBatch(
     skipped: 0,
     errors: [],
   };
+
+  const noticeUntilIso = addDaysUtc(at, renewalNoticeDaysFromEnv()).toISOString();
+  const { data: upcomingData, error: upcomingError } = await supabase
+    .from(SUBSCRIPTIONS_TABLE)
+    .select(SUBSCRIPTIONS_SELECT)
+    .gt("next_billing_at", atIso)
+    .lte("next_billing_at", noticeUntilIso)
+    .eq("status", "active")
+    .eq("cancel_at_period_end", false)
+    .order("next_billing_at", { ascending: true })
+    .limit(batchLimitFromEnv());
+
+  if (upcomingError) {
+    summary.errors.push({ subscriptionId: null, code: "upcoming_query_failed", message: upcomingError.message });
+  } else {
+    const upcomingRows = ((upcomingData as unknown as Row[] | null) ?? []) as Row[];
+    summary.upcomingScanned = upcomingRows.length;
+    for (const row of upcomingRows) {
+      const subscriptionId = getSubscriptionId(row);
+      const result = await sendPreRenewalNotice(supabase, row, atIso);
+      if (result.code === "sent") summary.preRenewalNotices += 1;
+      else if (result.code === "skipped" && result.message) {
+        summary.errors.push({ subscriptionId, code: "pre_renewal_notice_skipped", message: result.message });
+      }
+    }
+  }
 
   const { data, error } = await supabase
     .from(SUBSCRIPTIONS_TABLE)
