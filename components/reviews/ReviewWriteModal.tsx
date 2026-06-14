@@ -37,7 +37,7 @@ export function ReviewWriteModal(props: Props) {
   const [open, setOpen] = useState(false);
   const [eligible, setEligible] = useState(props.initialEligible ?? false);
   const [reason, setReason] = useState(
-    props.initialReason ?? "동일 멘토 2회 이상 구독 시 작성 가능합니다."
+    props.initialReason ?? "같은 멘토에게 2회 이상 결제한 학생만 작성 가능합니다."
   );
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState("");
