@@ -9,6 +9,7 @@ import {
   SUBSCRIPTIONS_ORDER_COLUMN,
   SUBSCRIPTIONS_SELECT,
   SUBSCRIPTIONS_TABLE,
+  addMonthsClampedUtc,
   buildSubscriptionsInsertPayload,
 } from "@/lib/subscribe/subscriptionsTable";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
@@ -165,6 +166,148 @@ function assertPlanDebitMatchesCatalog(
 /** DB `record_subscription_cash_debit`: idempotency_key = 'sub_debit_' || payment_id */
 function subscriptionCashDebitIdempotencyKey(paymentId: string): string {
   return `sub_debit_${paymentId}`;
+}
+
+function isSchemaNotReadyError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null | undefined;
+  const code = String(e?.code ?? "");
+  const message = String(e?.message ?? "").toLowerCase();
+  return (
+    code === "42P01" ||
+    code === "42703" ||
+    code === "PGRST204" ||
+    code === "PGRST205" ||
+    message.includes("schema cache") ||
+    message.includes("could not find") ||
+    message.includes("does not exist")
+  );
+}
+
+function isoFromUnknown(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function fallbackPeriodEndIso(periodStartIso: string): string {
+  return addMonthsClampedUtc(new Date(periodStartIso), 1).toISOString();
+}
+
+function positiveIntegerFromUnknown(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
+  return Math.trunc(value);
+}
+
+async function recordInitialSubscriptionBillingEvent(args: {
+  subscriptionId: string | null;
+  studentId: string;
+  mentorId: string;
+  paymentId: string;
+  planTier: SubscribePlanTier;
+  amountCents?: number | null;
+}): Promise<void> {
+  const subscriptionId = args.subscriptionId?.trim();
+  if (!subscriptionId) return;
+
+  const admin = createServiceRoleClient();
+  const { data: subscriptionRow, error: subError } = await admin
+    .from(SUBSCRIPTIONS_TABLE)
+    .select(
+      "id, student_id, mentor_id, payment_id, plan_tier, plan_id, created_at, started_at, current_period_start, current_period_end"
+    )
+    .eq("id", subscriptionId)
+    .maybeSingle();
+
+  if (subError || !subscriptionRow) {
+    if (!isSchemaNotReadyError(subError)) {
+      console.error("[recordInitialSubscriptionBillingEvent] subscription select failed", {
+        subscriptionId,
+        error: subError,
+      });
+    }
+    return;
+  }
+
+  const s = subscriptionRow as Row;
+  const ledgerKey = subscriptionCashDebitIdempotencyKey(args.paymentId);
+  const { data: ledgerRow, error: ledgerError } = await admin
+    .from("cash_ledger")
+    .select("id, delta_cents, created_at")
+    .eq("idempotency_key", ledgerKey)
+    .maybeSingle();
+  if (ledgerError && !isSchemaNotReadyError(ledgerError)) {
+    console.warn("[recordInitialSubscriptionBillingEvent] ledger lookup failed", {
+      subscriptionId,
+      ledgerKey,
+      error: ledgerError,
+    });
+  }
+
+  const ledger = (ledgerRow as Row | null) ?? null;
+  const periodStart =
+    isoFromUnknown(s.current_period_start) ??
+    isoFromUnknown(s.started_at) ??
+    isoFromUnknown(s.created_at) ??
+    new Date().toISOString();
+  const periodEnd = isoFromUnknown(s.current_period_end) ?? fallbackPeriodEndIso(periodStart);
+  const ledgerAmount =
+    typeof ledger?.delta_cents === "number" && Number.isFinite(ledger.delta_cents)
+      ? Math.abs(Math.trunc(ledger.delta_cents))
+      : null;
+  const amountCents = positiveIntegerFromUnknown(args.amountCents) ?? ledgerAmount;
+
+  const payload: Row = {
+    subscription_id: subscriptionId,
+    student_id: String(s.student_id ?? args.studentId),
+    mentor_id: String(s.mentor_id ?? args.mentorId),
+    event_type: "initial",
+    status: "succeeded",
+    period_start: periodStart,
+    period_end: periodEnd,
+    billing_at: isoFromUnknown(ledger?.created_at) ?? isoFromUnknown(s.created_at) ?? new Date().toISOString(),
+    amount_cents: amountCents,
+    plan_tier: String(s.plan_tier ?? args.planTier),
+    plan_id: typeof s.plan_id === "string" && s.plan_id.trim() ? s.plan_id : null,
+    idempotency_key: `sub_initial:${subscriptionId}`,
+    ledger_id: typeof ledger?.id === "string" ? ledger.id : null,
+    payment_id: String(s.payment_id ?? args.paymentId),
+    processed_at: isoFromUnknown(ledger?.created_at) ?? new Date().toISOString(),
+  };
+
+  const { data: eventRow, error: eventError } = await admin
+    .from("subscription_billing_events")
+    .upsert(payload, { onConflict: "idempotency_key" })
+    .select("id")
+    .maybeSingle();
+
+  if (eventError || !eventRow) {
+    if (!isSchemaNotReadyError(eventError)) {
+      console.error("[recordInitialSubscriptionBillingEvent] event upsert failed", {
+        subscriptionId,
+        error: eventError,
+      });
+    }
+    return;
+  }
+
+  const eventId = String((eventRow as Row).id ?? "");
+  if (!eventId) return;
+
+  const { error: linkError } = await admin
+    .from(SUBSCRIPTIONS_TABLE)
+    .update({
+      last_billing_event_id: eventId,
+      last_payment_id: args.paymentId,
+    })
+    .eq("id", subscriptionId);
+  if (linkError && !isSchemaNotReadyError(linkError)) {
+    console.error("[recordInitialSubscriptionBillingEvent] subscription link update failed", {
+      subscriptionId,
+      eventId,
+      error: linkError,
+    });
+  }
 }
 
 async function hasExistingSubscriptionCashDebitLedger(paymentId: string): Promise<boolean> {
@@ -649,6 +792,13 @@ export async function finalizeSubscriptionCheckout(
           code: "db",
         };
       }
+      await recordInitialSubscriptionBillingEvent({
+        subscriptionId: subIdForRoom,
+        studentId,
+        paymentId,
+        mentorId,
+        planTier,
+      });
       const roomR = await ensureMentorStudentRoomWithServiceRetry(
         supabase,
         studentId,
@@ -749,6 +899,15 @@ export async function finalizeSubscriptionCheckout(
     return { ok: false, error: `결제 완료 표시 실패(롤백: 구독 삭제 시도): ${payUpdate.error}`, code: "db" };
   }
 
+  await recordInitialSubscriptionBillingEvent({
+    subscriptionId: subId,
+    studentId,
+    paymentId,
+    mentorId,
+    planTier,
+    amountCents,
+  });
+
   const roomR = await ensureMentorStudentRoomWithServiceRetry(
     supabase,
     studentId,
@@ -808,6 +967,25 @@ async function insertSubscriptionRow(
     .maybeSingle();
   if (!canonical.error && canonical.data && (canonical.data as Row).id != null) {
     return { ok: true, subscriptionId: String((canonical.data as Row).id) };
+  }
+  if (canonical.error && isSchemaNotReadyError(canonical.error)) {
+    const legacyCanonical = await admin
+      .from(SUBSCRIPTIONS_TABLE)
+      .insert(
+        buildSubscriptionsInsertPayload({
+          studentId: ctx.studentId,
+          mentorId: ctx.mentorId,
+          planId: ctx.planId,
+          planTier: ctx.planTier,
+          paymentId: ctx.paymentId,
+          includeBillingPeriod: false,
+        })
+      )
+      .select("id")
+      .maybeSingle();
+    if (!legacyCanonical.error && legacyCanonical.data && (legacyCanonical.data as Row).id != null) {
+      return { ok: true, subscriptionId: String((legacyCanonical.data as Row).id) };
+    }
   }
   if (canonical.error) {
     console.error("[insertSubscriptionRow] subscriptions insert", canonical.error);
