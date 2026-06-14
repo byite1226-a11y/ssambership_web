@@ -5,6 +5,7 @@ type Row = Record<string, unknown>;
 const LEDGER_TYPE_KO: Record<string, string> = {
   refund_approved: "환불 승인",
   subscription_payment: "구독 결제",
+  subscription_renewal: "구독 갱신",
   staging_manual_cash_topup_for_subscription_repair_test: "운영 조정(수동 충전)",
   custom_order_escrow_hold: "맞춤의뢰 예치",
   custom_order_escrow_payout: "맞춤의뢰 정산 지급",
