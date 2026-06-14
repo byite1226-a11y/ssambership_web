@@ -227,13 +227,13 @@ async function markCanceledAtPeriodEnd(
   if (!subscriptionId) return false;
   const eventId = await upsertTerminalBillingEvent(supabase, {
     row,
-    eventType: "canceled",
+    eventType: "expired",
     idempotencyKey: `sub_cancel:${subscriptionId}:${periodKeyFromRow(row)}`,
     atIso,
   });
 
   const patch: Row = {
-    status: "canceled",
+    status: "expired",
     canceled_at: atIso,
     expired_at: atIso,
     next_billing_at: null,
