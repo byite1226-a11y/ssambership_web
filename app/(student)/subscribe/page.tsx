@@ -11,6 +11,7 @@ import {
   SUBSCRIBE_PLAN_CATALOG,
   planIdFromRow,
 } from "@/lib/subscribe/subscribePlanCatalog";
+import { mentorPlanCashKrw } from "@/lib/subscribe/mentorPlanPricing";
 import { loadMentorCapUsage, wouldExceedCap } from "@/lib/subscribe/mentorCapService";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
@@ -77,6 +78,7 @@ export default async function StudentSubscribePage(props: Props) {
   const capUsage = await loadMentorCapUsage(data.mentorId);
   const plans: SubscribePlanOption[] = SUBSCRIBE_PLAN_CATALOG.map((catalog) => ({
     ...catalog,
+    cashKrw: mentorPlanCashKrw(data.byTier[catalog.tier] as Record<string, unknown> | null, catalog.tier),
     planId: planIdFromRow(data.byTier[catalog.tier] as Record<string, unknown> | null),
   }));
   // cap 마감: 학생에겐 구체 수치 노출 금지 — 마감된 tier 목록(boolean)만 전달

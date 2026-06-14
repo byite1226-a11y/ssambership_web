@@ -59,11 +59,6 @@ export function SubscribeCheckoutClient(props: Props) {
       setError("이 멘토는 현재 구독이 마감되었습니다. 다른 멘토를 찾아보거나 잠시 후 다시 시도해 주세요.");
       return;
     }
-    if (!selected.planId) {
-      setError("플랜 정보가 없어 구독을 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.");
-      return;
-    }
-
     if (currentBalanceCash < selected.cashKrw) {
       setError("캐시가 부족합니다. 충전하러 가기");
       return;
@@ -186,7 +181,7 @@ export function SubscribeCheckoutClient(props: Props) {
 
       <button
         type="button"
-        disabled={loading || !selected.planId || insufficient || selectedClosed}
+        disabled={loading || insufficient || selectedClosed}
         onClick={() => void handleSubscribe()}
         className="min-h-[52px] w-full max-w-md rounded-xl bg-blue-600 px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
       >

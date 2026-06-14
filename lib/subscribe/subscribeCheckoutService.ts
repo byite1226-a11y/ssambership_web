@@ -4,7 +4,12 @@ import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
-import { cashKrwForSubscribeTier, SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import {
+  mentorPlanCashKrw,
+  mentorPlanDebitAmountCents,
+  recommendedAmountCentsForSubscribeTier,
+} from "@/lib/subscribe/mentorPlanPricing";
 import {
   SUBSCRIPTIONS_ORDER_COLUMN,
   SUBSCRIPTIONS_SELECT,
@@ -91,73 +96,24 @@ async function firstPayTable(supabase: SupabaseClient): Promise<string | null> {
   return null;
 }
 
-function planAmountKrw(planRow: Row | null): { amount: number; currency: string } {
-  if (!planRow) return { amount: 0, currency: "KRW" };
-  for (const k of ["amount_cents", "price_cents"] as const) {
-    if (typeof planRow[k] === "number" && Number.isFinite(planRow[k] as number)) {
-      return { amount: (planRow[k] as number) / 100, currency: "KRW" };
-    }
-  }
-  for (const k of ["amount", "price", "monthly_price", "price_krw"] as const) {
-    if (typeof planRow[k] === "number" && Number.isFinite(planRow[k] as number)) {
-      return { amount: planRow[k] as number, currency: "KRW" };
-    }
-  }
-  return { amount: 0, currency: "KRW" };
-}
-
-/**
- * cash_wallets / cash_ledger(004)의 balance_cents·delta_cents와 **동일한 정수 스케일**(문서: *_cents).
- * - `amount_cents`·`price_cents`가 있으면 planAmountKrw 가 그 값을 /100 하여 KRW 표시에 쓰므로, **원장 차감은 DB 정수를 그대로** 사용
- * (UI·결제 intent 의 won 표기와 `/_cents` 는 위 `planAmountKrw` 를 통해 맞음)
- * - KRW(원) 정수만 온 `amount`·`price_krw`·`monthly_price`·`price` 등: `planAmountKrw`의 표시 원화와, `_cents`가 있을 때 `*_cents/100`이 표시 원과 같다는 기존 관례에 맞춰 **최소화 단위 = KRW(표시) × 100** 으로 환산( `_cents` 를 100으로 나누는 쪽의 역
- */
-function planRowDebitAmountCents(planRow: Row): number {
-  for (const k of ["amount_cents", "price_cents"] as const) {
-    const v = planRow[k];
-    if (typeof v === "number" && Number.isFinite(v) && v > 0) {
-      return Math.trunc(v);
-    }
-  }
-  const { amount: krwDisplay } = planAmountKrw(planRow);
-  if (!Number.isFinite(krwDisplay) || krwDisplay <= 0) {
-    return 0;
-  }
-  return Math.round(krwDisplay * 100);
-}
-
-/** DB mentor_plans 금액과 잠금 카탈로그(55k/114.9k/249.9k) 교차검증 — 불일치 시 차감·구독 차단 */
-function assertPlanDebitMatchesCatalog(
-  planRow: Row,
+/** DB mentor_plans 금액을 결제 원천으로 확정. 미설정/비정상 값은 권장가로 fallback해 0원 차감을 막는다. */
+function resolveMentorPlanDebitAmount(
+  planRow: Row | null,
   planTier: SubscribePlanTier,
   context: string
 ): { ok: true; amountCents: number } | { ok: false; error: string } {
-  const amountCents = planRowDebitAmountCents(planRow);
-  const expectedCents = cashKrwForSubscribeTier(planTier) * 100;
+  const amountCents = mentorPlanDebitAmountCents(planRow, planTier);
   if (amountCents <= 0) {
-    console.error(`[assertPlanDebitMatchesCatalog:${context}] non-positive debit`, {
+    console.error(`[resolveMentorPlanDebitAmount:${context}] non-positive debit`, {
       planTier,
       amountCents,
-      planRowId: planRow.id ?? planRow.plan_id,
+      fallbackCents: recommendedAmountCentsForSubscribeTier(planTier),
+      planRowId: planRow?.id ?? planRow?.plan_id,
     });
     return {
       ok: false,
       error:
         "구독 플랜에서 캐시 차감할 유효 금액을 찾을 수 없습니다. 멘토 플랜 금액 설정을 확인하거나 잠시 후 다시 시도해 주세요.",
-    };
-  }
-  if (amountCents !== expectedCents) {
-    console.error(`[assertPlanDebitMatchesCatalog:${context}] plan_price_catalog_mismatch`, {
-      planTier,
-      amountCents,
-      expectedCents,
-      mentorId: planRow.mentor_id,
-      planRowId: planRow.id ?? planRow.plan_id,
-    });
-    return {
-      ok: false,
-      error:
-        "구독 플랜 금액이 시스템 기준과 일치하지 않아 결제를 진행할 수 없습니다. 고객센터에 문의해 주세요.",
     };
   }
   return { ok: true, amountCents };
@@ -378,12 +334,12 @@ async function repairMissingSubscriptionCashLedgerIfNeeded(
     return { ok: true };
   }
 
-  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, mode);
+  const debitCheck = resolveMentorPlanDebitAmount(planRow, planTier, mode);
   if (!debitCheck.ok) {
     if (mode === "newSubscription") {
       return { ok: false, error: debitCheck.error };
     }
-    console.warn(`${logTag} skip ledger repair: catalog mismatch`, {
+    console.warn(`${logTag} skip ledger repair: amount resolution failed`, {
       studentId,
       paymentId,
       mentorId,
@@ -545,6 +501,11 @@ export async function createSubscriptionPaymentIntent(
       code: "mentor",
     };
   }
+  const ensuredPlans = await ensureMentorCatalogPlanRows(supabase, mentorId);
+  if (!ensuredPlans.ok) {
+    return { ok: false, error: ensuredPlans.error, code: "db" };
+  }
+
   const plans = await fetchPlansForMentor(supabase, mentorId);
   if (plans.error) {
     return { ok: false, error: `플랜 조회 실패: ${plans.error}`, code: "plan" };
@@ -554,7 +515,8 @@ export async function createSubscriptionPaymentIntent(
   if (!planRow) {
     return { ok: false, error: `선택한 티어(${planTier})에 맞는 플랜 행이 없습니다. ${fillProbe}`, code: "plan" };
   }
-  const { amount, currency } = planAmountKrw(planRow);
+  const amount = mentorPlanCashKrw(planRow, planTier);
+  const currency = "KRW";
   const intentKey = `sub_${randomUUID()}`;
   const payTable = await firstPayTable(supabase);
   if (!payTable) {
@@ -684,12 +646,17 @@ export async function ensureMentorCatalogPlanRows(
   const tierCol = (await pickExistingColumn(admin, table, ["plan_tier", "tier", "slug", "code"])).column;
   const amtCol = (await pickExistingColumn(admin, table, ["amount_cents", "price_cents", "amount", "price"])).column;
   const labelCol = (await pickExistingColumn(admin, table, ["label", "title", "name"])).column;
+  const updatedAtCol = (await pickExistingColumn(admin, table, ["updated_at"])).column;
+  const priceUpdatedAtCol = (await pickExistingColumn(admin, table, ["price_updated_at"])).column;
 
   for (const item of missing) {
     const row: Record<string, unknown> = { [fk]: mentorId };
+    const now = new Date().toISOString();
     if (tierCol) row[tierCol] = item.tier;
-    if (amtCol) row[amtCol] = item.cashKrw * 100;
+    if (amtCol) row[amtCol] = recommendedAmountCentsForSubscribeTier(item.tier);
     if (labelCol) row[labelCol] = item.label;
+    if (updatedAtCol) row[updatedAtCol] = now;
+    if (priceUpdatedAtCol) row[priceUpdatedAtCol] = now;
     const { error } = await admin.from(table).insert(row);
     if (error) {
       return { ok: false, error: `${table} 플랜(${item.tier}) 생성 실패: ${error.message}` };
@@ -839,6 +806,11 @@ export async function finalizeSubscriptionCheckout(
     return { ok: false, error: "이미 해당 멘토에 활성 구독이 있어 중복을 막았습니다.", code: "dup" };
   }
 
+  const ensuredPlansForFinalize = await ensureMentorCatalogPlanRows(supabase, mentorId);
+  if (!ensuredPlansForFinalize.ok) {
+    return { ok: false, error: ensuredPlansForFinalize.error, code: "db" };
+  }
+
   const plans = await fetchPlansForMentor(supabase, mentorId);
   const { byTier } = assignPlansByTier(plans.rows);
   const planRow = byTier[planTier];
@@ -860,7 +832,7 @@ export async function finalizeSubscriptionCheckout(
     };
   }
 
-  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, "finalizeSubscriptionCheckout");
+  const debitCheck = resolveMentorPlanDebitAmount(planRow, planTier, "finalizeSubscriptionCheckout");
   if (!debitCheck.ok) {
     return { ok: false, error: debitCheck.error, code: "db" };
   }

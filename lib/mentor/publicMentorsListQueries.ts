@@ -10,9 +10,8 @@ import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/l
 import { loadMentorCapUsageBatch, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
 import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
 import { formatAvgResponseHoursLabel, loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
-import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
+import { mentorPlanCashKrw } from "@/lib/subscribe/mentorPlanPricing";
 import {
-  cashKrwForSubscribeTier,
   formatSubscribePlanCashMonthlyLabel,
   getSubscribeCatalogPlan,
 } from "@/lib/subscribe/subscribePlanCatalog";
@@ -237,7 +236,7 @@ function formatMoney(n: number): string {
 }
 
 function priceKrwFromRow(row: Row | null, tier: SubscribePlanTier): number {
-  return cashKrwFromPlanRow(row, tier);
+  return mentorPlanCashKrw(row, tier);
 }
 
 function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPrice[]; minPriceKrw: number | null } {
@@ -245,7 +244,7 @@ function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPr
   const tierPrices: MentorTierPrice[] = tiers.map((tier) => {
     const row = byTier?.[tier] ?? null;
     const catalog = getSubscribeCatalogPlan(tier);
-    const krw = cashKrwForSubscribeTier(tier);
+    const krw = priceKrwFromRow(row, tier);
     return {
       tier,
       label: catalog.label,

@@ -9,6 +9,11 @@ import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
 import { MentorPublicProfilePreviewCard } from "@/components/mentor/MentorPublicProfilePreviewCard";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import {
+  isOutsideMentorPriceGuide,
+  mentorPlanCashKrw,
+  mentorSubscriptionPriceRule,
+} from "@/lib/subscribe/mentorPlanPricing";
 import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus } from "lucide-react";
 
 type Q = { 
@@ -35,6 +40,10 @@ const inputClass =
   "min-h-[48px] w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30";
 
 const labelClass = "flex items-center gap-1.5 text-sm font-extrabold text-slate-900";
+
+function priceInputName(tier: string): string {
+  return `subscriptionPriceKrw_${tier}`;
+}
 
 function SectionHeader(props: { number: string; title: string; required?: boolean; optional?: boolean }) {
   return (
@@ -82,11 +91,23 @@ export function MentorProfileEditForm(props: {
     answerStyle: "",
     subOpen: initial.subOpen,
   });
+  const [planPrices, setPlanPrices] = useState(() =>
+    Object.fromEntries(
+      SUBSCRIBE_PLAN_CATALOG.map((plan) => [
+        plan.tier,
+        String(mentorPlanCashKrw(query.byTier?.[plan.tier] ?? null, plan.tier)),
+      ]),
+    ) as Record<string, string>,
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
     setFormData((prev) => ({ ...prev, [name]: val }));
+  };
+
+  const handlePlanPriceChange = (tier: string, value: string) => {
+    setPlanPrices((prev) => ({ ...prev, [tier]: value }));
   };
 
   const previewDisplay: MentorProfileDisplay = {
@@ -297,24 +318,70 @@ export function MentorProfileEditForm(props: {
             </div>
           </section>
 
-          {/* 4. 요금제 (잠금) */}
+          {/* 4. 요금제 */}
           <section className="space-y-4">
             <SectionHeader number="4" title="요금제 설정" />
-            <p className="text-xs font-medium text-slate-500">플랫폼 정책에 따라 가격은 수정할 수 없어요.</p>
+            <p className="text-xs font-medium text-slate-500">
+              구독 요금은 멘토가 직접 설정할 수 있어요. 권장 범위를 벗어나면 경고만 표시되고 저장은 가능합니다.
+            </p>
             <div className="grid gap-3 sm:grid-cols-3">
-              {SUBSCRIBE_PLAN_CATALOG.map((plan) => (
-                <div
-                  key={plan.tier}
-                  className={`rounded-xl border p-4 ${plan.recommend ? "border-2 border-[#1A56DB] bg-blue-50/30" : "border-slate-200 bg-slate-50/50"}`}
-                >
-                  <p className="text-sm font-black text-slate-900">{plan.label}</p>
-                  <p className="mt-1 text-lg font-black text-[#1A56DB]">
-                    {plan.cashKrw.toLocaleString("ko-KR")} <span className="text-xs font-bold text-slate-500">캐시/월</span>
-                  </p>
-                  <p className="mt-1 text-[11px] font-semibold text-slate-600">{plan.weeklyLabel}</p>
-                  <p className="mt-2 text-[10px] font-bold text-slate-400">수정 불가</p>
-                </div>
-              ))}
+              {SUBSCRIBE_PLAN_CATALOG.map((plan) => {
+                const rule = mentorSubscriptionPriceRule(plan.tier);
+                const rawValue = planPrices[plan.tier] ?? String(rule.recommendedCashKrw);
+                const numericValue = Number(rawValue);
+                const invalid = !Number.isFinite(numericValue) || numericValue <= 0;
+                const outsideGuide = !invalid && isOutsideMentorPriceGuide(numericValue, plan.tier);
+                return (
+                  <div
+                    key={plan.tier}
+                    className={`rounded-xl border p-4 ${
+                      plan.recommend ? "border-2 border-[#1A56DB] bg-blue-50/30" : "border-slate-200 bg-slate-50/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-black text-slate-900">{plan.label}</p>
+                        <p className="mt-1 text-[11px] font-semibold text-slate-600">{plan.weeklyLabel}</p>
+                      </div>
+                      {plan.recommend ? (
+                        <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
+                          추천
+                        </span>
+                      ) : null}
+                    </div>
+                    <label className="mt-3 block text-[11px] font-extrabold text-slate-500" htmlFor={priceInputName(plan.tier)}>
+                      월 구독 캐시
+                    </label>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <input
+                        id={priceInputName(plan.tier)}
+                        name={priceInputName(plan.tier)}
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        step={100}
+                        className={inputClass}
+                        value={rawValue}
+                        onChange={(e) => handlePlanPriceChange(plan.tier, e.target.value)}
+                      />
+                      <span className="shrink-0 text-xs font-bold text-slate-500">캐시</span>
+                    </div>
+                    <p className="mt-2 text-[10px] font-semibold text-slate-500">
+                      권장 {rule.recommendedCashKrw.toLocaleString("ko-KR")} · 범위{" "}
+                      {rule.minCashKrw.toLocaleString("ko-KR")}~{rule.maxCashKrw.toLocaleString("ko-KR")}
+                    </p>
+                    {invalid ? (
+                      <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] font-bold text-red-700">
+                        1캐시 이상 입력해 주세요.
+                      </p>
+                    ) : outsideGuide ? (
+                      <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-800">
+                        권장 범위 밖이에요. 그래도 저장할 수 있어요.
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </section>
 
