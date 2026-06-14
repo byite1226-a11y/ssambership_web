@@ -18,25 +18,33 @@ function limitForTier(tier: SubscribePlanTier | null): number {
   return 0;
 }
 
-function seoulWeekBounds(): { start: Date; end: Date } {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-  }).formatToParts(now);
-  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value;
-  const y = Number(get("year"));
-  const m = Number(get("month"));
-  const d = Number(get("day"));
-  const wd = get("weekday");
-  const dayMap: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
-  const offset = wd ? dayMap[wd.slice(0, 3)] ?? 0 : 0;
-  const startLocal = new Date(Date.UTC(y, m - 1, d - offset, 0, 0, 0));
-  const endLocal = new Date(startLocal.getTime() + 7 * 24 * 60 * 60 * 1000);
-  return { start: startLocal, end: endLocal };
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+function isoFromRow(row: Record<string, unknown> | null | undefined, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return null;
+}
+
+export function subscriptionAnchorWeekBounds(
+  anchorValue: string | Date | null | undefined,
+  nowValue: Date = new Date()
+): { start: Date; end: Date } | null {
+  const anchor =
+    anchorValue instanceof Date
+      ? anchorValue
+      : typeof anchorValue === "string"
+        ? new Date(anchorValue)
+        : null;
+  if (!anchor || Number.isNaN(anchor.getTime())) return null;
+
+  const now = Number.isNaN(nowValue.getTime()) ? new Date() : nowValue;
+  const elapsed = Math.max(0, now.getTime() - anchor.getTime());
+  const periodIndex = Math.floor(elapsed / WEEK_MS);
+  const start = new Date(anchor.getTime() + periodIndex * WEEK_MS);
+  return { start, end: new Date(start.getTime() + WEEK_MS) };
 }
 
 function parseRpcWeeklyUsage(data: unknown): WeeklyQuestionUsage {
@@ -63,9 +71,11 @@ function parseRpcWeeklyUsage(data: unknown): WeeklyQuestionUsage {
 async function countConfirmedThisWeekFallback(
   supabase: SupabaseClient,
   studentId: string,
-  mentorId: string
+  mentorId: string,
+  bounds: { start: Date; end: Date } | null
 ): Promise<number> {
-  const { start, end } = seoulWeekBounds();
+  if (!bounds) return 0;
+  const { start, end } = bounds;
   const rooms = await supabase.from("mentor_student_rooms").select("id").eq("student_id", studentId).eq("mentor_id", mentorId);
   const roomIds = ((rooms.data as { id: string }[] | null) ?? []).map((r) => String(r.id));
   if (roomIds.length === 0) return 0;
@@ -111,8 +121,9 @@ export async function fetchWeeklyQuestionUsageWithFallback(
   const planTier =
     typeof tierRaw === "string" && isSubscribePlanTier(tierRaw) ? tierRaw : null;
   const limit = limitForTier(planTier);
-  const used = await countConfirmedThisWeekFallback(supabase, studentId, mentorId);
-  const { start, end } = seoulWeekBounds();
+  const anchor = isoFromRow(active?.row, ["started_at", "created_at"]);
+  const bounds = subscriptionAnchorWeekBounds(anchor);
+  const used = await countConfirmedThisWeekFallback(supabase, studentId, mentorId, bounds);
 
   return {
     usage: {
@@ -121,8 +132,8 @@ export async function fetchWeeklyQuestionUsageWithFallback(
       remaining: Math.max(0, limit - used),
       canAsk: used < limit,
       planTier,
-      weekStart: start.toISOString(),
-      weekEnd: end.toISOString(),
+      weekStart: bounds?.start.toISOString() ?? null,
+      weekEnd: bounds?.end.toISOString() ?? null,
     },
     error: error?.message ?? null,
   };

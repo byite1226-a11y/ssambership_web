@@ -469,7 +469,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     />
                   </div>
                   <p className="mt-1.5 space-y-0.5 text-[10px] text-slate-500">
-                    <span className="block">갱신: {subCtx?.weekRenewalLabel ?? "매주 월요일 00:00"}</span>
+                    <span className="block">갱신: {subCtx?.weekRenewalLabel ?? "구독 시작일 기준 7일마다"}</span>
                     <span className="block">구독 플랜: {subCtx?.planLabel ?? "—"}</span>
                     <span className="block">다음 갱신: {subCtx?.nextRenewalLabel ?? "—"}</span>
                   </p>
