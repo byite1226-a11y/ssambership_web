@@ -1,14 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic, loadMentorProfilesForDirectory } from "@/lib/auth/mentorPublicRead";
+import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
-import { isSubscribePlanTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { assignPlansByTier, isSubscribePlanTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { mentorPlanDebitAmountCents } from "@/lib/subscribe/mentorPlanPricing";
 import {
   SUBSCRIPTIONS_ORDER_COLUMN,
   SUBSCRIPTIONS_SELECT,
   SUBSCRIPTIONS_TABLE,
 } from "@/lib/subscribe/subscriptionsTable";
+import {
+  formatSubscriptionPeriodLabel,
+  nextBillingDisplayLabel,
+  subscriptionRenewalEnabled,
+  subscriptionStatusDisplayLabel,
+  subscriptionStatusTone,
+  weeklyQuestionResetLabel,
+  type SubscriptionStatusTone,
+} from "@/lib/subscribe/subscriptionDisplay";
 import {
   computeProratedRefundEstimate,
   formatCashFromCents,
@@ -26,6 +37,7 @@ export type StudentSubscriptionManagementItem = {
   planLabel: string;
   status: string;
   statusLabel: string;
+  statusTone: SubscriptionStatusTone;
   cancelAtPeriodEnd: boolean;
   canCancel: boolean;
   canUndoCancel: boolean;
@@ -33,14 +45,22 @@ export type StudentSubscriptionManagementItem = {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   nextBillingAt: string | null;
+  graceUntil: string | null;
+  currentPeriodLabel: string;
   currentPeriodEndLabel: string;
   nextBillingAtLabel: string;
+  nextBillingAmountCents: number | null;
+  nextBillingAmountLabel: string | null;
+  nextBillingDisplayLabel: string;
+  weeklyQuestionLimitLabel: string;
+  weeklyResetLabel: string;
   paymentId: string | null;
   latestBillingAmountCents: number | null;
   latestBillingAmountLabel: string;
   refundEstimate: ProratedRefundEstimate;
   refundEstimateLabel: string;
   pendingRefundId: string | null;
+  resubscribeHref: string;
 };
 
 export type StudentSubscriptionManagementList = {
@@ -73,25 +93,6 @@ function parsePlanTier(value: unknown): SubscribePlanTier | null {
 
 function normalizeStatus(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
-}
-
-function statusLabel(status: string, cancelAtPeriodEnd: boolean): string {
-  if (cancelAtPeriodEnd && (status === "active" || status === "past_due")) return "해지 예약";
-  switch (status) {
-    case "active":
-      return "이용 중";
-    case "past_due":
-      return "갱신 보류";
-    case "expired":
-      return "만료";
-    case "canceled":
-    case "cancelled":
-      return "해지";
-    case "refunded":
-      return "환불 완료";
-    default:
-      return status || "상태 확인 필요";
-  }
 }
 
 async function latestSucceededBillingEventsBySubscription(
@@ -149,6 +150,23 @@ async function pendingRefundsBySubscription(
   return out;
 }
 
+async function planRowsByMentorId(
+  supabase: SupabaseClient,
+  mentorIds: string[]
+): Promise<Map<string, Partial<Record<SubscribePlanTier, Row>>>> {
+  const out = new Map<string, Partial<Record<SubscribePlanTier, Row>>>();
+  await Promise.all(
+    mentorIds.map(async (mentorId) => {
+      const plans = await fetchPlansForMentor(supabase, mentorId);
+      if (plans.error) {
+        console.warn("[planRowsByMentorId]", { mentorId, error: plans.error });
+      }
+      out.set(mentorId, assignPlansByTier(plans.rows).byTier as Partial<Record<SubscribePlanTier, Row>>);
+    })
+  );
+  return out;
+}
+
 export async function loadStudentSubscriptionManagementList(
   supabase: SupabaseClient,
   studentId: string
@@ -167,10 +185,11 @@ export async function loadStudentSubscriptionManagementList(
   const subscriptionIds = rows.map((row) => stringValue(row.id)).filter(Boolean) as string[];
   const mentorIds = [...new Set(rows.map((row) => stringValue(row.mentor_id)).filter(Boolean))] as string[];
 
-  const [profilesLoad, billingBySubscription, pendingRefundBySubscription] = await Promise.all([
+  const [profilesLoad, billingBySubscription, pendingRefundBySubscription, planRowsByMentor] = await Promise.all([
     loadMentorProfilesForDirectory(supabase, mentorIds),
     latestSucceededBillingEventsBySubscription(supabase, subscriptionIds),
     pendingRefundsBySubscription(supabase, studentId, subscriptionIds),
+    planRowsByMentorId(supabase, mentorIds),
   ]);
 
   const usersByMentor = new Map<string, Awaited<ReturnType<typeof getMentorUserPublic>>["data"]>();
@@ -194,7 +213,12 @@ export async function loadStudentSubscriptionManagementList(
     const amountCents = numberValue(billingEvent?.amount_cents);
     const currentPeriodStart = stringValue(row.current_period_start) ?? stringValue(billingEvent?.period_start);
     const currentPeriodEnd = stringValue(row.current_period_end) ?? stringValue(billingEvent?.period_end);
+    const nextBillingAt = stringValue(row.next_billing_at);
+    const graceUntil = stringValue(row.grace_until);
     const paymentId = stringValue(billingEvent?.payment_id) ?? stringValue(row.payment_id);
+    const currentPlanRow = tier ? (planRowsByMentor.get(mentorId)?.[tier] ?? null) : null;
+    const nextBillingAmountCents = tier ? mentorPlanDebitAmountCents(currentPlanRow, tier) : null;
+    const nextBillingAmountLabel = nextBillingAmountCents == null ? null : formatCashFromCents(nextBillingAmountCents);
     const refundEstimate = computeProratedRefundEstimate({
       amountCents,
       periodStartIso: currentPeriodStart,
@@ -210,22 +234,37 @@ export async function loadStudentSubscriptionManagementList(
       planTier: tier,
       planLabel: tier ? `${getSubscribeCatalogPlan(tier).label} 플랜` : "구독 플랜",
       status,
-      statusLabel: statusLabel(status, cancelAtPeriodEnd),
+      statusLabel: subscriptionStatusDisplayLabel({ status, cancelAtPeriodEnd, currentPeriodEnd, graceUntil }),
+      statusTone: subscriptionStatusTone(status, cancelAtPeriodEnd),
       cancelAtPeriodEnd,
       canCancel: canUsePeriod && !cancelAtPeriodEnd,
       canUndoCancel: canUsePeriod && cancelAtPeriodEnd,
       canRequestRefund: canUsePeriod && refundEstimate.amountCents > 0 && !pendingRefundId,
       currentPeriodStart,
       currentPeriodEnd,
-      nextBillingAt: stringValue(row.next_billing_at),
+      nextBillingAt,
+      graceUntil,
+      currentPeriodLabel: formatSubscriptionPeriodLabel(currentPeriodStart, currentPeriodEnd),
       currentPeriodEndLabel: formatDateLabel(currentPeriodEnd),
-      nextBillingAtLabel: formatDateLabel(stringValue(row.next_billing_at)),
+      nextBillingAtLabel: formatDateLabel(nextBillingAt),
+      nextBillingAmountCents,
+      nextBillingAmountLabel,
+      nextBillingDisplayLabel: nextBillingDisplayLabel({
+        status,
+        cancelAtPeriodEnd,
+        nextBillingAt,
+        amountLabel: nextBillingAmountLabel,
+        renewalEnabled: subscriptionRenewalEnabled(),
+      }),
+      weeklyQuestionLimitLabel: tier ? getSubscribeCatalogPlan(tier).weeklyLabel : "—",
+      weeklyResetLabel: weeklyQuestionResetLabel(stringValue(row.started_at) ?? stringValue(row.created_at)),
       paymentId,
       latestBillingAmountCents: amountCents,
       latestBillingAmountLabel: amountCents == null ? "결제 금액 확인 필요" : formatCashFromCents(amountCents),
       refundEstimate,
       refundEstimateLabel: formatCashFromCents(refundEstimate.amountCents),
       pendingRefundId,
+      resubscribeHref: `/subscribe?mentorId=${encodeURIComponent(mentorId)}${tier ? `&plan=${encodeURIComponent(tier)}` : ""}`,
     };
   });
 

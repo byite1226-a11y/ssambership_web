@@ -25,6 +25,21 @@ function SubscriptionCardSkeleton() {
   );
 }
 
+function subscriptionStatusBadgeClass(tone: ActiveSubscriptionCard["statusTone"]): string {
+  switch (tone) {
+    case "active":
+      return "border-blue-100 bg-blue-50 text-blue-700";
+    case "scheduled":
+    case "pastDue":
+      return "border-amber-100 bg-amber-50 text-amber-700";
+    case "expired":
+    case "refunded":
+    case "neutral":
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600";
+  }
+}
+
 function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
   return (
     <article className="rounded-2xl border border-[#e2e8f2] bg-white p-5 transition hover:border-[#cbd5e1]">
@@ -43,16 +58,31 @@ function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-extrabold text-slate-900">{item.mentorName}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="truncate text-base font-extrabold text-slate-900">{item.mentorName}</h3>
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${subscriptionStatusBadgeClass(item.statusTone)}`}
+            >
+              {item.statusLabel}
+            </span>
+          </div>
           <p className="mt-1 text-sm font-bold text-[#2563eb]">{item.planLabel}</p>
-          <dl className="mt-2 grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
+          <dl className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>
-              <dt className="inline font-semibold text-slate-500">구독 시작 </dt>
-              <dd className="inline">{item.subscribedAtLabel}</dd>
+              <dt className="font-semibold text-slate-500">현재 기간</dt>
+              <dd className="mt-0.5 font-bold text-slate-900">{item.currentPeriodLabel}</dd>
             </div>
             <div>
-              <dt className="inline font-semibold text-slate-500">남은 질문 </dt>
-              <dd className="inline font-bold text-slate-800">{item.questionsRemainingLabel}</dd>
+              <dt className="font-semibold text-slate-500">다음 결제</dt>
+              <dd className="mt-0.5 font-bold text-slate-900">{item.nextBillingDisplayLabel}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-500">남은 질문</dt>
+              <dd className="mt-0.5 font-bold text-slate-900">{item.questionsRemainingLabel}</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-500">질문 리셋</dt>
+              <dd className="mt-0.5 font-bold text-slate-900">{item.weeklyResetLabel}</dd>
             </div>
           </dl>
         </div>

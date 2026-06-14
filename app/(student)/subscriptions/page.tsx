@@ -20,6 +20,21 @@ function firstParam(value: string | string[] | undefined): string | null {
   return null;
 }
 
+function subscriptionStatusBadgeClass(tone: string): string {
+  switch (tone) {
+    case "active":
+      return "border-blue-100 bg-blue-50 text-blue-700";
+    case "scheduled":
+    case "pastDue":
+      return "border-amber-100 bg-amber-50 text-amber-700";
+    case "expired":
+    case "refunded":
+    case "neutral":
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600";
+  }
+}
+
 export default async function StudentSubscriptionsPage(props: PageProps) {
   const sp = (await props.searchParams) ?? {};
   const flashOk = firstParam(sp.ok);
@@ -36,7 +51,7 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
   ]);
   const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
   const activeCount = subscriptionList.items.filter((item) => item.status === "active" && !item.cancelAtPeriodEnd).length;
-  const scheduledCancelCount = subscriptionList.items.filter((item) => item.cancelAtPeriodEnd).length;
+  const scheduledCancelCount = subscriptionList.items.filter((item) => item.statusTone === "scheduled").length;
 
   return (
     <StudentDashboardShell
@@ -133,29 +148,29 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
                         {item.planLabel}
                       </span>
                       <span
-                        className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${
-                          item.cancelAtPeriodEnd
-                            ? "border-amber-100 bg-amber-50 text-amber-700"
-                            : item.status === "active"
-                              ? "border-emerald-100 bg-emerald-50 text-emerald-700"
-                              : "border-slate-200 bg-slate-50 text-slate-600"
-                        }`}
+                        className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${subscriptionStatusBadgeClass(item.statusTone)}`}
                       >
                         {item.statusLabel}
                       </span>
                     </div>
-                    <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                    <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
                       <div className="rounded-xl bg-slate-50 px-4 py-3">
-                        <dt className="text-xs font-bold text-slate-500">현재 기간 종료</dt>
-                        <dd className="mt-1 font-extrabold text-slate-900">{item.currentPeriodEndLabel}</dd>
+                        <dt className="text-xs font-bold text-slate-500">현재 기간</dt>
+                        <dd className="mt-1 font-extrabold text-slate-900">{item.currentPeriodLabel}</dd>
                       </div>
                       <div className="rounded-xl bg-slate-50 px-4 py-3">
                         <dt className="text-xs font-bold text-slate-500">다음 결제일</dt>
-                        <dd className="mt-1 font-extrabold text-slate-900">
-                          {item.cancelAtPeriodEnd ? "갱신 중단 예정" : item.nextBillingAtLabel}
-                        </dd>
+                        <dd className="mt-1 font-extrabold text-slate-900">{item.nextBillingDisplayLabel}</dd>
                       </div>
                       <div className="rounded-xl bg-slate-50 px-4 py-3">
+                        <dt className="text-xs font-bold text-slate-500">주간 질문 한도</dt>
+                        <dd className="mt-1 font-extrabold text-slate-900">{item.weeklyQuestionLimitLabel}</dd>
+                      </div>
+                      <div className="rounded-xl bg-slate-50 px-4 py-3">
+                        <dt className="text-xs font-bold text-slate-500">질문 리셋</dt>
+                        <dd className="mt-1 font-extrabold text-slate-900">{item.weeklyResetLabel}</dd>
+                      </div>
+                      <div className="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2 xl:col-span-4">
                         <dt className="text-xs font-bold text-slate-500">예상 잔여 환불액</dt>
                         <dd className="mt-1 font-extrabold text-slate-900">{item.refundEstimateLabel}</dd>
                       </div>
@@ -177,7 +192,7 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
                       <form action={requestSubscriptionCancelAtPeriodEndAction}>
                         <input type="hidden" name="subscriptionId" value={item.subscriptionId} />
                         <FormSubmitButton
-                          idleLabel="구독 해지"
+                          idleLabel="해지 예약"
                           pendingLabel="저장 중..."
                           className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-extrabold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         />
@@ -193,17 +208,26 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
                         />
                       </form>
                     ) : null}
-                    <Link
-                      href={`/support/refunds?subscriptionId=${encodeURIComponent(item.subscriptionId)}`}
-                      className={`rounded-xl px-4 py-2 text-center text-sm font-extrabold ${
-                        item.canRequestRefund
-                          ? "bg-blue-600 text-white hover:bg-blue-700"
-                          : "bg-slate-100 text-slate-400 pointer-events-none"
-                      }`}
-                      aria-disabled={!item.canRequestRefund}
-                    >
-                      환불 신청
-                    </Link>
+                    {item.statusTone === "expired" || item.statusTone === "refunded" ? (
+                      <Link
+                        href={item.resubscribeHref}
+                        className="rounded-xl bg-blue-600 px-4 py-2 text-center text-sm font-extrabold text-white hover:bg-blue-700"
+                      >
+                        재구독
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/support/refunds?subscriptionId=${encodeURIComponent(item.subscriptionId)}`}
+                        className={`rounded-xl px-4 py-2 text-center text-sm font-extrabold ${
+                          item.canRequestRefund
+                            ? "bg-blue-600 text-white hover:bg-blue-700"
+                            : "bg-slate-100 text-slate-400 pointer-events-none"
+                        }`}
+                        aria-disabled={!item.canRequestRefund}
+                      >
+                        환불 신청
+                      </Link>
+                    )}
                   </div>
                 </div>
               </article>
