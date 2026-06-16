@@ -105,7 +105,7 @@ export default async function NewDirectIndividualQuestionPage(props: PageProps) 
             </Link>
           </div>
         ) : (
-          <form action={createDirectIndividualQuestionAction} encType="multipart/form-data" className="mt-6 space-y-5">
+          <form action={createDirectIndividualQuestionAction} className="mt-6 space-y-5">
             <input type="hidden" name="mentorId" value={mentorId} />
             <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
 

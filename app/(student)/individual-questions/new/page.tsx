@@ -78,7 +78,7 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
           </div>
         </dl>
 
-        <form action={createOpenIndividualQuestionAction} encType="multipart/form-data" className="mt-6 space-y-5">
+        <form action={createOpenIndividualQuestionAction} className="mt-6 space-y-5">
           <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
 
           <div className="grid gap-4 sm:grid-cols-2">
