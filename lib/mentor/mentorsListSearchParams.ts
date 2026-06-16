@@ -1,3 +1,5 @@
+import { getMajorSubjects } from "@/lib/subjects/subjectCatalog";
+
 export type MentorsListSort =
   | "popular"
   | "new"
@@ -9,14 +11,8 @@ export type MentorsListSort =
 
 export type MentorsListView = "list" | "grid";
 
-export type MentorSubjectFilter =
-  | ""
-  | "수학"
-  | "영어"
-  | "국어"
-  | "과학"
-  | "사회"
-  | "논술";
+// 과목 정본(subjectCatalog) 대분류 라벨 기반. teaching_subjects(자유 텍스트) 라벨 매칭 호환.
+export type MentorSubjectFilter = string;
 
 export type MentorGradeFilter = "중등" | "고등" | "N수";
 
@@ -67,14 +63,12 @@ export function defaultMentorsListFilters(overrides?: Partial<MentorsListFilters
   };
 }
 
+// 대분류 라벨을 필터 id로 사용(매칭은 소분류 라벨까지 확장 — publicMentorsListQueries). 기타 제외.
 export const MENTOR_SUBJECT_OPTIONS: { id: MentorSubjectFilter; label: string }[] = [
   { id: "", label: "전체" },
-  { id: "수학", label: "수학" },
-  { id: "영어", label: "영어" },
-  { id: "국어", label: "국어" },
-  { id: "과학", label: "과학" },
-  { id: "사회", label: "사회" },
-  { id: "논술", label: "논술" },
+  ...getMajorSubjects()
+    .filter((m) => m.code !== "etc")
+    .map((m) => ({ id: m.label, label: m.label })),
 ];
 
 export const MENTOR_GRADE_OPTIONS: { id: MentorGradeFilter; label: string }[] = [

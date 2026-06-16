@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import "@/app/(public)/custom-request/landing.css";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { SubjectSelectOptions } from "@/components/subjects/SubjectSelectOptions";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createDirectIndividualQuestionAction } from "@/lib/individualQuestion/individualQuestionActions";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
@@ -17,16 +18,6 @@ type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const SUBJECT_OPTIONS = [
-  { value: "korean", label: "국어" },
-  { value: "english", label: "영어" },
-  { value: "math", label: "수학" },
-  { value: "science", label: "과학" },
-  { value: "social", label: "사회·역사" },
-  { value: "essay", label: "논술·글쓰기" },
-  { value: "career", label: "진로·입시" },
-  { value: "etc", label: "기타" },
-];
 
 function firstParam(value: string | string[] | undefined): string | null {
   if (typeof value === "string") return value;
@@ -118,11 +109,7 @@ export default async function NewDirectIndividualQuestionPage(props: PageProps) 
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">선택 안 함</option>
-                  {SUBJECT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
+                  <SubjectSelectOptions />
                 </select>
               </label>
               <label className="block">

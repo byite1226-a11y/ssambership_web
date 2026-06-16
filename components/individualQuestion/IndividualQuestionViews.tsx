@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CheckCircle2, Clock, MessageSquareText, Paperclip, WalletCards } from "lucide-react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { getSubjectLabel } from "@/lib/subjects/subjectCatalog";
 import {
   answerDirectIndividualQuestionAction,
   claimOpenIndividualQuestionAction,
@@ -157,7 +158,7 @@ export function OpenIndividualQuestionBrowseCards(props: {
                   본문과 첨부는 답변을 맡은 뒤에만 열람할 수 있어요.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-                  {row.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {row.subject}</span> : null}
+                  {row.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {getSubjectLabel(row.subject)}</span> : null}
                   {row.topic ? <span className="rounded-full bg-slate-100 px-2.5 py-1">단원 {row.topic}</span> : null}
                   <span className="rounded-full bg-slate-100 px-2.5 py-1">등록 {formatIndividualQuestionDate(row.created_at)}</span>
                   {remainingLabel ? (
@@ -275,7 +276,7 @@ export function IndividualQuestionDetailView(props: {
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{detail.body}</p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-              {detail.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {detail.subject}</span> : null}
+              {detail.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {getSubjectLabel(detail.subject)}</span> : null}
               {detail.topic ? <span className="rounded-full bg-slate-100 px-2.5 py-1">단원 {detail.topic}</span> : null}
             </div>
           </div>
