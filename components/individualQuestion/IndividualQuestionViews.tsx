@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Clock, MessageSquareText, Paperclip, WalletCards } from "lucide-react";
+import { CheckCircle2, Clock, MessageSquareText, Paperclip, WalletCards } from "lucide-react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import {
   answerDirectIndividualQuestionAction,
   claimOpenIndividualQuestionAction,
+  confirmIndividualQuestionAnswerAction,
 } from "@/lib/individualQuestion/individualQuestionActions";
 import {
   formatIndividualQuestionDate,
@@ -219,6 +220,7 @@ export function IndividualQuestionDetailView(props: {
   backLabel: string;
   actor: "student" | "mentor";
   canAnswer?: boolean;
+  canConfirm?: boolean;
   flash?: string | null;
   warning?: string | null;
 }) {
@@ -322,15 +324,15 @@ export function IndividualQuestionDetailView(props: {
             <section>
               <SectionTitle
                 title="답변 작성"
-                hint="답변 완료를 누르면 예치 금액이 멘토 지갑으로 지급됩니다."
+                hint="답변을 등록하면 학생이 확인 후 [해결됨]으로 확정할 때 예치 금액이 지급됩니다."
                 right={
                   <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
                     <WalletCards className="h-3.5 w-3.5" aria-hidden />
-                    답변 완료 즉시 지급
+                    학생 확정 시 지급
                   </span>
                 }
               />
-              <form action={answerDirectIndividualQuestionAction} encType="multipart/form-data" className="space-y-3">
+              <form action={answerDirectIndividualQuestionAction} className="space-y-3">
                 <input type="hidden" name="questionId" value={detail.id} />
                 <textarea
                   name="body"
@@ -347,12 +349,43 @@ export function IndividualQuestionDetailView(props: {
                 />
                 <div className="flex justify-end">
                   <FormSubmitButton
-                    idleLabel="답변 완료"
+                    idleLabel="답변 등록"
                     pendingLabel="처리 중..."
                     className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                 </div>
               </form>
+            </section>
+          </>
+        ) : null}
+
+        {props.canConfirm ? (
+          <>
+            <hr className="cr-detail-divider" />
+            <section>
+              <SectionTitle
+                title="답변 확정"
+                hint="답변이 도움이 되었다면 [해결됨]을 눌러 주세요. 확정하면 예치한 캐시가 멘토에게 지급됩니다."
+                right={
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                    확정 시 지급
+                  </span>
+                }
+              />
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+                <p className="text-sm leading-6 text-slate-700">
+                  멘토가 답변을 등록했어요. 확인 후 확정하면 정산이 완료됩니다. 확정 전까지 예치 캐시는 보관됩니다.
+                </p>
+                <form action={confirmIndividualQuestionAnswerAction} className="mt-3 flex justify-end">
+                  <input type="hidden" name="questionId" value={detail.id} />
+                  <FormSubmitButton
+                    idleLabel="해결됨 (답변 확정)"
+                    pendingLabel="확정 처리 중..."
+                    className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </form>
+              </div>
             </section>
           </>
         ) : null}

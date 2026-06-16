@@ -135,8 +135,8 @@ async function notifyOpenQuestionClaimed(
   });
 }
 
-// 답변 완료 → 학생에게 best-effort 알림. (status=answered 전환 + 지급 성공 후 1회 → 멱등)
-async function notifyAnswerReleased(
+// 답변 등록 → 학생에게 best-effort 알림. (status=answered 전환 후 1회 → 멱등) 아직 지급 전.
+async function notifyAnswerRegistered(
   supabase: ReturnType<typeof createServiceRoleClient>,
   args: { studentId: string; questionId: string }
 ): Promise<void> {
@@ -144,8 +144,23 @@ async function notifyAnswerReleased(
     recipientUserId: args.studentId,
     type: "individual_question_answered",
     title: "답변이 등록되었어요",
-    body: "개별 질문에 답변이 등록되었어요. 예치한 캐시는 멘토에게 지급되었습니다.",
+    body: "개별 질문에 답변이 등록되었어요. 내용을 확인하고 [해결됨]을 누르면 예치 캐시가 멘토에게 지급돼요.",
     link: `${STUDENT_LIST_PATH}/${args.questionId}`,
+    metadata: { questionId: args.questionId },
+  });
+}
+
+// 학생 확정 → 멘토에게 best-effort 알림. (release 성공 1회 → 멱등)
+async function notifyAnswerConfirmed(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  args: { mentorId: string; questionId: string }
+): Promise<void> {
+  await insertNotificationBestEffort({
+    recipientUserId: args.mentorId,
+    type: "individual_question_released",
+    title: "학생이 답변을 확정했어요",
+    body: "학생이 답변을 확정해 예치 캐시가 지급되었어요.",
+    link: `${MENTOR_LIST_PATH}/${args.questionId}`,
     metadata: { questionId: args.questionId },
   });
 }
@@ -407,16 +422,9 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
     actionError(detailPath, "답변 상태를 저장하지 못했습니다.");
   }
 
-  const { data: payoutData, error: payoutError } = await admin.rpc("release_individual_question_payout", {
-    p_question_id: questionId,
-  });
-  const payout = firstRpcResult(payoutData as IndividualQuestionRpcResult);
-  if (payoutError || !payout?.ok) {
-    actionError(detailPath, "답변은 저장되었지만 지급 처리에 실패했습니다. 관리자에게 문의해 주세요.");
-  }
-
+  // 지급은 즉시 하지 않는다. 학생이 [해결됨]으로 확정할 때 release를 호출(2단계 정산).
   if (row.student_id) {
-    await notifyAnswerReleased(admin, { studentId: row.student_id, questionId });
+    await notifyAnswerRegistered(admin, { studentId: row.student_id, questionId });
   }
 
   revalidatePath(MENTOR_LIST_PATH);
@@ -424,4 +432,62 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
   revalidatePath(STUDENT_LIST_PATH);
   revalidatePath(`${STUDENT_LIST_PATH}/${questionId}`);
   redirect(`${MENTOR_LIST_PATH}/${questionId}?answered=1`);
+}
+
+// 학생이 답변을 확정([해결됨]) → 그때 멘토 지급(release). 본인·answered 상태만.
+export async function confirmIndividualQuestionAnswerAction(formData: FormData) {
+  const { user } = await requireRole("student");
+  const questionId = textValue(formData, "questionId");
+  const detailPath = questionId ? `${STUDENT_LIST_PATH}/${encodeURIComponent(questionId)}` : STUDENT_LIST_PATH;
+  if (!questionId) actionError(STUDENT_LIST_PATH, "질문 정보가 올바르지 않습니다.");
+
+  const admin = createServiceRoleClient();
+  const { data: question, error: questionError } = await admin
+    .from("individual_questions")
+    .select("id, student_id, status, designated_mentor_id, claimed_mentor_id, release_ledger_id")
+    .eq("id", questionId)
+    .maybeSingle();
+
+  const row = question as
+    | {
+        id: string;
+        student_id: string | null;
+        status: string;
+        designated_mentor_id: string | null;
+        claimed_mentor_id: string | null;
+        release_ledger_id: string | null;
+      }
+    | null;
+
+  if (questionError || !row) actionError(STUDENT_LIST_PATH, "개별 질문을 찾을 수 없습니다.");
+  if (row.student_id !== user.id) actionError(STUDENT_LIST_PATH, "이 질문을 확정할 권한이 없습니다.");
+  if (row.release_ledger_id || row.status === "released") {
+    redirect(`${detailPath}?resolved=1`);
+  }
+  if (row.status === "refunded" || row.status === "expired" || row.status === "canceled") {
+    actionError(detailPath, "이미 종료된 질문입니다.");
+  }
+  if (row.status !== "answered") {
+    actionError(detailPath, "멘토 답변이 등록된 뒤에 확정할 수 있어요.");
+  }
+
+  // 지급은 070 RPC만 경유(멱등). 지갑 직접 조작 금지.
+  const { data: payoutData, error: payoutError } = await admin.rpc("release_individual_question_payout", {
+    p_question_id: questionId,
+  });
+  const payout = firstRpcResult(payoutData as IndividualQuestionRpcResult);
+  if (payoutError || !payout?.ok) {
+    actionError(detailPath, "지급 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+
+  const mentorId = row.claimed_mentor_id ?? row.designated_mentor_id;
+  if (mentorId) {
+    await notifyAnswerConfirmed(admin, { mentorId, questionId });
+  }
+
+  revalidatePath(MENTOR_LIST_PATH);
+  revalidatePath(`${MENTOR_LIST_PATH}/${questionId}`);
+  revalidatePath(STUDENT_LIST_PATH);
+  revalidatePath(`${STUDENT_LIST_PATH}/${questionId}`);
+  redirect(`${detailPath}?resolved=1`);
 }

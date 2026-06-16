@@ -27,7 +27,15 @@ export default async function StudentIndividualQuestionDetailPage(props: PagePro
   if (detail.student_id !== user.id) redirect("/individual-questions");
 
   const created = firstParam(sp.created);
+  const resolved = firstParam(sp.resolved);
   const warning = firstParam(sp.warning);
+  const canConfirm = detail.student_id === user.id && detail.status === "answered";
+
+  const flash = resolved
+    ? "답변을 확정했어요. 예치 금액이 멘토에게 지급되었습니다."
+    : created
+      ? "질문이 전달되었어요. 예치 금액은 답변을 확정하기 전까지 보관됩니다."
+      : null;
 
   return (
     <IndividualQuestionDetailView
@@ -35,7 +43,8 @@ export default async function StudentIndividualQuestionDetailPage(props: PagePro
       actor="student"
       backHref="/individual-questions"
       backLabel="내 개별 질문 목록"
-      flash={created ? "질문이 전달되었어요. 예치 금액은 답변 완료 전까지 보관됩니다." : null}
+      canConfirm={canConfirm}
+      flash={flash}
       warning={warning}
     />
   );
