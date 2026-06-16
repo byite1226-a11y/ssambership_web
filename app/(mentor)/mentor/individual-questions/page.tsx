@@ -84,7 +84,7 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
             <IndividualQuestionListCards
               rows={rows}
               emptyTitle="아직 맡은 개별 질문이 없습니다"
-              emptyDescription="학생이 멘토를 지정하거나 공개 질문을 가져가면 이곳에 표시됩니다."
+              emptyDescription="학생이 멘토를 지정하거나 공개 질문에 답변을 맡으면 이곳에 표시됩니다."
               detailBaseHref="/mentor/individual-questions"
               counterpartLabel="학생"
             />
@@ -99,7 +99,7 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
               <IndividualQuestionListCards
                 rows={awaitingRows}
                 emptyTitle="답변할 질문이 없어요"
-                emptyDescription="새 지정 질문이 도착하거나 공개 질문을 가져가면 이곳에 표시됩니다."
+                emptyDescription="새 지정 질문이 도착하거나 공개 질문에 답변을 맡으면 이곳에 표시됩니다."
                 detailBaseHref="/mentor/individual-questions"
                 counterpartLabel="학생"
               />
@@ -132,10 +132,10 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
           <div className="mb-4">
             <h2 className="cr-section-title-v5">
               <span className="bar" aria-hidden />
-              공개 질문 가져가기
+              공개 질문 답변하기
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              학생 신원과 본문은 가져가기 전에는 공개되지 않습니다. 먼저 가져간 멘토 1명만 답변할 수 있어요.
+              학생 신원과 본문은 답변을 맡기 전에는 공개되지 않습니다. 먼저 답변하기를 누른 멘토 1명만 답변할 수 있어요.
             </p>
           </div>
           <OpenIndividualQuestionBrowseCards rows={openList.rows} error={openList.error} />

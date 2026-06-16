@@ -4,11 +4,7 @@ import "@/app/(public)/custom-request/landing.css";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createOpenIndividualQuestionAction } from "@/lib/individualQuestion/individualQuestionActions";
-import {
-  OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CASH,
-  OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CASH,
-  OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH,
-} from "@/lib/individualQuestion/individualQuestionTypes";
+import { OPEN_INDIVIDUAL_QUESTION_PRICE_PLACEHOLDER_CASH } from "@/lib/individualQuestion/individualQuestionTypes";
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -57,23 +53,14 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
           </p>
         ) : null}
 
-        <dl className="grid gap-3 rounded-2xl bg-[#eef4ff] p-4 sm:grid-cols-3">
+        <dl className="grid gap-3 rounded-2xl bg-[#eef4ff] p-4 sm:grid-cols-2">
           <div>
             <dt className="text-xs font-extrabold text-blue-700">질문 방식</dt>
-            <dd className="mt-1 text-sm font-black text-slate-900">공개형 · 선착순 claim</dd>
+            <dd className="mt-1 text-sm font-black text-slate-900">공개형 · 먼저 답변하는 멘토 1명</dd>
           </div>
           <div>
-            <dt className="text-xs font-extrabold text-blue-700">최소 금액</dt>
-            <dd className="mt-1 text-sm font-black text-slate-900">
-              {OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH.toLocaleString("ko-KR")}캐시
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-extrabold text-blue-700">권장 범위</dt>
-            <dd className="mt-1 text-sm font-black text-slate-900">
-              {OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CASH.toLocaleString("ko-KR")}~
-              {OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CASH.toLocaleString("ko-KR")}캐시
-            </dd>
+            <dt className="text-xs font-extrabold text-blue-700">제시 금액</dt>
+            <dd className="mt-1 text-sm font-black text-slate-900">자유롭게 제시하세요</dd>
           </div>
         </dl>
 
@@ -97,7 +84,7 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-extrabold text-slate-900">단원·개념</span>
+              <span className="text-sm font-extrabold text-slate-900">단원·개념 <span className="font-semibold text-slate-400">(선택)</span></span>
               <input
                 name="topic"
                 type="text"
@@ -114,13 +101,13 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
               type="number"
               inputMode="numeric"
               required
-              min={OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH}
+              min={1}
               step={100}
-              placeholder={String(OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CASH)}
+              placeholder={String(OPEN_INDIVIDUAL_QUESTION_PRICE_PLACEHOLDER_CASH)}
               className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
             />
             <span className="mt-1 block text-xs font-semibold text-slate-500">
-              최소 금액만 강제됩니다. 권장 범위를 벗어나도 등록할 수 있지만, 답변 속도가 달라질 수 있어요.
+              금액은 자유롭게 제시할 수 있어요(0보다 큰 캐시). 금액이 높을수록 답변이 빨라질 수 있어요.
             </span>
           </label>
 
@@ -156,7 +143,7 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
               type="file"
               className="mt-2 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
             />
-            <span className="mt-1 block text-xs font-semibold text-slate-500">내가 올린 파일은 언제든 다시 볼 수 있어요. 다른 멘토에게는 질문을 가져가기 전까지 공개되지 않습니다.</span>
+            <span className="mt-1 block text-xs font-semibold text-slate-500">내가 올린 파일은 언제든 다시 볼 수 있어요. 다른 멘토에게는 답변을 맡기 전까지 공개되지 않습니다.</span>
           </label>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

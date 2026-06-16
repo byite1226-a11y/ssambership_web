@@ -129,7 +129,7 @@ export function OpenIndividualQuestionBrowseCards(props: {
   if (props.rows.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-base font-black text-slate-900">가져갈 수 있는 공개 질문이 없습니다</p>
+        <p className="text-base font-black text-slate-900">답변할 수 있는 공개 질문이 없습니다</p>
         <p className="mt-2 text-sm text-slate-500">학생이 공개형 질문을 등록하면 이곳에 표시됩니다.</p>
       </div>
     );
@@ -154,7 +154,7 @@ export function OpenIndividualQuestionBrowseCards(props: {
                 </div>
                 <h2 className="mt-2 text-lg font-black text-slate-900">{row.title}</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
-                  본문과 첨부는 가져가기 성공 후에만 열람할 수 있어요.
+                  본문과 첨부는 답변을 맡은 뒤에만 열람할 수 있어요.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
                   {row.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {row.subject}</span> : null}
@@ -170,7 +170,7 @@ export function OpenIndividualQuestionBrowseCards(props: {
               <form action={claimOpenIndividualQuestionAction} className="shrink-0">
                 <input type="hidden" name="questionId" value={row.id} />
                 <FormSubmitButton
-                  idleLabel="가져가기"
+                  idleLabel="답변하기"
                   pendingLabel="확인 중..."
                   className="w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
                 />

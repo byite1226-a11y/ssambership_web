@@ -44,7 +44,7 @@ export default async function MentorIndividualQuestionDetailPage(props: PageProp
       backHref="/mentor/individual-questions"
       backLabel="개별 질문 목록"
       canAnswer={canAnswer}
-      flash={answered ? "답변을 등록했어요. 학생이 확정하면 예치 금액이 지급됩니다." : claimed ? "공개 질문을 가져왔어요. 이제 답변을 작성할 수 있습니다." : null}
+      flash={answered ? "답변을 등록했어요. 학생이 확정하면 예치 금액이 지급됩니다." : claimed ? "공개 질문 답변을 맡았어요. 이제 답변을 작성할 수 있습니다." : null}
     />
   );
 }

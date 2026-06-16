@@ -5,10 +5,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
-import {
-  OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH,
-  type IndividualQuestionEscrowResult,
-} from "@/lib/individualQuestion/individualQuestionTypes";
+import { type IndividualQuestionEscrowResult } from "@/lib/individualQuestion/individualQuestionTypes";
 import { amountCentsFromCashKrw } from "@/lib/subscribe/mentorPlanPricing";
 import {
   fileHasContent,
@@ -129,7 +126,7 @@ async function notifyOpenQuestionClaimed(
   await insertNotificationBestEffort({
     recipientUserId: args.studentId,
     type: "individual_question_claimed",
-    title: "멘토가 질문을 가져갔어요",
+    title: "멘토가 답변을 맡았어요",
     body: `${mentorName}가 공개 질문을 맡았어요. 곧 답변을 받을 수 있어요.`,
     link: `${STUDENT_LIST_PATH}/${args.questionId}`,
     metadata: { questionId: args.questionId, questionType: "open" },
@@ -248,8 +245,9 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
 
   if (!idempotencyKey) actionError(returnPath, "제출 정보가 만료되었습니다. 다시 시도해 주세요.");
   if (!title || !body) actionError(returnPath, "제목과 내용을 모두 입력해 주세요.");
-  if (!priceCash || priceCash < OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH) {
-    actionError(returnPath, `공개 질문은 최소 ${OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH.toLocaleString("ko-KR")}캐시 이상으로 등록해 주세요.`);
+  // 금액 자유화: 최소/최대 강제 없음. 단 0·음수·빈값은 차단(positiveIntegerValue가 양수만 반환).
+  if (!priceCash) {
+    actionError(returnPath, "예치할 금액을 0보다 큰 캐시로 입력해 주세요.");
   }
 
   const admin = createServiceRoleClient();
@@ -306,7 +304,7 @@ export async function claimOpenIndividualQuestionAction(formData: FormData) {
   });
   const result = firstRpcResult(data as IndividualQuestionRpcResult);
   if (error || !result?.ok || !result.question_id) {
-    actionError(MENTOR_LIST_PATH, "다른 멘토가 먼저 가져갔어요. 목록을 새로 확인해 주세요.");
+    actionError(MENTOR_LIST_PATH, "이미 다른 멘토가 답변을 맡았어요. 목록을 새로 확인해 주세요.");
   }
 
   await setQuestionExpiryBestEffort(admin, result.question_id, "claimed");
