@@ -157,7 +157,7 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
               type="file"
               className="mt-2 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
             />
-            <span className="mt-1 block text-xs font-semibold text-slate-500">멘토가 가져간 뒤에만 열람할 수 있어요.</span>
+            <span className="mt-1 block text-xs font-semibold text-slate-500">내가 올린 파일은 언제든 다시 볼 수 있어요. 다른 멘토에게는 질문을 가져가기 전까지 공개되지 않습니다.</span>
           </label>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
