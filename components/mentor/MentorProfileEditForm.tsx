@@ -15,6 +15,8 @@ import {
   mentorSubscriptionPriceRule,
 } from "@/lib/subscribe/mentorPlanPricing";
 import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus } from "lucide-react";
+import { MentorSubjectCheckboxes } from "@/components/subjects/MentorSubjectCheckboxes";
+import { subjectCodesFromText } from "@/lib/subjects/subjectCatalog";
 
 type Q = { 
   row: Record<string, unknown> | null; 
@@ -114,6 +116,16 @@ export function MentorProfileEditForm(props: {
 
   const handlePlanPriceChange = (tier: string, value: string) => {
     setPlanPrices((prev) => ({ ...prev, [tier]: value }));
+  };
+
+  // 담당과목: formData.subjects(콤마 결합)에서 정본 code 파생. 토글 시 code 결합으로 갱신.
+  // (미선택/레거시 자유텍스트는 첫 토글 전까지 그대로 보존 — 강제 변환 없음)
+  const subjectCodes = subjectCodesFromText(formData.subjects);
+  const toggleSubjectCode = (code: string) => {
+    const next = new Set(subjectCodes);
+    if (next.has(code)) next.delete(code);
+    else next.add(code);
+    setFormData((prev) => ({ ...prev, subjects: [...next].join(",") }));
   };
 
   const previewDisplay: MentorProfileDisplay = {
@@ -310,16 +322,15 @@ export function MentorProfileEditForm(props: {
           <section className="space-y-6">
             <SectionHeader number="3" title="전공 및 과목" required />
             <div>
-              <label className={labelClass} htmlFor="subjects">과목 태그</label>
-              <p className="mt-1 text-xs font-medium text-slate-500">쉼표(,)로 구분해 입력하세요. 예: 수학, 영어, 논술</p>
-              <input
-                id="subjects"
-                name="subjects"
-                className={`${inputClass} mt-2`}
-                value={formData.subjects}
-                onChange={handleChange}
-                placeholder="수학, 영어, 물리"
-              />
+              <label className={labelClass}>담당 과목</label>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                가르치는 과목을 모두 선택하세요. 대분류를 펼쳐 세부 과목을 고를 수 있어요.
+              </p>
+              <div className="mt-2">
+                <MentorSubjectCheckboxes selected={subjectCodes} onToggle={toggleSubjectCode} />
+              </div>
+              {/* 저장은 기존 경로 유지: name="subjects" 콤마 결합 code. (mutation이 split→text[]) */}
+              <input type="hidden" name="subjects" value={formData.subjects} />
               <input type="hidden" name="tags" value={initial.tags} />
             </div>
           </section>

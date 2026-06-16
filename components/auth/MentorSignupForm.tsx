@@ -1,5 +1,7 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { UploadCloud } from "lucide-react";
+import { MentorSubjectCheckboxes } from "@/components/subjects/MentorSubjectCheckboxes";
+import { subjectCodesFromText } from "@/lib/subjects/subjectCatalog";
 
 export type MentorSignupFormValues = {
   nickname: string;
@@ -55,6 +57,15 @@ export function MentorSignupForm({ value, onChange, disabled, fieldErrors }: Men
       return;
     }
     onChange(patch(value, { [k]: ev.target.value } as Pick<MentorSignupFormValues, K>));
+  }
+
+  // 담당과목: 정본 code 선택 → csv 직렬화(기존 가입 경로의 teaching_subjects_csv 호환).
+  const subjectCodes = subjectCodesFromText(value.teachingSubjectsCsv);
+  function toggleSubjectCode(code: string) {
+    const next = new Set(subjectCodes);
+    if (next.has(code)) next.delete(code);
+    else next.add(code);
+    onChange(patch(value, { teachingSubjectsCsv: [...next].join(",") }));
   }
 
   return (
@@ -174,24 +185,18 @@ export function MentorSignupForm({ value, onChange, disabled, fieldErrors }: Men
           전공 과목
         </SectionHeader>
         <div>
-          <label htmlFor="m-sub" className={label}>
-            전공과목 <span className="text-red-500">*</span>
+          <label className={label}>
+            담당 과목 <span className="text-red-500">*</span>
           </label>
-          <input
-            id="m-sub"
-            className={input}
-            value={value.teachingSubjectsCsv}
-            onChange={(e) => hText("teachingSubjectsCsv", e)}
-            disabled={disabled}
-            placeholder="쉼표로 구분 (예: 수학, 국어, 수능)"
-            aria-invalid={!!fieldErrors?.teachingSubjectsCsv}
-          />
+          <div className="mt-2">
+            <MentorSubjectCheckboxes selected={subjectCodes} onToggle={toggleSubjectCode} disabled={disabled} />
+          </div>
           {fieldErrors?.teachingSubjectsCsv ? (
             <p className="mt-1.5 text-sm text-red-600" role="alert">
               {fieldErrors.teachingSubjectsCsv}
             </p>
           ) : (
-            <p className={hint}>답변이 기대되는 과목(분야)을 적어 주세요. 띄어쓰기는 그대로 반영돼요.</p>
+            <p className={hint}>가르치는 과목을 모두 선택하세요. 대분류를 펼쳐 세부 과목을 고를 수 있어요.</p>
           )}
         </div>
       </section>

@@ -132,3 +132,18 @@ export function normalizeSubjectCode(input: unknown): string | null {
   if (BY_CODE.has(trimmed)) return trimmed;
   return LABEL_TO_CODE.get(trimmed) ?? LEGACY_LABEL_TO_CODE.get(trimmed) ?? null;
 }
+
+/** 콤마/구분자 텍스트(또는 배열 join) → 정규화된 code 배열(중복 제거). 못 맞춘 토큰은 버린다. */
+export function subjectCodesFromText(input: unknown): string[] {
+  if (typeof input !== "string" || !input.trim()) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of input.split(/[,，、·]/)) {
+    const code = normalizeSubjectCode(raw);
+    if (code && !seen.has(code)) {
+      seen.add(code);
+      out.push(code);
+    }
+  }
+  return out;
+}
