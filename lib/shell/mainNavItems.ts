@@ -32,6 +32,7 @@ function isPayoutNavItem(item: MainNavItem): boolean {
 export const publicMainNav: MainNavItem[] = [
   { href: "/mentors", label: "멘토 찾기" },
   { href: "/question-room", label: "질문방" },
+  { href: "/individual-questions", label: "개별 질문" },
   { href: "/community", label: "커뮤니티" },
   { href: "/custom-request", label: "맞춤의뢰" },
   { href: "/cash", label: "캐시결제" },
@@ -40,6 +41,7 @@ export const publicMainNav: MainNavItem[] = [
 export const studentMainNav: MainNavItem[] = [
   { href: "/mentors", label: "멘토 찾기" },
   { href: "/question-room", label: "질문방" },
+  { href: "/individual-questions", label: "개별 질문" },
   { href: "/community", label: "커뮤니티" },
   { href: "/custom-request", label: "맞춤의뢰" },
   { href: "/cash", label: "캐시결제" },
@@ -76,6 +78,7 @@ export const adminMainNav: MainNavItem[] = [
 export const landingGuestNav: MainNavItem[] = [
   { href: "/mentors", label: "멘토 찾기" },
   { href: "/question-room", label: "질문방" },
+  { href: "/individual-questions", label: "개별 질문" },
   { href: "/community", label: "커뮤니티" },
   { href: "/custom-request", label: "맞춤의뢰" },
   { href: "/cash", label: "캐시결제" },
