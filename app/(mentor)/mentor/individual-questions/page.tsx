@@ -8,6 +8,7 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import {
   fetchMentorOwnedIndividualQuestions,
   fetchOpenIndividualQuestionsForMentor,
+  isIndividualQuestionAwaitingAnswer,
 } from "@/lib/individualQuestion/individualQuestionQueries";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 import { createClient } from "@/lib/supabase/server";
@@ -37,6 +38,9 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
         fetchOpenIndividualQuestionsForMentor(supabase, 80),
       ])
     : [{ rows: [], error: null }, { rows: [], error: null }];
+
+  const awaitingRows = rows.filter((row) => isIndividualQuestionAwaitingAnswer(row.status));
+  const settledRows = rows.filter((row) => !isIndividualQuestionAwaitingAnswer(row.status));
 
   return (
     <div className="cr-landing cr-detail-v5 cr-detail-shell mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
@@ -71,19 +75,56 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
           </p>
         ) : null}
 
-        <section>
-          <h2 className="cr-section-title-v5 mb-4">
-            <span className="bar" aria-hidden />
-            내가 맡은 질문
-          </h2>
-          <IndividualQuestionListCards
-            rows={rows}
-            emptyTitle="아직 맡은 개별 질문이 없습니다"
-            emptyDescription="학생이 멘토를 지정하거나 공개 질문을 가져가면 이곳에 표시됩니다."
-            detailBaseHref="/mentor/individual-questions"
-            counterpartLabel="학생"
-          />
-        </section>
+        {rows.length === 0 ? (
+          <section>
+            <h2 className="cr-section-title-v5 mb-4">
+              <span className="bar" aria-hidden />
+              내가 맡은 질문
+            </h2>
+            <IndividualQuestionListCards
+              rows={rows}
+              emptyTitle="아직 맡은 개별 질문이 없습니다"
+              emptyDescription="학생이 멘토를 지정하거나 공개 질문을 가져가면 이곳에 표시됩니다."
+              detailBaseHref="/mentor/individual-questions"
+              counterpartLabel="학생"
+            />
+          </section>
+        ) : (
+          <>
+            <section>
+              <h2 className="cr-section-title-v5 mb-4">
+                <span className="bar" aria-hidden />
+                답변 대기 ({awaitingRows.length})
+              </h2>
+              <IndividualQuestionListCards
+                rows={awaitingRows}
+                emptyTitle="답변할 질문이 없어요"
+                emptyDescription="새 지정 질문이 도착하거나 공개 질문을 가져가면 이곳에 표시됩니다."
+                detailBaseHref="/mentor/individual-questions"
+                counterpartLabel="학생"
+              />
+            </section>
+
+            {settledRows.length > 0 ? (
+              <>
+                <hr className="cr-detail-divider" />
+                <section>
+                  <h2 className="cr-section-title-v5 mb-4">
+                    <span className="bar" aria-hidden />
+                    답변 완료·종료 ({settledRows.length})
+                  </h2>
+                  <IndividualQuestionListCards
+                    rows={settledRows}
+                    emptyTitle="완료된 질문이 없어요"
+                    emptyDescription="답변을 완료하면 이곳에 정리됩니다."
+                    detailBaseHref="/mentor/individual-questions"
+                    counterpartLabel="학생"
+                  />
+                </section>
+              </>
+            ) : null}
+          </>
+        )}
 
         <hr className="cr-detail-divider" />
 

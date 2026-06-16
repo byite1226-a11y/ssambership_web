@@ -38,6 +38,10 @@ export default async function StudentIndividualQuestionsPage() {
           <p className="cr-detail-subtitle">캐시로 예치한 지정형·공개형 단건 질문과 답변 상태를 확인합니다.</p>
         </header>
 
+        <p className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-900">
+          개별 질문은 <strong>구독 질문방과 별개</strong>로, 건마다 캐시를 예치해 진행하는 단건 질문이에요. 구독 멘토와의 대화는 <Link href="/question-room" className="font-extrabold underline">질문방</Link>에서 이어집니다.
+        </p>
+
         {error ? (
           <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
             개별 질문 목록을 불러오지 못했습니다. {error}

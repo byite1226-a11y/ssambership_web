@@ -14,6 +14,7 @@ import {
   uploadIndividualQuestionAttachment,
 } from "@/lib/individualQuestion/individualQuestionAttachmentStorage";
 import { expiryDateForStatus, type IndividualQuestionExpirableStatus } from "@/lib/individualQuestion/individualQuestionExpiryConfig";
+import { fetchUserDisplayName, insertNotificationBestEffort } from "@/lib/notifications/notificationInsert";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 
@@ -82,6 +83,73 @@ async function setQuestionExpiryBestEffort(
   }
 }
 
+function mentorDisplayLabel(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return "멘토";
+  return trimmed.endsWith("멘토") ? trimmed : `${trimmed} 멘토`;
+}
+
+async function safeDisplayName(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  userId: string,
+  fallback: string
+): Promise<string> {
+  try {
+    const name = await fetchUserDisplayName(supabase, userId);
+    return name && name !== "사용자" ? name : fallback;
+  } catch (error) {
+    console.error("[individualQuestion] display name lookup failed", { userId, error });
+    return fallback;
+  }
+}
+
+// 지정형 질문 도착 → 지정 멘토에게 best-effort 알림. (생성 1회 전환에서만 호출 → 멱등)
+async function notifyDirectQuestionArrival(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  args: { mentorId: string; questionId: string; studentId: string }
+): Promise<void> {
+  const studentName = await safeDisplayName(supabase, args.studentId, "학생");
+  await insertNotificationBestEffort({
+    recipientUserId: args.mentorId,
+    type: "individual_question_assigned",
+    title: "새 개별 질문이 도착했어요",
+    body: `${studentName}님이 개별 질문을 보냈어요. 답변을 작성해 주세요.`,
+    link: `${MENTOR_LIST_PATH}/${args.questionId}`,
+    metadata: { questionId: args.questionId, questionType: "direct" },
+  });
+}
+
+// 공개 질문 claim → 학생에게 best-effort 알림. (claim은 원자적 1회 전환 → 멱등)
+async function notifyOpenQuestionClaimed(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  args: { studentId: string; questionId: string; mentorId: string }
+): Promise<void> {
+  const mentorName = mentorDisplayLabel(await safeDisplayName(supabase, args.mentorId, "멘토"));
+  await insertNotificationBestEffort({
+    recipientUserId: args.studentId,
+    type: "individual_question_claimed",
+    title: "멘토가 질문을 가져갔어요",
+    body: `${mentorName}가 공개 질문을 맡았어요. 곧 답변을 받을 수 있어요.`,
+    link: `${STUDENT_LIST_PATH}/${args.questionId}`,
+    metadata: { questionId: args.questionId, questionType: "open" },
+  });
+}
+
+// 답변 완료 → 학생에게 best-effort 알림. (status=answered 전환 + 지급 성공 후 1회 → 멱등)
+async function notifyAnswerReleased(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  args: { studentId: string; questionId: string }
+): Promise<void> {
+  await insertNotificationBestEffort({
+    recipientUserId: args.studentId,
+    type: "individual_question_answered",
+    title: "답변이 등록되었어요",
+    body: "개별 질문에 답변이 등록되었어요. 예치한 캐시는 멘토에게 지급되었습니다.",
+    link: `${STUDENT_LIST_PATH}/${args.questionId}`,
+    metadata: { questionId: args.questionId },
+  });
+}
+
 export async function createDirectIndividualQuestionAction(formData: FormData) {
   const { user } = await requireRole("student");
   const mentorId = textValue(formData, "mentorId");
@@ -126,6 +194,11 @@ export async function createDirectIndividualQuestionAction(formData: FormData) {
 
   if (result.code !== "already_exists") {
     await setQuestionExpiryBestEffort(admin, result.question_id, "assigned");
+    await notifyDirectQuestionArrival(admin, {
+      mentorId,
+      questionId: result.question_id,
+      studentId: user.id,
+    });
   }
 
   if (result.code !== "already_exists" && attachment instanceof File && fileHasContent(attachment)) {
@@ -221,6 +294,20 @@ export async function claimOpenIndividualQuestionAction(formData: FormData) {
 
   await setQuestionExpiryBestEffort(admin, result.question_id, "claimed");
 
+  const { data: claimedRow } = await admin
+    .from("individual_questions")
+    .select("student_id")
+    .eq("id", result.question_id)
+    .maybeSingle();
+  const claimedStudentId = typeof claimedRow?.student_id === "string" ? claimedRow.student_id : null;
+  if (claimedStudentId) {
+    await notifyOpenQuestionClaimed(admin, {
+      studentId: claimedStudentId,
+      questionId: result.question_id,
+      mentorId: user.id,
+    });
+  }
+
   revalidatePath(MENTOR_LIST_PATH);
   revalidatePath(`${MENTOR_LIST_PATH}/${result.question_id}`);
   revalidatePath(STUDENT_LIST_PATH);
@@ -245,13 +332,14 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
   const admin = createServiceRoleClient();
   const { data: question, error: questionError } = await admin
     .from("individual_questions")
-    .select("id, question_type, designated_mentor_id, claimed_mentor_id, status, release_ledger_id, refund_ledger_id")
+    .select("id, student_id, question_type, designated_mentor_id, claimed_mentor_id, status, release_ledger_id, refund_ledger_id")
     .eq("id", questionId)
     .maybeSingle();
 
   const row = question as
     | {
         id: string;
+        student_id: string | null;
         question_type: string;
         designated_mentor_id: string | null;
         claimed_mentor_id: string | null;
@@ -325,6 +413,10 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
   const payout = firstRpcResult(payoutData as IndividualQuestionRpcResult);
   if (payoutError || !payout?.ok) {
     actionError(detailPath, "답변은 저장되었지만 지급 처리에 실패했습니다. 관리자에게 문의해 주세요.");
+  }
+
+  if (row.student_id) {
+    await notifyAnswerReleased(admin, { studentId: row.student_id, questionId });
   }
 
   revalidatePath(MENTOR_LIST_PATH);
