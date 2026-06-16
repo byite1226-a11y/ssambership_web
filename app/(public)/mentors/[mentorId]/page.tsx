@@ -10,6 +10,7 @@ import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
 import { loadMentorCapUsage } from "@/lib/subscribe/mentorCapService";
 import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
 import { loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
+import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
 
 type Props = {
   params: Promise<{ mentorId: string }>;
@@ -66,9 +67,10 @@ export default async function MentorDetailByIdPage(props: Props) {
       </div>
     );
   }
-  const [capUsage, avgResponseHours] = await Promise.all([
+  const [capUsage, avgResponseHours, individualQuestionPrice] = await Promise.all([
     loadMentorCapUsage(mentorId),
     loadMentorAvgResponseHours(supabase, mentorId),
+    fetchMentorIndividualQuestionPrice(supabase, mentorId),
   ]);
 
   return (
@@ -86,6 +88,7 @@ export default async function MentorDetailByIdPage(props: Props) {
         freeQuestionRemaining={freeQuestionRemaining}
         subscriptionClosed={capUsage.isFull}
         avgResponseHours={avgResponseHours}
+        individualQuestionPriceCents={individualQuestionPrice.amountCents}
       />
     </div>
   );

@@ -49,6 +49,7 @@ export const studentMainNav: MainNavItem[] = [
 /** 멘토 상단 헤더 네비 (잠금값 — 대시보드 제외) */
 export const mentorHeaderNav: MainNavItem[] = [
   { href: "/mentor/question-room", label: "질문방" },
+  { href: "/mentor/individual-questions", label: "개별 질문" },
   { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰" },
   { href: "/community", label: "커뮤니티" },
   { href: "/mentor/payouts", label: "정산" },

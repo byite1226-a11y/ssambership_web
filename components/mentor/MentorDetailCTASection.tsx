@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { FREE_QUESTION_POLICY_SHORT } from "@/lib/mentor/freeQuestionPolicy";
+import { formatIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionFormat";
 
 const GUARANTEES = [
   { label: "안전한 연결", desc: "검증된 멘토와만 연결" },
@@ -14,8 +15,10 @@ export function MentorDetailCTASection(props: {
   mentorId: string;
   subscribeHref: string;
   freeQuestionHref: string;
+  individualQuestionHref: string;
   freeQuestionRemaining?: number | null;
   subscriptionClosed?: boolean;
+  individualQuestionPriceCents?: number | null;
 }) {
   const freeLabel =
     props.freeQuestionRemaining != null
@@ -50,6 +53,18 @@ export function MentorDetailCTASection(props: {
         >
           {freeLabel}
         </Link>
+        {props.individualQuestionPriceCents ? (
+          <Link
+            href={props.individualQuestionHref}
+            className="inline-flex min-h-[52px] items-center justify-center rounded-xl border-2 border-emerald-500 bg-white px-8 text-sm font-extrabold text-emerald-700 transition hover:bg-emerald-50/50"
+          >
+            개별 질문하기 · {formatIndividualQuestionPrice(props.individualQuestionPriceCents)}
+          </Link>
+        ) : (
+          <span className="inline-flex min-h-[52px] cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-8 text-sm font-extrabold text-slate-400">
+            개별 질문 준비 중
+          </span>
+        )}
       </div>
 
       <p className="mt-4 text-center text-xs font-medium text-slate-600">{FREE_QUESTION_POLICY_SHORT}</p>

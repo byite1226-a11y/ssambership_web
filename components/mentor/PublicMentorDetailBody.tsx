@@ -84,6 +84,7 @@ export function PublicMentorDetailBody(props: {
   freeQuestionRemaining?: number | null;
   subscriptionClosed?: boolean;
   avgResponseHours?: number | null;
+  individualQuestionPriceCents?: number | null;
 }) {
   const { mentorId, display, bundle, viewer, reviewEligibility } = props;
   const isLoggedIn = props.isLoggedIn ?? Boolean(viewer);
@@ -92,6 +93,10 @@ export function PublicMentorDetailBody(props: {
   const freeQuestionHref = isLoggedIn
     ? `/question-room?mentorId=${encodeURIComponent(mentorId)}`
     : `/login/student?next=${encodeURIComponent(`/mentors/${mentorId}`)}`;
+  const individualQuestionHref =
+    viewer?.role === "student"
+      ? `/mentors/${encodeURIComponent(mentorId)}/individual-question/new`
+      : `/login/student?next=${encodeURIComponent(`/mentors/${mentorId}/individual-question/new`)}`;
 
   const verified = mentorIsVerified(display.verification);
   const schoolLine = mentorSchoolGradeLine(display);
@@ -294,8 +299,10 @@ export function PublicMentorDetailBody(props: {
             mentorId={mentorId}
             subscribeHref={subscribeHref}
             freeQuestionHref={freeQuestionHref}
+            individualQuestionHref={individualQuestionHref}
             freeQuestionRemaining={props.freeQuestionRemaining}
             subscriptionClosed={props.subscriptionClosed}
+            individualQuestionPriceCents={props.individualQuestionPriceCents}
           />
         </div>
 
@@ -309,6 +316,8 @@ export function PublicMentorDetailBody(props: {
             isLoggedIn={isLoggedIn}
             freeQuestionRemaining={props.freeQuestionRemaining}
             subscriptionClosed={props.subscriptionClosed}
+            individualQuestionHref={individualQuestionHref}
+            individualQuestionPriceCents={props.individualQuestionPriceCents}
           />
         </div>
       </div>

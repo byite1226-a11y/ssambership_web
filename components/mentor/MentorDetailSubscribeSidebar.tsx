@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { PlanComparisonCards } from "@/components/subscribe/PlanComparisonCards";
 import type { PlansByTier, SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { formatIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionFormat";
 
 const BENEFITS = [
   "연결노트 제공 — 내 공부 흐름을 한눈에 정리",
@@ -20,6 +21,8 @@ export function MentorDetailSubscribeSidebar(props: {
   isLoggedIn: boolean;
   freeQuestionRemaining?: number | null;
   subscriptionClosed?: boolean;
+  individualQuestionHref: string;
+  individualQuestionPriceCents?: number | null;
 }) {
   const [selectedTier, setSelectedTier] = useState<SubscribePlanTier>("standard");
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(props.mentorId)}&plan=${selectedTier}`;
@@ -75,6 +78,20 @@ export function MentorDetailSubscribeSidebar(props: {
         >
           {freeLabel}
         </Link>
+
+        {props.individualQuestionPriceCents ? (
+          <Link
+            href={props.individualQuestionHref}
+            className="mt-2 flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-emerald-500 bg-white text-sm font-extrabold text-emerald-700 transition hover:bg-emerald-50/40"
+          >
+            개별 질문하기 · {formatIndividualQuestionPrice(props.individualQuestionPriceCents)}
+          </Link>
+        ) : (
+          <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <p className="text-xs font-extrabold text-slate-500">개별 질문 준비 중</p>
+            <p className="mt-1 text-[11px] font-medium text-slate-500">멘토가 단가를 설정하면 이용할 수 있어요.</p>
+          </div>
+        )}
 
         <div className="mt-5 border-t border-slate-100 pt-4">
           <p className="text-xs font-black text-slate-900">구독 혜택</p>
