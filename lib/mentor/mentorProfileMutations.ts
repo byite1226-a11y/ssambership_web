@@ -25,6 +25,8 @@ export type MentorProfileFormInput = {
   tags: string;
   subscribeOpen: boolean;
   subscriptionPricesKrw?: Record<SubscribePlanTier, number | null>;
+  /** 개별 질문(지정형) 답변 단가. null/미입력이면 변경하지 않음. 구독 요금제와 별개. */
+  individualQuestionPriceCash?: number | null;
 };
 
 const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "cancel_scheduled", "past_due"];
@@ -149,6 +151,30 @@ async function updateMentorSubscriptionPrices(
 }
 
 /**
+ * 개별 질문(지정형) 답변 단가 upsert. 구독 요금제(mentor_plans)와 별개 테이블.
+ * 미입력(null)이면 변경하지 않는다. 입력 시 0 초과만 허용(최소/최대 강제 없음 — 자유 금액).
+ */
+async function updateMentorIndividualQuestionPrice(
+  supabase: SupabaseClient,
+  mentorId: string,
+  priceCash: number | null | undefined,
+  now: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (priceCash == null) return { ok: true };
+  if (!Number.isFinite(priceCash) || priceCash <= 0) {
+    return { ok: false, error: "개별 질문 답변 단가는 1캐시 이상 숫자로 입력해 주세요." };
+  }
+  const { error } = await supabase
+    .from("mentor_individual_question_pricing")
+    .upsert(
+      { mentor_id: mentorId, amount_cents: Math.trunc(priceCash), updated_at: now },
+      { onConflict: "mentor_id" }
+    );
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/**
  * 가입·sync 시 사용한 컬럼 + 확장 후보(마이그레이션과 맞춤)
  */
 export async function updateMentorProfile(
@@ -213,6 +239,14 @@ export async function updateMentorProfile(
     now
   );
   if (!priceUpdate.ok) return priceUpdate;
+
+  const iqPriceUpdate = await updateMentorIndividualQuestionPrice(
+    supabase,
+    input.userId,
+    input.individualQuestionPriceCash,
+    now
+  );
+  if (!iqPriceUpdate.ok) return iqPriceUpdate;
 
   return { ok: true };
 }

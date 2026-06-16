@@ -23,6 +23,14 @@ function parsePriceKrw(formData: FormData, tier: SubscribePlanTier): number | nu
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+/** 개별 질문 답변 단가(캐시). 미입력이면 null → 변경 없음. */
+function parseIndividualQuestionPriceCash(formData: FormData): number | null {
+  const raw = String(formData.get("individualQuestionPriceCash") ?? "").replace(/[^\d]/g, "");
+  if (!raw) return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export async function submitMentorProfileEdit(formData: FormData) {
   const { user } = await requireRole("mentor");
   const supabase = await createClient();
@@ -54,6 +62,7 @@ export async function submitMentorProfileEdit(formData: FormData) {
     tags,
     subscribeOpen,
     subscriptionPricesKrw,
+    individualQuestionPriceCash: parseIndividualQuestionPriceCash(formData),
   });
 
   if (!r.ok) {

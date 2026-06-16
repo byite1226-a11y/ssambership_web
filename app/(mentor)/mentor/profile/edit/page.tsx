@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MENTOR_PROFILE_DATA_MODEL } from "@/lib/mentor/mentorDataModel";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
+import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
@@ -25,6 +26,7 @@ export default async function MentorProfileEditPage(props: PageProps) {
   const media = await fetchMentorMediaSample(supabase, user.id, 8);
   const plans = await fetchPlansForMentor(supabase, user.id);
   const { byTier } = assignPlansByTier(plans.rows);
+  const iqPrice = await fetchMentorIndividualQuestionPrice(supabase, user.id);
 
   const display = buildMentorProfileDisplay(row, userRow ?? null);
   const initial = {
@@ -39,6 +41,7 @@ export default async function MentorProfileEditPage(props: PageProps) {
     verification: display.verification,
     displayName: display.displayName,
     grade: display.grade,
+    individualQuestionPriceCash: iqPrice.amountCents,
   };
 
   const hasRow = Boolean(row);

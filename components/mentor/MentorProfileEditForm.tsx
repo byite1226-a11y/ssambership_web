@@ -34,6 +34,7 @@ type I = {
   verification: string;
   displayName?: string;
   grade?: string;
+  individualQuestionPriceCash?: number | null;
 };
 
 const inputClass =
@@ -98,6 +99,11 @@ export function MentorProfileEditForm(props: {
         String(mentorPlanCashKrw(query.byTier?.[plan.tier] ?? null, plan.tier)),
       ]),
     ) as Record<string, string>,
+  );
+  const [individualQuestionPrice, setIndividualQuestionPrice] = useState(
+    initial.individualQuestionPriceCash != null && initial.individualQuestionPriceCash > 0
+      ? String(initial.individualQuestionPriceCash)
+      : "",
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -382,6 +388,41 @@ export function MentorProfileEditForm(props: {
                   </div>
                 );
               })}
+            </div>
+
+            {/* 개별 질문 답변 단가 — 구독 요금제와 별개 */}
+            <div className="rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-black text-slate-900">개별 질문 답변 단가</p>
+                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-blue-600 ring-1 ring-blue-100">
+                  구독과 별개
+                </span>
+              </div>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                학생이 나를 지정해 보내는 단건(지정형) 개별 질문의 답변 단가예요. 구독 요금제와 무관하며, 자유롭게 설정할 수 있어요.
+                비워 두면 지정형 개별 질문을 받지 않습니다.
+              </p>
+              <label
+                className="mt-3 block text-[11px] font-extrabold text-slate-500"
+                htmlFor="individualQuestionPriceCash"
+              >
+                답변 단가 (캐시)
+              </label>
+              <div className="mt-1.5 flex max-w-xs items-center gap-2">
+                <input
+                  id="individualQuestionPriceCash"
+                  name="individualQuestionPriceCash"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  step={100}
+                  placeholder="예: 5000"
+                  className={inputClass}
+                  value={individualQuestionPrice}
+                  onChange={(e) => setIndividualQuestionPrice(e.target.value)}
+                />
+                <span className="shrink-0 text-xs font-bold text-slate-500">캐시</span>
+              </div>
             </div>
           </section>
 
