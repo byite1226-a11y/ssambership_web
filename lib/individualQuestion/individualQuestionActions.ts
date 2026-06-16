@@ -13,6 +13,7 @@ import {
   fileHasContent,
   uploadIndividualQuestionAttachment,
 } from "@/lib/individualQuestion/individualQuestionAttachmentStorage";
+import { expiryDateForStatus, type IndividualQuestionExpirableStatus } from "@/lib/individualQuestion/individualQuestionExpiryConfig";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 
@@ -61,6 +62,26 @@ function createErrorMessage(codeOrMessage: string | null | undefined): string {
   return "개별 질문을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
+async function setQuestionExpiryBestEffort(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  questionId: string,
+  status: IndividualQuestionExpirableStatus
+): Promise<void> {
+  const expiresAt = expiryDateForStatus(status).toISOString();
+  const { error } = await supabase
+    .from("individual_questions")
+    .update({ expires_at: expiresAt })
+    .eq("id", questionId)
+    .eq("status", status);
+  if (error) {
+    console.error("[individualQuestion] expires_at update failed", {
+      questionId,
+      status,
+      error: error.message,
+    });
+  }
+}
+
 export async function createDirectIndividualQuestionAction(formData: FormData) {
   const { user } = await requireRole("student");
   const mentorId = textValue(formData, "mentorId");
@@ -101,6 +122,10 @@ export async function createDirectIndividualQuestionAction(formData: FormData) {
   const result = firstRpcResult(data as IndividualQuestionRpcResult);
   if (error || !result?.ok || !result.question_id) {
     actionError(returnPath, createErrorMessage(error?.message ?? result?.code ?? result?.message));
+  }
+
+  if (result.code !== "already_exists") {
+    await setQuestionExpiryBestEffort(admin, result.question_id, "assigned");
   }
 
   if (result.code !== "already_exists" && attachment instanceof File && fileHasContent(attachment)) {
@@ -155,6 +180,10 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
     actionError(returnPath, createErrorMessage(error?.message ?? result?.code ?? result?.message));
   }
 
+  if (result.code !== "already_exists") {
+    await setQuestionExpiryBestEffort(admin, result.question_id, "open");
+  }
+
   if (result.code !== "already_exists" && attachment instanceof File && fileHasContent(attachment)) {
     const upload = await uploadIndividualQuestionAttachment(admin, {
       questionId: result.question_id,
@@ -189,6 +218,8 @@ export async function claimOpenIndividualQuestionAction(formData: FormData) {
   if (error || !result?.ok || !result.question_id) {
     actionError(MENTOR_LIST_PATH, "다른 멘토가 먼저 가져갔어요. 목록을 새로 확인해 주세요.");
   }
+
+  await setQuestionExpiryBestEffort(admin, result.question_id, "claimed");
 
   revalidatePath(MENTOR_LIST_PATH);
   revalidatePath(`${MENTOR_LIST_PATH}/${result.question_id}`);
