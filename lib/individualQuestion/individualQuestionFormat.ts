@@ -29,7 +29,7 @@ export function individualQuestionStatusLabel(status: string | null | undefined)
     case "canceled":
       return "취소";
     case "open":
-      return "공개 대기";
+      return "공개중";
     case "claimed":
       return "멘토 배정";
     default:

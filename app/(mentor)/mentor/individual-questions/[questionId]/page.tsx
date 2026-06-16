@@ -27,12 +27,15 @@ export default async function MentorIndividualQuestionDetailPage(props: PageProp
 
   const { detail, error } = await fetchIndividualQuestionDetail(supabase, questionId);
   if (error || !detail) notFound();
-  if (detail.question_type !== "direct" || detail.designated_mentor_id !== user.id) {
+  const ownsDirect = detail.question_type === "direct" && detail.designated_mentor_id === user.id;
+  const ownsOpen = detail.question_type === "open" && detail.claimed_mentor_id === user.id;
+  if (!ownsDirect && !ownsOpen) {
     redirect("/mentor/individual-questions");
   }
 
   const answered = firstParam(sp.answered);
-  const canAnswer = detail.status === "assigned";
+  const claimed = firstParam(sp.claimed);
+  const canAnswer = (ownsDirect && detail.status === "assigned") || (ownsOpen && detail.status === "claimed");
 
   return (
     <IndividualQuestionDetailView
@@ -41,7 +44,7 @@ export default async function MentorIndividualQuestionDetailPage(props: PageProp
       backHref="/mentor/individual-questions"
       backLabel="개별 질문 목록"
       canAnswer={canAnswer}
-      flash={answered ? "답변 완료와 지급 처리가 끝났습니다." : null}
+      flash={answered ? "답변 완료와 지급 처리가 끝났습니다." : claimed ? "공개 질문을 가져왔어요. 이제 답변을 작성할 수 있습니다." : null}
     />
   );
 }

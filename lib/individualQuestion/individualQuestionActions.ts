@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
-import type { IndividualQuestionEscrowResult } from "@/lib/individualQuestion/individualQuestionTypes";
+import {
+  OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS,
+  type IndividualQuestionEscrowResult,
+} from "@/lib/individualQuestion/individualQuestionTypes";
 import {
   fileHasContent,
   uploadIndividualQuestionAttachment,
@@ -26,6 +29,13 @@ function textValue(formData: FormData, key: string): string {
 function optionalText(formData: FormData, key: string): string | null {
   const value = textValue(formData, key);
   return value.length > 0 ? value : null;
+}
+
+function positiveIntegerValue(formData: FormData, key: string): number | null {
+  const raw = textValue(formData, key).replace(/[,\s]/g, "");
+  if (!/^\d+$/.test(raw)) return null;
+  const value = Number.parseInt(raw, 10);
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
 function firstRpcResult(data: IndividualQuestionRpcResult): IndividualQuestionEscrowResult | null {
@@ -110,6 +120,83 @@ export async function createDirectIndividualQuestionAction(formData: FormData) {
   redirect(`${STUDENT_LIST_PATH}/${result.question_id}?created=1`);
 }
 
+export async function createOpenIndividualQuestionAction(formData: FormData) {
+  const { user } = await requireRole("student");
+  const idempotencyKey = textValue(formData, "idempotencyKey");
+  const title = textValue(formData, "title");
+  const body = textValue(formData, "body");
+  const subject = optionalText(formData, "subject");
+  const topic = optionalText(formData, "topic");
+  const priceCents = positiveIntegerValue(formData, "priceCents");
+  const attachment = formData.get("attachment");
+  const returnPath = `${STUDENT_LIST_PATH}/new`;
+
+  if (!idempotencyKey) actionError(returnPath, "제출 정보가 만료되었습니다. 다시 시도해 주세요.");
+  if (!title || !body) actionError(returnPath, "제목과 내용을 모두 입력해 주세요.");
+  if (!priceCents || priceCents < OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS) {
+    actionError(returnPath, `공개 질문은 최소 ${OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS.toLocaleString("ko-KR")}캐시 이상으로 등록해 주세요.`);
+  }
+
+  const admin = createServiceRoleClient();
+  const { data, error } = await admin.rpc("create_individual_question_with_hold", {
+    p_student_id: user.id,
+    p_question_type: "open",
+    p_mentor_id: null,
+    p_subject: subject,
+    p_topic: topic,
+    p_title: title,
+    p_body: body,
+    p_price_cents: priceCents,
+    p_idempotency_key: idempotencyKey,
+  });
+
+  const result = firstRpcResult(data as IndividualQuestionRpcResult);
+  if (error || !result?.ok || !result.question_id) {
+    actionError(returnPath, createErrorMessage(error?.message ?? result?.code ?? result?.message));
+  }
+
+  if (result.code !== "already_exists" && attachment instanceof File && fileHasContent(attachment)) {
+    const upload = await uploadIndividualQuestionAttachment(admin, {
+      questionId: result.question_id,
+      messageId: null,
+      file: attachment,
+    });
+    if (!upload.ok) {
+      redirect(`${STUDENT_LIST_PATH}/${result.question_id}?created=1&warning=${encodeURIComponent(upload.error)}`);
+    }
+  }
+
+  revalidatePath(STUDENT_LIST_PATH);
+  revalidatePath(MENTOR_LIST_PATH);
+  redirect(`${STUDENT_LIST_PATH}/${result.question_id}?created=1`);
+}
+
+export async function claimOpenIndividualQuestionAction(formData: FormData) {
+  const { user } = await requireRole("mentor");
+  const questionId = textValue(formData, "questionId");
+  if (!questionId) actionError(MENTOR_LIST_PATH, "질문 정보가 올바르지 않습니다.");
+
+  const supabase = await createClient();
+  const approval = await assertMentorApprovedForAction(supabase, user.id);
+  if (!approval.ok) actionError(MENTOR_LIST_PATH, "승인 완료 후 공개 질문을 가져갈 수 있어요.");
+
+  const admin = createServiceRoleClient();
+  const { data, error } = await admin.rpc("claim_individual_question", {
+    p_question_id: questionId,
+    p_mentor_id: user.id,
+  });
+  const result = firstRpcResult(data as IndividualQuestionRpcResult);
+  if (error || !result?.ok || !result.question_id) {
+    actionError(MENTOR_LIST_PATH, "다른 멘토가 먼저 가져갔어요. 목록을 새로 확인해 주세요.");
+  }
+
+  revalidatePath(MENTOR_LIST_PATH);
+  revalidatePath(`${MENTOR_LIST_PATH}/${result.question_id}`);
+  revalidatePath(STUDENT_LIST_PATH);
+  revalidatePath(`${STUDENT_LIST_PATH}/${result.question_id}`);
+  redirect(`${MENTOR_LIST_PATH}/${result.question_id}?claimed=1`);
+}
+
 export async function answerDirectIndividualQuestionAction(formData: FormData) {
   const { user } = await requireRole("mentor");
   const questionId = textValue(formData, "questionId");
@@ -127,7 +214,7 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
   const admin = createServiceRoleClient();
   const { data: question, error: questionError } = await admin
     .from("individual_questions")
-    .select("id, question_type, designated_mentor_id, status, release_ledger_id, refund_ledger_id")
+    .select("id, question_type, designated_mentor_id, claimed_mentor_id, status, release_ledger_id, refund_ledger_id")
     .eq("id", questionId)
     .maybeSingle();
 
@@ -136,6 +223,7 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
         id: string;
         question_type: string;
         designated_mentor_id: string | null;
+        claimed_mentor_id: string | null;
         status: string;
         release_ledger_id: string | null;
         refund_ledger_id: string | null;
@@ -143,7 +231,9 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
     | null;
 
   if (questionError || !row) actionError(MENTOR_LIST_PATH, "개별 질문을 찾을 수 없습니다.");
-  if (row.question_type !== "direct" || row.designated_mentor_id !== user.id) {
+  const ownsDirect = row.question_type === "direct" && row.designated_mentor_id === user.id;
+  const ownsOpen = row.question_type === "open" && row.claimed_mentor_id === user.id;
+  if (!ownsDirect && !ownsOpen) {
     actionError(MENTOR_LIST_PATH, "이 질문에 답변할 권한이 없습니다.");
   }
   if (row.refund_ledger_id || row.status === "refunded" || row.status === "expired" || row.status === "canceled") {
@@ -152,7 +242,9 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
   if (row.release_ledger_id || row.status === "released") {
     actionError(detailPath, "이미 답변 완료 처리된 질문입니다.");
   }
-  if (row.status !== "assigned") {
+  const canAnswerDirect = ownsDirect && row.status === "assigned";
+  const canAnswerOpen = ownsOpen && row.status === "claimed";
+  if (!canAnswerDirect && !canAnswerOpen) {
     actionError(detailPath, "현재 상태에서는 답변 완료 처리를 할 수 없습니다.");
   }
 
@@ -189,8 +281,8 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
       answered_at: new Date().toISOString(),
     })
     .eq("id", questionId)
-    .eq("status", "assigned")
-    .eq("designated_mentor_id", user.id);
+    .eq("status", row.status)
+    .or(`designated_mentor_id.eq.${user.id},claimed_mentor_id.eq.${user.id}`);
 
   if (updateError) {
     actionError(detailPath, "답변 상태를 저장하지 못했습니다.");

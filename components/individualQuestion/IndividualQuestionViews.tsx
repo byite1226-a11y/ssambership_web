@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { MessageSquareText, Paperclip, WalletCards } from "lucide-react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
-import { answerDirectIndividualQuestionAction } from "@/lib/individualQuestion/individualQuestionActions";
+import {
+  answerDirectIndividualQuestionAction,
+  claimOpenIndividualQuestionAction,
+} from "@/lib/individualQuestion/individualQuestionActions";
 import {
   formatIndividualQuestionDate,
   formatIndividualQuestionPrice,
@@ -10,6 +13,7 @@ import {
   individualQuestionStatusLabel,
   type IndividualQuestionDetail,
   type IndividualQuestionListItem,
+  type OpenIndividualQuestionBrowseRow,
 } from "@/lib/individualQuestion/individualQuestionQueries";
 
 function SectionTitle(props: { title: string; hint?: string; right?: ReactNode }) {
@@ -65,6 +69,9 @@ export function IndividualQuestionListCards(props: {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <IndividualQuestionStatusBadge status={row.status} />
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                    {row.question_type === "open" ? "공개형" : "지정형"}
+                  </span>
                   <span className="text-xs font-bold text-blue-700">{formatIndividualQuestionPrice(row.price_cents)} 예치</span>
                 </div>
                 <h2 className="mt-2 truncate text-lg font-black text-slate-900 group-hover:text-blue-700">{row.title}</h2>
@@ -84,6 +91,65 @@ export function IndividualQuestionListCards(props: {
           </Link>
         );
       })}
+    </div>
+  );
+}
+
+export function OpenIndividualQuestionBrowseCards(props: {
+  rows: OpenIndividualQuestionBrowseRow[];
+  error?: string | null;
+}) {
+  if (props.error) {
+    return (
+      <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
+        공개 질문 목록을 불러오지 못했습니다. {props.error}
+      </p>
+    );
+  }
+
+  if (props.rows.length === 0) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <p className="text-base font-black text-slate-900">가져갈 수 있는 공개 질문이 없습니다</p>
+        <p className="mt-2 text-sm text-slate-500">학생이 공개형 질문을 등록하면 이곳에 표시됩니다.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      {props.rows.map((row) => (
+        <article key={row.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-700">
+                  공개중
+                </span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">학생 신원 비공개</span>
+                <span className="text-xs font-bold text-blue-700">{formatIndividualQuestionPrice(row.price_cents)} 예치</span>
+              </div>
+              <h2 className="mt-2 text-lg font-black text-slate-900">{row.title}</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                본문과 첨부는 가져가기 성공 후에만 열람할 수 있어요.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+                {row.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {row.subject}</span> : null}
+                {row.topic ? <span className="rounded-full bg-slate-100 px-2.5 py-1">단원 {row.topic}</span> : null}
+                <span className="rounded-full bg-slate-100 px-2.5 py-1">등록 {formatIndividualQuestionDate(row.created_at)}</span>
+              </div>
+            </div>
+            <form action={claimOpenIndividualQuestionAction} className="shrink-0">
+              <input type="hidden" name="questionId" value={row.id} />
+              <FormSubmitButton
+                idleLabel="가져가기"
+                pendingLabel="확인 중..."
+                className="w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
+              />
+            </form>
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
@@ -130,7 +196,7 @@ export function IndividualQuestionDetailView(props: {
 }) {
   const { detail } = props;
   const counterpartName = props.actor === "student" ? detail.mentorName : detail.studentName;
-  const counterpartLabel = props.actor === "student" ? "담당 멘토" : "학생";
+  const counterpartLabel = props.actor === "student" ? (detail.question_type === "open" ? "답변 멘토" : "담당 멘토") : "학생";
 
   return (
     <div className="cr-landing cr-detail-v5 cr-detail-shell mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">

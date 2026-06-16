@@ -37,3 +37,7 @@ export const INDIVIDUAL_QUESTION_LEDGER_REASONS = {
   payout: "individual_question_payout",
   refund: "individual_question_refund",
 } as const;
+
+export const OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS = 1000;
+export const OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CENTS = 5000;
+export const OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CENTS = 30000;

@@ -60,6 +60,16 @@ export type IndividualQuestionDetail = IndividualQuestionListItem & {
   attachments: IndividualQuestionAttachmentView[];
 };
 
+export type OpenIndividualQuestionBrowseRow = {
+  id: string;
+  subject: string | null;
+  topic: string | null;
+  title: string;
+  price_cents: number;
+  expires_at: string | null;
+  created_at: string;
+};
+
 type UserNameRow = {
   id: string;
   full_name?: string | null;
@@ -97,10 +107,11 @@ async function fetchUserNameMap(supabase: SupabaseClient, ids: string[]): Promis
 function enrichQuestions(rows: IndividualQuestionRow[], names: Map<string, UserNameRow>): IndividualQuestionListItem[] {
   return rows.map((row) => {
     const mentorId = row.designated_mentor_id ?? row.claimed_mentor_id;
+    const mentorFallback = row.question_type === "open" && !mentorId ? "아직 배정 전" : "멘토";
     return {
       ...row,
       studentName: displayName(names.get(row.student_id), "학생"),
-      mentorName: displayName(mentorId ? names.get(mentorId) : null, "멘토"),
+      mentorName: displayName(mentorId ? names.get(mentorId) : null, mentorFallback),
     };
   });
 }
@@ -136,7 +147,7 @@ export function individualQuestionStatusLabel(status: string | null | undefined)
     case "canceled":
       return "취소";
     case "open":
-      return "공개 대기";
+      return "공개중";
     case "claimed":
       return "멘토 배정";
     default:
@@ -184,6 +195,26 @@ export async function fetchStudentDirectIndividualQuestions(
   return { rows: enrichQuestions(rows, names), error: null };
 }
 
+export async function fetchStudentIndividualQuestions(
+  supabase: SupabaseClient,
+  studentId: string
+): Promise<{ rows: IndividualQuestionListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("individual_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) return { rows: [], error: error.message };
+  const rows = (data ?? []) as IndividualQuestionRow[];
+  const names = await fetchUserNameMap(
+    supabase,
+    rows.flatMap((row) => [row.student_id, row.designated_mentor_id ?? row.claimed_mentor_id ?? ""])
+  );
+  return { rows: enrichQuestions(rows, names), error: null };
+}
+
 export async function fetchMentorDirectIndividualQuestions(
   supabase: SupabaseClient,
   mentorId: string
@@ -203,6 +234,38 @@ export async function fetchMentorDirectIndividualQuestions(
     rows.flatMap((row) => [row.student_id, row.designated_mentor_id ?? ""])
   );
   return { rows: enrichQuestions(rows, names), error: null };
+}
+
+export async function fetchMentorOwnedIndividualQuestions(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<{ rows: IndividualQuestionListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("individual_questions")
+    .select(QUESTION_COLUMNS)
+    .or(`designated_mentor_id.eq.${mentorId},claimed_mentor_id.eq.${mentorId}`)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) return { rows: [], error: error.message };
+  const rows = (data ?? []) as IndividualQuestionRow[];
+  const names = await fetchUserNameMap(
+    supabase,
+    rows.flatMap((row) => [row.student_id, row.designated_mentor_id ?? row.claimed_mentor_id ?? ""])
+  );
+  return { rows: enrichQuestions(rows, names), error: null };
+}
+
+export async function fetchOpenIndividualQuestionsForMentor(
+  supabase: SupabaseClient,
+  limit = 80
+): Promise<{ rows: OpenIndividualQuestionBrowseRow[]; error: string | null }> {
+  const { data, error } = await supabase.rpc("list_open_individual_questions_for_mentor", {
+    p_limit: limit,
+  });
+
+  if (error) return { rows: [], error: error.message };
+  return { rows: (data ?? []) as OpenIndividualQuestionBrowseRow[], error: null };
 }
 
 export async function fetchIndividualQuestionDetail(
