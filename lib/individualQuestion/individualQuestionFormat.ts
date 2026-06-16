@@ -1,6 +1,8 @@
+// 저장값은 정규 단위 cents(=캐시×100). 표시는 ÷100 하여 캐시로 노출(구독·지갑과 동일 규약).
 export function formatIndividualQuestionPrice(amountCents: number | null | undefined): string {
   const value = typeof amountCents === "number" && Number.isFinite(amountCents) ? amountCents : 0;
-  return `${Math.trunc(value).toLocaleString("ko-KR")}캐시`;
+  const cash = Math.floor(Math.abs(value) / 100);
+  return `${cash.toLocaleString("ko-KR")}캐시`;
 }
 
 export function formatIndividualQuestionDate(value: string | null | undefined): string {

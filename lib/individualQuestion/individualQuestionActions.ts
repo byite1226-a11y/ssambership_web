@@ -6,9 +6,10 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
 import {
-  OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS,
+  OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH,
   type IndividualQuestionEscrowResult,
 } from "@/lib/individualQuestion/individualQuestionTypes";
+import { amountCentsFromCashKrw } from "@/lib/subscribe/mentorPlanPricing";
 import {
   fileHasContent,
   uploadIndividualQuestionAttachment,
@@ -240,14 +241,15 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
   const body = textValue(formData, "body");
   const subject = optionalText(formData, "subject");
   const topic = optionalText(formData, "topic");
-  const priceCents = positiveIntegerValue(formData, "priceCents");
+  // 폼 입력은 캐시(=원) 단위. 저장은 정규 cents(=캐시×100)로 변환.
+  const priceCash = positiveIntegerValue(formData, "priceCents");
   const attachment = formData.get("attachment");
   const returnPath = `${STUDENT_LIST_PATH}/new`;
 
   if (!idempotencyKey) actionError(returnPath, "제출 정보가 만료되었습니다. 다시 시도해 주세요.");
   if (!title || !body) actionError(returnPath, "제목과 내용을 모두 입력해 주세요.");
-  if (!priceCents || priceCents < OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS) {
-    actionError(returnPath, `공개 질문은 최소 ${OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS.toLocaleString("ko-KR")}캐시 이상으로 등록해 주세요.`);
+  if (!priceCash || priceCash < OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH) {
+    actionError(returnPath, `공개 질문은 최소 ${OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH.toLocaleString("ko-KR")}캐시 이상으로 등록해 주세요.`);
   }
 
   const admin = createServiceRoleClient();
@@ -259,7 +261,7 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
     p_topic: topic,
     p_title: title,
     p_body: body,
-    p_price_cents: priceCents,
+    p_price_cents: amountCentsFromCashKrw(priceCash),
     p_idempotency_key: idempotencyKey,
   });
 

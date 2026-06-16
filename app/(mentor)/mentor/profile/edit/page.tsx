@@ -7,6 +7,7 @@ import { MENTOR_PROFILE_DATA_MODEL } from "@/lib/mentor/mentorDataModel";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
+import { cashKrwFromAmountCents } from "@/lib/subscribe/mentorPlanPricing";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
@@ -41,7 +42,9 @@ export default async function MentorProfileEditPage(props: PageProps) {
     verification: display.verification,
     displayName: display.displayName,
     grade: display.grade,
-    individualQuestionPriceCash: iqPrice.amountCents,
+    // 저장값은 cents(=캐시×100). 입력 프리필은 캐시로 ÷100 변환.
+    individualQuestionPriceCash:
+      iqPrice.amountCents != null ? cashKrwFromAmountCents(iqPrice.amountCents) : null,
   };
 
   const hasRow = Boolean(row);

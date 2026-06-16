@@ -38,6 +38,7 @@ export const INDIVIDUAL_QUESTION_LEDGER_REASONS = {
   refund: "individual_question_refund",
 } as const;
 
-export const OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS = 1000;
-export const OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CENTS = 5000;
-export const OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CENTS = 30000;
+// 단위: 캐시(=원). 저장 시 ×100 하여 cents 로 변환(amountCentsFromCashKrw). 표시는 캐시 그대로.
+export const OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH = 1000;
+export const OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CASH = 5000;
+export const OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CASH = 30000;

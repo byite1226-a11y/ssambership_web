@@ -164,10 +164,11 @@ async function updateMentorIndividualQuestionPrice(
   if (!Number.isFinite(priceCash) || priceCash <= 0) {
     return { ok: false, error: "개별 질문 답변 단가는 1캐시 이상 숫자로 입력해 주세요." };
   }
+  // 입력은 캐시(=원). 정규 cents(=캐시×100)로 저장 — 구독 헬퍼 재사용으로 규약 일원화.
   const { error } = await supabase
     .from("mentor_individual_question_pricing")
     .upsert(
-      { mentor_id: mentorId, amount_cents: Math.trunc(priceCash), updated_at: now },
+      { mentor_id: mentorId, amount_cents: amountCentsFromCashKrw(priceCash), updated_at: now },
       { onConflict: "mentor_id" }
     );
   if (error) return { ok: false, error: error.message };

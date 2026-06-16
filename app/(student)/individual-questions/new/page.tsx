@@ -5,11 +5,10 @@ import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createOpenIndividualQuestionAction } from "@/lib/individualQuestion/individualQuestionActions";
 import {
-  OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CENTS,
-  OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CENTS,
-  OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS,
+  OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CASH,
+  OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CASH,
+  OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH,
 } from "@/lib/individualQuestion/individualQuestionTypes";
-import { formatIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionFormat";
 
 type PageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -66,14 +65,14 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
           <div>
             <dt className="text-xs font-extrabold text-blue-700">최소 금액</dt>
             <dd className="mt-1 text-sm font-black text-slate-900">
-              {formatIndividualQuestionPrice(OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS)}
+              {OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH.toLocaleString("ko-KR")}캐시
             </dd>
           </div>
           <div>
             <dt className="text-xs font-extrabold text-blue-700">권장 범위</dt>
             <dd className="mt-1 text-sm font-black text-slate-900">
-              {formatIndividualQuestionPrice(OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CENTS)}~
-              {formatIndividualQuestionPrice(OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CENTS)}
+              {OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CASH.toLocaleString("ko-KR")}~
+              {OPEN_INDIVIDUAL_QUESTION_GUIDE_MAX_CASH.toLocaleString("ko-KR")}캐시
             </dd>
           </div>
         </dl>
@@ -115,9 +114,9 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
               type="number"
               inputMode="numeric"
               required
-              min={OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CENTS}
+              min={OPEN_INDIVIDUAL_QUESTION_MIN_PRICE_CASH}
               step={100}
-              placeholder={String(OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CENTS)}
+              placeholder={String(OPEN_INDIVIDUAL_QUESTION_GUIDE_MIN_CASH)}
               className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
             />
             <span className="mt-1 block text-xs font-semibold text-slate-500">
