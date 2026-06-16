@@ -4,9 +4,10 @@ import { CheckCircle2, Clock, MessageSquareText, Paperclip, WalletCards } from "
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { getSubjectLabel } from "@/lib/subjects/subjectCatalog";
 import {
-  answerDirectIndividualQuestionAction,
   claimOpenIndividualQuestionAction,
   confirmIndividualQuestionAnswerAction,
+  confirmIndividualQuestionAnswerByMentorAction,
+  sendIndividualQuestionMessageAction,
 } from "@/lib/individualQuestion/individualQuestionActions";
 import {
   formatIndividualQuestionDate,
@@ -184,34 +185,47 @@ export function OpenIndividualQuestionBrowseCards(props: {
   );
 }
 
-function AttachmentList(props: { attachments: IndividualQuestionDetail["attachments"] }) {
-  if (props.attachments.length === 0) {
-    return <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">첨부 파일이 없습니다.</p>;
-  }
+type IqAttachment = IndividualQuestionDetail["attachments"][number];
 
+function isImageAttachment(att: IqAttachment): boolean {
+  const mime = (att.mime_type ?? "").toLowerCase();
+  if (mime.startsWith("image/")) return true;
+  return /\.(png|jpe?g|webp|gif)$/i.test(att.file_name ?? "");
+}
+
+// 첨부 인라인 렌더 — 이미지는 썸네일(클릭 확대), 그 외는 파일칩. 질문 카드·메시지 버블 공용.
+function AttachmentInline(props: { attachments: IqAttachment[] }) {
+  if (props.attachments.length === 0) return null;
   return (
-    <ul className="grid gap-2">
-      {props.attachments.map((attachment) => (
-        <li key={attachment.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <span className="inline-flex min-w-0 items-center gap-2 text-sm font-bold text-slate-800">
-            <Paperclip className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
-            <span className="truncate">{attachment.file_name || "첨부 파일"}</span>
+    <div className="mt-2 flex flex-wrap gap-2">
+      {props.attachments.map((att) =>
+        !att.signedUrl ? (
+          <span key={att.id} className="rounded-lg bg-white/70 px-2.5 py-1.5 text-xs font-semibold text-slate-400">
+            열람 불가
           </span>
-          {attachment.signedUrl ? (
-            <Link
-              href={attachment.signedUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700 hover:bg-blue-100"
-            >
-              열기
-            </Link>
-          ) : (
-            <span className="text-xs font-semibold text-slate-400">열람 불가</span>
-          )}
-        </li>
-      ))}
-    </ul>
+        ) : isImageAttachment(att) ? (
+          <Link key={att.id} href={att.signedUrl} target="_blank" rel="noreferrer" className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={att.signedUrl}
+              alt={att.file_name || "첨부 이미지"}
+              className="max-h-48 rounded-xl border border-slate-200 bg-white object-contain"
+            />
+          </Link>
+        ) : (
+          <Link
+            key={att.id}
+            href={att.signedUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-800 hover:bg-slate-50"
+          >
+            <Paperclip className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
+            <span className="max-w-[180px] truncate">{att.file_name || "첨부 파일"}</span>
+          </Link>
+        )
+      )}
+    </div>
   );
 }
 
@@ -220,14 +234,29 @@ export function IndividualQuestionDetailView(props: {
   backHref: string;
   backLabel: string;
   actor: "student" | "mentor";
-  canAnswer?: boolean;
-  canConfirm?: boolean;
   flash?: string | null;
   warning?: string | null;
 }) {
-  const { detail } = props;
-  const counterpartName = props.actor === "student" ? detail.mentorName : detail.studentName;
-  const counterpartLabel = props.actor === "student" ? (detail.question_type === "open" ? "답변 멘토" : "담당 멘토") : "학생";
+  const { detail, actor } = props;
+  const counterpartName = actor === "student" ? detail.mentorName : detail.studentName;
+  const counterpartLabel = actor === "student" ? (detail.question_type === "open" ? "답변 멘토" : "담당 멘토") : "학생";
+
+  // 질문 자체 첨부(message_id 없음)와 메시지별 첨부 분리.
+  const questionAttachments = detail.attachments.filter((a) => !a.message_id);
+  const attachmentsByMessage = new Map<string, IqAttachment[]>();
+  for (const att of detail.attachments) {
+    if (!att.message_id) continue;
+    const list = attachmentsByMessage.get(att.message_id) ?? [];
+    list.push(att);
+    attachmentsByMessage.set(att.message_id, list);
+  }
+
+  const status = (detail.status ?? "").toLowerCase();
+  const terminal = status === "released" || status === "refunded" || status === "expired" || status === "canceled";
+  const canCompose = !terminal;
+  const canMentorConfirm = actor === "mentor" && (status === "assigned" || status === "claimed");
+  const canStudentConfirm = actor === "student" && status === "answered";
+  const answeredWaiting = actor === "mentor" && status === "answered";
 
   return (
     <div className="cr-landing cr-detail-v5 cr-detail-shell mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
@@ -238,63 +267,41 @@ export function IndividualQuestionDetailView(props: {
             <h1 className="cr-detail-title">{detail.title}</h1>
             <IndividualQuestionStatusBadge status={detail.status} />
           </div>
-          <p className="cr-detail-subtitle">
-            구독 질문권과 별개로 캐시를 예치해 진행하는 단건 질문입니다.
-          </p>
+          <p className="cr-detail-subtitle">구독 질문권과 별개로 캐시를 예치해 진행하는 단건 질문입니다.</p>
         </header>
 
         {props.flash ? (
-          <p className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900">
-            {props.flash}
-          </p>
+          <p className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900">{props.flash}</p>
         ) : null}
         {props.warning ? (
-          <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
-            {props.warning}
-          </p>
+          <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">{props.warning}</p>
         ) : null}
 
-        <dl className="grid gap-3 rounded-2xl bg-[#eef4ff] p-4 sm:grid-cols-3">
-          <div>
-            <dt className="text-xs font-extrabold text-blue-700">{counterpartLabel}</dt>
-            <dd className="mt-1 text-sm font-black text-slate-900">{counterpartName}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-extrabold text-blue-700">예치 금액</dt>
-            <dd className="mt-1 text-sm font-black text-slate-900">{formatIndividualQuestionPrice(detail.price_cents)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-extrabold text-blue-700">등록일</dt>
-            <dd className="mt-1 text-sm font-black text-slate-900">{formatIndividualQuestionDate(detail.created_at)}</dd>
-          </div>
-        </dl>
-
-        <hr className="cr-detail-divider" />
-
-        <section>
-          <SectionTitle title="질문 내용" hint="멘토에게 전달된 원문입니다." />
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">{detail.body}</p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
-              {detail.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {getSubjectLabel(detail.subject)}</span> : null}
-              {detail.topic ? <span className="rounded-full bg-slate-100 px-2.5 py-1">단원 {detail.topic}</span> : null}
+        {/* 질문 카드 — 본문·첨부 미리보기를 상단에 고정해 대화 중에도 보이게 */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-extrabold text-blue-700">질문 내용</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-500">
+              <span className="rounded-full bg-slate-100 px-2.5 py-1">{counterpartLabel} {counterpartName}</span>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-900">예치 {formatIndividualQuestionPrice(detail.price_cents)}</span>
             </div>
           </div>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{detail.body}</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+            {detail.subject ? <span className="rounded-full bg-slate-100 px-2.5 py-1">과목 {getSubjectLabel(detail.subject)}</span> : null}
+            {detail.topic ? <span className="rounded-full bg-slate-100 px-2.5 py-1">단원 {detail.topic}</span> : null}
+            <span className="rounded-full bg-slate-100 px-2.5 py-1">등록 {formatIndividualQuestionDate(detail.created_at)}</span>
+          </div>
+          <AttachmentInline attachments={questionAttachments} />
         </section>
 
         <hr className="cr-detail-divider" />
 
-        <section>
-          <SectionTitle title="첨부 파일" hint="질문과 답변에 연결된 파일입니다." />
-          <AttachmentList attachments={detail.attachments} />
-        </section>
-
-        <hr className="cr-detail-divider" />
-
+        {/* 대화 스레드 */}
         <section>
           <SectionTitle
-            title="답변 기록"
-            hint={detail.messages.length > 0 ? "멘토 답변과 후속 기록입니다." : "아직 답변이 등록되지 않았습니다."}
+            title="대화"
+            hint={detail.messages.length > 0 ? "멘토와 학생이 주고받은 메시지입니다." : "아직 메시지가 없어요. 첫 메시지를 보내 보세요."}
             right={
               <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600">
                 <MessageSquareText className="h-3.5 w-3.5" aria-hidden />
@@ -304,90 +311,118 @@ export function IndividualQuestionDetailView(props: {
           />
           {detail.messages.length > 0 ? (
             <ol className="space-y-3">
-              {detail.messages.map((message) => (
-                <li key={message.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-black text-slate-900">{message.authorName}</p>
-                    <p className="text-xs font-semibold text-slate-500">{formatIndividualQuestionDate(message.created_at)}</p>
-                  </div>
-                  <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{message.body}</p>
-                </li>
-              ))}
+              {detail.messages.map((message) => {
+                const mine = message.authorRole === actor;
+                const atts = attachmentsByMessage.get(message.id) ?? [];
+                const initial = (message.authorName.trim().charAt(0) || (message.authorRole === "mentor" ? "멘" : "학")).toUpperCase();
+                return (
+                  <li key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                    <div className={`flex max-w-[82%] gap-2 ${mine ? "flex-row-reverse" : "flex-row"}`}>
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600">
+                        {mine ? "나" : initial}
+                      </span>
+                      <div className="min-w-0">
+                        <div className={`rounded-2xl px-4 py-3 ${mine ? "bg-blue-600 text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
+                          <p className="whitespace-pre-wrap text-sm leading-7">{message.body}</p>
+                          <AttachmentInline attachments={atts} />
+                        </div>
+                        <p className={`mt-1 text-[11px] font-semibold text-slate-400 ${mine ? "text-right" : "text-left"}`}>
+                          {mine ? "나" : message.authorName} · {formatIndividualQuestionDate(message.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           ) : (
-            <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">멘토 답변을 기다리고 있어요.</p>
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              {actor === "mentor" ? "학생 질문을 확인하고 답변을 보내 보세요." : "멘토 답변을 기다리고 있어요. 추가로 설명할 내용이 있으면 메시지를 보내세요."}
+            </p>
           )}
         </section>
 
-        {props.canAnswer ? (
+        {/* 메시지 입력바 — 멘토·학생 공통(서버가 작성자 판별) */}
+        {canCompose ? (
           <>
             <hr className="cr-detail-divider" />
-            <section>
-              <SectionTitle
-                title="답변 작성"
-                hint="답변을 등록하면 학생이 확인 후 [해결됨]으로 확정할 때 예치 금액이 지급됩니다."
-                right={
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                    <WalletCards className="h-3.5 w-3.5" aria-hidden />
-                    학생 확정 시 지급
-                  </span>
-                }
+            <form action={sendIndividualQuestionMessageAction} className="space-y-2">
+              <input type="hidden" name="questionId" value={detail.id} />
+              <textarea
+                name="body"
+                rows={4}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none ring-blue-100 transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4"
+                placeholder={actor === "mentor" ? "학생에게 보낼 답변·메시지를 작성하세요." : "멘토에게 보낼 메시지를 작성하세요."}
               />
-              <form action={answerDirectIndividualQuestionAction} className="space-y-3">
-                <input type="hidden" name="questionId" value={detail.id} />
-                <textarea
-                  name="body"
-                  required
-                  minLength={5}
-                  rows={7}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-900 outline-none ring-blue-100 transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4"
-                  placeholder="학생에게 전달할 답변을 작성해 주세요."
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-600">
+                  <Paperclip className="h-4 w-4 text-blue-600" aria-hidden />
+                  <span>파일 첨부</span>
+                  <input type="file" name="attachment" className="block max-w-[200px] text-xs text-slate-500" />
+                </label>
+                <FormSubmitButton
+                  idleLabel="보내기"
+                  pendingLabel="전송 중..."
+                  className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 />
-                <input
-                  type="file"
-                  name="attachment"
-                  className="block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
-                />
-                <div className="flex justify-end">
-                  <FormSubmitButton
-                    idleLabel="답변 등록"
-                    pendingLabel="처리 중..."
-                    className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-                </div>
-              </form>
-            </section>
+              </div>
+            </form>
           </>
         ) : null}
 
-        {props.canConfirm ? (
+        {/* 멘토 답변 확정 */}
+        {canMentorConfirm ? (
           <>
             <hr className="cr-detail-divider" />
-            <section>
-              <SectionTitle
-                title="답변 확정"
-                hint="답변이 도움이 되었다면 [해결됨]을 눌러 주세요. 확정하면 예치한 캐시가 멘토에게 지급됩니다."
-                right={
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-                    확정 시 지급
-                  </span>
-                }
-              />
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-                <p className="text-sm leading-6 text-slate-700">
-                  멘토가 답변을 등록했어요. 확인 후 확정하면 정산이 완료됩니다. 확정 전까지 예치 캐시는 보관됩니다.
-                </p>
-                <form action={confirmIndividualQuestionAnswerAction} className="mt-3 flex justify-end">
-                  <input type="hidden" name="questionId" value={detail.id} />
-                  <FormSubmitButton
-                    idleLabel="해결됨 (답변 확정)"
-                    pendingLabel="확정 처리 중..."
-                    className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-                </form>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-bold text-slate-700">답변을 모두 작성했다면 확정해 학생 확인을 요청하세요.</p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-blue-700">
+                  <WalletCards className="h-3.5 w-3.5" aria-hidden />
+                  학생 확정 시 지급
+                </span>
               </div>
-            </section>
+              <form action={confirmIndividualQuestionAnswerByMentorAction} className="mt-3 flex justify-end">
+                <input type="hidden" name="questionId" value={detail.id} />
+                <FormSubmitButton
+                  idleLabel="답변 확정"
+                  pendingLabel="처리 중..."
+                  className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </form>
+            </div>
+          </>
+        ) : null}
+
+        {answeredWaiting ? (
+          <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-sm font-bold text-emerald-800">
+            답변을 확정했어요. 학생이 [해결됨]을 누르면 예치 금액이 지급됩니다. 보충 설명은 계속 보낼 수 있어요.
+          </p>
+        ) : null}
+
+        {/* 학생 해결됨(확정 → 지급) */}
+        {canStudentConfirm ? (
+          <>
+            <hr className="cr-detail-divider" />
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm leading-6 text-slate-700">
+                  멘토가 답변을 확정했어요. 도움이 되었다면 [해결됨]을 눌러 주세요. 확정 전까지 예치 캐시는 보관됩니다.
+                </p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                  확정 시 지급
+                </span>
+              </div>
+              <form action={confirmIndividualQuestionAnswerAction} className="mt-3 flex justify-end">
+                <input type="hidden" name="questionId" value={detail.id} />
+                <FormSubmitButton
+                  idleLabel="해결됨 (답변 확정)"
+                  pendingLabel="확정 처리 중..."
+                  className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </form>
+            </div>
           </>
         ) : null}
 

@@ -35,7 +35,7 @@ export default async function MentorIndividualQuestionDetailPage(props: PageProp
 
   const answered = firstParam(sp.answered);
   const claimed = firstParam(sp.claimed);
-  const canAnswer = (ownsDirect && detail.status === "assigned") || (ownsOpen && detail.status === "claimed");
+  const sent = firstParam(sp.sent);
 
   return (
     <IndividualQuestionDetailView
@@ -43,8 +43,15 @@ export default async function MentorIndividualQuestionDetailPage(props: PageProp
       actor="mentor"
       backHref="/mentor/individual-questions"
       backLabel="개별 질문 목록"
-      canAnswer={canAnswer}
-      flash={answered ? "답변을 등록했어요. 학생이 확정하면 예치 금액이 지급됩니다." : claimed ? "공개 질문 답변을 맡았어요. 이제 답변을 작성할 수 있습니다." : null}
+      flash={
+        answered
+          ? "답변을 확정했어요. 학생이 [해결됨]을 누르면 예치 금액이 지급됩니다."
+          : sent
+            ? "메시지를 보냈어요."
+            : claimed
+              ? "공개 질문 답변을 맡았어요. 이제 답변을 작성할 수 있습니다."
+              : null
+      }
     />
   );
 }

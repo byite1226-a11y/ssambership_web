@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireRole } from "@/lib/auth/routeGuard";
+import { requireRole, requireQnaActor } from "@/lib/auth/routeGuard";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
 import { type IndividualQuestionEscrowResult } from "@/lib/individualQuestion/individualQuestionTypes";
@@ -144,6 +144,29 @@ async function notifyAnswerRegistered(
     title: "답변이 등록되었어요",
     body: "개별 질문에 답변이 등록되었어요. 내용을 확인하고 [해결됨]을 누르면 예치 캐시가 멘토에게 지급돼요.",
     link: `${STUDENT_LIST_PATH}/${args.questionId}`,
+    metadata: { questionId: args.questionId },
+  });
+}
+
+// 대화 새 메시지 → 상대방 best-effort 알림.
+async function notifyNewIndividualQuestionMessage(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  args: { recipientUserId: string; questionId: string; toRole: "student" | "mentor" }
+): Promise<void> {
+  const link =
+    args.toRole === "mentor"
+      ? `${MENTOR_LIST_PATH}/${args.questionId}`
+      : `${STUDENT_LIST_PATH}/${args.questionId}`;
+  const body =
+    args.toRole === "mentor"
+      ? "학생이 개별 질문에 새 메시지를 보냈어요."
+      : "멘토가 개별 질문에 새 메시지를 보냈어요.";
+  await insertNotificationBestEffort({
+    recipientUserId: args.recipientUserId,
+    type: "individual_question_message",
+    title: "새 메시지가 도착했어요",
+    body,
+    link,
     metadata: { questionId: args.questionId },
   });
 }
@@ -330,74 +353,70 @@ export async function claimOpenIndividualQuestionAction(formData: FormData) {
   redirect(`${MENTOR_LIST_PATH}/${result.question_id}?claimed=1`);
 }
 
-export async function answerDirectIndividualQuestionAction(formData: FormData) {
-  const { user } = await requireRole("mentor");
+type IndividualQuestionPartyRow = {
+  id: string;
+  student_id: string | null;
+  question_type: string;
+  designated_mentor_id: string | null;
+  claimed_mentor_id: string | null;
+  status: string;
+  release_ledger_id: string | null;
+  refund_ledger_id: string | null;
+};
+
+const PARTY_COLUMNS =
+  "id, student_id, question_type, designated_mentor_id, claimed_mentor_id, status, release_ledger_id, refund_ledger_id";
+
+const TERMINAL_STATUSES = new Set(["refunded", "expired", "canceled"]);
+
+// 대화 메시지 전송 — 멘토·학생 공통. party만 허용. status 불변(보충 대화 포함).
+export async function sendIndividualQuestionMessageAction(formData: FormData) {
+  const { user, actor } = await requireQnaActor();
   const questionId = textValue(formData, "questionId");
   const body = textValue(formData, "body");
   const attachment = formData.get("attachment");
-  const detailPath = questionId ? `${MENTOR_LIST_PATH}/${encodeURIComponent(questionId)}` : MENTOR_LIST_PATH;
+  const hasAttachment = attachment instanceof File && fileHasContent(attachment);
+  const listPath = actor === "mentor" ? MENTOR_LIST_PATH : STUDENT_LIST_PATH;
+  const detailPath = questionId ? `${listPath}/${encodeURIComponent(questionId)}` : listPath;
 
-  if (!questionId) actionError(MENTOR_LIST_PATH, "질문 정보가 올바르지 않습니다.");
-  if (!body) actionError(detailPath, "답변 내용을 입력해 주세요.");
-
-  const supabase = await createClient();
-  const approval = await assertMentorApprovedForAction(supabase, user.id);
-  if (!approval.ok) actionError(detailPath, "승인 완료 후 개별 질문에 답변할 수 있어요.");
+  if (!questionId) actionError(listPath, "질문 정보가 올바르지 않습니다.");
+  if (!body && !hasAttachment) actionError(detailPath, "보낼 내용을 입력하거나 파일을 첨부해 주세요.");
 
   const admin = createServiceRoleClient();
   const { data: question, error: questionError } = await admin
     .from("individual_questions")
-    .select("id, student_id, question_type, designated_mentor_id, claimed_mentor_id, status, release_ledger_id, refund_ledger_id")
+    .select(PARTY_COLUMNS)
     .eq("id", questionId)
     .maybeSingle();
 
-  const row = question as
-    | {
-        id: string;
-        student_id: string | null;
-        question_type: string;
-        designated_mentor_id: string | null;
-        claimed_mentor_id: string | null;
-        status: string;
-        release_ledger_id: string | null;
-        refund_ledger_id: string | null;
-      }
-    | null;
+  const row = question as IndividualQuestionPartyRow | null;
+  if (questionError || !row) actionError(listPath, "개별 질문을 찾을 수 없습니다.");
 
-  if (questionError || !row) actionError(MENTOR_LIST_PATH, "개별 질문을 찾을 수 없습니다.");
-  const ownsDirect = row.question_type === "direct" && row.designated_mentor_id === user.id;
-  const ownsOpen = row.question_type === "open" && row.claimed_mentor_id === user.id;
-  if (!ownsDirect && !ownsOpen) {
-    actionError(MENTOR_LIST_PATH, "이 질문에 답변할 권한이 없습니다.");
+  const isStudentParty = actor === "student" && row.student_id === user.id;
+  const isMentorParty =
+    actor === "mentor" && (row.designated_mentor_id === user.id || row.claimed_mentor_id === user.id);
+  if (!isStudentParty && !isMentorParty) {
+    actionError(listPath, "이 질문의 대화에 참여할 권한이 없습니다.");
   }
-  if (row.refund_ledger_id || row.status === "refunded" || row.status === "expired" || row.status === "canceled") {
-    actionError(detailPath, "이미 종료된 질문에는 답변할 수 없습니다.");
+  if (TERMINAL_STATUSES.has(row.status) || row.refund_ledger_id) {
+    actionError(detailPath, "이미 종료된 질문에는 메시지를 보낼 수 없습니다.");
   }
-  if (row.release_ledger_id || row.status === "released") {
-    actionError(detailPath, "이미 답변 완료 처리된 질문입니다.");
-  }
-  const canAnswerDirect = ownsDirect && row.status === "assigned";
-  const canAnswerOpen = ownsOpen && row.status === "claimed";
-  if (!canAnswerDirect && !canAnswerOpen) {
-    actionError(detailPath, "현재 상태에서는 답변 완료 처리를 할 수 없습니다.");
+  if (row.status === "released" || row.release_ledger_id) {
+    actionError(detailPath, "정산이 완료된 질문입니다.");
   }
 
   const { data: message, error: messageError } = await admin
     .from("individual_question_messages")
-    .insert({
-      question_id: questionId,
-      author_id: user.id,
-      body,
-    })
+    .insert({ question_id: questionId, author_id: user.id, body: body || "(첨부 파일)" })
     .select("id")
     .single();
 
   const messageId = typeof message?.id === "string" ? message.id : null;
   if (messageError || !messageId) {
-    actionError(detailPath, "답변을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    actionError(detailPath, "메시지를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
-  if (attachment instanceof File && fileHasContent(attachment)) {
+  if (hasAttachment) {
     const upload = await uploadIndividualQuestionAttachment(admin, {
       questionId,
       messageId,
@@ -408,21 +427,69 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
     }
   }
 
+  // 상대방 best-effort 알림.
+  if (isMentorParty && row.student_id) {
+    await notifyNewIndividualQuestionMessage(admin, { recipientUserId: row.student_id, questionId, toRole: "student" });
+  } else if (isStudentParty) {
+    const mentorId = row.claimed_mentor_id ?? row.designated_mentor_id;
+    if (mentorId) {
+      await notifyNewIndividualQuestionMessage(admin, { recipientUserId: mentorId, questionId, toRole: "mentor" });
+    }
+  }
+
+  revalidatePath(MENTOR_LIST_PATH);
+  revalidatePath(`${MENTOR_LIST_PATH}/${questionId}`);
+  revalidatePath(STUDENT_LIST_PATH);
+  revalidatePath(`${STUDENT_LIST_PATH}/${questionId}`);
+  redirect(`${detailPath}?sent=1`);
+}
+
+// 멘토 [답변 확정] — status를 answered로 전이(지급은 학생 [해결됨] 때). 메시지 전송과 분리.
+export async function confirmIndividualQuestionAnswerByMentorAction(formData: FormData) {
+  const { user } = await requireRole("mentor");
+  const questionId = textValue(formData, "questionId");
+  const detailPath = questionId ? `${MENTOR_LIST_PATH}/${encodeURIComponent(questionId)}` : MENTOR_LIST_PATH;
+  if (!questionId) actionError(MENTOR_LIST_PATH, "질문 정보가 올바르지 않습니다.");
+
+  const supabase = await createClient();
+  const approval = await assertMentorApprovedForAction(supabase, user.id);
+  if (!approval.ok) actionError(detailPath, "승인 완료 후 답변을 확정할 수 있어요.");
+
+  const admin = createServiceRoleClient();
+  const { data: question, error: questionError } = await admin
+    .from("individual_questions")
+    .select(PARTY_COLUMNS)
+    .eq("id", questionId)
+    .maybeSingle();
+
+  const row = question as IndividualQuestionPartyRow | null;
+  if (questionError || !row) actionError(MENTOR_LIST_PATH, "개별 질문을 찾을 수 없습니다.");
+
+  const ownsDirect = row.question_type === "direct" && row.designated_mentor_id === user.id;
+  const ownsOpen = row.question_type === "open" && row.claimed_mentor_id === user.id;
+  if (!ownsDirect && !ownsOpen) actionError(MENTOR_LIST_PATH, "이 질문을 확정할 권한이 없습니다.");
+  if (TERMINAL_STATUSES.has(row.status) || row.refund_ledger_id) {
+    actionError(detailPath, "이미 종료된 질문입니다.");
+  }
+  if (row.status === "answered" || row.status === "released" || row.release_ledger_id) {
+    redirect(`${detailPath}?answered=1`);
+  }
+  const canConfirmDirect = ownsDirect && row.status === "assigned";
+  const canConfirmOpen = ownsOpen && row.status === "claimed";
+  if (!canConfirmDirect && !canConfirmOpen) {
+    actionError(detailPath, "현재 상태에서는 답변을 확정할 수 없습니다.");
+  }
+
   const { error: updateError } = await admin
     .from("individual_questions")
-    .update({
-      status: "answered",
-      answered_at: new Date().toISOString(),
-    })
+    .update({ status: "answered", answered_at: new Date().toISOString() })
     .eq("id", questionId)
     .eq("status", row.status)
     .or(`designated_mentor_id.eq.${user.id},claimed_mentor_id.eq.${user.id}`);
 
-  if (updateError) {
-    actionError(detailPath, "답변 상태를 저장하지 못했습니다.");
-  }
+  if (updateError) actionError(detailPath, "답변 확정 상태를 저장하지 못했습니다.");
 
-  // 지급은 즉시 하지 않는다. 학생이 [해결됨]으로 확정할 때 release를 호출(2단계 정산).
+  // 지급은 학생 [해결됨] 때. 여기선 학생에게 확정 알림만.
   if (row.student_id) {
     await notifyAnswerRegistered(admin, { studentId: row.student_id, questionId });
   }
@@ -431,7 +498,7 @@ export async function answerDirectIndividualQuestionAction(formData: FormData) {
   revalidatePath(`${MENTOR_LIST_PATH}/${questionId}`);
   revalidatePath(STUDENT_LIST_PATH);
   revalidatePath(`${STUDENT_LIST_PATH}/${questionId}`);
-  redirect(`${MENTOR_LIST_PATH}/${questionId}?answered=1`);
+  redirect(`${detailPath}?answered=1`);
 }
 
 // 학생이 답변을 확정([해결됨]) → 그때 멘토 지급(release). 본인·answered 상태만.
