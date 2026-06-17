@@ -88,14 +88,14 @@ export function ConnectionNotesPanel(props: {
     return (
       <section
         className={`rounded-2xl border p-3.5 ${
-          isStudent ? "border-blue-100 bg-blue-50/50" : "border-slate-200 bg-slate-50/70"
+          isStudent ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-slate-100/70"
         }`}
       >
         <div className="flex items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-[13px] font-extrabold text-slate-900">
-            <span className={`h-2.5 w-2.5 rounded-full ${isStudent ? "bg-blue-600" : "bg-slate-400"}`} aria-hidden />
+            <span className={`h-2.5 w-2.5 rounded-full ${isStudent ? "bg-blue-600" : "bg-slate-500"}`} aria-hidden />
             {opts.title}
-            <span className={`text-[11px] font-bold ${isStudent ? "text-blue-600" : "text-slate-500"}`}>
+            <span className={`text-[11px] font-bold ${isStudent ? "text-blue-700" : "text-slate-600"}`}>
               {opts.cards.length}
             </span>
           </p>
@@ -122,8 +122,8 @@ export function ConnectionNotesPanel(props: {
             opts.cards.map((card) => (
               <article
                 key={card.id}
-                className={`rounded-xl border border-l-[3px] bg-white px-3.5 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)] ${
-                  isStudent ? "border-blue-100 border-l-blue-600" : "border-slate-200 border-l-slate-400"
+                className={`rounded-xl border border-l-[3px] bg-white px-3.5 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)] ${
+                  isStudent ? "border-blue-200 border-l-blue-600" : "border-slate-300 border-l-slate-500"
                 }`}
               >
                 <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700">{card.body}</p>
@@ -143,15 +143,15 @@ export function ConnectionNotesPanel(props: {
     <aside className="hidden w-full shrink-0 flex-col bg-[#f8fafc] lg:flex lg:w-[420px]">
       <div className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto bg-white">
         {/* 헤더 색면 띠 (앱 파랑 info) */}
-        <div className="border-b border-blue-100 bg-blue-50 px-5 py-4">
+        <div className="border-b border-blue-200 bg-blue-100 px-5 py-4">
           <p className="flex items-center gap-2 text-[15px] font-extrabold text-blue-900">
-            <Notebook className="h-[18px] w-[18px] text-blue-600" aria-hidden />
+            <Notebook className="h-[18px] w-[18px] text-blue-700" aria-hidden />
             연결 노트
           </p>
           {/* 관계 지표 */}
-          <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-xl border border-blue-100 bg-white">
+          <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-xl border border-blue-200 bg-white">
             <div className="flex items-center gap-2 px-3 py-2.5">
-              <CalendarDays className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
+              <CalendarDays className="h-4 w-4 shrink-0 text-blue-700" aria-hidden />
               <span className="min-w-0">
                 <span className="block text-[10px] font-bold text-blue-700">함께한 기간</span>
                 <span className="block text-[15px] font-black tabular-nums text-slate-900">
@@ -159,8 +159,8 @@ export function ConnectionNotesPanel(props: {
                 </span>
               </span>
             </div>
-            <div className="flex items-center gap-2 border-l border-blue-100 px-3 py-2.5">
-              <MessagesSquare className="h-4 w-4 shrink-0 text-blue-600" aria-hidden />
+            <div className="flex items-center gap-2 border-l border-blue-200 px-3 py-2.5">
+              <MessagesSquare className="h-4 w-4 shrink-0 text-blue-700" aria-hidden />
               <span className="min-w-0">
                 <span className="block text-[10px] font-bold text-blue-700">함께한 질문</span>
                 <span className="block text-[15px] font-black tabular-nums text-slate-900">{props.threadCount}</span>
