@@ -667,9 +667,23 @@ export function QuestionRoomStudentDesignWorkspace(props: {
             </>
             )}
           </div>
+          {/* 모바일: 중앙 하단 토글 */}
+          <div className="shrink-0 border-t border-slate-100 bg-white p-3 lg:hidden">
+            <ConnectionNotesPanel
+              room={currentRoom}
+              notes={props.notes.rows}
+              viewerRole="student"
+              currentUserId={props.currentUserId}
+              roomId={props.roomId}
+              threadId={props.threadId}
+              threadCount={props.threads.rows.length}
+              mentorName={roomMentorLabel(currentRoom ?? {}, props.mentorDisplays)}
+              variant="mobile"
+            />
+          </div>
         </main>
 
-        {/* 우측 패널: 연결 노트 (공용 컴포넌트 — 멘토/학생 통합) */}
+        {/* 우측 패널: 연결 노트 (공용 컴포넌트 — 멘토/학생 통합, 데스크톱) */}
         <ConnectionNotesPanel
           room={currentRoom}
           notes={props.notes.rows}

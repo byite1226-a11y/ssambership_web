@@ -228,17 +228,21 @@ export function QuestionRoomMentorDesignWorkspace(props: {
     </div>
   ) : null;
 
-  const notesPanel = (
-    <ConnectionNotesPanel
-      room={currentRoom}
-      notes={props.notes.rows}
-      viewerRole="mentor"
-      currentUserId={props.currentUserId}
-      roomId={props.roomId}
-      threadId={props.threadId}
-      threadCount={props.threads.rows.length}
-      studentName={studentName}
-    />
+  const notesPanelProps = {
+    room: currentRoom,
+    notes: props.notes.rows,
+    viewerRole: "mentor" as const,
+    currentUserId: props.currentUserId,
+    roomId: props.roomId,
+    threadId: props.threadId,
+    threadCount: props.threads.rows.length,
+    studentName,
+  };
+  const notesPanel = <ConnectionNotesPanel {...notesPanelProps} />;
+  const mobileNotesPanel = (
+    <div className="shrink-0 border-t border-slate-100 bg-white p-3 lg:hidden">
+      <ConnectionNotesPanel {...notesPanelProps} variant="mobile" />
+    </div>
   );
 
   /* 채팅(톡방) 본문 — 3단계 중앙 */
@@ -327,6 +331,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
           </div>
         </form>
       </div>
+      {mobileNotesPanel}
     </main>
   );
 
@@ -565,6 +570,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
               )}
             </div>
           </div>
+          {mobileNotesPanel}
         </main>
 
         {notesPanel}
