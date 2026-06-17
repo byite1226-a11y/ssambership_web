@@ -10,6 +10,8 @@ import { QuestionThreadAnswerCompleteButton } from "@/components/qna/QuestionThr
 import { parseAttachmentMessageBody } from "@/lib/qna/questionRoomAttachmentDisplay";
 import { StatusBadge, legacyToneToStatusBadgeTone } from "@/components/common/StatusBadge";
 import { listCardClassName, type ListCardTone } from "@/components/design-system/ListCard";
+import type { QuestionRoomSubscriptionContext } from "@/lib/qna/questionRoomStudentContext";
+import type { WeeklyQuestionUsage } from "@/lib/qna/weeklyQuestionUsageDisplay";
 // _threadStatusBadgeClass는 신규 StatusBadge로 대체됨 — 잔존 호출 없음(_ 접두로 미사용 표시)
 void _threadStatusBadgeClass;
 
@@ -138,6 +140,10 @@ export function QuestionRoomMentorDesignWorkspace(props: {
   threadDetailMode?: boolean;
   /** 톡방에서 질문 목록(2단계)으로 돌아가는 경로 */
   backHref?: string | null;
+  /** 이 학생의 구독 요금제·갱신 정보(읽기 전용 표시용). */
+  subscriptionContext?: QuestionRoomSubscriptionContext | null;
+  /** 이 학생의 이번 주 질문 사용/한도(읽기 전용 표시용). */
+  studentWeeklyUsage?: WeeklyQuestionUsage | null;
 }) {
   const rev = props.formRevision ?? "0";
   const roomBase = props.roomHrefBase ?? "/mentor/question-room";
@@ -197,6 +203,31 @@ export function QuestionRoomMentorDesignWorkspace(props: {
     : ("pending" as const);
 
   /* 연결 노트 패널 (공용 컴포넌트 — 멘토/학생 통합) */
+  /* 학생 구독 요금제·이번 주 잔여 질문 카드 (읽기 전용, 멘토 중앙 헤더 상주) */
+  const sub = props.subscriptionContext ?? null;
+  const usage = props.studentWeeklyUsage ?? null;
+  const hasPlan = Boolean(sub && (sub.planTier || (usage && (usage.limit > 0 || usage.planTier))));
+  const usageUnlimited = Boolean(usage && usage.limit >= 999);
+  const studentPlanCard = sub ? (
+    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold">
+      {hasPlan ? (
+        <>
+          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
+            {sub.planLabel}
+          </span>
+          <span className="text-slate-700">
+            {usageUnlimited
+              ? `이번 주 무제한 · ${usage?.used ?? 0} 사용`
+              : `이번 주 잔여 ${usage?.remaining ?? 0}/${usage?.limit ?? 0}`}
+          </span>
+          <span className="text-blue-700/80">다음 갱신 {sub.nextRenewalLabel}</span>
+        </>
+      ) : (
+        <span className="text-slate-500">구독 정보 없음</span>
+      )}
+    </div>
+  ) : null;
+
   const notesPanel = (
     <ConnectionNotesPanel
       room={currentRoom}
@@ -237,6 +268,8 @@ export function QuestionRoomMentorDesignWorkspace(props: {
           </div>
         ) : null}
       </header>
+
+      {studentPlanCard ? <div className="shrink-0 border-b border-slate-100 px-5 pb-3 pt-0">{studentPlanCard}</div> : null}
 
       <div className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto bg-[#f8fafc] p-5">
         {props.messages.loading ? (
@@ -438,6 +471,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                     ))}
                   </div>
                 ) : null}
+                {studentPlanCard}
               </div>
             </div>
           </header>

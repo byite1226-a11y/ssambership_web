@@ -96,7 +96,8 @@ export function QuestionRoomWorkspace(props: {
   messageCountsByThreadId?: Record<string, number>;
   lastMessageByThreadId?: Record<string, Record<string, unknown>>;
   unreadCountsByRoomId?: Record<string, number>;
-  subscriptionContext?: import("@/lib/qna/questionRoomStudentContext").QuestionRoomSubscriptionContext;
+  subscriptionContext?: import("@/lib/qna/questionRoomStudentContext").QuestionRoomSubscriptionContext | null;
+  studentWeeklyUsage?: import("@/lib/qna/weeklyQuestionUsageDisplay").WeeklyQuestionUsage | null;
   subjectOptions?: string[];
   roomHrefBase?: string;
   listStartQuestion?: { href: string; label: string };
@@ -196,6 +197,8 @@ export function QuestionRoomWorkspace(props: {
         formRevision={rev}
         threadDetailMode={props.threadDetailMode}
         backHref={props.backHref}
+        subscriptionContext={props.subscriptionContext}
+        studentWeeklyUsage={props.studentWeeklyUsage}
         actionFeedback={{
           ok: props.actionFeedback?.ok ?? null,
           error: props.actionFeedback?.error ?? null,
@@ -220,7 +223,7 @@ export function QuestionRoomWorkspace(props: {
         messageCountsByThreadId={props.messageCountsByThreadId}
         lastMessageByThreadId={props.lastMessageByThreadId}
         unreadCountsByRoomId={props.unreadCountsByRoomId}
-        subscriptionContext={props.subscriptionContext}
+        subscriptionContext={props.subscriptionContext ?? undefined}
         subjectOptions={props.subjectOptions}
         actionFeedback={props.actionFeedback}
         draftMessageBody={props.draftMessageBody}

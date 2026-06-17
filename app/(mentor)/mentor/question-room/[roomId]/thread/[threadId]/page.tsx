@@ -15,7 +15,10 @@ import {
 import {
   loadLastMessageByThreadId,
   loadMessageCountsByThreadId,
+  loadQuestionRoomSubscriptionContext,
 } from "@/lib/qna/questionRoomStudentContext";
+import { fetchWeeklyQuestionUsageWithFallback } from "@/lib/qna/weeklyQuestionUsage";
+import { partyUserIdFromRoomRow } from "@/lib/qna/questionRoomUiLabels";
 import { extractNoteText } from "@/lib/qna/questionRoomMutations";
 import { paramToDraft } from "@/lib/qna/draftQuery";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
@@ -85,6 +88,16 @@ export default async function MentorQuestionThreadDetailPage(props: Props) {
 
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
+  const currentRoom = listBundle.rooms.rows.find((r) => r && String(r.id) === String(roomId)) ?? null;
+  const studentId = currentRoom ? partyUserIdFromRoomRow(currentRoom, "student") : null;
+  const [subscriptionContext, weeklyUsageResult] = studentId
+    ? await Promise.all([
+        loadQuestionRoomSubscriptionContext(supabase, studentId, currentRoom),
+        fetchWeeklyQuestionUsageWithFallback(supabase, studentId, user.id),
+      ])
+    : [null, null];
+  const studentWeeklyUsage = weeklyUsageResult?.usage ?? null;
+
   return (
     <PageScaffold
       hideHero
@@ -119,6 +132,8 @@ export default async function MentorQuestionThreadDetailPage(props: Props) {
         draftMessageBody={draftMessageBody}
         draftNoteBody={draftNoteBody}
         formRevision={formRevision}
+        subscriptionContext={subscriptionContext}
+        studentWeeklyUsage={studentWeeklyUsage}
         showChatPanel
         threadDetailMode
         backHref={roomDetailPath("/mentor/question-room", roomId)}
