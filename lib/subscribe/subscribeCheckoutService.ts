@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
+import { transferReleasedIndividualQuestionsToRoom } from "@/lib/individualQuestion/transferIndividualQuestionsToRoom";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
@@ -1144,5 +1145,16 @@ async function ensureMentorStudentRoomWithServiceRetry(
 ): Promise<RoomR> {
   void userClient;
   void logLabel;
-  return ensureMentorStudentRoom(createServiceRoleClient(), studentId, mentorId, paymentId, subscriptionId);
+  const admin = createServiceRoleClient();
+  const room = await ensureMentorStudentRoom(admin, studentId, mentorId, paymentId, subscriptionId);
+
+  // 부가(best-effort): released 개별질문을 구독 질문방으로 이전. 실패해도 구독 전환은 성공 유지.
+  if (room.ok && room.roomId) {
+    try {
+      await transferReleasedIndividualQuestionsToRoom(admin, { studentId, mentorId, roomId: room.roomId });
+    } catch (e) {
+      console.error("[subscribeCheckout] individual-question transfer failed (non-fatal)", e);
+    }
+  }
+  return room;
 }
