@@ -223,6 +223,30 @@ export async function fetchOpenIndividualQuestionsForMentor(
   return { rows: (data ?? []) as OpenIndividualQuestionBrowseRow[], error: null };
 }
 
+export type IndividualQuestionTransferInfo = {
+  roomId: string | null;
+  threadId: string | null;
+  transferredAt: string | null;
+};
+
+/**
+ * 이 개별질문이 구독 질문방으로 이전됐는지 조회(075 매핑 테이블).
+ * 사용자 세션 클라이언트로 호출 → RLS(본인 학생 select)로 본인 것만 보인다.
+ */
+export async function fetchIndividualQuestionTransfer(
+  supabase: SupabaseClient,
+  questionId: string
+): Promise<IndividualQuestionTransferInfo | null> {
+  const { data, error } = await supabase
+    .from("individual_question_transfers")
+    .select("room_id, thread_id, transferred_at")
+    .eq("individual_question_id", questionId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as { room_id: string | null; thread_id: string | null; transferred_at: string | null };
+  return { roomId: row.room_id, threadId: row.thread_id, transferredAt: row.transferred_at };
+}
+
 export async function fetchIndividualQuestionDetail(
   supabase: SupabaseClient,
   questionId: string
