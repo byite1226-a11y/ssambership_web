@@ -11,7 +11,7 @@
 
 export { StatNumber, type StatNumberProps } from "@/components/design-system/StatNumber";
 export { SurfaceCard, Card, type SurfaceCardProps, type SurfaceCardVariant } from "@/components/design-system/SurfaceCard";
-export { ListCard, type ListCardTone } from "@/components/design-system/ListCard";
+export { ListCard, listCardClassName, type ListCardTone } from "@/components/design-system/ListCard";
 export {
   StatusBadge,
   Badge,

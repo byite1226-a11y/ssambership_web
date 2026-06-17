@@ -9,8 +9,16 @@ import { QuestionRoomAttachmentButton } from "@/components/qna/QuestionRoomAttac
 import { QuestionThreadAnswerCompleteButton } from "@/components/qna/QuestionThreadAnswerCompleteButton";
 import { parseAttachmentMessageBody } from "@/lib/qna/questionRoomAttachmentDisplay";
 import { StatusBadge, legacyToneToStatusBadgeTone } from "@/components/common/StatusBadge";
+import { listCardClassName, type ListCardTone } from "@/components/design-system/ListCard";
 // _threadStatusBadgeClass는 신규 StatusBadge로 대체됨 — 잔존 호출 없음(_ 접두로 미사용 표시)
 void _threadStatusBadgeClass;
+
+// 질문 상태 tone(답변대기=amber / 진행중=blue / 답변완료=emerald) → 목록 카드 톤(좌측 액센트 바).
+const THREAD_TONE_TO_CARD_TONE: Record<"amber" | "blue" | "emerald", ListCardTone> = {
+  amber: "amber",
+  blue: "blue",
+  emerald: "green",
+};
 import { sendQuestionMessageAction } from "@/lib/qna/questionRoomActions";
 import {
   formatMinutesAgo,
@@ -607,7 +615,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                         key={id}
                         href={threadInRoomPath(roomBase, props.roomId, id)}
                         scroll={false}
-                        className="block rounded-xl border border-slate-100 bg-white p-4 transition hover:border-slate-200 hover:shadow-sm"
+                        className={listCardClassName(THREAD_TONE_TO_CARD_TONE[status.tone], true, "block")}
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           {chip.map((c) => (
