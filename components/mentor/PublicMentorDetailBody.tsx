@@ -6,6 +6,7 @@ import { MentorDetailHeaderActions } from "@/components/mentor/MentorDetailHeade
 import { MentorDetailSubjectTabs } from "@/components/mentor/MentorDetailSubjectTabs";
 import { MentorDetailSubscribeSidebar } from "@/components/mentor/MentorDetailSubscribeSidebar";
 import { MentorReviewsCarousel } from "@/components/mentor/MentorReviewsCarousel";
+import { SurfaceCard } from "@/components/design-system/SurfaceCard";
 import { mentorVerificationKo, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import type { PublicMentorLoadResult } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
@@ -181,7 +182,7 @@ export function PublicMentorDetailBody(props: {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-12 xl:gap-10">
         <div className="min-w-0 space-y-6 xl:col-span-8">
           {/* 프로필 헤더 */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <SurfaceCard tone="neutral" bodyClassName="sm:p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
               <div className="relative mx-auto h-[120px] w-[120px] shrink-0 sm:mx-0">
                 <div className="h-[120px] w-[120px] overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-2 ring-slate-100">
@@ -240,14 +241,13 @@ export function PublicMentorDetailBody(props: {
                 </li>
               ))}
             </ul>
-          </section>
+          </SurfaceCard>
 
           {/* 멘토 소개 */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-lg font-black text-slate-900">멘토 소개</h2>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{introLong}</p>
+          <SurfaceCard tone="neutral" title="멘토 소개">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{introLong}</p>
             <p className="mt-3 text-xs text-slate-500">인증 상태: {verKo}</p>
-          </section>
+          </SurfaceCard>
 
           {/* 통계 4카드 */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -275,9 +275,8 @@ export function PublicMentorDetailBody(props: {
           <MentorReviewsCarousel mentorId={mentorId} />
 
           {viewer?.role === "student" ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black text-slate-900">리뷰 작성</h2>
-              <div className="mt-4 space-y-4">
+            <SurfaceCard tone="neutral" title="리뷰 작성">
+              <div className="space-y-4">
                 <ReviewEligibilityBanner
                   eligibilityKnown={reviewEligibility != null}
                   eligible={reviewEligibility?.eligible === true}
@@ -291,7 +290,7 @@ export function PublicMentorDetailBody(props: {
                   }
                 />
               </div>
-            </section>
+            </SurfaceCard>
           ) : null}
 
           <MentorDetailCTASection

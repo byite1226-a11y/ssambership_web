@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StateBanner } from "@/components/community/StateBanner";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
+import { SurfaceCard } from "@/components/design-system/SurfaceCard";
 import {
   formatCommunityPostDate,
   pickExcerpt,
@@ -215,62 +216,61 @@ export function CommunityPostDetail(props: {
           </div>
         </article>
       ) : props.row ? (
-        <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <header className="border-b border-slate-100 bg-white px-6 pb-5 pt-6">
-            <div className="flex flex-wrap items-center gap-2">
-              {typeof props.row.category === "string" && props.row.category.trim() ? (
-                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-extrabold text-blue-800 ring-1 ring-blue-100">
-                  {props.row.category.trim()}
-                </span>
-              ) : null}
-              <AuthorRoleBadge row={props.row} />
-            </div>
-            <h1 className="mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-3xl">{t}</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
-              <span className="font-semibold text-slate-800">{author}</span>
-              {dateStr ? (
-                <>
-                  <span className="text-slate-300" aria-hidden>
-                    ·
+        <SurfaceCard
+          tone="neutral"
+          header={
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                {typeof props.row.category === "string" && props.row.category.trim() ? (
+                  <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-extrabold text-blue-800 ring-1 ring-blue-100">
+                    {props.row.category.trim()}
                   </span>
-                  <time>{dateStr}</time>
-                </>
-              ) : null}
+                ) : null}
+                <AuthorRoleBadge row={props.row} />
+              </div>
+              <h1 className="mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-3xl">{t}</h1>
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+                <span className="font-semibold text-slate-800">{author}</span>
+                {dateStr ? (
+                  <>
+                    <span className="text-slate-300" aria-hidden>
+                      ·
+                    </span>
+                    <time>{dateStr}</time>
+                  </>
+                ) : null}
+              </div>
             </div>
-          </header>
-
-          <div className="px-6 py-6">
-            <section aria-labelledby="bd-body-heading">
-              <h2 id="bd-body-heading" className="text-sm font-extrabold text-slate-900">
-                본문
-              </h2>
-              {bodyOrTeaser ? (
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">{bodyOrTeaser}</p>
-              ) : (
-                <p className="mt-3 text-sm text-slate-500">등록된 본문이 없습니다.</p>
-              )}
-            </section>
-          </div>
-        </article>
+          }
+        >
+          <section aria-labelledby="bd-body-heading">
+            <h2 id="bd-body-heading" className="text-sm font-extrabold text-slate-900">
+              본문
+            </h2>
+            {bodyOrTeaser ? (
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">{bodyOrTeaser}</p>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">등록된 본문이 없습니다.</p>
+            )}
+          </section>
+        </SurfaceCard>
       ) : null}
 
       {props.row && props.variant === "board" ? (
-        <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm">
-          <h2 className="text-base font-extrabold text-slate-900">관련 콘텐츠</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+        <SurfaceCard tone="neutral" title="관련 콘텐츠">
+          <p className="text-sm leading-relaxed text-slate-600">
             관련 숏폼·게시글 추천 데이터를 준비 중입니다. 다른 글은 왼쪽 메뉴의 <span className="font-bold text-slate-800">숏폼</span>·
             <span className="font-bold text-slate-800">게시판</span>에서 이어서 둘러보세요.
           </p>
-        </section>
+        </SurfaceCard>
       ) : null}
 
       {props.row ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-100 pb-3">
-            <h2 className="text-base font-extrabold text-slate-900">댓글</h2>
-            <span className="text-sm text-slate-500">{n}개</span>
-          </div>
-
+        <SurfaceCard
+          tone="neutral"
+          header={<h2 className="text-base font-extrabold text-slate-900">댓글</h2>}
+          headerAction={<span className="text-sm text-slate-500">{n}개</span>}
+        >
           {props.commentsQueryError ? (
             <p className="mt-2 text-sm text-amber-800">{props.commentsQueryError}</p>
           ) : null}
@@ -332,13 +332,12 @@ export function CommunityPostDetail(props: {
               </p>
             )}
           </div>
-        </section>
+        </SurfaceCard>
       ) : null}
 
       {props.row ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="border-b border-slate-100 pb-3 text-base font-extrabold text-slate-900">신고</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+        <SurfaceCard tone="neutral" title="신고">
+          <p className="text-sm leading-6 text-slate-600">
             이 글은 즉시 삭제·숨김·블라인드 처리되지 않습니다. 운영 정책에 따라{" "}
             <span className="font-semibold text-slate-800">관리자 검토 요청</span>으로 접수되며, 확인 후 필요한 조치가
             이뤄질 수 있습니다.
@@ -400,7 +399,7 @@ export function CommunityPostDetail(props: {
               </Link>
             </p>
           )}
-        </section>
+        </SurfaceCard>
       ) : null}
 
       {props.variant === "shortform" && props.row ? (
