@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { BadgeCheck, Camera } from "lucide-react";
 import { MentorFavoriteButton } from "@/components/mentor/MentorFavoriteButton";
+import { listCardClassName } from "@/components/design-system/ListCard";
 import type { MentorPublicListCard } from "@/lib/mentor/publicMentorsListQueries";
 import {
   mentorIntroFallback,
@@ -41,7 +42,7 @@ export function MentorCard(props: {
 
   if (layout === "grid") {
     return (
-      <article className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-[#1A56DB]/30 hover:shadow-md">
+      <article className={listCardClassName("neutral", true, "relative flex h-full min-w-0 flex-col overflow-hidden p-0")}>
         <MentorFavoriteButton
           mentorId={card.mentorId}
           initialFavorited={props.isFavorited}
@@ -120,7 +121,7 @@ export function MentorCard(props: {
   }
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-[#1A56DB]/25 hover:shadow-md">
+    <article className={listCardClassName("neutral", true, "relative overflow-hidden p-0")}>
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
         <div className="relative shrink-0 sm:w-[88px]">
           <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border-2 border-white bg-slate-100 shadow ring-1 ring-slate-100 sm:mx-0">

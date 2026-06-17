@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 import type { CommunityBoardPostCard } from "@/lib/community/communityBoardQueries";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
+import { listCardClassName } from "@/components/design-system/ListCard";
 
 const PRIMARY = "#1A56DB";
 
@@ -11,7 +12,7 @@ export function CommunityPostCard(props: { post: CommunityBoardPostCard }) {
   const detailHref = `/community/board/${p.id}`;
 
   return (
-    <article className="rounded-2xl border border-[#eef0f3] bg-white p-4 transition hover:border-slate-300 sm:p-5">
+    <article className={listCardClassName("neutral", true, "sm:p-5")}>
       <div className="flex gap-3">
         <div
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
