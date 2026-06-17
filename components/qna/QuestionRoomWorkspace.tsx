@@ -126,7 +126,7 @@ export function QuestionRoomWorkspace(props: {
     return props.threads.rows.find((t) => t && String(t.id) === String(props.threadId)) ?? null;
   }, [props.threadId, props.threads.rows]);
 
-  const studentName = currentRoom ? roomTitle(currentRoom) : "학생";
+  const studentName = currentRoom ? roomTitle(currentRoom) : "이름 미설정";
   const studentExtra = currentRoom ? (pickRowString(currentRoom, ["grade", "school"]) ?? pickRowString(currentRoom, ["subject", "major"])) : null;
   const mentorId = currentRoom ? partyUserIdFromRoomRow(currentRoom, "mentor") : null;
   const threadWorkflow = selectedThread
@@ -155,7 +155,7 @@ export function QuestionRoomWorkspace(props: {
 
   // List View
   if (props.surface === "list") {
-    const startHref = props.listStartQuestion?.href ?? (props.variant === "student" ? "/mentors" : "/mentor/dashboard");
+    const startHref = props.listStartQuestion?.href ?? (props.variant === "student" ? "/mentors" : "/mentor/mypage");
     const startLabel = props.listStartQuestion?.label ?? (props.variant === "student" ? "질문 시작하기" : "대시보드로 이동");
     
     return (
@@ -348,7 +348,7 @@ export function QuestionRoomWorkspace(props: {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-[18px] font-black text-slate-900">
-                    {props.variant === "mentor" ? `${studentName} 학생의 질문방` : studentName}
+                    {props.variant === "mentor" ? `${studentName}의 질문방` : studentName}
                   </h1>
                   {studentExtra && (
                     <span className="text-[12px] font-bold text-slate-400">· {studentExtra}</span>

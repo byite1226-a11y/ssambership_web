@@ -11,6 +11,7 @@ export function SelectMentorApplicationForm(props: {
   mentorName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   if (props.disabled || !props.applicationId) {
     return (
@@ -53,17 +54,19 @@ export function SelectMentorApplicationForm(props: {
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
+                disabled={submitting}
                 onClick={() => setOpen(false)}
-                className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 취소
               </button>
-              <form action={selectMentorApplicationForOrder} className="inline">
+              <form action={selectMentorApplicationForOrder} className="inline" onSubmit={() => setSubmitting(true)}>
                 <input type="hidden" name="postId" value={props.postId} />
                 <input type="hidden" name="applicationId" value={props.applicationId} />
                 <FormSubmitButton
                   idleLabel="선택 확정"
                   pendingLabel="처리 중…"
+                  disabled={submitting}
                   className="min-h-[44px] w-full rounded-xl bg-[#1A56DB] px-6 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700 sm:w-auto"
                 />
               </form>

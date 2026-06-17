@@ -18,6 +18,7 @@ export function CustomRequestApplicationFileChip(props: {
   thumbUrl?: string | null;
   className?: string;
   actionClassName?: string;
+  allowPreview?: boolean;
   /** 리스트 단일 라이트박스 — 제공 시 칩 내부 모달 미사용 */
   onImageClick?: () => void;
 }) {
@@ -26,6 +27,7 @@ export function CustomRequestApplicationFileChip(props: {
 
   const isImage = isPreviewableImageMime(props.mimeType, props.filename);
   const isPdf = isPreviewablePdfMime(props.mimeType, props.filename);
+  const allowPreview = props.allowPreview ?? true;
 
   const fetchPreviewUrl = useCallback(async () => {
     const { url } = await getApplicationAttachmentPreviewUrlAction({
@@ -50,7 +52,7 @@ export function CustomRequestApplicationFileChip(props: {
   }, [fetchPreviewUrl]);
 
   const thumbInner =
-    isImage && props.thumbUrl ? (
+    allowPreview && isImage && props.thumbUrl ? (
       <button
         type="button"
         className="cr-file-thumb-btn"
@@ -79,7 +81,13 @@ export function CustomRequestApplicationFileChip(props: {
         <p className="meta">{props.sizeLabel}</p>
         {inlineError ? <p className="cr-file-inline-error">{inlineError}</p> : null}
       </div>
-      {isPdf ? (
+      {!allowPreview ? (
+        <div className={`cr-file-action ${props.actionClassName ?? ""}`.trim()}>
+          <span className="rounded-lg bg-slate-100 px-3 py-2 text-[12px] font-bold text-slate-500">
+            선택 후 확인 가능
+          </span>
+        </div>
+      ) : isPdf ? (
         <div className={`cr-file-action ${props.actionClassName ?? ""}`.trim()}>
           <button
             type="button"

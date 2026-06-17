@@ -1,14 +1,21 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
+import { transferReleasedIndividualQuestionsToRoom } from "@/lib/individualQuestion/transferIndividualQuestionsToRoom";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { pickExistingColumn, rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { assignPlansByTier, type SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
-import { cashKrwForSubscribeTier, SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
+import {
+  mentorPlanCashKrw,
+  mentorPlanDebitAmountCents,
+  recommendedAmountCentsForSubscribeTier,
+} from "@/lib/subscribe/mentorPlanPricing";
 import {
   SUBSCRIPTIONS_ORDER_COLUMN,
   SUBSCRIPTIONS_SELECT,
   SUBSCRIPTIONS_TABLE,
+  addMonthsClampedUtc,
   buildSubscriptionsInsertPayload,
 } from "@/lib/subscribe/subscriptionsTable";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
@@ -90,73 +97,24 @@ async function firstPayTable(supabase: SupabaseClient): Promise<string | null> {
   return null;
 }
 
-function planAmountKrw(planRow: Row | null): { amount: number; currency: string } {
-  if (!planRow) return { amount: 0, currency: "KRW" };
-  for (const k of ["amount_cents", "price_cents"] as const) {
-    if (typeof planRow[k] === "number" && Number.isFinite(planRow[k] as number)) {
-      return { amount: (planRow[k] as number) / 100, currency: "KRW" };
-    }
-  }
-  for (const k of ["amount", "price", "monthly_price", "price_krw"] as const) {
-    if (typeof planRow[k] === "number" && Number.isFinite(planRow[k] as number)) {
-      return { amount: planRow[k] as number, currency: "KRW" };
-    }
-  }
-  return { amount: 0, currency: "KRW" };
-}
-
-/**
- * cash_wallets / cash_ledger(004)의 balance_cents·delta_cents와 **동일한 정수 스케일**(문서: *_cents).
- * - `amount_cents`·`price_cents`가 있으면 planAmountKrw 가 그 값을 /100 하여 KRW 표시에 쓰므로, **원장 차감은 DB 정수를 그대로** 사용
- * (UI·결제 intent 의 won 표기와 `/_cents` 는 위 `planAmountKrw` 를 통해 맞음)
- * - KRW(원) 정수만 온 `amount`·`price_krw`·`monthly_price`·`price` 등: `planAmountKrw`의 표시 원화와, `_cents`가 있을 때 `*_cents/100`이 표시 원과 같다는 기존 관례에 맞춰 **최소화 단위 = KRW(표시) × 100** 으로 환산( `_cents` 를 100으로 나누는 쪽의 역
- */
-function planRowDebitAmountCents(planRow: Row): number {
-  for (const k of ["amount_cents", "price_cents"] as const) {
-    const v = planRow[k];
-    if (typeof v === "number" && Number.isFinite(v) && v > 0) {
-      return Math.trunc(v);
-    }
-  }
-  const { amount: krwDisplay } = planAmountKrw(planRow);
-  if (!Number.isFinite(krwDisplay) || krwDisplay <= 0) {
-    return 0;
-  }
-  return Math.round(krwDisplay * 100);
-}
-
-/** DB mentor_plans 금액과 잠금 카탈로그(55k/114.9k/249.9k) 교차검증 — 불일치 시 차감·구독 차단 */
-function assertPlanDebitMatchesCatalog(
-  planRow: Row,
+/** DB mentor_plans 금액을 결제 원천으로 확정. 미설정/비정상 값은 권장가로 fallback해 0원 차감을 막는다. */
+function resolveMentorPlanDebitAmount(
+  planRow: Row | null,
   planTier: SubscribePlanTier,
   context: string
 ): { ok: true; amountCents: number } | { ok: false; error: string } {
-  const amountCents = planRowDebitAmountCents(planRow);
-  const expectedCents = cashKrwForSubscribeTier(planTier) * 100;
+  const amountCents = mentorPlanDebitAmountCents(planRow, planTier);
   if (amountCents <= 0) {
-    console.error(`[assertPlanDebitMatchesCatalog:${context}] non-positive debit`, {
+    console.error(`[resolveMentorPlanDebitAmount:${context}] non-positive debit`, {
       planTier,
       amountCents,
-      planRowId: planRow.id ?? planRow.plan_id,
+      fallbackCents: recommendedAmountCentsForSubscribeTier(planTier),
+      planRowId: planRow?.id ?? planRow?.plan_id,
     });
     return {
       ok: false,
       error:
         "구독 플랜에서 캐시 차감할 유효 금액을 찾을 수 없습니다. 멘토 플랜 금액 설정을 확인하거나 잠시 후 다시 시도해 주세요.",
-    };
-  }
-  if (amountCents !== expectedCents) {
-    console.error(`[assertPlanDebitMatchesCatalog:${context}] plan_price_catalog_mismatch`, {
-      planTier,
-      amountCents,
-      expectedCents,
-      mentorId: planRow.mentor_id,
-      planRowId: planRow.id ?? planRow.plan_id,
-    });
-    return {
-      ok: false,
-      error:
-        "구독 플랜 금액이 시스템 기준과 일치하지 않아 결제를 진행할 수 없습니다. 고객센터에 문의해 주세요.",
     };
   }
   return { ok: true, amountCents };
@@ -165,6 +123,148 @@ function assertPlanDebitMatchesCatalog(
 /** DB `record_subscription_cash_debit`: idempotency_key = 'sub_debit_' || payment_id */
 function subscriptionCashDebitIdempotencyKey(paymentId: string): string {
   return `sub_debit_${paymentId}`;
+}
+
+function isSchemaNotReadyError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null | undefined;
+  const code = String(e?.code ?? "");
+  const message = String(e?.message ?? "").toLowerCase();
+  return (
+    code === "42P01" ||
+    code === "42703" ||
+    code === "PGRST204" ||
+    code === "PGRST205" ||
+    message.includes("schema cache") ||
+    message.includes("could not find") ||
+    message.includes("does not exist")
+  );
+}
+
+function isoFromUnknown(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function fallbackPeriodEndIso(periodStartIso: string): string {
+  return addMonthsClampedUtc(new Date(periodStartIso), 1).toISOString();
+}
+
+function positiveIntegerFromUnknown(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
+  return Math.trunc(value);
+}
+
+async function recordInitialSubscriptionBillingEvent(args: {
+  subscriptionId: string | null;
+  studentId: string;
+  mentorId: string;
+  paymentId: string;
+  planTier: SubscribePlanTier;
+  amountCents?: number | null;
+}): Promise<void> {
+  const subscriptionId = args.subscriptionId?.trim();
+  if (!subscriptionId) return;
+
+  const admin = createServiceRoleClient();
+  const { data: subscriptionRow, error: subError } = await admin
+    .from(SUBSCRIPTIONS_TABLE)
+    .select(
+      "id, student_id, mentor_id, payment_id, plan_tier, plan_id, created_at, started_at, current_period_start, current_period_end"
+    )
+    .eq("id", subscriptionId)
+    .maybeSingle();
+
+  if (subError || !subscriptionRow) {
+    if (!isSchemaNotReadyError(subError)) {
+      console.error("[recordInitialSubscriptionBillingEvent] subscription select failed", {
+        subscriptionId,
+        error: subError,
+      });
+    }
+    return;
+  }
+
+  const s = subscriptionRow as Row;
+  const ledgerKey = subscriptionCashDebitIdempotencyKey(args.paymentId);
+  const { data: ledgerRow, error: ledgerError } = await admin
+    .from("cash_ledger")
+    .select("id, delta_cents, created_at")
+    .eq("idempotency_key", ledgerKey)
+    .maybeSingle();
+  if (ledgerError && !isSchemaNotReadyError(ledgerError)) {
+    console.warn("[recordInitialSubscriptionBillingEvent] ledger lookup failed", {
+      subscriptionId,
+      ledgerKey,
+      error: ledgerError,
+    });
+  }
+
+  const ledger = (ledgerRow as Row | null) ?? null;
+  const periodStart =
+    isoFromUnknown(s.current_period_start) ??
+    isoFromUnknown(s.started_at) ??
+    isoFromUnknown(s.created_at) ??
+    new Date().toISOString();
+  const periodEnd = isoFromUnknown(s.current_period_end) ?? fallbackPeriodEndIso(periodStart);
+  const ledgerAmount =
+    typeof ledger?.delta_cents === "number" && Number.isFinite(ledger.delta_cents)
+      ? Math.abs(Math.trunc(ledger.delta_cents))
+      : null;
+  const amountCents = positiveIntegerFromUnknown(args.amountCents) ?? ledgerAmount;
+
+  const payload: Row = {
+    subscription_id: subscriptionId,
+    student_id: String(s.student_id ?? args.studentId),
+    mentor_id: String(s.mentor_id ?? args.mentorId),
+    event_type: "initial",
+    status: "succeeded",
+    period_start: periodStart,
+    period_end: periodEnd,
+    billing_at: isoFromUnknown(ledger?.created_at) ?? isoFromUnknown(s.created_at) ?? new Date().toISOString(),
+    amount_cents: amountCents,
+    plan_tier: String(s.plan_tier ?? args.planTier),
+    plan_id: typeof s.plan_id === "string" && s.plan_id.trim() ? s.plan_id : null,
+    idempotency_key: `sub_initial:${subscriptionId}`,
+    ledger_id: typeof ledger?.id === "string" ? ledger.id : null,
+    payment_id: String(s.payment_id ?? args.paymentId),
+    processed_at: isoFromUnknown(ledger?.created_at) ?? new Date().toISOString(),
+  };
+
+  const { data: eventRow, error: eventError } = await admin
+    .from("subscription_billing_events")
+    .upsert(payload, { onConflict: "idempotency_key" })
+    .select("id")
+    .maybeSingle();
+
+  if (eventError || !eventRow) {
+    if (!isSchemaNotReadyError(eventError)) {
+      console.error("[recordInitialSubscriptionBillingEvent] event upsert failed", {
+        subscriptionId,
+        error: eventError,
+      });
+    }
+    return;
+  }
+
+  const eventId = String((eventRow as Row).id ?? "");
+  if (!eventId) return;
+
+  const { error: linkError } = await admin
+    .from(SUBSCRIPTIONS_TABLE)
+    .update({
+      last_billing_event_id: eventId,
+      last_payment_id: args.paymentId,
+    })
+    .eq("id", subscriptionId);
+  if (linkError && !isSchemaNotReadyError(linkError)) {
+    console.error("[recordInitialSubscriptionBillingEvent] subscription link update failed", {
+      subscriptionId,
+      eventId,
+      error: linkError,
+    });
+  }
 }
 
 async function hasExistingSubscriptionCashDebitLedger(paymentId: string): Promise<boolean> {
@@ -235,12 +335,12 @@ async function repairMissingSubscriptionCashLedgerIfNeeded(
     return { ok: true };
   }
 
-  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, mode);
+  const debitCheck = resolveMentorPlanDebitAmount(planRow, planTier, mode);
   if (!debitCheck.ok) {
     if (mode === "newSubscription") {
       return { ok: false, error: debitCheck.error };
     }
-    console.warn(`${logTag} skip ledger repair: catalog mismatch`, {
+    console.warn(`${logTag} skip ledger repair: amount resolution failed`, {
       studentId,
       paymentId,
       mentorId,
@@ -402,6 +502,11 @@ export async function createSubscriptionPaymentIntent(
       code: "mentor",
     };
   }
+  const ensuredPlans = await ensureMentorCatalogPlanRows(supabase, mentorId);
+  if (!ensuredPlans.ok) {
+    return { ok: false, error: ensuredPlans.error, code: "db" };
+  }
+
   const plans = await fetchPlansForMentor(supabase, mentorId);
   if (plans.error) {
     return { ok: false, error: `플랜 조회 실패: ${plans.error}`, code: "plan" };
@@ -411,7 +516,8 @@ export async function createSubscriptionPaymentIntent(
   if (!planRow) {
     return { ok: false, error: `선택한 티어(${planTier})에 맞는 플랜 행이 없습니다. ${fillProbe}`, code: "plan" };
   }
-  const { amount, currency } = planAmountKrw(planRow);
+  const amount = mentorPlanCashKrw(planRow, planTier);
+  const currency = "KRW";
   const intentKey = `sub_${randomUUID()}`;
   const payTable = await firstPayTable(supabase);
   if (!payTable) {
@@ -541,12 +647,17 @@ export async function ensureMentorCatalogPlanRows(
   const tierCol = (await pickExistingColumn(admin, table, ["plan_tier", "tier", "slug", "code"])).column;
   const amtCol = (await pickExistingColumn(admin, table, ["amount_cents", "price_cents", "amount", "price"])).column;
   const labelCol = (await pickExistingColumn(admin, table, ["label", "title", "name"])).column;
+  const updatedAtCol = (await pickExistingColumn(admin, table, ["updated_at"])).column;
+  const priceUpdatedAtCol = (await pickExistingColumn(admin, table, ["price_updated_at"])).column;
 
   for (const item of missing) {
     const row: Record<string, unknown> = { [fk]: mentorId };
+    const now = new Date().toISOString();
     if (tierCol) row[tierCol] = item.tier;
-    if (amtCol) row[amtCol] = item.cashKrw * 100;
+    if (amtCol) row[amtCol] = recommendedAmountCentsForSubscribeTier(item.tier);
     if (labelCol) row[labelCol] = item.label;
+    if (updatedAtCol) row[updatedAtCol] = now;
+    if (priceUpdatedAtCol) row[priceUpdatedAtCol] = now;
     const { error } = await admin.from(table).insert(row);
     if (error) {
       return { ok: false, error: `${table} 플랜(${item.tier}) 생성 실패: ${error.message}` };
@@ -649,6 +760,13 @@ export async function finalizeSubscriptionCheckout(
           code: "db",
         };
       }
+      await recordInitialSubscriptionBillingEvent({
+        subscriptionId: subIdForRoom,
+        studentId,
+        paymentId,
+        mentorId,
+        planTier,
+      });
       const roomR = await ensureMentorStudentRoomWithServiceRetry(
         supabase,
         studentId,
@@ -689,6 +807,11 @@ export async function finalizeSubscriptionCheckout(
     return { ok: false, error: "이미 해당 멘토에 활성 구독이 있어 중복을 막았습니다.", code: "dup" };
   }
 
+  const ensuredPlansForFinalize = await ensureMentorCatalogPlanRows(supabase, mentorId);
+  if (!ensuredPlansForFinalize.ok) {
+    return { ok: false, error: ensuredPlansForFinalize.error, code: "db" };
+  }
+
   const plans = await fetchPlansForMentor(supabase, mentorId);
   const { byTier } = assignPlansByTier(plans.rows);
   const planRow = byTier[planTier];
@@ -710,7 +833,7 @@ export async function finalizeSubscriptionCheckout(
     };
   }
 
-  const debitCheck = assertPlanDebitMatchesCatalog(planRow, planTier, "finalizeSubscriptionCheckout");
+  const debitCheck = resolveMentorPlanDebitAmount(planRow, planTier, "finalizeSubscriptionCheckout");
   if (!debitCheck.ok) {
     return { ok: false, error: debitCheck.error, code: "db" };
   }
@@ -748,6 +871,15 @@ export async function finalizeSubscriptionCheckout(
     await tryDeleteSubscriptionById(supabase, subId);
     return { ok: false, error: `결제 완료 표시 실패(롤백: 구독 삭제 시도): ${payUpdate.error}`, code: "db" };
   }
+
+  await recordInitialSubscriptionBillingEvent({
+    subscriptionId: subId,
+    studentId,
+    paymentId,
+    mentorId,
+    planTier,
+    amountCents,
+  });
 
   const roomR = await ensureMentorStudentRoomWithServiceRetry(
     supabase,
@@ -808,6 +940,25 @@ async function insertSubscriptionRow(
     .maybeSingle();
   if (!canonical.error && canonical.data && (canonical.data as Row).id != null) {
     return { ok: true, subscriptionId: String((canonical.data as Row).id) };
+  }
+  if (canonical.error && isSchemaNotReadyError(canonical.error)) {
+    const legacyCanonical = await admin
+      .from(SUBSCRIPTIONS_TABLE)
+      .insert(
+        buildSubscriptionsInsertPayload({
+          studentId: ctx.studentId,
+          mentorId: ctx.mentorId,
+          planId: ctx.planId,
+          planTier: ctx.planTier,
+          paymentId: ctx.paymentId,
+          includeBillingPeriod: false,
+        })
+      )
+      .select("id")
+      .maybeSingle();
+    if (!legacyCanonical.error && legacyCanonical.data && (legacyCanonical.data as Row).id != null) {
+      return { ok: true, subscriptionId: String((legacyCanonical.data as Row).id) };
+    }
   }
   if (canonical.error) {
     console.error("[insertSubscriptionRow] subscriptions insert", canonical.error);
@@ -994,5 +1145,16 @@ async function ensureMentorStudentRoomWithServiceRetry(
 ): Promise<RoomR> {
   void userClient;
   void logLabel;
-  return ensureMentorStudentRoom(createServiceRoleClient(), studentId, mentorId, paymentId, subscriptionId);
+  const admin = createServiceRoleClient();
+  const room = await ensureMentorStudentRoom(admin, studentId, mentorId, paymentId, subscriptionId);
+
+  // 부가(best-effort): released 개별질문을 구독 질문방으로 이전. 실패해도 구독 전환은 성공 유지.
+  if (room.ok && room.roomId) {
+    try {
+      await transferReleasedIndividualQuestionsToRoom(admin, { studentId, mentorId, roomId: room.roomId });
+    } catch (e) {
+      console.error("[subscribeCheckout] individual-question transfer failed (non-fatal)", e);
+    }
+  }
+  return room;
 }

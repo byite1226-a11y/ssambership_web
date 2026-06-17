@@ -79,7 +79,7 @@ export default function LegalMentorGuidePage() {
         </ol>
         <p>
           심사 중에도 가이드와 공지를 참고할 수 있습니다. 진행 상태는{" "}
-          <Link href="/mentor/dashboard" className="font-bold text-[#1A56DB] hover:underline">
+          <Link href="/mentor/mypage" className="font-bold text-[#1A56DB] hover:underline">
             멘토 대시보드
           </Link>
           와 마이페이지에서 확인하세요.

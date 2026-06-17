@@ -1,0 +1,315 @@
+import "server-only";
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { IndividualQuestionStatus } from "@/lib/individualQuestion/individualQuestionTypes";
+import { signIndividualQuestionAttachment } from "@/lib/individualQuestion/individualQuestionAttachmentStorage";
+
+// 표시 헬퍼는 individualQuestionFormat.ts를 단일 소스로 사용한다. (client/server 공용)
+export {
+  formatIndividualQuestionPrice,
+  formatIndividualQuestionDate,
+  individualQuestionTypeLabel,
+  individualQuestionStatusLabel,
+  individualQuestionStatusBadgeClass,
+  isIndividualQuestionAwaitingAnswer,
+  isIndividualQuestionAnswered,
+  isIndividualQuestionExpiringSoon,
+  formatIndividualQuestionExpiryRemaining,
+} from "@/lib/individualQuestion/individualQuestionFormat";
+
+export type IndividualQuestionRow = {
+  id: string;
+  student_id: string;
+  question_type: "direct" | "open";
+  designated_mentor_id: string | null;
+  claimed_mentor_id: string | null;
+  claimed_at: string | null;
+  subject: string | null;
+  topic: string | null;
+  title: string;
+  body: string;
+  price_cents: number;
+  status: IndividualQuestionStatus | string;
+  expires_at: string | null;
+  answered_at: string | null;
+  released_at: string | null;
+  refunded_at: string | null;
+  hold_ledger_id: string | null;
+  release_ledger_id: string | null;
+  refund_ledger_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type IndividualQuestionMessageRow = {
+  id: string;
+  question_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+};
+
+export type IndividualQuestionAttachmentRow = {
+  id: string;
+  question_id: string;
+  message_id: string | null;
+  storage_path: string;
+  file_name: string | null;
+  mime_type: string | null;
+  created_at: string;
+};
+
+export type IndividualQuestionAttachmentView = IndividualQuestionAttachmentRow & {
+  signedUrl: string | null;
+};
+
+export type IndividualQuestionListItem = IndividualQuestionRow & {
+  studentName: string;
+  mentorName: string;
+};
+
+export type IndividualQuestionDetail = IndividualQuestionListItem & {
+  messages: Array<IndividualQuestionMessageRow & { authorName: string; authorRole: "student" | "mentor" | "unknown" }>;
+  attachments: IndividualQuestionAttachmentView[];
+};
+
+export type OpenIndividualQuestionBrowseRow = {
+  id: string;
+  subject: string | null;
+  topic: string | null;
+  title: string;
+  price_cents: number;
+  expires_at: string | null;
+  created_at: string;
+};
+
+type UserNameRow = {
+  id: string;
+  full_name?: string | null;
+  nickname?: string | null;
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+};
+
+const QUESTION_COLUMNS =
+  "id, student_id, question_type, designated_mentor_id, claimed_mentor_id, claimed_at, subject, topic, title, body, price_cents, status, expires_at, answered_at, released_at, refunded_at, hold_ledger_id, release_ledger_id, refund_ledger_id, created_at, updated_at";
+
+function displayName(row: UserNameRow | null | undefined, fallback: string): string {
+  const value = row?.full_name?.trim() || row?.nickname?.trim() || row?.name?.trim() || row?.email?.trim();
+  return value || fallback;
+}
+
+async function fetchUserNameMap(supabase: SupabaseClient, ids: string[]): Promise<Map<string, UserNameRow>> {
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  const map = new Map<string, UserNameRow>();
+  if (uniqueIds.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, full_name, nickname, name, email, role")
+    .in("id", uniqueIds);
+
+  if (error || !data) return map;
+  for (const row of data as UserNameRow[]) {
+    if (row.id) map.set(row.id, row);
+  }
+  return map;
+}
+
+function enrichQuestions(rows: IndividualQuestionRow[], names: Map<string, UserNameRow>): IndividualQuestionListItem[] {
+  return rows.map((row) => {
+    const mentorId = row.designated_mentor_id ?? row.claimed_mentor_id;
+    const mentorFallback = row.question_type === "open" && !mentorId ? "아직 배정 전" : "멘토";
+    return {
+      ...row,
+      studentName: displayName(names.get(row.student_id), "학생"),
+      mentorName: displayName(mentorId ? names.get(mentorId) : null, mentorFallback),
+    };
+  });
+}
+
+export async function fetchStudentDirectIndividualQuestions(
+  supabase: SupabaseClient,
+  studentId: string
+): Promise<{ rows: IndividualQuestionListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("individual_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("student_id", studentId)
+    .eq("question_type", "direct")
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (error) return { rows: [], error: error.message };
+  const rows = (data ?? []) as IndividualQuestionRow[];
+  const names = await fetchUserNameMap(
+    supabase,
+    rows.flatMap((row) => [row.student_id, row.designated_mentor_id ?? row.claimed_mentor_id ?? ""])
+  );
+  return { rows: enrichQuestions(rows, names), error: null };
+}
+
+export async function fetchStudentIndividualQuestions(
+  supabase: SupabaseClient,
+  studentId: string
+): Promise<{ rows: IndividualQuestionListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("individual_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) return { rows: [], error: error.message };
+  const rows = (data ?? []) as IndividualQuestionRow[];
+  const names = await fetchUserNameMap(
+    supabase,
+    rows.flatMap((row) => [row.student_id, row.designated_mentor_id ?? row.claimed_mentor_id ?? ""])
+  );
+  return { rows: enrichQuestions(rows, names), error: null };
+}
+
+export async function fetchMentorDirectIndividualQuestions(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<{ rows: IndividualQuestionListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("individual_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("question_type", "direct")
+    .eq("designated_mentor_id", mentorId)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (error) return { rows: [], error: error.message };
+  const rows = (data ?? []) as IndividualQuestionRow[];
+  const names = await fetchUserNameMap(
+    supabase,
+    rows.flatMap((row) => [row.student_id, row.designated_mentor_id ?? ""])
+  );
+  return { rows: enrichQuestions(rows, names), error: null };
+}
+
+export async function fetchMentorOwnedIndividualQuestions(
+  supabase: SupabaseClient,
+  mentorId: string
+): Promise<{ rows: IndividualQuestionListItem[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("individual_questions")
+    .select(QUESTION_COLUMNS)
+    .or(`designated_mentor_id.eq.${mentorId},claimed_mentor_id.eq.${mentorId}`)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) return { rows: [], error: error.message };
+  const rows = (data ?? []) as IndividualQuestionRow[];
+  const names = await fetchUserNameMap(
+    supabase,
+    rows.flatMap((row) => [row.student_id, row.designated_mentor_id ?? row.claimed_mentor_id ?? ""])
+  );
+  return { rows: enrichQuestions(rows, names), error: null };
+}
+
+export async function fetchOpenIndividualQuestionsForMentor(
+  supabase: SupabaseClient,
+  limit = 80
+): Promise<{ rows: OpenIndividualQuestionBrowseRow[]; error: string | null }> {
+  const { data, error } = await supabase.rpc("list_open_individual_questions_for_mentor", {
+    p_limit: limit,
+  });
+
+  if (error) return { rows: [], error: error.message };
+  return { rows: (data ?? []) as OpenIndividualQuestionBrowseRow[], error: null };
+}
+
+export type IndividualQuestionTransferInfo = {
+  roomId: string | null;
+  threadId: string | null;
+  transferredAt: string | null;
+};
+
+/**
+ * 이 개별질문이 구독 질문방으로 이전됐는지 조회(075 매핑 테이블).
+ * 사용자 세션 클라이언트로 호출 → RLS(본인 학생 select)로 본인 것만 보인다.
+ */
+export async function fetchIndividualQuestionTransfer(
+  supabase: SupabaseClient,
+  questionId: string
+): Promise<IndividualQuestionTransferInfo | null> {
+  const { data, error } = await supabase
+    .from("individual_question_transfers")
+    .select("room_id, thread_id, transferred_at")
+    .eq("individual_question_id", questionId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const row = data as { room_id: string | null; thread_id: string | null; transferred_at: string | null };
+  return { roomId: row.room_id, threadId: row.thread_id, transferredAt: row.transferred_at };
+}
+
+export async function fetchIndividualQuestionDetail(
+  supabase: SupabaseClient,
+  questionId: string
+): Promise<{ detail: IndividualQuestionDetail | null; error: string | null }> {
+  const { data: question, error: questionError } = await supabase
+    .from("individual_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("id", questionId)
+    .maybeSingle();
+
+  if (questionError) return { detail: null, error: questionError.message };
+  if (!question) return { detail: null, error: "개별 질문을 찾을 수 없습니다." };
+
+  const row = question as IndividualQuestionRow;
+  const [messagesResp, attachmentsResp] = await Promise.all([
+    supabase
+      .from("individual_question_messages")
+      .select("id, question_id, author_id, body, created_at")
+      .eq("question_id", questionId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("individual_question_attachments")
+      .select("id, question_id, message_id, storage_path, file_name, mime_type, created_at")
+      .eq("question_id", questionId)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  if (messagesResp.error) return { detail: null, error: messagesResp.error.message };
+  if (attachmentsResp.error) return { detail: null, error: attachmentsResp.error.message };
+
+  const messages = (messagesResp.data ?? []) as IndividualQuestionMessageRow[];
+  const attachments = (attachmentsResp.data ?? []) as IndividualQuestionAttachmentRow[];
+  const names = await fetchUserNameMap(
+    supabase,
+    [
+      row.student_id,
+      row.designated_mentor_id ?? "",
+      row.claimed_mentor_id ?? "",
+      ...messages.map((message) => message.author_id),
+    ].filter(Boolean)
+  );
+
+  const [enriched] = enrichQuestions([row], names);
+  const signedAttachments = await Promise.all(
+    attachments.map(async (attachment) => ({
+      ...attachment,
+      signedUrl: await signIndividualQuestionAttachment(supabase, attachment.storage_path),
+    }))
+  );
+
+  return {
+    detail: {
+      ...enriched,
+      messages: messages.map((message) => {
+        const role = names.get(message.author_id)?.role;
+        return {
+          ...message,
+          authorName: displayName(names.get(message.author_id), "사용자"),
+          authorRole: role === "student" || role === "mentor" ? role : "unknown",
+        };
+      }),
+      attachments: signedAttachments,
+    },
+    error: null,
+  };
+}

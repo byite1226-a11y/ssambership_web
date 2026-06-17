@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { MENTOR_PROFILE_DATA_MODEL } from "@/lib/mentor/mentorDataModel";
 import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
+import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
+import { cashKrwFromAmountCents } from "@/lib/subscribe/mentorPlanPricing";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
@@ -25,6 +27,7 @@ export default async function MentorProfileEditPage(props: PageProps) {
   const media = await fetchMentorMediaSample(supabase, user.id, 8);
   const plans = await fetchPlansForMentor(supabase, user.id);
   const { byTier } = assignPlansByTier(plans.rows);
+  const iqPrice = await fetchMentorIndividualQuestionPrice(supabase, user.id);
 
   const display = buildMentorProfileDisplay(row, userRow ?? null);
   const initial = {
@@ -39,6 +42,9 @@ export default async function MentorProfileEditPage(props: PageProps) {
     verification: display.verification,
     displayName: display.displayName,
     grade: display.grade,
+    // 저장값은 cents(=캐시×100). 입력 프리필은 캐시로 ÷100 변환.
+    individualQuestionPriceCash:
+      iqPrice.amountCents != null ? cashKrwFromAmountCents(iqPrice.amountCents) : null,
   };
 
   const hasRow = Boolean(row);

@@ -10,9 +10,9 @@ import { assignPlansByTier, type PlansByTier, type SubscribePlanTier } from "@/l
 import { loadMentorCapUsageBatch, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
 import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
 import { formatAvgResponseHoursLabel, loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
-import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
+import { getMajorSubjects, getMinorSubjects } from "@/lib/subjects/subjectCatalog";
+import { mentorPlanCashKrw } from "@/lib/subscribe/mentorPlanPricing";
 import {
-  cashKrwForSubscribeTier,
   formatSubscribePlanCashMonthlyLabel,
   getSubscribeCatalogPlan,
 } from "@/lib/subscribe/subscribePlanCatalog";
@@ -237,7 +237,7 @@ function formatMoney(n: number): string {
 }
 
 function priceKrwFromRow(row: Row | null, tier: SubscribePlanTier): number {
-  return cashKrwFromPlanRow(row, tier);
+  return mentorPlanCashKrw(row, tier);
 }
 
 function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPrice[]; minPriceKrw: number | null } {
@@ -245,7 +245,7 @@ function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPr
   const tierPrices: MentorTierPrice[] = tiers.map((tier) => {
     const row = byTier?.[tier] ?? null;
     const catalog = getSubscribeCatalogPlan(tier);
-    const krw = cashKrwForSubscribeTier(tier);
+    const krw = priceKrwFromRow(row, tier);
     return {
       tier,
       label: catalog.label,
@@ -271,10 +271,14 @@ function schoolMatchesPreset(school: string, university: string): boolean {
   return true;
 }
 
+// 대분류 라벨 선택 시 그 대분류 + 소분류 라벨 어느 하나라도 멘토 과목 텍스트에 포함되면 매칭.
+// teaching_subjects 가 자유 텍스트라 라벨 부분일치로 보수적으로 처리(3단계 code화 후 재정합).
 function subjectMatchesPreset(subject: string, subjectsText: string): boolean {
   if (!subject) return true;
   const blob = subjectsText.toLowerCase();
-  return blob.includes(subject.toLowerCase());
+  const major = getMajorSubjects().find((m) => m.label === subject);
+  const labels = major ? [major.label, ...getMinorSubjects(major.code).map((s) => s.label)] : [subject];
+  return labels.some((label) => blob.includes(label.toLowerCase()));
 }
 
 function gradeMatchesFilter(grades: MentorGradeFilter[], blob: string): boolean {

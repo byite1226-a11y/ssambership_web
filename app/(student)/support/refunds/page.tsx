@@ -1,44 +1,143 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
-import { EmptyState } from "@/components/common/EmptyState";
+import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
+import { createClient } from "@/lib/supabase/server";
+import { requestSubscriptionProratedRefundAction } from "@/lib/subscribe/subscriptionCancelActions";
+import { loadStudentSubscriptionManagementList } from "@/lib/subscribe/studentSubscriptionManagement";
 
-export default function StudentSupportRefundsPage() {
+type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
+
+function firstParam(value: string | string[] | undefined): string | null {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value[0] ?? null;
+  return null;
+}
+
+export default async function StudentSupportRefundsPage(props: PageProps) {
+  const sp = (await props.searchParams) ?? {};
+  const selectedSubscriptionId = firstParam(sp.subscriptionId);
+  const flashOk = firstParam(sp.ok);
+  const flashError = firstParam(sp.error);
+  const { user } = await getServerUserWithProfile();
+  if (!user) {
+    redirect(`/login/student?next=${encodeURIComponent("/support/refunds")}`);
+  }
+
+  const supabase = await createClient();
+  const subscriptionList = await loadStudentSubscriptionManagementList(supabase, user.id);
+  const refundableItems = subscriptionList.items.filter((item) => item.canRequestRefund || item.pendingRefundId);
+
   return (
     <PageScaffold
       hideFooterPlaceholderCards
       eyebrow="고객지원"
-      title="환불 요청"
-      description="구독·맞춤의뢰·캐시는 서로 다른 정산 체계입니다. 이 화면은 사용자 발 환불 요청을 남기는 UI 자리이며, 저장 API는 아직 연결되어 있지 않습니다."
+      title="구독 환불 신청"
+      description="구독 해지는 다음 갱신 중단이 기본입니다. 잔여기간 환불을 원하면 예상 금액으로 신청하고, 실제 환불은 관리자 승인 후 처리됩니다."
       ctas={[
         { href: "/legal/refund", label: "환불 정책 안내", tone: "slate" },
-        { href: "/support/disputes", label: "분쟁 내역", tone: "blue" },
+        { href: "/subscriptions", label: "구독 현황", tone: "blue" },
       ]}
       sections={[]}
-      dataPoints={["refunds / payment_refunds 테이블 (미연결)"]}
+      dataPoints={["예상 환불액 = 결제금액 × 남은기간 / 전체기간", "관리자 승인 전에는 캐시가 자동 환불되지 않습니다."]}
     >
-      <EmptyState
-        title="환불 요청 폼은 비활성화되어 있습니다"
-        description="실제 금액 변경·PG 환불은 백엔드·운영 절차 없이 이 화면에서 실행되지 않습니다."
-      />
-      <form className="mt-6 max-w-lg space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <label className="block text-xs font-bold text-slate-700">
-          유형
-          <select disabled className="mt-1 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-            <option>구독 환불</option>
-            <option>맞춤의뢰 환불</option>
-          </select>
-        </label>
-        <label className="block text-xs font-bold text-slate-700">
-          사유
-          <textarea disabled rows={3} className="mt-1 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500" />
-        </label>
-        <button type="button" disabled className="w-full rounded-lg bg-slate-200 py-2 text-sm font-extrabold text-slate-500 cursor-not-allowed">
-          제출 비활성화 (API 없음)
-        </button>
-      </form>
-      <p className="mt-4 text-xs text-slate-500">
-        캐시 원장·충전은 <Link href="/wallet/ledger">캐시 원장</Link> 메뉴를 이용해 주세요.
-      </p>
+      <div className="mx-auto max-w-4xl space-y-5">
+        {flashOk ? (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            {flashOk}
+          </p>
+        ) : null}
+        {flashError ? (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-900">
+            {flashError}
+          </p>
+        ) : null}
+
+        {subscriptionList.error ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+            구독 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </p>
+        ) : null}
+
+        {refundableItems.length === 0 ? (
+          <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <h2 className="text-base font-black text-slate-900">환불 신청 가능한 구독이 없습니다</h2>
+            <p className="mt-2 text-sm text-slate-500">
+              잔여기간이 있는 활성 구독만 환불 신청할 수 있습니다. 구독 해지는 구독 현황에서 먼저 진행할 수 있어요.
+            </p>
+            <Link href="/subscriptions" className="mt-5 inline-flex rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700">
+              구독 현황으로 이동
+            </Link>
+          </section>
+        ) : (
+          <section className="space-y-4">
+            {refundableItems.map((item) => {
+              const selected = selectedSubscriptionId === item.subscriptionId;
+              return (
+                <article
+                  key={item.subscriptionId}
+                  className={`rounded-2xl border bg-white p-5 shadow-sm ${
+                    selected ? "border-blue-300 ring-2 ring-blue-100" : "border-slate-200"
+                  }`}
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg font-black text-slate-900">{item.mentorName}</h2>
+                        <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700">
+                          {item.planLabel}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-600">
+                        현재 기간 종료일은 <strong className="text-slate-900">{item.currentPeriodEndLabel}</strong>입니다.
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-4 py-3 text-right">
+                      <p className="text-xs font-bold text-slate-500">예상 환불액</p>
+                      <p className="mt-1 text-xl font-black text-slate-900">{item.refundEstimateLabel}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        남은 {item.refundEstimate.remainingDays}일 / 전체 {item.refundEstimate.totalDays}일
+                      </p>
+                    </div>
+                  </div>
+
+                  {item.pendingRefundId ? (
+                    <p className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800">
+                      이미 접수된 환불 신청이 관리자 검토 대기 중입니다.
+                    </p>
+                  ) : (
+                    <form action={requestSubscriptionProratedRefundAction} className="mt-4 space-y-3">
+                      <input type="hidden" name="subscriptionId" value={item.subscriptionId} />
+                      <label className="block text-xs font-bold text-slate-700">
+                        신청 사유
+                        <textarea
+                          name="reason"
+                          rows={3}
+                          placeholder="환불이 필요한 이유를 간단히 적어 주세요."
+                          className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+                        />
+                      </label>
+                      <p className="text-xs leading-relaxed text-slate-500">
+                        이 금액은 예상치입니다. 실제 환불 여부와 금액은 관리자가 결제·이용 내역을 확인한 뒤 승인합니다.
+                      </p>
+                      <FormSubmitButton
+                        idleLabel="잔여기간 환불 신청"
+                        pendingLabel="접수 중..."
+                        className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+                    </form>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        )}
+
+        <p className="text-xs text-slate-500">
+          환불 승인 후 캐시 원장 반영은 <Link href="/wallet/ledger" className="font-bold text-blue-700 underline">캐시 원장</Link>에서 확인할 수 있습니다.
+        </p>
+      </div>
     </PageScaffold>
   );
 }

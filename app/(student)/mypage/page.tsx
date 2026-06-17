@@ -212,9 +212,12 @@ export default async function StudentMyPage() {
                   <span className="ml-1 text-xs font-normal text-slate-500">질문방</span>
                 </p>
               </div>
-              <div className="mt-5">
+              <div className="mt-5 flex flex-wrap gap-2">
                 <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563eb] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]" href="/question-room">
                   질문방 바로가기
+                </Link>
+                <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[#d8e0ec] bg-white px-5 py-2.5 text-sm font-bold text-[#3f4b5f] transition hover:border-[#c4cedd] hover:text-[#0f172a]" href="/individual-questions">
+                  개별 질문 보기
                 </Link>
               </div>
             </section>

@@ -17,15 +17,15 @@ type StudentSignupFormProps = {
 };
 
 const input =
-  "mt-2.5 w-full min-h-[3.4rem] rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 " +
-  "focus:border-sky-500 focus:ring-2 focus:ring-sky-200/55 sm:min-h-[3.5rem] sm:rounded-3xl sm:px-5 sm:py-4 sm:text-lg md:text-[1.05rem]";
+  "mt-2 w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 " +
+  "focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 sm:min-h-[3.1rem] sm:px-5";
 
-const label = "mb-0 block text-sm font-bold text-slate-800 sm:text-[0.95rem] md:text-base";
+const label = "mb-0 block text-sm font-bold text-slate-800 sm:text-base";
 
-const hint = "mt-1.5 text-sm leading-relaxed text-slate-500 sm:mt-2 sm:text-base";
+const hint = "mt-1.5 text-sm leading-relaxed text-slate-500";
 
 const sectionClass =
-  "rounded-2xl border border-sky-200/30 bg-sky-50/25 px-4 py-4 sm:rounded-3xl sm:px-5 sm:py-5 md:px-6";
+  "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
 
 function patch(
   v: StudentSignupFormValues,
@@ -36,9 +36,9 @@ function patch(
 
 function SectionHeader({ n, id, children }: { n: string; id: string; children: ReactNode }) {
   return (
-    <div className="mb-4 border-b border-sky-200/30 pb-3 sm:mb-5 sm:pb-3.5">
-      <p className="text-xs font-extrabold tracking-wide text-sky-800/90 sm:text-sm">{n}</p>
-      <h3 id={id} className="mt-0.5 text-base font-extrabold text-slate-900 sm:text-lg md:text-[1.15rem]">
+    <div className="mb-4 border-b border-slate-100 pb-3">
+      <p className="text-xs font-extrabold tracking-wide text-[#2563eb]">{n}</p>
+      <h3 id={id} className="mt-0.5 text-base font-extrabold text-slate-900 sm:text-lg">
         {children}
       </h3>
     </div>

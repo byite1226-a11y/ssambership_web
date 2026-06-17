@@ -6,7 +6,11 @@ import { partyUserIdFromRoomRow } from "@/lib/qna/questionRoomUiLabels";
 import { fetchMessagesForThreads, fetchThreadsForRooms } from "@/lib/qna/questionRoomQueries";
 import { readQuestionThreadWorkflowStatus } from "@/lib/qna/questionThreadStatus";
 import { threadMentorStudentRoomId } from "@/lib/qna/questionThreadRoomRef";
-import { loadWeeklyUsageByMentorIds, weeklyUsageToSnapshot } from "@/lib/qna/weeklyQuestionUsage";
+import {
+  loadWeeklyUsageByMentorIds,
+  subscriptionAnchorWeekBounds,
+  weeklyUsageToSnapshot,
+} from "@/lib/qna/weeklyQuestionUsage";
 import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsage";
 
 type Row = Record<string, unknown>;
@@ -32,22 +36,35 @@ function formatKoDate(iso: string | null | undefined): string {
   }
 }
 
-function nextMondayLabel(): string {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
+function subscriptionAnchorIso(row: Row | null | undefined): string | null {
+  for (const key of ["started_at", "created_at"] as const) {
+    const value = row?.[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return null;
+}
+
+function anchorRenewalLabel(anchorIso: string | null): string {
+  if (!anchorIso) return "구독 시작일 기준 7일마다 갱신";
+  const anchor = new Date(anchorIso);
+  if (Number.isNaN(anchor.getTime())) return "구독 시작일 기준 7일마다 갱신";
+  const weekday = anchor.toLocaleDateString("ko-KR", {
     timeZone: "Asia/Seoul",
-    weekday: "short",
-  }).formatToParts(now);
-  const wd = parts.find((p) => p.type === "weekday")?.value?.slice(0, 3);
-  const map: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
-  const offset = wd ? (7 - (map[wd] ?? 0)) % 7 : 0;
-  const days = offset === 0 ? 7 : offset;
-  const next = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-  return next.toLocaleDateString("ko-KR", {
+    weekday: "long",
+  });
+  return `매주 ${weekday} 갱신 (구독 시작 시각 기준)`;
+}
+
+function nextAnchorRenewalLabel(anchorIso: string | null): string {
+  const bounds = subscriptionAnchorWeekBounds(anchorIso);
+  if (!bounds) return "구독 후 7일째";
+  return bounds.end.toLocaleString("ko-KR", {
     timeZone: "Asia/Seoul",
     month: "long",
     day: "numeric",
     weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -62,8 +79,8 @@ export async function loadQuestionRoomSubscriptionContext(
       planTier: null,
       planLabel: "—",
       subscribedAtLabel: "—",
-      weekRenewalLabel: "월요일 00:00",
-      nextRenewalLabel: nextMondayLabel(),
+      weekRenewalLabel: "구독 시작일 기준 7일마다 갱신",
+      nextRenewalLabel: "구독 후 7일째",
     };
   }
 
@@ -71,15 +88,14 @@ export async function loadQuestionRoomSubscriptionContext(
   const tierRaw = active?.row.plan_tier;
   const planTier = typeof tierRaw === "string" && isSubscribePlanTier(tierRaw) ? tierRaw : null;
   const catalog = planTier ? getSubscribeCatalogPlan(planTier) : null;
+  const anchorIso = subscriptionAnchorIso(active?.row);
 
   return {
     planTier,
     planLabel: catalog?.label ?? (planTier ? planTier.toUpperCase() : "구독 플랜"),
-    subscribedAtLabel: formatKoDate(
-      typeof active?.row.created_at === "string" ? active.row.created_at : null
-    ),
-    weekRenewalLabel: "매주 월요일 00:00 갱신",
-    nextRenewalLabel: nextMondayLabel(),
+    subscribedAtLabel: formatKoDate(anchorIso),
+    weekRenewalLabel: anchorRenewalLabel(anchorIso),
+    nextRenewalLabel: nextAnchorRenewalLabel(anchorIso),
   };
 }
 

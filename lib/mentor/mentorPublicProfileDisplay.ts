@@ -1,14 +1,26 @@
 import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
+import { getSubjectLabel, normalizeSubjectCode } from "@/lib/subjects/subjectCatalog";
 
-/** 과목·태그 CSV → 칩 배열 (멘토 찾기·미리보기 공통) */
+/**
+ * 과목·태그 CSV → 칩 배열 (멘토 찾기·미리보기 공통).
+ * 과목 정본 code/레거시 라벨은 정본 라벨로 표시(혼재 안전), 매칭 안 되는 태그는 원문 유지.
+ */
 export function mentorSubjectChips(text: string, max = 5): string[] {
   if (!text.trim()) return [];
-  return text
-    .split(/[,，、·]/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-    .slice(0, max);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of text.split(/[,，、·]/)) {
+    const token = raw.trim();
+    if (!token) continue;
+    const code = normalizeSubjectCode(token);
+    const label = code ? getSubjectLabel(code) : token;
+    if (seen.has(label)) continue;
+    seen.add(label);
+    out.push(label);
+    if (out.length >= max) break;
+  }
+  return out;
 }
 
 export function mentorIntroFallback(intro: string | undefined | null): string {

@@ -10,6 +10,7 @@ import {
   type QuestionRoomListFilterTab,
 } from "@/lib/qna/questionRoomUiLabels";
 import type { QuestionRoomListPreview } from "@/lib/qna/questionRoomQueries";
+import { ListCard, type ListCardTone } from "@/components/design-system/ListCard";
 
 type Row = Record<string, unknown>;
 
@@ -19,6 +20,14 @@ const chipToneClass = {
   blue: "border-blue-200/90 bg-blue-50 text-blue-950",
   emerald: "border-emerald-200/90 bg-emerald-50 text-emerald-900",
 } as const;
+
+// 질문방 상태칩 색 → 공용 카드 톤(좌측 액센트 바 색).
+const CHIP_TONE_TO_CARD_TONE: Record<keyof typeof chipToneClass, ListCardTone> = {
+  slate: "neutral",
+  amber: "amber",
+  blue: "blue",
+  emerald: "green",
+};
 
 function roomTitle(r: Row): string {
   for (const k of ["title", "topic", "name", "label"] as const) {
@@ -331,19 +340,12 @@ export function QuestionRoomListCatalog(props: {
                     : chip.tab === "waiting"
                       ? "답변하기"
                       : "대화 열기";
-                const accentMentor = props.variant === "mentor" && chip.tab === "waiting";
-                const accentStudentNeed = props.variant === "student" && chip.tab === "needReview";
                 return (
-                  <article
+                  <ListCard
                     key={id || "room"}
-                    className={[
-                      "min-w-0 rounded-2xl border bg-white p-3.5 shadow-sm transition sm:p-4",
-                      accentMentor ? "border-l-[6px] border-l-blue-600 border-y-slate-200 border-r-slate-200 ring-1 ring-blue-500/10" : "",
-                      accentStudentNeed
-                        ? "border-l-[6px] border-l-amber-400 border-y-slate-200 border-r-slate-200 ring-1 ring-amber-400/15"
-                        : "",
-                      !accentMentor && !accentStudentNeed ? "border-slate-200 hover:border-slate-300 hover:shadow" : "",
-                    ].join(" ")}
+                    as="article"
+                    tone={CHIP_TONE_TO_CARD_TONE[chip.tone]}
+                    interactive
                   >
                     <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1">
@@ -379,7 +381,7 @@ export function QuestionRoomListCatalog(props: {
                         </Link>
                       </div>
                     </div>
-                  </article>
+                  </ListCard>
                 );
               })}
             </div>

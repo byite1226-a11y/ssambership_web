@@ -5,7 +5,10 @@ import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { getPostLoginPath } from "@/lib/auth/getPostLoginPath";
 import { createClient } from "@/lib/supabase/server";
 import { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
-import { loadOrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
+import {
+  hideStudentPreCompletionDeliverableStoragePaths,
+  loadOrderDetailPageData,
+} from "@/lib/customRequest/orderDetailQueries";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import { getMentorStartDisabledByMissingOrderDdl } from "@/lib/customRequest/orderSchemaGate";
@@ -39,9 +42,14 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   const access = canAccessOrder(bundle.order.row, user.id, role);
   const accessDenied = !!bundle.order.row && !access.ok;
   const canEnrich = !!bundle.order.row && access.ok;
-  const detail = canEnrich ? await loadOrderDetailPageData(supabase, orderId, bundle) : null;
+  const loadedDetail = canEnrich ? await loadOrderDetailPageData(supabase, orderId, bundle) : null;
   const view: "student" | "mentor" = role === "mentor" ? "mentor" : "student";
   const isMentor = role === "mentor";
+  const detail =
+    loadedDetail && role === "student"
+      ? hideStudentPreCompletionDeliverableStoragePaths(loadedDetail)
+      : loadedDetail;
+  const roomBundle = detail?.bundle ?? bundle;
   const mentorStartDdlDisabledReason = getMentorStartDisabledByMissingOrderDdl();
 
   let mentorStudentDisplayName: string | undefined;
@@ -68,7 +76,7 @@ export default async function CustomRequestOrderPage(props: PageProps) {
   const room = (
     <div className="w-full min-w-0">
       <OrderRoomView
-        bundle={bundle}
+        bundle={roomBundle}
         detail={detail}
         orderId={orderId}
         view={view}

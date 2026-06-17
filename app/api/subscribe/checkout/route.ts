@@ -4,8 +4,9 @@ import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
 import { parseWalletBalanceBreakdown } from "@/lib/cash/parseWalletBalanceKrw";
 import { finalizeSubscriptionCashWalletCheckout } from "@/lib/subscribe/subscribeCheckoutService";
 import { getStudentSupabaseForSubscribe } from "@/lib/subscribe/subscribeCheckoutSession";
-import { cashKrwForSubscribeTier } from "@/lib/subscribe/subscribePlanCatalog";
-import { isSubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
+import { assignPlansByTier, isSubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
+import { cashKrwFromAmountCents, mentorPlanDebitAmountCents } from "@/lib/subscribe/mentorPlanPricing";
 
 function userMessageForCheckoutError(code: string | undefined, error: string): string {
   if (code === "dup") return error;
@@ -43,25 +44,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const expectedCashKrw = cashKrwForSubscribeTier(planTier);
-  if (
-    typeof amountCents === "number" &&
-    Number.isFinite(amountCents) &&
-    amountCents > 0 &&
-    amountCents !== expectedCashKrw * 100
-  ) {
-    console.error("[subscribe/checkout] amount_mismatch", {
-      mentorId: mentorIdTrim,
-      planTier,
-      amountCents,
-      expectedCents: expectedCashKrw * 100,
-    });
-    return NextResponse.json(
-      { ok: false, error: "amount_mismatch", message: "결제 금액이 플랜과 일치하지 않습니다." },
-      { status: 400 }
-    );
-  }
-
   const session = await getStudentSupabaseForSubscribe();
   if (!session.ok) {
     return NextResponse.json(
@@ -70,10 +52,49 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const plans = await fetchPlansForMentor(session.supabase, mentorIdTrim);
+  if (plans.error) {
+    console.error("[subscribe/checkout] plan fetch failed", {
+      mentorId: mentorIdTrim,
+      planTier,
+      error: plans.error,
+    });
+    return NextResponse.json(
+      { ok: false, error: "plan_fetch_failed", message: "플랜 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 400 }
+    );
+  }
+  const { byTier } = assignPlansByTier(plans.rows);
+  const expectedAmountCents = mentorPlanDebitAmountCents(byTier[planTier], planTier);
+  const expectedCashKrw = cashKrwFromAmountCents(expectedAmountCents);
+
+  if (
+    typeof amountCents === "number" &&
+    Number.isFinite(amountCents) &&
+    amountCents > 0 &&
+    amountCents !== expectedAmountCents
+  ) {
+    console.error("[subscribe/checkout] amount_mismatch", {
+      mentorId: mentorIdTrim,
+      planTier,
+      amountCents,
+      expectedCents: expectedAmountCents,
+      planProbe: plans.probe,
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "amount_mismatch",
+        message: "결제 금액이 현재 멘토 요금제와 일치하지 않습니다. 새로고침 후 다시 시도해 주세요.",
+      },
+      { status: 400 }
+    );
+  }
+
   const balance = await fetchWalletBalanceByUserId(session.supabase, session.studentId);
   const breakdown = parseWalletBalanceBreakdown(balance.row);
   const balanceCents = breakdown.totalCash * 100;
-  const requiredCents = expectedCashKrw * 100;
+  const requiredCents = expectedAmountCents;
 
   if (balanceCents < requiredCents) {
     return NextResponse.json(

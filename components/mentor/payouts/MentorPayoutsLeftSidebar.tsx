@@ -92,7 +92,7 @@ export function MentorPayoutsLeftSidebar(props: Props) {
           <li>환불/취소 건은 익월 정산에 반영될 수 있습니다.</li>
         </ul>
         <p className="mt-3 text-[10px] text-slate-500">구독 멘토 몫 70% · 맞춤의뢰 멘토 몫 80%</p>
-        <Link href="/support/faq" className="mt-3 inline-flex text-xs font-bold text-[#1A56DB] hover:underline">
+        <Link href="/support" className="mt-3 inline-flex text-xs font-bold text-[#1A56DB] hover:underline">
           정산 가이드 보기 &gt;
         </Link>
       </section>

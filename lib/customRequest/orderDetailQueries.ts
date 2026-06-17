@@ -18,6 +18,7 @@ import {
   formatOrderRoomDate,
   orderStatusLabelForUi,
   paymentStatusLabelForUi,
+  studentCanDownloadDeliverable,
 } from "@/lib/customRequest/orderLifecycleConstants";
 
 type Row = Record<string, unknown>;
@@ -144,6 +145,43 @@ export type OrderDetailPageData = {
   settlementLoadError: string | null;
   hasActiveDispute: boolean;
 };
+
+const DELIVERABLE_STORAGE_PATH_KEYS = [
+  "storage_path",
+  "file_path",
+  "file_storage_path",
+  "object_path",
+  "file_url",
+] as const;
+
+function stripDeliverableStoragePathFields(row: Row): Row {
+  const clean = { ...row };
+  for (const key of DELIVERABLE_STORAGE_PATH_KEYS) {
+    delete clean[key];
+  }
+  return clean;
+}
+
+export function hideStudentPreCompletionDeliverableStoragePaths(detail: OrderDetailPageData): OrderDetailPageData {
+  if (studentCanDownloadDeliverable(detail.bundle.order.row)) {
+    return detail;
+  }
+  const rows = ((detail.bundle.deliverables.rows as Row[] | undefined) ?? []).map(stripDeliverableStoragePathFields);
+  const latestDeliverable = detail.latestDeliverable
+    ? stripDeliverableStoragePathFields(detail.latestDeliverable as Row)
+    : null;
+  return {
+    ...detail,
+    bundle: {
+      ...detail.bundle,
+      deliverables: {
+        ...detail.bundle.deliverables,
+        rows,
+      },
+    },
+    latestDeliverable,
+  };
+}
 
 function numberish(v: unknown): string {
   if (v === null || v === undefined) return "";

@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cashKrwFromPlanRow } from "@/lib/cash/planPriceKrw";
 import {
   cashKrwForSubscribeTier,
   formatSubscribePlanCashMonthlyLabel,
   getSubscribeCatalogPlan,
 } from "@/lib/subscribe/subscribePlanCatalog";
+import { mentorPlanCashKrw } from "@/lib/subscribe/mentorPlanPricing";
 import { getMentorUserPublic } from "@/lib/auth/mentorPublicRead";
 import { buildMentorProfileDisplay, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
@@ -89,7 +89,7 @@ export function priceLabelFromPlanRow(row: Row | null, tier?: SubscribePlanTier)
 
   let krw = 0;
   if (row) {
-    krw = cashKrwFromPlanRow(row, resolvedTier ?? undefined);
+    krw = resolvedTier ? mentorPlanCashKrw(row, resolvedTier) : 0;
   }
   if (krw <= 0 && resolvedTier) {
     krw = cashKrwForSubscribeTier(resolvedTier);

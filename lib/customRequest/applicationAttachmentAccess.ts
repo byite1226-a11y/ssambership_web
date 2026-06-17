@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import {
+  findOrderForPostAndStudent,
   isAuthorOfPost,
   loadCustomPostById,
   type ApplicationAttachmentListItem,
@@ -67,6 +68,25 @@ function assertAppLevelAccess(viewer: Viewer, postId: string, postRow: Row | nul
       path: applicationAttachmentAccessRedirectPath(postId, "첨부를 다운로드할 권한이 없습니다."),
     });
   }
+}
+
+async function assertStudentCanPreviewAfterSelection(
+  supabase: SupabaseClient,
+  viewer: Viewer,
+  postId: string,
+  postRow: Row | null
+): Promise<void> {
+  if (viewer.role !== "student" || !isAuthorOfPost(viewer.userId, postRow).ok) {
+    return;
+  }
+  const existing = await findOrderForPostAndStudent(supabase, postId, viewer.userId);
+  if (existing.orderId) {
+    return;
+  }
+  throw new ApplicationAttachmentAccessError({
+    kind: "redirect",
+    path: applicationAttachmentAccessRedirectPath(postId, "첨부 파일은 멘토 선택 후 확인할 수 있어요."),
+  });
 }
 
 async function loadAttachmentStoragePath(
@@ -175,6 +195,7 @@ export async function resolveApplicationAttachmentSignedUrlWithViewer(
   const path = await loadAttachmentStoragePath(supabase, postId, applicationId, attachmentId);
   const { mentorId, postRow } = await loadApplicationContext(supabase, postId, applicationId);
   assertAppLevelAccess(viewer, postId, postRow, mentorId);
+  await assertStudentCanPreviewAfterSelection(supabase, viewer, postId, postRow);
   return signStoragePath(supabase, path, postId);
 }
 
