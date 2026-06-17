@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CheckCircle2, Clock, MessageSquareText, Paperclip, WalletCards } from "lucide-react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { listCardClassName, type ListCardTone } from "@/components/design-system/ListCard";
 import { getSubjectLabel } from "@/lib/subjects/subjectCatalog";
 import {
   claimOpenIndividualQuestionAction,
@@ -21,6 +22,23 @@ import {
   type IndividualQuestionListItem,
   type OpenIndividualQuestionBrowseRow,
 } from "@/lib/individualQuestion/individualQuestionQueries";
+
+// 개별질문 상태 → 목록 카드 좌측 액센트 톤(상태 배지 색과 일치).
+function iqCardTone(status: string | null | undefined): ListCardTone {
+  switch ((status ?? "").toLowerCase()) {
+    case "released":
+      return "blue";
+    case "answered":
+      return "green";
+    case "open":
+    case "assigned":
+    case "claimed":
+    case "escrowed":
+      return "amber";
+    default:
+      return "neutral"; // refunded / expired / canceled
+  }
+}
 
 function ExpiringSoonBadge() {
   return (
@@ -80,7 +98,7 @@ export function IndividualQuestionListCards(props: {
           <Link
             key={row.id}
             href={`${props.detailBaseHref}/${row.id}`}
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md"
+            className={listCardClassName(iqCardTone(row.status), true, "group block")}
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
@@ -143,7 +161,7 @@ export function OpenIndividualQuestionBrowseCards(props: {
         const expiringSoon = isIndividualQuestionExpiringSoon(row.expires_at, "open");
         const remainingLabel = formatIndividualQuestionExpiryRemaining(row.expires_at, "open");
         return (
-          <article key={row.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <article key={row.id} className={listCardClassName("amber", false)}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">

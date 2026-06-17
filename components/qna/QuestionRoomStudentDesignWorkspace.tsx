@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ConnectionNotesPanel } from "@/components/qna/ConnectionNotesPanel";
+import { listCardClassName, type ListCardTone } from "@/components/design-system/ListCard";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -50,6 +51,13 @@ import { mentorSchoolLine, mentorSubjectChips } from "@/lib/mentor/mentorPublicP
 
 type Row = Record<string, unknown>;
 type SortKey = "newest" | "oldest";
+
+// 질문 상태 tone(답변대기=amber / 진행중=blue / 답변완료=emerald) → 목록 카드 톤(좌측 액센트 바).
+const THREAD_TONE_TO_CARD_TONE: Record<"amber" | "blue" | "emerald", ListCardTone> = {
+  amber: "amber",
+  blue: "blue",
+  emerald: "green",
+};
 
 function messageBody(m: Row): string {
   return (
@@ -591,7 +599,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     return (
                       <article
                         key={id}
-                        className="rounded-xl border border-slate-100 bg-white p-4 transition hover:border-slate-200 hover:shadow-sm"
+                        className={listCardClassName(THREAD_TONE_TO_CARD_TONE[status.tone], true)}
                       >
                         <Link
                           href={threadInRoomPath("/question-room", props.roomId, id)}
