@@ -237,7 +237,7 @@ export function PlanComparisonCards(props: {
                   : isRec
                     ? "border border-blue-200/90 opacity-95 shadow-sm"
                     : "border border-slate-200 opacity-[0.92] shadow-sm"
-              } ${!selected ? "bg-slate-50/40" : ""}`}
+              } ${!selected && isRec ? "bg-blue-50/50" : ""}`}
             >
               <div className="flex min-w-0 items-start gap-3">
                 <div

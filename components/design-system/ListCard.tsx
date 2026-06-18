@@ -16,9 +16,11 @@ export function listCardClassName(
   const t = DS_CARD_TONE_CLASSES[tone];
   return cn(
     "min-w-0 rounded-2xl border border-l-[4px] border-ds-border-emphasis bg-ds-surface p-4",
-    "shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition",
+    // hover에서 배경색은 바꾸지 않는다(회색 흐려짐 방지) — box-shadow·border-color만 트랜지션.
+    "shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition-[box-shadow,border-color] duration-150",
     t.accentBar,
-    interactive && "hover:border-ds-border-emphasis hover:shadow-[0_3px_12px_rgba(0,0,0,0.08)]",
+    // hover 신호 = 흰 배경 유지 + 그림자 살짝 + 그 카드 tone 색 테두리 강조.
+    interactive && cn(t.hoverBorder, "hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]"),
     className,
   );
 }

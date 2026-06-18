@@ -53,12 +53,12 @@ export function MentorCard(props: {
         <div className="p-5">
           <div className="flex gap-3">
             <div className="relative h-16 w-16 shrink-0">
-              <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-white bg-slate-100 shadow ring-1 ring-slate-100">
+              <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-white bg-blue-50 shadow ring-1 ring-slate-100">
                 {photo ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photo} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-slate-300">
+                  <div className="flex h-full w-full items-center justify-center text-blue-300">
                     <Camera className="h-6 w-6" aria-hidden />
                   </div>
                 )}
@@ -124,12 +124,12 @@ export function MentorCard(props: {
     <article className={listCardClassName("neutral", true, "relative overflow-hidden p-0")}>
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
         <div className="relative shrink-0 sm:w-[88px]">
-          <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border-2 border-white bg-slate-100 shadow ring-1 ring-slate-100 sm:mx-0">
+          <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border-2 border-white bg-blue-50 shadow ring-1 ring-slate-100 sm:mx-0">
             {photo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photo} alt="" className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-slate-300">
+              <div className="flex h-full w-full items-center justify-center text-blue-300">
                 <Camera className="h-8 w-8" aria-hidden />
               </div>
             )}
@@ -183,7 +183,12 @@ export function MentorCard(props: {
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">구독 요금제</p>
           <ul className="mt-2 space-y-2.5">
             {card.tierPrices.map((t) => (
-              <li key={t.tier} className="rounded-lg border border-slate-100 bg-slate-50/80 px-2.5 py-2">
+              <li
+                key={t.tier}
+                className={`rounded-lg border px-2.5 py-2 ${
+                  t.recommend ? "border-blue-200 bg-blue-50/60" : "border-slate-200 bg-white"
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-black text-slate-800">
                     {t.label}

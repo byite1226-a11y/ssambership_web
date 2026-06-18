@@ -94,13 +94,13 @@ export function MentorsListBody(props: {
           </div>
 
           {showListHint ? (
-            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-700">
+            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm text-slate-700">
               {COPY_PUBLIC_LIST_HINT}
             </div>
           ) : null}
 
           {list.cards.length === 0 && mentorsListFiltersApplied(filters) ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-6 py-16 text-center">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
               <SearchX className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
               <h3 className="mt-4 text-lg font-black text-slate-900">조건에 맞는 멘토가 없어요</h3>
               <p className="mt-2 max-w-sm text-sm font-medium text-slate-600">
@@ -114,7 +114,7 @@ export function MentorsListBody(props: {
               </Link>
             </div>
           ) : list.cards.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-10 text-center">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
               <p className="text-lg font-black text-slate-900">아직 데이터가 없어요</p>
               <p className="mt-2 text-sm text-slate-600">필터를 조정하거나 검색어를 바꿔 보세요.</p>
               <Link href="/mentors" className="mt-4 inline-block text-sm font-bold text-[#1A56DB] underline">

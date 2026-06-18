@@ -185,12 +185,12 @@ export function PublicMentorDetailBody(props: {
           <SurfaceCard tone="neutral" bodyClassName="sm:p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
               <div className="relative mx-auto h-[120px] w-[120px] shrink-0 sm:mx-0">
-                <div className="h-[120px] w-[120px] overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-2 ring-slate-100">
+                <div className="h-[120px] w-[120px] overflow-hidden rounded-full border-4 border-white bg-blue-50 shadow-md ring-2 ring-slate-100">
                   {photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photo} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 text-3xl font-black text-slate-600">
+                    <div className="flex h-full w-full items-center justify-center bg-blue-50 text-3xl font-black text-blue-600">
                       {(display.displayName || "멘").trim().slice(0, 1)}
                       <Camera className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 opacity-0" aria-hidden />
                     </div>

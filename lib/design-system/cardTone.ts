@@ -14,6 +14,8 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: string;
     hint: string;
     accentBar: string;
+    /** 목록 카드 interactive hover 시 적용할 테두리 색(회색 배경 대신 tone 강조). */
+    hoverBorder: string;
   }
 > = {
   neutral: {
@@ -24,6 +26,7 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-ds-primary",
     hint: "text-ds-tertiary",
     accentBar: "border-l-slate-300",
+    hoverBorder: "hover:border-blue-300",
   },
   blue: {
     surface: "bg-ds-accent-student-muted/60",
@@ -33,6 +36,7 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-ds-accent-student",
     hint: "text-blue-700/80",
     accentBar: "border-l-blue-600",
+    hoverBorder: "hover:border-blue-400",
   },
   indigo: {
     surface: "bg-indigo-50/80",
@@ -42,6 +46,7 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-indigo-700",
     hint: "text-indigo-600/80",
     accentBar: "border-l-indigo-600",
+    hoverBorder: "hover:border-indigo-400",
   },
   green: {
     surface: "bg-ds-accent-mentor-muted/50",
@@ -51,6 +56,7 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-ds-accent-mentor",
     hint: "text-emerald-700/80",
     accentBar: "border-l-emerald-500",
+    hoverBorder: "hover:border-emerald-400",
   },
   teal: {
     surface: "bg-teal-50/80",
@@ -60,6 +66,7 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-teal-700",
     hint: "text-teal-600/80",
     accentBar: "border-l-teal-600",
+    hoverBorder: "hover:border-teal-400",
   },
   mentor: {
     surface: "bg-ds-accent-mentor-muted",
@@ -69,6 +76,7 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-ds-accent-mentor",
     hint: "text-emerald-700/80",
     accentBar: "border-l-emerald-500",
+    hoverBorder: "hover:border-emerald-400",
   },
   violet: {
     surface: "bg-violet-50/80",
@@ -78,6 +86,7 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-violet-700",
     hint: "text-violet-600/80",
     accentBar: "border-l-violet-600",
+    hoverBorder: "hover:border-violet-400",
   },
   amber: {
     surface: "bg-amber-50/90",
@@ -87,5 +96,6 @@ export const DS_CARD_TONE_CLASSES: Record<
     value: "text-amber-700",
     hint: "text-amber-700/80",
     accentBar: "border-l-amber-500",
+    hoverBorder: "hover:border-amber-400",
   },
 };

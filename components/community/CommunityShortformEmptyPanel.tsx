@@ -16,7 +16,7 @@ export function CommunityShortformEmptyPanel(props: {
 
   return (
     <div
-      className={`rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/30 text-center ${pad}`}
+      className={`rounded-2xl border border-dashed border-slate-200 bg-white text-center ${pad}`}
     >
       <p className="text-base font-extrabold text-slate-900">{title}</p>
       <p className={`mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600 ${props.compact ? "" : "text-[15px]"}`}>
