@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, HelpCircle, PlayCircle } from "lucide-react";
+import { Camera, Eye, HelpCircle, PlayCircle } from "lucide-react";
 import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
 import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
@@ -71,9 +71,17 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
   const borderCls = isDense
     ? "border border-slate-200"
     : "border border-l-[4px] border-slate-300 border-l-[#1A56DB]";
+  // preview만: 폼 카드(흰색)와 미세 구분 위해 본문 배경을 아주 옅은 청백으로.
+  const bgCls = isDense ? "bg-white" : "bg-[#FBFCFE]";
 
   return (
-    <div className={`overflow-hidden ${borderCls} bg-white ${cardRadius} ${shadowCls} ${className}`}>
+    <div className={`overflow-hidden ${borderCls} ${bgCls} ${cardRadius} ${shadowCls} ${className}`}>
+      {!isDense ? (
+        <div className="flex items-center gap-1.5 bg-[#EBF1FE] px-4 py-2 text-[11px] font-extrabold text-[#1A56DB]">
+          <Eye className="h-3.5 w-3.5" aria-hidden />
+          학생에게 보이는 화면
+        </div>
+      ) : null}
       <div className={`${bannerH} bg-gradient-to-br from-slate-100 via-slate-50 to-white`} aria-hidden />
       <div className={`relative ${padX}`}>
         <div className={`${avatarSize} overflow-hidden rounded-2xl border-white bg-white shadow-md`}>
