@@ -170,7 +170,7 @@ export function MypageSubscriptionsCard() {
   }, [load]);
 
   return (
-    <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+    <section className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">

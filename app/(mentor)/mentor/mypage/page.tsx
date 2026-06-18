@@ -205,7 +205,7 @@ function ProfileHeader(props: {
   const initial = initialOf(displayName);
   const verifBadgeClass =
     verification.tone === "ok"
-      ? "text-blue-600 bg-blue-50"
+      ? "text-[#1A56DB] bg-blue-50"
       : verification.tone === "pending"
         ? "text-amber-700 bg-amber-50"
         : "text-slate-500 bg-slate-100";
@@ -254,7 +254,7 @@ function RevenueCard(props: {
         </p>
         <Link
           href="/mentor/payouts"
-          className="text-[12px] font-medium text-blue-600 hover:underline"
+          className="text-[12px] font-medium text-[#1A56DB] hover:underline"
         >
           정산 내역 보기 →
         </Link>
@@ -293,7 +293,7 @@ function ActiveOrdersSection({ orders }: { orders: MentorHubOrderRow[] }) {
         <h2 className="text-[15px] font-semibold text-[#1e2430]">진행 중 의뢰</h2>
         <Link
           href="/mentor/custom-request/orders"
-          className="text-[12px] font-medium text-blue-600 hover:underline"
+          className="text-[12px] font-medium text-[#1A56DB] hover:underline"
         >
           전체보기 →
         </Link>
@@ -327,7 +327,7 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
           >
             <div className="flex items-start gap-4">
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-blue-600"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-[#1A56DB]"
                 aria-hidden
               >
                 {order.studentInitial}
@@ -358,14 +358,14 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
               </div>
               <Link
                 href={order.workroomHref}
-                className="hidden shrink-0 items-center gap-1 self-start rounded-[8px] bg-blue-600 px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-blue-700 sm:inline-flex"
+                className="hidden shrink-0 items-center gap-1 self-start rounded-[8px] bg-[#1A56DB] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#1648c0] sm:inline-flex"
               >
                 바로가기 →
               </Link>
             </div>
             <Link
               href={order.workroomHref}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-[8px] bg-blue-600 px-3 py-2 text-[12px] font-semibold text-white sm:hidden"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-[8px] bg-[#1A56DB] px-3 py-2 text-[12px] font-semibold text-white sm:hidden"
             >
               바로가기 →
             </Link>
@@ -454,7 +454,7 @@ function RecentReviewsCard({ reviews }: { reviews: ReviewCardItem[] }) {
           ))}
         </ul>
       )}
-      <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-blue-600 hover:underline">
+      <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-[#1A56DB] hover:underline">
         후기 전체보기 →
       </Link>
     </article>

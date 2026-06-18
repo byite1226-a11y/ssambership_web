@@ -59,7 +59,7 @@ export default async function StudentMyPage() {
 
   const ledgerPreview = (
     <>
-      <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+      <section className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
         <SectionTitle title="결제·캐시" hint="충전 잔액과 최근 원장을 확인하세요." />
         <p className="mt-5 text-3xl font-black tabular-nums text-[#0f172a]">
           {cashBalanceKrw.toLocaleString("ko-KR")}
@@ -112,7 +112,7 @@ export default async function StudentMyPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+      <section className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
         <SectionTitle title="알림·지원·리뷰" />
         <ul className="divide-y divide-slate-100 text-sm">
           <li className="flex items-center justify-between gap-2 py-2.5">
@@ -120,7 +120,7 @@ export default async function StudentMyPage() {
               <Bell className="h-4 w-4 text-[#1A56DB]" strokeWidth={2} aria-hidden />
               알림
             </span>
-            <Link href="/notifications" className="text-xs font-bold text-blue-600 hover:underline">
+            <Link href="/notifications" className="text-xs font-bold text-[#1A56DB] hover:underline">
               {bundle.notifications.valueText} · 센터 →
             </Link>
           </li>
@@ -129,7 +129,7 @@ export default async function StudentMyPage() {
               <HelpCircle className="h-4 w-4 text-[#1A56DB]" strokeWidth={2} aria-hidden />
               고객지원
             </span>
-            <Link href="/support/disputes" className="text-xs font-bold text-blue-600 hover:underline">
+            <Link href="/support/disputes" className="text-xs font-bold text-[#1A56DB] hover:underline">
               분쟁·환불 →
             </Link>
           </li>
@@ -164,7 +164,7 @@ export default async function StudentMyPage() {
 
         <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-6">
-            <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+            <section className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
                 <div className="flex min-w-0 items-center gap-4">
                   <div
@@ -199,7 +199,7 @@ export default async function StudentMyPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+            <section className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <SectionTitle title="진행 중인 질문" hint={roomText} />
