@@ -10,13 +10,18 @@ type Props = {
   compact?: boolean;
   /** compact일 때 우측 행동(버튼/링크 등). 맥락 있을 때만. */
   action?: ReactNode;
-  /** compact 아이콘 타일 톤 — 기본 파랑(브랜드), mentor=초록(멘토 전용 화면). */
-  iconTone?: "blue" | "mentor";
+  /** compact 아이콘 타일 톤 — 기본 파랑(브랜드), mentor=초록(정체성), neutral=회색(정보 없음). */
+  iconTone?: "blue" | "mentor" | "neutral";
 };
 
 export function EmptyState(props: Props) {
   if (props.compact) {
-    const tile = props.iconTone === "mentor" ? "bg-[#E6F7F1] text-[#16A34A]" : "bg-[#EBF1FE] text-[#1A56DB]";
+    const tile =
+      props.iconTone === "mentor"
+        ? "bg-[#E6F7F1] text-[#16A34A]"
+        : props.iconTone === "neutral"
+          ? "bg-[#F1F5F9] text-[#64748B]"
+          : "bg-[#EBF1FE] text-[#1A56DB]";
     return (
       <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4">
         {props.icon ? (

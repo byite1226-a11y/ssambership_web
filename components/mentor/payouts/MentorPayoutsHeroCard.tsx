@@ -7,8 +7,9 @@ import type { MentorPayoutScheduleInfo, MentorPayoutSummary } from "@/lib/mentor
 import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 import { formatCashKrw } from "./payoutUi";
 
-// 멘토 전용 화면 액센트(초록 #16A34A) 아이콘 타일
-const MENTOR_TILE = "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#E6F7F1] text-[#16A34A]";
+// 색 위계: 발생 전 단순 정보 = 중립 slate / "지급 완료 합계" = 완료 초록 #059669. (멘토 정체성 초록 #16A34A는 본문에 쓰지 않음)
+const TILE_NEUTRAL = "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] text-[#64748B]";
+const TILE_DONE = "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ECFDF5] text-[#059669]";
 
 type Props = {
   summary: MentorPayoutSummary;
@@ -20,7 +21,7 @@ export function MentorPayoutsHeroCard(props: Props) {
   const { summary, schedule, lifetimePaid } = props;
 
   return (
-    <section className={`${SURFACE_CARD} border-l-[4px] border-l-[#16A34A]`}>
+    <section className={`${SURFACE_CARD} border-l-[4px] border-l-[#1A56DB]`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[13px] font-medium text-slate-500">이번 달 예상 정산 · {schedule.monthLabel}</p>
@@ -40,7 +41,7 @@ export function MentorPayoutsHeroCard(props: Props) {
       <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-6 sm:grid-cols-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className={MENTOR_TILE}>
+            <span className={TILE_NEUTRAL}>
               <Repeat className="h-3.5 w-3.5" aria-hidden />
             </span>
             <p className="text-[12px] font-semibold text-slate-500">구독 수익</p>
@@ -52,7 +53,7 @@ export function MentorPayoutsHeroCard(props: Props) {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className={MENTOR_TILE}>
+            <span className={TILE_NEUTRAL}>
               <Briefcase className="h-3.5 w-3.5" aria-hidden />
             </span>
             <p className="text-[12px] font-semibold text-slate-500">맞춤의뢰 수익</p>
@@ -64,12 +65,12 @@ export function MentorPayoutsHeroCard(props: Props) {
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className={MENTOR_TILE}>
+            <span className={TILE_DONE}>
               <Wallet className="h-3.5 w-3.5" aria-hidden />
             </span>
             <p className="text-[12px] font-semibold text-slate-500">누적 정산</p>
           </div>
-          <p className="mt-2 text-[20px] font-bold tabular-nums text-slate-900">{formatCashKrw(lifetimePaid)}</p>
+          <p className="mt-2 text-[20px] font-bold tabular-nums text-[#059669]">{formatCashKrw(lifetimePaid)}</p>
           <p className="mt-1 text-[11px] text-slate-400">지급 완료 합계</p>
         </div>
       </div>

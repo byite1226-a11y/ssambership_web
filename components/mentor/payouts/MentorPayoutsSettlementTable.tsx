@@ -22,7 +22,7 @@ export function MentorPayoutsSettlementTable(props: {
     return (
       <EmptyState
         compact
-        iconTone="mentor"
+        iconTone="neutral"
         icon={<CalendarX className="h-5 w-5" strokeWidth={1.8} aria-hidden />}
         title="선택한 기간에 정산 내역이 없어요"
         description="해당 기간에 완료된 구독 또는 맞춤의뢰가 없습니다."
