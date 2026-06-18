@@ -322,7 +322,9 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
     <ul className="space-y-3">
       {orders.map((order) => (
         <li key={order.id}>
-          <article className={`${SURFACE_CARD} transition hover:border-blue-100`}>
+          <article
+            className={`${SURFACE_CARD} transition-[box-shadow,border-color] duration-150 hover:border-blue-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]`}
+          >
             <div className="flex items-start gap-4">
               <span
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-blue-600"
