@@ -102,7 +102,7 @@ async function updateMentorSubscriptionPrices(
   const changedTiers: SubscribePlanTier[] = [];
   const { data: existingRows, error: selectError } = await supabase
     .from("mentor_plans")
-    .select("id, mentor_id, plan_tier, amount_cents, price_cents, monthly_price_cents")
+    .select("id, mentor_id, plan_tier, amount_cents")
     .eq("mentor_id", mentorId);
 
   if (selectError) {
