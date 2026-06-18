@@ -61,7 +61,7 @@ export function MentorOpenPostListSection(props: {
 
         return (
           <li key={id}>
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-ds-border-subtle border-l-[3px] border-l-blue-600 bg-white px-5 py-4 transition hover:bg-slate-50/80">
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-ds-border-subtle border-l-[3px] border-l-blue-600 bg-white px-5 py-4 transition-[box-shadow,border-color] duration-150 hover:border-blue-400 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]">
               <Link href={detailHref} className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-slate-900">{d.title}</p>
                 {metaParts.length > 0 ? (
