@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CheckCircle2, Clock, MessageSquareText, Paperclip, WalletCards } from "lucide-react";
+import { CheckCircle2, Clock, Inbox, MessageSquareText, Paperclip, Sparkles, WalletCards } from "lucide-react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { EmptyState } from "@/components/common/EmptyState";
 import { listCardClassName, type ListCardTone } from "@/components/design-system/ListCard";
 import { getSubjectLabel } from "@/lib/subjects/subjectCatalog";
 import {
@@ -38,6 +39,29 @@ function iqCardTone(status: string | null | undefined): ListCardTone {
     default:
       return "neutral"; // refunded / expired / canceled
   }
+}
+
+/** 멘토 개별질문 요약 스트립 — 답변 대기 / 진행 중 / 이번 달 완료 (숫자는 목록 데이터로 계산). */
+export function MentorIndividualQuestionSummaryStrip(props: {
+  waiting: number;
+  inProgress: number;
+  doneThisMonth: number;
+}) {
+  const cells = [
+    { label: "답변 대기", value: props.waiting, color: "text-amber-600" },
+    { label: "진행 중", value: props.inProgress, color: "text-blue-700" },
+    { label: "이번 달 완료", value: props.doneThisMonth, color: "text-[#059669]" },
+  ];
+  return (
+    <div className="mb-6 grid grid-cols-3 gap-3">
+      {cells.map((c) => (
+        <div key={c.label} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center">
+          <p className={`text-2xl font-black tabular-nums ${c.color}`}>{c.value}</p>
+          <p className="mt-0.5 text-xs font-bold text-slate-500">{c.label}</p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function ExpiringSoonBadge() {
@@ -81,10 +105,7 @@ export function IndividualQuestionListCards(props: {
 }) {
   if (props.rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-base font-black text-slate-900">{props.emptyTitle}</p>
-        <p className="mt-2 text-sm text-slate-500">{props.emptyDescription}</p>
-      </div>
+      <EmptyState compact icon={<Inbox className="h-5 w-5" aria-hidden />} title={props.emptyTitle} description={props.emptyDescription} />
     );
   }
 
@@ -107,6 +128,12 @@ export function IndividualQuestionListCards(props: {
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
                     {individualQuestionTypeLabel(row.question_type)}
                   </span>
+                  {row.subject ? (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                      {getSubjectLabel(row.subject)}
+                      {row.topic ? ` · ${row.topic}` : ""}
+                    </span>
+                  ) : null}
                   <span className="text-xs font-bold text-slate-900">{formatIndividualQuestionPrice(row.price_cents)} 예치</span>
                   {expiringSoon ? <ExpiringSoonBadge /> : null}
                 </div>
@@ -148,10 +175,20 @@ export function OpenIndividualQuestionBrowseCards(props: {
 
   if (props.rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-base font-black text-slate-900">답변할 수 있는 공개 질문이 없습니다</p>
-        <p className="mt-2 text-sm text-slate-500">학생이 공개형 질문을 등록하면 이곳에 표시됩니다.</p>
-      </div>
+      <EmptyState
+        compact
+        icon={<Sparkles className="h-5 w-5" aria-hidden />}
+        title="답변할 수 있는 공개 질문이 없습니다"
+        description="학생이 공개형 질문을 등록하면 이곳에 표시됩니다. 단가를 설정해 두면 지정 질문도 받을 수 있어요."
+        action={
+          <Link
+            href="/mentor/profile/edit"
+            className="inline-flex items-center rounded-xl bg-[#1A56DB] px-4 py-2 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+          >
+            단가 설정
+          </Link>
+        }
+      />
     );
   }
 

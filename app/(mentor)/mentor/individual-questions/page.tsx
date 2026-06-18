@@ -2,6 +2,7 @@ import Link from "next/link";
 import "@/app/(public)/custom-request/landing.css";
 import {
   IndividualQuestionListCards,
+  MentorIndividualQuestionSummaryStrip,
   OpenIndividualQuestionBrowseCards,
 } from "@/components/individualQuestion/IndividualQuestionViews";
 import { requireRole } from "@/lib/auth/routeGuard";
@@ -42,6 +43,17 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
   const awaitingRows = rows.filter((row) => isIndividualQuestionAwaitingAnswer(row.status));
   const settledRows = rows.filter((row) => !isIndividualQuestionAwaitingAnswer(row.status));
 
+  // 요약 스트립 숫자 — 이미 가져온 목록으로 계산(데이터 로직 미터치, 표시용 카운트).
+  const lower = (s: string | null | undefined) => (s ?? "").toLowerCase();
+  const now = new Date();
+  const waitingCount = rows.filter((r) => ["assigned", "escrowed"].includes(lower(r.status))).length;
+  const inProgressCount = rows.filter((r) => ["claimed", "answered"].includes(lower(r.status))).length;
+  const doneThisMonthCount = rows.filter((r) => {
+    if (lower(r.status) !== "released" || !r.released_at) return false;
+    const d = new Date(r.released_at);
+    return !Number.isNaN(d.getTime()) && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+
   return (
     <div className="cr-landing cr-detail-v5 cr-detail-shell mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
       <article className="cr-detail-card">
@@ -73,6 +85,14 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
           <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
             개별 질문 목록을 불러오지 못했습니다. {error}
           </p>
+        ) : null}
+
+        {approval.ok ? (
+          <MentorIndividualQuestionSummaryStrip
+            waiting={waitingCount}
+            inProgress={inProgressCount}
+            doneThisMonth={doneThisMonthCount}
+          />
         ) : null}
 
         {rows.length === 0 ? (
