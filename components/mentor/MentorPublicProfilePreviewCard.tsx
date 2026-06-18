@@ -59,11 +59,14 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
   const padX = isDense ? "px-4 pb-4" : "px-6 pb-8";
   const nameCls = isDense ? "text-base font-black" : "text-xl font-black";
   const introClamp = isHub ? "line-clamp-3" : isCompact ? "line-clamp-2" : "line-clamp-3";
-  const cardRadius = isDense ? "rounded-2xl" : "rounded-3xl";
-  const shadowCls = isDense ? "shadow-sm" : "shadow-lg ring-1 ring-slate-900/5";
+  const cardRadius = "rounded-2xl";
+  // preview(프로필 편집 미리보기): 다른 카드와 톤 통일 — 사방 균일 1.5px slate-300 + 옅은 그림자, 좌측 액센트 바 없음.
+  // dense(hub/compact)는 기존 외형 유지.
+  const shadowCls = isDense ? "shadow-sm" : "shadow-[0_1px_4px_rgba(0,0,0,0.05)]";
+  const borderCls = isDense ? "border border-slate-200" : "border-[1.5px] border-slate-300";
 
   return (
-    <div className={`overflow-hidden border border-slate-200 bg-white ${cardRadius} ${shadowCls} ${className}`}>
+    <div className={`overflow-hidden ${borderCls} bg-white ${cardRadius} ${shadowCls} ${className}`}>
       <div className={`${bannerH} bg-gradient-to-br from-slate-100 via-slate-50 to-white`} aria-hidden />
       <div className={`relative ${padX}`}>
         <div className={`${avatarSize} overflow-hidden rounded-2xl border-white bg-white shadow-md`}>
