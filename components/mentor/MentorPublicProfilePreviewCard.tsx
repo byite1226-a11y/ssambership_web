@@ -157,15 +157,21 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
         </div>
 
         {!isCompact ? (
-          <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-xs">
+          <dl
+            className={`mt-4 grid gap-3 border-t border-slate-100 pt-4 text-xs ${
+              d.grade ? "grid-cols-2" : "grid-cols-1"
+            }`}
+          >
             <div>
               <dt className="font-bold text-slate-500">학교·전공</dt>
               <dd className="mt-0.5 font-extrabold leading-snug text-slate-800">{mentorSchoolLine(d)}</dd>
             </div>
-            <div>
-              <dt className="font-bold text-slate-500">학년</dt>
-              <dd className="mt-0.5 font-extrabold text-slate-800">{d.grade || "—"}</dd>
-            </div>
+            {d.grade ? (
+              <div>
+                <dt className="font-bold text-slate-500">학년</dt>
+                <dd className="mt-0.5 font-extrabold text-slate-800">{d.grade}</dd>
+              </div>
+            ) : null}
           </dl>
         ) : null}
 
