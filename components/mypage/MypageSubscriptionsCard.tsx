@@ -40,9 +40,29 @@ function subscriptionStatusBadgeClass(tone: ActiveSubscriptionCard["statusTone"]
   }
 }
 
+/** 카드 hover 시 테두리 색 — 배지 색 매핑과 동일 계열로 통일(회색 배경 hover 대신). */
+function subscriptionHoverBorderClass(tone: ActiveSubscriptionCard["statusTone"]): string {
+  switch (tone) {
+    case "active":
+      return "hover:border-blue-400";
+    case "scheduled":
+    case "pastDue":
+      return "hover:border-amber-400";
+    case "expired":
+    case "refunded":
+    case "neutral":
+    default:
+      return "hover:border-slate-300";
+  }
+}
+
 function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
   return (
-    <article className="rounded-2xl border border-[#e2e8f2] bg-white p-5 transition hover:border-[#cbd5e1]">
+    <article
+      className={`rounded-2xl border border-[#e2e8f2] bg-white p-5 transition-[box-shadow,border-color] duration-150 ${subscriptionHoverBorderClass(
+        item.statusTone,
+      )} hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]`}
+    >
       <div className="flex gap-4 sm:gap-5">
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
           {item.photoUrl ? (
