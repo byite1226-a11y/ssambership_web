@@ -559,7 +559,7 @@ export function MentorProfileEditForm(props: {
 
         {/* Right Column: Preview */}
         <div className="lg:col-span-5">
-          <div className="sticky top-10 space-y-6">
+          <div className="space-y-6 lg:sticky lg:top-10">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-black text-slate-900">학생에게 보여지는 프로필 미리보기</h2>
               <HelpCircle className="h-4 w-4 text-slate-300" />
