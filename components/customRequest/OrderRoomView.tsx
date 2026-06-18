@@ -374,7 +374,7 @@ export function OrderRoomView(props: {
           <p className="cr-detail-subtitle">
             선택한 멘토와 대화하며 작업을 진행하고, 납품 파일과 수정 요청, 문제 해결 내역을 한곳에서 확인할 수 있어요.
           </p>
-          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 py-1.5 text-xs font-extrabold text-[var(--c-blue,#1A56DB)]">
+          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 py-1.5 text-xs font-extrabold text-[#1A56DB]">
             <span aria-hidden>✓</span>
             결제 확인이 완료된 주문이에요
           </span>

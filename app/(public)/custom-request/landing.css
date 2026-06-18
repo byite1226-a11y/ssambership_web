@@ -1,7 +1,7 @@
 /* ===== 맞춤의뢰 랜딩 전용 (.cr-landing 하위 스코프) ===== */
-.cr-landing{ --c-primary:#0f172a; --c-secondary:#3f4b5f; --c-tertiary:#8a96a8;
+.cr-landing{ --c-primary:var(--ds-text-primary); --c-secondary:#3f4b5f; --c-tertiary:#8a96a8;
   --c-border:#e2e8f2; --c-border-strong:#d8e0ec; --c-band:#f3f6fc; --c-fill:#eef3fb;
-  --c-blue:#1A56DB; --c-blue-weak:#e9f0ff; color:var(--c-primary); }
+  --c-blue:var(--ds-accent-student); --c-blue-weak:#e9f0ff; color:var(--c-primary); }
 .cr-landing *{box-sizing:border-box}
 .cr-landing .ico{flex:none;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .cr-landing .wrap{max-width:1120px;margin:0 auto;padding:0 24px}

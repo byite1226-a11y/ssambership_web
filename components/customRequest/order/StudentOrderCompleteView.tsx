@@ -100,7 +100,7 @@ function pickMentorId(order: Row | null, application: Row | null): string | null
 
 function BluePill({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex min-h-7 items-center rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 text-xs font-extrabold text-[var(--c-blue,#1A56DB)]">
+    <span className="inline-flex min-h-7 items-center rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 text-xs font-extrabold text-[#1A56DB]">
       {children}
     </span>
   );
@@ -204,7 +204,7 @@ function DeliverableSection(props: { orderId: string; deliverable: Row | null; s
                   </>
                 ) : (
                   <>
-                    <details className="rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-3 py-2 text-sm font-bold text-[var(--c-primary,#0f172a)]">
+                    <details className="rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-3 py-2 text-sm font-bold text-[#0f172a]">
                       <summary className="cursor-pointer list-none">미리보기</summary>
                       <p className="mt-2 max-w-sm border-t border-[var(--c-border,#e2e8f2)] pt-2 text-xs font-semibold leading-relaxed text-[var(--c-secondary,#3f4b5f)]">
                         {previewText || "미리볼 텍스트 납품 내용이 없습니다."}
@@ -241,11 +241,11 @@ function PaymentReceipt(props: { method: string; paidAtLabel: string; statusLabe
       <dl className="mt-3 grid gap-2 text-sm">
         <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
           <dt className="font-bold text-[var(--c-secondary,#3f4b5f)]">결제 수단</dt>
-          <dd className="text-right font-extrabold text-[var(--c-primary,#0f172a)]">{props.method}</dd>
+          <dd className="text-right font-extrabold text-[#0f172a]">{props.method}</dd>
         </div>
         <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
           <dt className="font-bold text-[var(--c-secondary,#3f4b5f)]">결제일시</dt>
-          <dd className="text-right font-extrabold text-[var(--c-primary,#0f172a)]">{props.paidAtLabel}</dd>
+          <dd className="text-right font-extrabold text-[#0f172a]">{props.paidAtLabel}</dd>
         </div>
         <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
           <dt className="font-bold text-[var(--c-secondary,#3f4b5f)]">결제 상태</dt>
@@ -267,19 +267,19 @@ function OrderInfoSection(props: {
       <dl className="mt-3 grid gap-2 sm:grid-cols-2">
         <div className="rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
           <dt className="text-[11px] font-bold text-[var(--c-tertiary,#8a96a8)]">주문 번호</dt>
-          <dd className="mt-1 break-words font-mono text-sm font-extrabold text-[var(--c-primary,#0f172a)]">{props.shortId}</dd>
+          <dd className="mt-1 break-words font-mono text-sm font-extrabold text-[#0f172a]">{props.shortId}</dd>
         </div>
         <div className="rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
           <dt className="text-[11px] font-bold text-[var(--c-tertiary,#8a96a8)]">카테고리</dt>
-          <dd className="mt-1 text-sm font-extrabold text-[var(--c-primary,#0f172a)]">{props.category}</dd>
+          <dd className="mt-1 text-sm font-extrabold text-[#0f172a]">{props.category}</dd>
         </div>
         <div className="rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
           <dt className="text-[11px] font-bold text-[var(--c-tertiary,#8a96a8)]">주문일</dt>
-          <dd className="mt-1 text-sm font-extrabold text-[var(--c-primary,#0f172a)]">{props.createdAtLabel}</dd>
+          <dd className="mt-1 text-sm font-extrabold text-[#0f172a]">{props.createdAtLabel}</dd>
         </div>
         <div className="rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
           <dt className="text-[11px] font-bold text-[var(--c-tertiary,#8a96a8)]">완료일</dt>
-          <dd className="mt-1 text-sm font-extrabold text-[var(--c-primary,#0f172a)]">{props.completedAtLabel}</dd>
+          <dd className="mt-1 text-sm font-extrabold text-[#0f172a]">{props.completedAtLabel}</dd>
         </div>
       </dl>
     </SectionPaneWithAction>
@@ -290,7 +290,7 @@ function ConversationSummary(props: { messages: Row[] }) {
   return (
     <CustomRequestSectionPane title="주문방 대화 기록">
       <details className="mt-3 rounded-xl border border-[var(--c-border,#e2e8f2)] bg-[var(--c-band,#f3f6fc)] px-4 py-3">
-        <summary className="cursor-pointer list-none text-sm font-extrabold text-[var(--c-blue,#1A56DB)]">
+        <summary className="cursor-pointer list-none text-sm font-extrabold text-[#1A56DB]">
           대화 {props.messages.length.toLocaleString("ko-KR")}건 · 대화 보기
         </summary>
         <div className="mt-3 space-y-2 border-t border-[var(--c-border,#e2e8f2)] pt-3">
@@ -300,7 +300,7 @@ function ConversationSummary(props: { messages: Row[] }) {
               const at = formatOrderRoomDateTime(pickTimestamp(message, ["created_at", "updated_at"]));
               return (
                 <div key={`${String(message.id ?? index)}-${index}`} className="rounded-lg bg-white px-3 py-2">
-                  <p className="line-clamp-2 text-sm font-semibold text-[var(--c-primary,#0f172a)]">{body}</p>
+                  <p className="line-clamp-2 text-sm font-semibold text-[#0f172a]">{body}</p>
                   <p className="mt-1 text-[11px] font-medium text-[var(--c-tertiary,#8a96a8)]">{at}</p>
                 </div>
               );
@@ -327,7 +327,7 @@ function RevisionSummary(props: { revisions: Row[] }) {
                 key={`${String(revision.id ?? index)}-${index}`}
                 className="rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3"
               >
-                <p className="text-sm font-bold text-[var(--c-primary,#0f172a)]">{body}</p>
+                <p className="text-sm font-bold text-[#0f172a]">{body}</p>
                 <p className="mt-1 text-[11px] font-medium text-[var(--c-tertiary,#8a96a8)]">{at}</p>
               </li>
             );
@@ -351,7 +351,7 @@ function CompletionGuide(props: { events: Row[] }) {
         <li>멘토에게 남긴 후기는 멘토 프로필에 반영돼요.</li>
       </ul>
       <details className="mt-4 rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
-        <summary className="cursor-pointer list-none text-sm font-extrabold text-[var(--c-blue,#1A56DB)]">진행 로그 열기</summary>
+        <summary className="cursor-pointer list-none text-sm font-extrabold text-[#1A56DB]">진행 로그 열기</summary>
         <ol className="mt-3 space-y-2 border-t border-[var(--c-border,#e2e8f2)] pt-3">
           {props.events.length > 0 ? (
             props.events.map((event, index) => {
@@ -360,9 +360,9 @@ function CompletionGuide(props: { events: Row[] }) {
               const at = formatOrderRoomDateTime(pickTimestamp(event, ["created_at", "updated_at"]));
               return (
                 <li key={`${String(event.id ?? index)}-${index}`} className="flex gap-3 rounded-lg bg-[var(--c-band,#f3f6fc)] px-3 py-2">
-                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--c-blue,#1A56DB)]" />
+                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#1A56DB]" />
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-[var(--c-primary,#0f172a)]">{label}</p>
+                    <p className="text-sm font-bold text-[#0f172a]">{label}</p>
                     <p className="mt-0.5 text-[11px] font-medium text-[var(--c-tertiary,#8a96a8)]">{at}</p>
                   </div>
                 </li>
