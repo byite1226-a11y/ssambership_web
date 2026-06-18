@@ -71,8 +71,7 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
   const borderCls = isDense
     ? "border border-slate-200"
     : "border border-l-[4px] border-slate-300 border-l-[#1A56DB]";
-  // preview만: 폼 카드(흰색)와 미세 구분 위해 본문 배경을 아주 옅은 청백으로.
-  const bgCls = isDense ? "bg-white" : "bg-[#FBFCFE]";
+  const bgCls = "bg-white";
 
   return (
     <div className={`overflow-hidden ${borderCls} ${bgCls} ${cardRadius} ${shadowCls} ${className}`}>
