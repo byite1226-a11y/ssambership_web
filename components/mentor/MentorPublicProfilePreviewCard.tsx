@@ -67,7 +67,8 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
   // preview(프로필 편집 미리보기): 다른 카드와 톤 통일 — 사방 균일 1.5px slate-300 + 옅은 그림자, 좌측 액센트 바 없음.
   // dense(hub/compact)는 기존 외형 유지.
   const shadowCls = isDense ? "shadow-sm" : "shadow-[0_1px_4px_rgba(0,0,0,0.05)]";
-  const borderCls = isDense ? "border border-slate-200" : "border border-slate-300";
+  // preview: 좌측 섹션 카드의 액센트 바(border-l-[4px])와 시각 무게를 맞추기 위해 사방 4px 테두리(중립 slate-300). 좌측 바는 넣지 않음.
+  const borderCls = isDense ? "border border-slate-200" : "border-[4px] border-slate-300";
 
   return (
     <div className={`overflow-hidden ${borderCls} bg-white ${cardRadius} ${shadowCls} ${className}`}>
