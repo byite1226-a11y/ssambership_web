@@ -219,7 +219,7 @@ function ProfileHeader(props: {
   return (
     <header className="mb-7 flex items-center gap-3.5">
       <div
-        className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-blue-600 text-xl font-semibold text-white"
+        className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#16A34A] text-xl font-semibold text-white"
         aria-hidden
       >
         {initial}
