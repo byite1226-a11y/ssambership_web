@@ -37,20 +37,20 @@ const emptyMentor: MentorSignupFormValues = {
   studentIdFile: null,
 };
 
-const STUDENT_PRIMARY = "#2563eb";
+const STUDENT_PRIMARY = "#1A56DB";
 const MENTOR_PRIMARY = "#16A34A";
 
 const signupInputBase =
   "mt-2 w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 sm:min-h-[3.1rem] sm:px-5";
 const inputClassStudent =
-  `${signupInputBase} focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20`;
+  `${signupInputBase} focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20`;
 const inputClassMentor =
   `${signupInputBase} focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20`;
 const labelClass =
   "mb-0 block break-keep text-sm font-bold text-slate-800 sm:text-base";
 const subhelper = "mt-1.5 text-sm leading-relaxed text-slate-500";
 const profileStudent =
-  "rounded-2xl border border-[#2563eb] bg-white p-6 ring-2 ring-[#2563eb]/15 sm:p-7";
+  "rounded-2xl border border-[#1A56DB] bg-white p-6 ring-2 ring-[#1A56DB]/15 sm:p-7";
 const profileMentor =
   "rounded-2xl border border-[#16A34A] bg-white p-6 ring-2 ring-[#16A34A]/15 sm:p-7";
 const accountSection = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
@@ -115,7 +115,7 @@ function SignupRoleChoiceCard({
         "relative flex h-full min-h-[270px] flex-col rounded-2xl border bg-white p-6 text-left transition sm:p-7",
         isStudent
           ? active
-            ? "border-[#2563eb] ring-2 ring-[#2563eb]/15"
+            ? "border-[#1A56DB] ring-2 ring-[#1A56DB]/15"
             : "border-slate-200 hover:border-slate-300"
           : active
             ? "border-[#16A34A] ring-2 ring-[#16A34A]/15"
@@ -428,7 +428,7 @@ function SignupPageContent() {
                 </p>
                 <Link
                   href="/mentors"
-                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#2563eb] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
+                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1A56DB] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
                 >
                   멘토 찾기
                 </Link>
@@ -509,7 +509,7 @@ function SignupPageContent() {
                   <button
                     type="button"
                     onClick={goBackToRoleSelect}
-                    className="mt-3 min-h-11 w-full rounded-2xl bg-[#2563eb] py-2.5 text-sm font-extrabold text-white sm:text-base"
+                    className="mt-3 min-h-11 w-full rounded-2xl bg-[#1A56DB] py-2.5 text-sm font-extrabold text-white sm:text-base"
                   >
                     역할 선택으로
                   </button>
@@ -525,7 +525,7 @@ function SignupPageContent() {
                   aria-label="학생 회원가입 폼"
                 >
                   <header className="border-b border-slate-100 pb-5">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#2563eb]">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#1A56DB]">
                       Student signup
                     </p>
                     <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
@@ -630,7 +630,7 @@ function SignupPageContent() {
                       void handleSignUp("student");
                     }}
                     disabled={loading}
-                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#2563eb] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
+                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#1A56DB] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A56DB] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
                   >
                     {loading ? "처리 중…" : "학생으로 가입하기"}
                   </button>
@@ -770,7 +770,7 @@ function SignupPageContent() {
                 type="button"
                 onClick={goNext}
                 disabled={loading || !role}
-                className="min-h-14 min-w-[11.5rem] rounded-2xl bg-[#2563eb] px-10 text-base font-extrabold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg md:min-w-[12.5rem]"
+                className="min-h-14 min-w-[11.5rem] rounded-2xl bg-[#1A56DB] px-10 text-base font-extrabold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg md:min-w-[12.5rem]"
               >
                 다음 — 정보 입력
               </button>
@@ -827,10 +827,10 @@ function termsBlock(
   const skin = "border-slate-200 bg-white";
   const sub = "text-slate-500";
   const headerBorder = "border-slate-100";
-  const kicker = isSky ? "text-[#2563eb]" : "text-[#16A34A]";
-  const link = isSky ? "text-[#2563eb] hover:text-blue-700" : "text-[#16A34A] hover:text-emerald-700";
+  const kicker = isSky ? "text-[#1A56DB]" : "text-[#16A34A]";
+  const link = isSky ? "text-[#1A56DB] hover:text-blue-700" : "text-[#16A34A] hover:text-emerald-700";
   const chk = isSky
-    ? "text-[#2563eb] focus:ring-[#2563eb]"
+    ? "text-[#1A56DB] focus:ring-[#1A56DB]"
     : "text-[#16A34A] focus:ring-[#16A34A]";
 
   return (

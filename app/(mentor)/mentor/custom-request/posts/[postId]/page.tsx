@@ -73,7 +73,7 @@ export default async function MentorCustomRequestPostDetailPage(props: PageProps
           attachmentLoadError={postAttachments.error}
         />
         <p className="mt-6 text-center text-xs text-[var(--c-tertiary,#8a96a8)]">
-          <Link href="/custom-request" className="font-semibold text-[var(--c-secondary,#3f4b5f)] hover:text-[var(--c-blue,#2563eb)] hover:underline">
+          <Link href="/custom-request" className="font-semibold text-[var(--c-secondary,#3f4b5f)] hover:text-[var(--c-blue,#1A56DB)] hover:underline">
             맞춤의뢰 소개
           </Link>
         </p>

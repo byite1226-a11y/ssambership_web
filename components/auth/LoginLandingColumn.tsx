@@ -17,7 +17,7 @@ const cardShell: Record<AuthLoginRole, string> = {
   student:
     "flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border-2 border-sky-200/90 " +
     "bg-gradient-to-b from-sky-100/60 via-sky-50/50 to-white " +
-    "shadow-[0_2px_4px_rgba(0,0,0,0.04),0_28px_64px_-28px_rgba(37,99,235,0.25),inset_0_1px_0_rgba(255,255,255,0.95)] " +
+    "shadow-[0_2px_4px_rgba(0,0,0,0.04),0_28px_64px_-28px_rgba(26,86,219,0.25),inset_0_1px_0_rgba(255,255,255,0.95)] " +
     "sm:rounded-[2rem] lg:rounded-[2.15rem]",
   mentor:
     "flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border-2 border-emerald-200/90 " +
@@ -35,7 +35,7 @@ const badgeClass: Record<AuthLoginRole, string> = {
 
 const cta: Record<AuthLoginRole, string> = {
   student:
-    "inline-flex w-full min-h-[3.5rem] items-center justify-center rounded-2xl bg-blue-600 text-base font-extrabold text-white shadow-[0_8px_28px_-4px_rgba(37,99,235,0.55)] transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:min-h-[3.75rem] sm:rounded-3xl sm:text-lg",
+    "inline-flex w-full min-h-[3.5rem] items-center justify-center rounded-2xl bg-blue-600 text-base font-extrabold text-white shadow-[0_8px_28px_-4px_rgba(26,86,219,0.55)] transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:min-h-[3.75rem] sm:rounded-3xl sm:text-lg",
   mentor:
     "inline-flex w-full min-h-[3.5rem] items-center justify-center rounded-2xl bg-emerald-700 text-base font-extrabold text-white shadow-[0_8px_28px_-4px_rgba(4,120,87,0.5)] transition hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:min-h-[3.75rem] sm:rounded-3xl sm:text-lg",
 };

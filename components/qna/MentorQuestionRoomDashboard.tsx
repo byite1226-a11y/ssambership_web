@@ -158,7 +158,7 @@ export function MentorQuestionRoomDashboard(props: {
                   type="button"
                   onClick={() => selectRoom(id)}
                   className={`relative flex w-full items-start gap-3 border-b border-slate-50 px-4 py-4 text-left transition-all md:px-6 ${
-                    isSelected ? "bg-blue-50/70 shadow-[inset_3px_0_0_0_#2563eb]" : "hover:bg-blue-50/40"
+                    isSelected ? "bg-blue-50/70 shadow-[inset_3px_0_0_0_#1A56DB]" : "hover:bg-blue-50/40"
                   }`}
                 >
                   <div className="mt-1 shrink-0">

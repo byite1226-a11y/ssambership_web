@@ -20,7 +20,7 @@
   --ds-border-emphasis: #cbd5e1; /* slate-300 — 강조 카드 variant */
 
   /* ── Accent (한 화면에 primary 1곳 원칙) ── */
-  --ds-accent-student: #2563eb; /* blue-600 */
+  --ds-accent-student: #1A56DB; /* blue-600 */
   --ds-accent-student-muted: #eff6ff; /* blue-50 */
   --ds-accent-mentor: #059669; /* emerald-600 */
   --ds-accent-mentor-muted: #ecfdf5; /* emerald-50 */

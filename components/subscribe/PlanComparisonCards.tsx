@@ -160,7 +160,7 @@ export function PlanComparisonCards(props: {
                 key={t.id}
                 className={`relative flex min-w-0 flex-col rounded-2xl border bg-white p-4 pt-5 leading-tight sm:p-4 ${
                   isRec
-                    ? "border-2 border-blue-500 shadow-[0_8px_28px_rgba(37,99,235,0.12)] ring-1 ring-blue-100"
+                    ? "border-2 border-blue-500 shadow-[0_8px_28px_rgba(26,86,219,0.12)] ring-1 ring-blue-100"
                     : "border border-slate-200 shadow-sm"
                 }`}
               >
@@ -233,7 +233,7 @@ export function PlanComparisonCards(props: {
               key={t.id}
               className={`flex h-full min-h-0 min-w-0 flex-col rounded-2xl border bg-white p-4 sm:p-5 md:min-h-[28rem] ${
                 selected
-                  ? "z-[1] border-2 border-blue-600 shadow-[0_12px_40px_rgba(37,99,235,0.18)] ring-2 ring-blue-100"
+                  ? "z-[1] border-2 border-blue-600 shadow-[0_12px_40px_rgba(26,86,219,0.18)] ring-2 ring-blue-100"
                   : isRec
                     ? "border border-blue-200/90 opacity-95 shadow-sm"
                     : "border border-slate-200 opacity-[0.92] shadow-sm"

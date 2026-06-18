@@ -134,7 +134,7 @@ export async function loadAdminDashboardExtended(supabase: SupabaseClient): Prom
   const inProgress = summary.disputeActiveCount ?? 2;
   const onHold = 1;
   const donut = [
-    { name: "처리완료", value: resolved, fill: "#10B981" },
+    { name: "처리완료", value: resolved, fill: "#059669" },
     { name: "처리중", value: inProgress, fill: "#1A56DB" },
     { name: "대기", value: pending, fill: "#F59E0B" },
     { name: "보류", value: onHold, fill: "#94A3B8" },

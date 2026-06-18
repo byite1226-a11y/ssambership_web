@@ -61,16 +61,16 @@ export function RoleSelector({ value, onChange, disabled }: RoleSelectorProps) {
       {cards.map((c) => {
         const selected = value === c.id;
         const isBlue = c.tone === "blue";
-        const accent = isBlue ? "#2563eb" : "#16A34A";
-        const focusRing = isBlue ? "focus-visible:ring-[#2563eb]/40" : "focus-visible:ring-[#16A34A]/40";
+        const accent = isBlue ? "#1A56DB" : "#16A34A";
+        const focusRing = isBlue ? "focus-visible:ring-[#1A56DB]/40" : "focus-visible:ring-[#16A34A]/40";
         const chipClass = isBlue
-          ? "bg-blue-50 text-[#2563eb] ring-1 ring-blue-100"
+          ? "bg-blue-50 text-[#1A56DB] ring-1 ring-blue-100"
           : "bg-emerald-50 text-[#16A34A] ring-1 ring-emerald-100";
         const heroBox = isBlue
           ? "border-slate-200 bg-blue-50/40"
           : "border-slate-200 bg-emerald-50/40";
         const footerBorder = "border-slate-200";
-        const footerSelected = isBlue ? "text-[#2563eb]" : "text-[#16A34A]";
+        const footerSelected = isBlue ? "text-[#1A56DB]" : "text-[#16A34A]";
         const footerHint = isBlue ? "text-slate-500" : "text-slate-500";
         const icons = c.id === "student" ? studentIcons : mentorIcons;
 
@@ -86,7 +86,7 @@ export function RoleSelector({ value, onChange, disabled }: RoleSelectorProps) {
               focusRing,
               selected
                 ? isBlue
-                  ? "border-[#2563eb] ring-2 ring-[#2563eb]/15"
+                  ? "border-[#1A56DB] ring-2 ring-[#1A56DB]/15"
                   : "border-[#16A34A] ring-2 ring-[#16A34A]/15"
                 : "border-slate-200 hover:border-slate-300",
               disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",

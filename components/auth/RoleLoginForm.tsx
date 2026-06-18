@@ -16,7 +16,7 @@ const inputBase =
   "w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 sm:min-h-[3.1rem] sm:px-5";
 
 const inputByRole: Record<AuthLoginRole, string> = {
-  student: `${inputBase} focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20`,
+  student: `${inputBase} focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20`,
   mentor: `${inputBase} focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20`,
 };
 
@@ -27,7 +27,7 @@ const labelByRole: Record<AuthLoginRole, string> = {
 
 const ctaByRole: Record<AuthLoginRole, string> = {
   student:
-    "w-full min-h-14 rounded-2xl bg-[#2563eb] text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
+    "w-full min-h-14 rounded-2xl bg-[#1A56DB] text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A56DB] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
   mentor:
     "w-full min-h-14 rounded-2xl bg-[#16A34A] text-base font-extrabold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A34A] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
 };

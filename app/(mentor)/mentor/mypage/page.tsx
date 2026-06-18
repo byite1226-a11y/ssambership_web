@@ -406,7 +406,7 @@ function SubscribersStatCard({ activeSubscribers }: { activeSubscribers: number 
   return (
     <StatCard
       icon={<Users className="h-4 w-4" />}
-      iconClass="bg-[#eef4ff] text-[#2563eb]"
+      iconClass="bg-[#eef4ff] text-[#1A56DB]"
       label="구독 학생"
     >
       <p className="text-[28px] font-bold tracking-tight text-[#1e2430]">

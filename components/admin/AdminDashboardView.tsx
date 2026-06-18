@@ -84,7 +84,7 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Line yAxisId="left" type="monotone" dataKey="signups" name="가입" stroke={PRIMARY} strokeWidth={2} dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="cashKrw" name="거래(원)" stroke="#10B981" strokeWidth={2} dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="cashKrw" name="거래(원)" stroke="#059669" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

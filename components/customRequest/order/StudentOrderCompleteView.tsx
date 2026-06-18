@@ -100,7 +100,7 @@ function pickMentorId(order: Row | null, application: Row | null): string | null
 
 function BluePill({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex min-h-7 items-center rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 text-xs font-extrabold text-[var(--c-blue,#2563eb)]">
+    <span className="inline-flex min-h-7 items-center rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 text-xs font-extrabold text-[var(--c-blue,#1A56DB)]">
       {children}
     </span>
   );
@@ -290,7 +290,7 @@ function ConversationSummary(props: { messages: Row[] }) {
   return (
     <CustomRequestSectionPane title="주문방 대화 기록">
       <details className="mt-3 rounded-xl border border-[var(--c-border,#e2e8f2)] bg-[var(--c-band,#f3f6fc)] px-4 py-3">
-        <summary className="cursor-pointer list-none text-sm font-extrabold text-[var(--c-blue,#2563eb)]">
+        <summary className="cursor-pointer list-none text-sm font-extrabold text-[var(--c-blue,#1A56DB)]">
           대화 {props.messages.length.toLocaleString("ko-KR")}건 · 대화 보기
         </summary>
         <div className="mt-3 space-y-2 border-t border-[var(--c-border,#e2e8f2)] pt-3">
@@ -351,7 +351,7 @@ function CompletionGuide(props: { events: Row[] }) {
         <li>멘토에게 남긴 후기는 멘토 프로필에 반영돼요.</li>
       </ul>
       <details className="mt-4 rounded-xl border border-[var(--c-border,#e2e8f2)] bg-white px-4 py-3">
-        <summary className="cursor-pointer list-none text-sm font-extrabold text-[var(--c-blue,#2563eb)]">진행 로그 열기</summary>
+        <summary className="cursor-pointer list-none text-sm font-extrabold text-[var(--c-blue,#1A56DB)]">진행 로그 열기</summary>
         <ol className="mt-3 space-y-2 border-t border-[var(--c-border,#e2e8f2)] pt-3">
           {props.events.length > 0 ? (
             props.events.map((event, index) => {
@@ -360,7 +360,7 @@ function CompletionGuide(props: { events: Row[] }) {
               const at = formatOrderRoomDateTime(pickTimestamp(event, ["created_at", "updated_at"]));
               return (
                 <li key={`${String(event.id ?? index)}-${index}`} className="flex gap-3 rounded-lg bg-[var(--c-band,#f3f6fc)] px-3 py-2">
-                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--c-blue,#2563eb)]" />
+                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--c-blue,#1A56DB)]" />
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-[var(--c-primary,#0f172a)]">{label}</p>
                     <p className="mt-0.5 text-[11px] font-medium text-[var(--c-tertiary,#8a96a8)]">{at}</p>

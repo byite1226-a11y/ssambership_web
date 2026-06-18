@@ -73,7 +73,7 @@ export default async function AdminMentorApprovalDetailPage(props: Props) {
               className="h-full rounded-md"
               style={{
                 width: `${Math.min(100, capUsage.pct)}%`,
-                backgroundColor: capUsage.pct >= 80 ? "#e08a2f" : "#2563eb",
+                backgroundColor: capUsage.pct >= 80 ? "#e08a2f" : "#1A56DB",
               }}
             />
           </div>

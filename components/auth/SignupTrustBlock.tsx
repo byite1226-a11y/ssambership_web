@@ -58,7 +58,7 @@ export function SignupTrustBlock() {
       <aside className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
         <div className="flex items-start gap-4">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2563eb]"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1A56DB]"
             aria-hidden
           >
             <TrustInfoIcon className="h-7 w-7" />
