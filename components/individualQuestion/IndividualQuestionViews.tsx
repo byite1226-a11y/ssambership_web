@@ -110,7 +110,7 @@ export function IndividualQuestionListCards(props: {
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       {props.rows.map((row) => {
         const counterpart = props.counterpartLabel === "멘토" ? row.mentorName : row.studentName;
         const expiringSoon = isIndividualQuestionExpiringSoon(row.expires_at, row.status);
@@ -193,7 +193,7 @@ export function OpenIndividualQuestionBrowseCards(props: {
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       {props.rows.map((row) => {
         const expiringSoon = isIndividualQuestionExpiringSoon(row.expires_at, "open");
         const remainingLabel = formatIndividualQuestionExpiryRemaining(row.expires_at, "open");

@@ -287,7 +287,7 @@ export function QuestionRoomListCatalog(props: {
               ))}
             </div>
 
-            <div className="mt-4 space-y-2.5">
+            <div className="mt-4 space-y-4">
               {props.rooms.loading ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-950">
                   질문방을 불러오는 중…

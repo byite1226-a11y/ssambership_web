@@ -319,7 +319,7 @@ function EmptyOrders() {
 
 function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {orders.map((order) => (
         <li key={order.id}>
           <article

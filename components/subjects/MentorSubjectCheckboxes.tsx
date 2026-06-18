@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { getMajorSubjects, getMinorSubjects } from "@/lib/subjects/subjectCatalog";
 
 /**
@@ -24,15 +25,21 @@ export function MentorSubjectCheckboxes(props: {
           <details
             key={major.code}
             open={selectedCount > 0}
-            className="rounded-xl border border-slate-200 bg-white"
+            className="group overflow-hidden rounded-xl border border-slate-200 bg-white"
           >
-            <summary className="flex cursor-pointer items-center justify-between gap-2 px-4 py-2.5 text-sm font-extrabold text-slate-900">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-2.5 text-sm font-extrabold text-slate-900 transition-colors hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
               <span>{major.label}</span>
-              {selectedCount > 0 ? (
-                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600">
-                  {selectedCount}
-                </span>
-              ) : null}
+              <span className="flex items-center gap-2">
+                {selectedCount > 0 ? (
+                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-[#1A56DB]">
+                    {selectedCount}
+                  </span>
+                ) : null}
+                <ChevronDown
+                  className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-150 group-open:rotate-180"
+                  aria-hidden
+                />
+              </span>
             </summary>
             <div className="grid grid-cols-2 gap-2 px-4 pb-3 sm:grid-cols-3">
               {items.map((it) => (
