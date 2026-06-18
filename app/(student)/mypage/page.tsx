@@ -46,6 +46,13 @@ export default async function StudentMyPage() {
   const activeMentorCount = activeSubs.error ? 0 : activeSubs.count;
   const paymentCount = bundle.payments.valueText || "0";
 
+  // 개별질문 건수 — 표시용 카운트(학생이 보낸 지정/공개 합계). 계산 로직 변경 없음.
+  const iqCountRes = await supabase
+    .from("individual_questions")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", user.id);
+  const individualQuestionCount = iqCountRes.error ? 0 : iqCountRes.count ?? 0;
+
   const { roomCount } = bundle;
   const displayName = profile?.full_name?.trim() || profile?.nickname?.trim() || user.email || "학생";
   const emailLine = profile?.email?.trim() || user.email || "";
@@ -184,15 +191,19 @@ export default async function StudentMyPage() {
                     ) : null}
                   </div>
                 </div>
-                <dl className="grid grid-cols-3 overflow-hidden rounded-2xl border border-[#bfdbfe] bg-[#eef4ff]">
+                <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {[
                     { label: "질문방", value: String(roomCount.n ?? 0) },
                     { label: "구독", value: String(activeMentorCount) },
+                    { label: "개별질문", value: String(individualQuestionCount) },
                     { label: "의뢰·결제", value: paymentCount },
                   ].map((item) => (
-                    <div key={item.label} className="border-r border-[#dbeafe] px-4 py-3 last:border-r-0">
-                      <dt className="text-[11px] font-bold text-[#1A56DB]">{item.label}</dt>
-                      <dd className="mt-1 text-lg font-black tabular-nums text-[#0f172a]">{item.value}</dd>
+                    <div
+                      key={item.label}
+                      className="rounded-xl border border-[#bfdbfe] bg-[#eef4ff] px-3 py-3 text-center"
+                    >
+                      <dd className="text-2xl font-black tabular-nums text-[#0f172a]">{item.value}</dd>
+                      <dt className="mt-0.5 text-[11px] font-bold text-[#1A56DB]">{item.label}</dt>
                     </div>
                   ))}
                 </dl>
@@ -200,25 +211,25 @@ export default async function StudentMyPage() {
             </section>
 
             <section className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
-              <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <SectionTitle title="진행 중인 질문" hint={roomText} />
                   {roomCount.error ? (
                     <p className="mt-2 text-xs font-semibold text-amber-800">정보를 불러오지 못했습니다.</p>
                   ) : null}
+                  <p className="mt-2 text-2xl font-black tabular-nums text-[#0f172a]">
+                    {roomCount.n ?? 0}
+                    <span className="ml-1 text-xs font-normal text-slate-500">질문방</span>
+                  </p>
                 </div>
-                <p className="shrink-0 text-2xl font-black tabular-nums text-[#0f172a]">
-                  {roomCount.n ?? 0}
-                  <span className="ml-1 text-xs font-normal text-slate-500">질문방</span>
-                </p>
-              </div>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]" href="/question-room">
-                  질문방 바로가기
-                </Link>
-                <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[#d8e0ec] bg-white px-5 py-2.5 text-sm font-bold text-[#3f4b5f] transition hover:border-[#c4cedd] hover:text-[#0f172a]" href="/individual-questions">
-                  개별 질문 보기
-                </Link>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]" href="/question-room">
+                    질문방 바로가기
+                  </Link>
+                  <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[#d8e0ec] bg-white px-5 py-2.5 text-sm font-bold text-[#3f4b5f] transition hover:border-[#c4cedd] hover:text-[#0f172a]" href="/individual-questions">
+                    개별 질문 보기
+                  </Link>
+                </div>
               </div>
             </section>
 
