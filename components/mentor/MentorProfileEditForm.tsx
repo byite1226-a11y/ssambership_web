@@ -376,7 +376,7 @@ export function MentorProfileEditForm(props: {
                         type="number"
                         inputMode="numeric"
                         min={1}
-                        step={100}
+                        step={1}
                         className={inputClass}
                         value={rawValue}
                         onChange={(e) => handlePlanPriceChange(plan.tier, e.target.value)}
@@ -426,7 +426,7 @@ export function MentorProfileEditForm(props: {
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  step={100}
+                  step={1}
                   placeholder="예: 5000"
                   className={inputClass}
                   value={individualQuestionPrice}
