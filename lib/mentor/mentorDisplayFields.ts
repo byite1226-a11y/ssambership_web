@@ -17,7 +17,9 @@ export type MentorProfileDisplay = {
   verifiedUniversity?: string;
   verifiedDepartment?: string;
   verifiedMajorCategory?: string;
+  verifiedMajorCategoryLabel?: string;
   schoolTier?: string;
+  schoolTierLabel?: string;
   schoolVerified?: boolean;
   subjects: string;
   highSchool: string;
@@ -71,7 +73,9 @@ export function buildMentorProfileDisplay(
     verifiedUniversity,
     verifiedDepartment,
     verifiedMajorCategory,
+    verifiedMajorCategoryLabel: verifiedMajorCategory,
     schoolTier,
+    schoolTierLabel: schoolTier,
     schoolVerified,
     subjects: getProfileFieldString(profileRow, ["teaching_subjects", "subjects", "subject_list"]),
     highSchool: getProfileFieldString(profileRow, ["high_school_name"]),

@@ -8,11 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { logAdminAction } from "@/lib/admin/adminActionLog";
 import {
-  SCHOOL_TIERS,
-  VERIFIED_MAJOR_CATEGORIES,
   type SchoolTier,
   type VerifiedMajorCategory,
 } from "@/lib/mentor/schoolVerificationConstants";
+import { loadSchoolClassificationCatalogs } from "@/lib/mentor/schoolClassificationCatalog";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 const PATH = "/admin/mentor-approval";
@@ -41,12 +40,16 @@ async function writeClient(): Promise<SupabaseClient> {
   }
 }
 
-function asMajorCategory(value: string): VerifiedMajorCategory | null {
-  return (VERIFIED_MAJOR_CATEGORIES as readonly string[]).includes(value) ? (value as VerifiedMajorCategory) : null;
+async function asMajorCategory(value: string): Promise<VerifiedMajorCategory | null> {
+  const supabase = await createClient();
+  const catalogs = await loadSchoolClassificationCatalogs(supabase);
+  return catalogs.majorCategories.some((category) => category.code === value) ? (value as VerifiedMajorCategory) : null;
 }
 
-function asSchoolTier(value: string): SchoolTier | null {
-  return (SCHOOL_TIERS as readonly string[]).includes(value) ? (value as SchoolTier) : null;
+async function asSchoolTier(value: string): Promise<SchoolTier | null> {
+  const supabase = await createClient();
+  const catalogs = await loadSchoolClassificationCatalogs(supabase);
+  return catalogs.schoolTiers.some((tier) => tier.code === value) ? (value as SchoolTier) : null;
 }
 
 function buildSimpleUniversityId(universityName: string): string {
@@ -101,8 +104,10 @@ export async function approveMentorSchoolVerificationAction(formData: FormData) 
   const verifiedUniversityName = textFromForm(formData.get("verifiedUniversityName"));
   const verifiedUniversityIdInput = textFromForm(formData.get("verifiedUniversityId"));
   const verifiedDepartmentName = textFromForm(formData.get("verifiedDepartmentName"));
-  const verifiedMajorCategory = asMajorCategory(textFromForm(formData.get("verifiedMajorCategory")));
-  const schoolTier = asSchoolTier(textFromForm(formData.get("schoolTier")));
+  const [verifiedMajorCategory, schoolTier] = await Promise.all([
+    asMajorCategory(textFromForm(formData.get("verifiedMajorCategory"))),
+    asSchoolTier(textFromForm(formData.get("schoolTier"))),
+  ]);
 
   if (!verificationId) {
     redirect(errUrl("학교·전공 인증 요청을 식별할 수 없습니다."));

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { MentorsListFilterSidebar } from "@/components/mentor/MentorsListFilterSidebar";
 import { MentorsListQuickLinks } from "@/components/mentor/MentorsListQuickLinks";
 import type { MentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
+import type { MentorSchoolFilter, MentorTypeFilter } from "@/lib/mentor/mentorsListSearchParams";
 import {
   MENTOR_SORT_OPTIONS,
   filtersToHrefRecord,
@@ -16,6 +17,8 @@ export function MentorsListTopFilterBar(props: {
   filters: MentorsListFilters;
   favoriteCount: number;
   totalCount: number;
+  schoolOptions: { id: MentorSchoolFilter; label: string }[];
+  mentorTypeOptions: { id: MentorTypeFilter; label: string }[];
 }) {
   const hrefBase = filtersToHrefRecord(props.filters);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -129,6 +132,8 @@ export function MentorsListTopFilterBar(props: {
               filters={props.filters}
               totalCount={props.totalCount}
               idPrefix="drawer"
+              schoolOptions={props.schoolOptions}
+              mentorTypeOptions={props.mentorTypeOptions}
             />
           </div>
         </div>

@@ -6,6 +6,11 @@ import {
   fetchMentorSchoolVerificationProfilesByIds,
   loadMentorSchoolVerificationReviewRows,
 } from "@/lib/admin/mentorSchoolVerificationReview";
+import {
+  findSchoolTierMappingForSchool,
+  loadSchoolClassificationCatalogs,
+  loadSchoolTierMappings,
+} from "@/lib/mentor/schoolClassificationCatalog";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { resolveStudentIdImageSignedUrl } from "@/lib/storage/studentIdImageStorage";
 
@@ -38,8 +43,12 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
   const flashOkMessage = schoolFlashOk ?? flashOk;
 
   const supabase = await createClient();
-  const list = await loadMentorApprovalsList(supabase, 50);
-  const schoolVerificationList = await loadMentorSchoolVerificationReviewRows(supabase, 50);
+  const [list, schoolVerificationList, classificationCatalogs, schoolTierMappings] = await Promise.all([
+    loadMentorApprovalsList(supabase, 50),
+    loadMentorSchoolVerificationReviewRows(supabase, 50),
+    loadSchoolClassificationCatalogs(supabase),
+    loadSchoolTierMappings(supabase),
+  ]);
   // [보안 주석] service_role로 RLS 우회
   // 이 페이지는 (admin)/layout.tsx + (admin)/(console)/layout.tsx
   // 이중 requireRole("admin") 가드로 보호됨.
@@ -59,6 +68,25 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
     readDb,
     schoolVerificationMentorIds
   );
+  const schoolTierSuggestionByVerificationId: Record<
+    string,
+    { schoolName: string; schoolTierCode: string; schoolTierLabel: string; note: string | null }
+  > = {};
+  for (const row of schoolVerificationList.rows) {
+    const profile = schoolVerificationProfileByMentorId[row.mentor_id] ?? null;
+    const mapping = findSchoolTierMappingForSchool(
+      schoolTierMappings.rows,
+      row.verified_university_name || profile?.university_name
+    );
+    if (mapping) {
+      schoolTierSuggestionByVerificationId[row.id] = {
+        schoolName: mapping.school_name,
+        schoolTierCode: mapping.school_tier_code,
+        schoolTierLabel: classificationCatalogs.schoolTierLabels[mapping.school_tier_code] ?? mapping.school_tier_code,
+        note: mapping.note,
+      };
+    }
+  }
 
   const studentIdImageSignedUrlByUserId: Record<string, string | null> = {};
   for (const r of list.rows) {
@@ -89,6 +117,9 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
         schoolVerificationLoadError={schoolVerificationList.error}
         schoolVerificationProfileByMentorId={schoolVerificationProfileByMentorId}
         schoolVerificationSignedUrlById={schoolVerificationSignedUrlById}
+        schoolTierOptions={classificationCatalogs.schoolTiers}
+        majorCategoryOptions={classificationCatalogs.majorCategories}
+        schoolTierSuggestionByVerificationId={schoolTierSuggestionByVerificationId}
         statusFilter={filter}
         statusColumn={list.keyHints.status ?? null}
       />

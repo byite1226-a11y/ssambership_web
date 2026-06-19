@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SearchX } from "lucide-react";
 import type { MentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
+import type { MentorSchoolFilter, MentorTypeFilter } from "@/lib/mentor/mentorsListSearchParams";
 import { filtersToHrefRecord, mentorsListHref } from "@/lib/mentor/mentorsListSearchParams";
 import type { PublicMentorsListResult } from "@/lib/mentor/publicMentorsListQueries";
 import { MentorGrid } from "@/components/mentor/MentorGrid";
@@ -30,6 +31,8 @@ export function MentorsListBody(props: {
   list: PublicMentorsListResult;
   favoriteIds: string[];
   isLoggedIn: boolean;
+  schoolOptions: { id: MentorSchoolFilter; label: string }[];
+  mentorTypeOptions: { id: MentorTypeFilter; label: string }[];
 }) {
   const { filters, list } = props;
   const hrefBase = filtersToHrefRecord(filters);
@@ -64,6 +67,8 @@ export function MentorsListBody(props: {
         filters={filters}
         favoriteCount={props.favoriteIds.length}
         totalCount={list.totalCount}
+        schoolOptions={props.schoolOptions}
+        mentorTypeOptions={props.mentorTypeOptions}
       />
 
       <div className="mt-6 flex flex-col gap-6 xl:grid xl:grid-cols-12 xl:items-start">
@@ -71,7 +76,12 @@ export function MentorsListBody(props: {
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-[14px] font-black text-slate-900">필터</h2>
             <div className="mt-3">
-              <MentorsListFilterSidebar filters={filters} totalCount={list.totalCount} />
+              <MentorsListFilterSidebar
+                filters={filters}
+                totalCount={list.totalCount}
+                schoolOptions={props.schoolOptions}
+                mentorTypeOptions={props.mentorTypeOptions}
+              />
             </div>
           </div>
         </aside>

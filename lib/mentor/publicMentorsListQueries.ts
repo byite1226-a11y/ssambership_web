@@ -16,11 +16,19 @@ import {
   formatSubscribePlanCashMonthlyLabel,
   getSubscribeCatalogPlan,
 } from "@/lib/subscribe/subscribePlanCatalog";
+import { applySchoolClassificationLabels } from "@/lib/mentor/schoolClassificationCatalog";
 import type {
   MentorGradeFilter,
   MentorTypeFilter,
 } from "@/lib/mentor/mentorsListSearchParams";
 type Row = Record<string, unknown>;
+
+type PublicMentorsListOptions = {
+  fetchLimit?: number;
+  pageSize?: number;
+  schoolTierLabels?: Record<string, string>;
+  majorCategoryLabels?: Record<string, string>;
+};
 
 export const PUBLIC_MENTORS_RLS_HINT =
   "멘토 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요. 문제가 계속되면 고객 지원으로 문의해 주세요.";
@@ -502,7 +510,7 @@ async function batchMentorListStats(
 export async function loadPublicMentorsList(
   supabase: SupabaseClient,
   filters: MentorsListFilters,
-  opts?: { fetchLimit?: number; pageSize?: number }
+  opts?: PublicMentorsListOptions
 ): Promise<PublicMentorsListResult> {
   const fetchLimit = opts?.fetchLimit ?? 200;
   const pageSize = opts?.pageSize ?? MENTORS_PAGE_SIZE;
@@ -576,7 +584,10 @@ export async function loadPublicMentorsList(
     if (!mentorVerificationStatusAllowsActivity(prow?.verification_status)) {
       continue;
     }
-    const display = buildMentorProfileDisplay(prow, u);
+    const display = applySchoolClassificationLabels(buildMentorProfileDisplay(prow, u), {
+      schoolTierLabels: opts?.schoolTierLabels ?? {},
+      majorCategoryLabels: opts?.majorCategoryLabels ?? {},
+    });
     const rev = revBatch.map.get(u.id) ?? { count: null, avg: null };
     const plan = planBatch.byMentor.get(u.id);
     const byTier = plan?.byTier ?? null;

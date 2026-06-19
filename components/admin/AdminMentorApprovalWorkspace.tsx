@@ -13,8 +13,9 @@ import {
   requestMentorSchoolVerificationResubmitAction,
 } from "@/lib/admin/mentorSchoolVerificationReviewActions";
 import { mentorApprovalStatusLabel, mentorApprovalStatusRaw } from "@/lib/admin/mentorApprovalLabels";
-import { SCHOOL_TIERS, VERIFIED_MAJOR_CATEGORIES } from "@/lib/mentor/schoolVerificationConstants";
+import type { ClassificationOption } from "@/lib/mentor/schoolClassificationCatalog";
 import type { MentorSchoolVerificationRow } from "@/lib/mentor/mentorSchoolVerification";
+import type { SchoolTier, VerifiedMajorCategory } from "@/lib/mentor/schoolVerificationConstants";
 
 type Row = Record<string, unknown>;
 type UserDisplay = { nickname: string | null; full_name: string | null };
@@ -36,6 +37,12 @@ type Props = {
   schoolVerificationLoadError: string | null;
   schoolVerificationProfileByMentorId: Record<string, SchoolVerificationProfile>;
   schoolVerificationSignedUrlById: Record<string, string | null>;
+  schoolTierOptions: ClassificationOption<SchoolTier>[];
+  majorCategoryOptions: ClassificationOption<VerifiedMajorCategory>[];
+  schoolTierSuggestionByVerificationId: Record<
+    string,
+    { schoolName: string; schoolTierCode: string; schoolTierLabel: string; note: string | null }
+  >;
   statusFilter: string;
   statusColumn: string | null;
 };
@@ -117,6 +124,9 @@ export function AdminMentorApprovalWorkspace(props: Props) {
     : null;
   const selectedSchoolDocumentUrl = selectedSchoolVerification
     ? props.schoolVerificationSignedUrlById[selectedSchoolVerification.id] ?? null
+    : null;
+  const selectedSchoolTierSuggestion = selectedSchoolVerification
+    ? props.schoolTierSuggestionByVerificationId[selectedSchoolVerification.id] ?? null
     : null;
 
   return (
@@ -301,6 +311,15 @@ export function AdminMentorApprovalWorkspace(props: Props) {
                     </p>
                   )}
 
+                  {selectedSchoolTierSuggestion ? (
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-950">
+                      학교군 추천: {selectedSchoolTierSuggestion.schoolName} → {selectedSchoolTierSuggestion.schoolTierLabel}
+                      {selectedSchoolTierSuggestion.note ? (
+                        <span className="ml-1 text-blue-900/80">({selectedSchoolTierSuggestion.note})</span>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   <form action={approveMentorSchoolVerificationAction} className="space-y-3 border-t border-slate-100 pt-4">
                     <input type="hidden" name="verificationId" value={selectedSchoolVerification.id} />
                     <label className="block text-xs font-bold text-slate-700">
@@ -344,9 +363,9 @@ export function AdminMentorApprovalWorkspace(props: Props) {
                           <option value="" disabled>
                             선택
                           </option>
-                          {VERIFIED_MAJOR_CATEGORIES.map((category) => (
-                            <option key={category} value={category}>
-                              {category}
+                          {props.majorCategoryOptions.map((category) => (
+                            <option key={category.code} value={category.code}>
+                              {category.label}
                             </option>
                           ))}
                         </select>
@@ -359,9 +378,9 @@ export function AdminMentorApprovalWorkspace(props: Props) {
                           defaultValue={selectedSchoolVerification.school_tier ?? "미분류"}
                           className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
                         >
-                          {SCHOOL_TIERS.map((tier) => (
-                            <option key={tier} value={tier}>
-                              {tier}
+                          {props.schoolTierOptions.map((tier) => (
+                            <option key={tier.code} value={tier.code}>
+                              {tier.label}
                             </option>
                           ))}
                         </select>

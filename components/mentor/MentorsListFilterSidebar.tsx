@@ -11,14 +11,21 @@ import {
   MENTOR_TYPE_OPTIONS,
   filtersToHrefRecord,
 } from "@/lib/mentor/mentorsListSearchParams";
+import type { MentorSchoolFilter, MentorTypeFilter } from "@/lib/mentor/mentorsListSearchParams";
+
+type FilterOption<T extends string> = { id: T; label: string };
 
 export function MentorsListFilterSidebar(props: {
   filters: MentorsListFilters;
   totalCount: number;
   className?: string;
   idPrefix?: string;
+  schoolOptions?: FilterOption<MentorSchoolFilter>[];
+  mentorTypeOptions?: FilterOption<MentorTypeFilter>[];
 }) {
   const id = props.idPrefix ?? "mentors";
+  const schoolOptions = props.schoolOptions ?? MENTOR_SCHOOL_OPTIONS;
+  const mentorTypeOptions = props.mentorTypeOptions ?? MENTOR_TYPE_OPTIONS;
   const [extraSort, setExtraSort] = useState(
     props.filters.sort === "rating" || props.filters.sort === "response" ? props.filters.sort : "",
   );
@@ -85,7 +92,7 @@ export function MentorsListFilterSidebar(props: {
           <fieldset>
             <legend className="text-[12px] font-black text-slate-900">학교군</legend>
             <div className="mt-2 space-y-2">
-              {MENTOR_SCHOOL_OPTIONS.map((o) => (
+              {schoolOptions.map((o) => (
                 <label
                   key={o.id || "all"}
                   className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700"
@@ -176,7 +183,7 @@ export function MentorsListFilterSidebar(props: {
           <fieldset>
             <legend className="text-[12px] font-black text-slate-900">전공 계열</legend>
             <div className="mt-2 space-y-2">
-              {MENTOR_TYPE_OPTIONS.map((o) => (
+              {mentorTypeOptions.map((o) => (
                 <label
                   key={o.id}
                   className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700"

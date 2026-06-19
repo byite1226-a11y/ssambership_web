@@ -67,7 +67,7 @@ export function mentorSchoolVerificationBadgeClass(display: MentorProfileDisplay
 
 export function mentorSchoolVerificationMetaLine(display: MentorProfileDisplay): string {
   if (!display.schoolVerified) return "";
-  return [display.schoolTier, display.verifiedMajorCategory]
+  return [display.schoolTierLabel || display.schoolTier, display.verifiedMajorCategoryLabel || display.verifiedMajorCategory]
     .map((v) => v?.trim())
     .filter(Boolean)
     .join(" · ");
