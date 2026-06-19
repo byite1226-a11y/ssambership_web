@@ -3,6 +3,7 @@ import { createSignedStorageUrl } from "@/lib/storage/signedStorageUrl";
 
 export const STUDENT_ID_IMAGES_BUCKET = "student-id-images" as const;
 export const STUDENT_ID_IMAGE_SIGNED_URL_TTL_SEC = 300;
+const SCHOOL_VERIFICATION_DIR = "school-verifications";
 
 /** DB `mentor_profiles.student_id_image_url` 에 저장할 값 (버킷/경로만, 공개 URL 아님) */
 export function formatStudentIdImageStoredRef(objectPath: string): string {
@@ -17,6 +18,12 @@ export function formatStudentIdImageStoredRef(objectPath: string): string {
 export function buildStudentIdImageObjectPath(userId: string, fileName: string): string {
   const safeName = fileName.replace(/[^\w.가-힣-]+/g, "_");
   return `${userId}/${Date.now()}-${safeName}`;
+}
+
+/** 학교·전공 증명 서류 업로드 경로: `{userId}/school-verifications/{filename}` */
+export function buildMentorSchoolVerificationObjectPath(userId: string, fileName: string): string {
+  const safeName = fileName.replace(/[^\w.가-힣-]+/g, "_");
+  return `${userId}/${SCHOOL_VERIFICATION_DIR}/${Date.now()}-${safeName}`;
 }
 
 /**
