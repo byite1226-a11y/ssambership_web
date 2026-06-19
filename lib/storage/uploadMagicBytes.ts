@@ -20,6 +20,8 @@ const GIF_89A_MAGIC = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61] as const;
 const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04] as const;
 const ZIP_EMPTY_MAGIC = [0x50, 0x4b, 0x05, 0x06] as const;
 const ZIP_SPANNED_MAGIC = [0x50, 0x4b, 0x07, 0x08] as const;
+const FTYPE_MAGIC = [0x66, 0x74, 0x79, 0x70] as const;
+const EBML_MAGIC = [0x1a, 0x45, 0xdf, 0xa3] as const;
 
 function asBytes(buffer: ArrayBuffer | Uint8Array): Uint8Array {
   return buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
@@ -36,6 +38,10 @@ function isWebp(bytes: Uint8Array): boolean {
 
 function isZip(bytes: Uint8Array): boolean {
   return startsWith(bytes, ZIP_MAGIC) || startsWith(bytes, ZIP_EMPTY_MAGIC) || startsWith(bytes, ZIP_SPANNED_MAGIC);
+}
+
+function isIsoBaseMedia(bytes: Uint8Array): boolean {
+  return bytes.length >= 12 && startsWith(bytes.slice(4), FTYPE_MAGIC);
 }
 
 export function normalizeJpgPngPdfExtension(value: string | null | undefined): JpgPngPdfKind | null {
@@ -107,6 +113,12 @@ export function validateMagicBytesForMime(buffer: ArrayBuffer | Uint8Array, mime
     normalized === "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   ) {
     return isZip(bytes) ? null : JPG_PNG_PDF_MAGIC_ERROR;
+  }
+  if (normalized === "video/mp4" || normalized === "video/quicktime") {
+    return isIsoBaseMedia(bytes) ? null : JPG_PNG_PDF_MAGIC_ERROR;
+  }
+  if (normalized === "video/webm") {
+    return startsWith(bytes, EBML_MAGIC) ? null : JPG_PNG_PDF_MAGIC_ERROR;
   }
 
   return "지원하지 않는 파일 형식입니다.";

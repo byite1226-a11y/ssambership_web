@@ -3,14 +3,22 @@ import { CommunityShortformDetailView } from "@/components/community/CommunitySh
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { isCommunityPostUuid, loadCommunityComments } from "@/lib/community/communityQueries";
-import { getShortformDetail, incrementShortformView } from "@/lib/community/communityShortformQueries";
+import {
+  getShortformDetail,
+  getShortformReactionFlags,
+  incrementShortformView,
+} from "@/lib/community/communityShortformQueries";
 import Link from "next/link";
 import { VideoOff } from "lucide-react";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export default async function CommunityShortformDetailPage(props: Props) {
   const { id } = await props.params;
+  const sp = (await props.searchParams) ?? {};
   const supabase = await createClient();
   const { user } = await getServerUserWithProfile();
   const idOk = isCommunityPostUuid(id);
@@ -27,7 +35,9 @@ export default async function CommunityShortformDetailPage(props: Props) {
   }
 
   const { rows: comments } = item ? await loadCommunityComments(supabase, "shortform", id) : { rows: [] };
+  const reaction = item ? await getShortformReactionFlags(supabase, id, user?.id ?? null) : { liked: false };
   const returnPath = `/community/shortform/${id}`;
+  const likeError = typeof sp.likeError === "string" ? sp.likeError : null;
 
   return (
     <CommunityLayoutShell activeNav="shortform">
@@ -53,6 +63,9 @@ export default async function CommunityShortformDetailPage(props: Props) {
             returnPath={returnPath}
             comments={comments}
             canComment={user != null}
+            canInteract={user != null}
+            liked={reaction.liked}
+            likeErrorCode={likeError}
           />
         ) : null}
       </div>
