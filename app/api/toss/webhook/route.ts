@@ -37,6 +37,22 @@ function pickPayAmountWon(data: TossPaymentWebhookData): number {
   return Number.NaN;
 }
 
+function maskPaymentKey(value: string | null | undefined): string | null {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return null;
+  return `${trimmed.slice(0, 4)}...`;
+}
+
+function webhookLogData(data: TossPaymentWebhookData): Record<string, unknown> {
+  return {
+    orderId: data.orderId ?? null,
+    status: data.status ?? null,
+    totalAmount: data.totalAmount ?? null,
+    method: data.method ?? null,
+    paymentKey: maskPaymentKey(data.paymentKey),
+  };
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = readTossWebhookSignatureHeader(req.headers);
@@ -70,7 +86,7 @@ export async function POST(req: NextRequest) {
 
   const payAmountWon = pickPayAmountWon(data);
   if (!Number.isFinite(payAmountWon) || payAmountWon <= 0) {
-    console.error("[toss/webhook] missing pay amount", { orderId, data });
+    console.error("[toss/webhook] missing pay amount", { orderId, data: webhookLogData(data) });
     return okResponse({ skipped: "amount_missing" });
   }
 
@@ -95,7 +111,7 @@ export async function POST(req: NextRequest) {
         outcome: "failed",
         orderId,
         payAmountWon,
-        paymentKey: data.paymentKey ?? null,
+        paymentKey: maskPaymentKey(data.paymentKey),
         code: result.code,
         message: result.message,
         eventCreatedAt: event.createdAt ?? null,
@@ -117,7 +133,7 @@ export async function POST(req: NextRequest) {
       payAmountWon,
       cashKrw: result.amount,
       userId: result.userId,
-      paymentKey: data.paymentKey ?? null,
+      paymentKey: maskPaymentKey(data.paymentKey),
       method: data.method ?? null,
       eventCreatedAt: event.createdAt ?? null,
     });
@@ -130,7 +146,7 @@ export async function POST(req: NextRequest) {
         outcome: "error",
         orderId,
         payAmountWon,
-        paymentKey: data.paymentKey ?? null,
+        paymentKey: maskPaymentKey(data.paymentKey),
         message: e instanceof Error ? e.message : String(e),
         eventCreatedAt: event.createdAt ?? null,
       });

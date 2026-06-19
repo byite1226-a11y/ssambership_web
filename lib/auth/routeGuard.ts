@@ -43,9 +43,12 @@ export async function requireRole(role: GuardRole): Promise<{ user: User; profil
   if (!user) {
     redirect(await loginRedirectUrlForGuard(role));
   }
+  if (!profile) {
+    redirect(await loginRedirectUrlForGuard(role));
+  }
   if (role === "admin") {
-    if (!profile || profile.role !== "admin") {
-      redirect(profile ? getPostLoginPath(profile.role) : await loginRedirectUrlForGuard("admin"));
+    if (profile.role !== "admin") {
+      redirect(getPostLoginPath(profile.role));
     }
     return { user, profile };
   }
