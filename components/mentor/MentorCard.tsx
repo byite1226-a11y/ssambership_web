@@ -9,6 +9,9 @@ import {
   mentorIntroFallback,
   mentorIsVerified,
   mentorSchoolGradeLine,
+  mentorSchoolVerificationBadgeClass,
+  mentorSchoolVerificationBadgeLabel,
+  mentorSchoolVerificationMetaLine,
   mentorSubjectChips,
 } from "@/lib/mentor/mentorPublicProfileDisplay";
 
@@ -36,6 +39,7 @@ export function MentorCard(props: {
   const chips = mentorSubjectChips(d.subjects || d.tags, 6);
   const intro = mentorIntroFallback(d.intro);
   const photo = d.photoUrl?.trim();
+  const schoolMeta = mentorSchoolVerificationMetaLine(d);
   const profileHref = `/mentors/${card.mentorId}`;
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(card.mentorId)}`;
   const closed = card.subscriptionClosed;
@@ -79,7 +83,15 @@ export function MentorCard(props: {
                   </span>
                 ) : null}
               </div>
-              <p className="mt-0.5 text-xs font-medium text-slate-600">{mentorSchoolGradeLine(d)}</p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs font-medium text-slate-600">
+                <span>{mentorSchoolGradeLine(d)}</span>
+                <span
+                  className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black ${mentorSchoolVerificationBadgeClass(d)}`}
+                >
+                  {mentorSchoolVerificationBadgeLabel(d)}
+                </span>
+                {schoolMeta ? <span className="text-[10px] font-bold text-slate-500">{schoolMeta}</span> : null}
+              </div>
             </div>
           </div>
           {chips.length > 0 ? (
@@ -160,7 +172,15 @@ export function MentorCard(props: {
               </span>
             ) : null}
           </div>
-          <p className="mt-0.5 text-sm font-medium text-slate-600">{mentorSchoolGradeLine(d)}</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-600">
+            <span>{mentorSchoolGradeLine(d)}</span>
+            <span
+              className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black ${mentorSchoolVerificationBadgeClass(d)}`}
+            >
+              {mentorSchoolVerificationBadgeLabel(d)}
+            </span>
+            {schoolMeta ? <span className="text-[11px] font-bold text-slate-500">{schoolMeta}</span> : null}
+          </div>
 
           {chips.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-1.5">

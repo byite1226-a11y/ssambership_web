@@ -35,6 +35,10 @@ export function MentorsListTopFilterBar(props: {
             ) : null}
             {props.filters.priceBand ? <input type="hidden" name="priceBand" value={props.filters.priceBand} /> : null}
             {props.filters.subject ? <input type="hidden" name="subject" value={props.filters.subject} /> : null}
+            {props.filters.school ? <input type="hidden" name="school" value={props.filters.school} /> : null}
+            {!props.filters.school && props.filters.university ? (
+              <input type="hidden" name="university" value={props.filters.university} />
+            ) : null}
             <input
               type="search"
               name="q"

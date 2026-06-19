@@ -42,6 +42,7 @@ export function MentorsListSidebar(props: {
               const minPrice = c.minPriceKrw;
               const priceText =
                 minPrice != null ? `${minPrice.toLocaleString("ko-KR")}캐시~` : "요금 확인";
+              const schoolStatus = c.display.schoolVerified ? "인증" : "미인증";
               return (
                 <li key={c.mentorId}>
                   <Link
@@ -50,7 +51,7 @@ export function MentorsListSidebar(props: {
                   >
                     <p className="text-xs font-black text-slate-900">{c.display.displayName}</p>
                     <p className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
-                      {c.display.university || "학교 정보 준비 중"} · {priceText}
+                      {c.display.university || "학교 정보 준비 중"} · {schoolStatus} · {priceText}
                     </p>
                   </Link>
                 </li>

@@ -54,6 +54,25 @@ export function mentorSchoolGradeLine(display: MentorProfileDisplay): string {
   return mentorSchoolLine(display);
 }
 
+export function mentorSchoolVerificationBadgeLabel(display: MentorProfileDisplay): string {
+  return display.schoolVerified ? "✓ 인증" : "참고·미인증";
+}
+
+export function mentorSchoolVerificationBadgeClass(display: MentorProfileDisplay): string {
+  if (display.schoolVerified) {
+    return "bg-[#1A56DB] text-white";
+  }
+  return "border border-slate-200 bg-slate-100 text-slate-600";
+}
+
+export function mentorSchoolVerificationMetaLine(display: MentorProfileDisplay): string {
+  if (!display.schoolVerified) return "";
+  return [display.schoolTier, display.verifiedMajorCategory]
+    .map((v) => v?.trim())
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export function mentorVerificationBadgeClass(verification: string | null | undefined): string {
   const verKo = mentorVerificationKo(verification);
   if (/완료|승인/i.test(verKo)) {

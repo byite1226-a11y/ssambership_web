@@ -6,6 +6,7 @@ import type { MentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
 import {
   MENTOR_GRADE_OPTIONS,
   MENTOR_PRICE_BAND_OPTIONS,
+  MENTOR_SCHOOL_OPTIONS,
   MENTOR_SUBJECT_OPTIONS,
   MENTOR_TYPE_OPTIONS,
   filtersToHrefRecord,
@@ -82,6 +83,27 @@ export function MentorsListFilterSidebar(props: {
           </fieldset>
 
           <fieldset>
+            <legend className="text-[12px] font-black text-slate-900">학교군</legend>
+            <div className="mt-2 space-y-2">
+              {MENTOR_SCHOOL_OPTIONS.map((o) => (
+                <label
+                  key={o.id || "all"}
+                  className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700"
+                >
+                  <input
+                    type="radio"
+                    name="school"
+                    value={o.id}
+                    defaultChecked={props.filters.school === o.id}
+                    className="accent-[#1A56DB]"
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset>
             <button
               type="button"
               onClick={() => setGradesOpen((v) => !v)}
@@ -152,7 +174,7 @@ export function MentorsListFilterSidebar(props: {
           </fieldset>
 
           <fieldset>
-            <legend className="text-[12px] font-black text-slate-900">멘토 유형</legend>
+            <legend className="text-[12px] font-black text-slate-900">전공 계열</legend>
             <div className="mt-2 space-y-2">
               {MENTOR_TYPE_OPTIONS.map((o) => (
                 <label

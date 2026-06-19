@@ -1,4 +1,10 @@
 import { getMajorSubjects } from "@/lib/subjects/subjectCatalog";
+import {
+  SCHOOL_TIERS,
+  VERIFIED_MAJOR_CATEGORIES,
+  type SchoolTier,
+  type VerifiedMajorCategory,
+} from "@/lib/mentor/schoolVerificationConstants";
 
 export type MentorsListSort =
   | "popular"
@@ -16,17 +22,11 @@ export type MentorSubjectFilter = string;
 
 export type MentorGradeFilter = "중등" | "고등" | "N수";
 
-export type MentorTypeFilter =
-  | "메디컬계열"
-  | "교육학과"
-  | "공대"
-  | "경영경제대"
-  | "문과대"
-  | "SKY";
+export type MentorTypeFilter = VerifiedMajorCategory;
 
 export type MentorPriceBandFilter = "3to5" | "5to10" | "10to20" | "over20";
 
-export type MentorSchoolFilter = "" | "서울대" | "연대" | "고대" | "기타";
+export type MentorSchoolFilter = "" | SchoolTier;
 
 export type MentorsListFilters = {
   q: string;
@@ -78,12 +78,7 @@ export const MENTOR_GRADE_OPTIONS: { id: MentorGradeFilter; label: string }[] = 
 ];
 
 export const MENTOR_TYPE_OPTIONS: { id: MentorTypeFilter; label: string }[] = [
-  { id: "메디컬계열", label: "메디컬계열" },
-  { id: "교육학과", label: "교육학과" },
-  { id: "공대", label: "공대" },
-  { id: "경영경제대", label: "경영·경제대" },
-  { id: "문과대", label: "문과대" },
-  { id: "SKY", label: "SKY" },
+  ...VERIFIED_MAJOR_CATEGORIES.map((id) => ({ id, label: id })),
 ];
 
 export const MENTOR_PRICE_BAND_OPTIONS: {
@@ -100,10 +95,7 @@ export const MENTOR_PRICE_BAND_OPTIONS: {
 
 export const MENTOR_SCHOOL_OPTIONS: { id: MentorSchoolFilter; label: string }[] = [
   { id: "", label: "전체" },
-  { id: "서울대", label: "서울대" },
-  { id: "연대", label: "연대" },
-  { id: "고대", label: "고대" },
-  { id: "기타", label: "기타" },
+  ...SCHOOL_TIERS.map((id) => ({ id, label: id })),
 ];
 
 export const MENTOR_SORT_OPTIONS: { id: MentorsListSort; label: string }[] = [
@@ -166,7 +158,8 @@ export function parseMentorsListFilters(sp: Record<string, string | string[] | u
     return typeof v === "string" ? v.trim() : "";
   };
 
-  const school = pickSchool(one("school") || one("university"));
+  const rawUniversity = one("university");
+  const school = pickSchool(one("school")) || pickSchool(rawUniversity);
   const verifiedOnly = one("verified") === "1" || one("verification") === "verified";
   const priceBand = pickPriceBand(one("priceBand"));
 
@@ -177,7 +170,7 @@ export function parseMentorsListFilters(sp: Record<string, string | string[] | u
     q: one("q"),
     subject: pickSubject(one("subject")),
     school,
-    university: school || one("university"),
+    university: school ? "" : rawUniversity,
     verification: one("verification"),
     verifiedOnly,
     grades: parseListParam(many(sp, "grades"), MENTOR_GRADE_OPTIONS.map((g) => g.id)) as MentorGradeFilter[],

@@ -14,6 +14,9 @@ import {
   mentorIntroFallback,
   mentorIsVerified,
   mentorSchoolGradeLine,
+  mentorSchoolVerificationBadgeClass,
+  mentorSchoolVerificationBadgeLabel,
+  mentorSchoolVerificationMetaLine,
   mentorSubjectChips,
 } from "@/lib/mentor/mentorPublicProfileDisplay";
 import type { AppRole, UserRow } from "@/lib/types/user";
@@ -101,6 +104,7 @@ export function PublicMentorDetailBody(props: {
 
   const verified = mentorIsVerified(display.verification);
   const schoolLine = mentorSchoolGradeLine(display);
+  const schoolMeta = mentorSchoolVerificationMetaLine(display);
   const chips = mentorSubjectChips(display.subjects || display.tags, 8);
   const introShort = mentorIntroFallback(display.intro);
   const introLong =
@@ -146,10 +150,10 @@ export function PublicMentorDetailBody(props: {
 
   const trustBadges = [
     {
-      title: `${display.university || "대학"} 인증`,
-      sub: verified ? "재학 인증 완료" : "인증 검토 중",
+      title: display.schoolVerified ? `${display.university || "대학"} 인증` : "학교·전공 미인증",
+      sub: display.schoolVerified ? "학교·전공 검증 완료" : "자유입력 참고 정보",
     },
-    { title: "학생증 인증", sub: verified ? "본인 인증 완료" : "서류 제출 대기" },
+    { title: "멘토 승인", sub: verified ? "멘토 인증 완료" : "승인 검토 중" },
     { title: "활동 인증", sub: verified ? "우수 멘토" : "활동 검증 예정" },
     {
       title:
@@ -207,7 +211,15 @@ export function PublicMentorDetailBody(props: {
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-sm font-bold text-slate-700">{schoolLine}</p>
+                <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5 text-sm font-bold text-slate-700 sm:justify-start">
+                  <span>{schoolLine}</span>
+                  <span
+                    className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black ${mentorSchoolVerificationBadgeClass(display)}`}
+                  >
+                    {mentorSchoolVerificationBadgeLabel(display)}
+                  </span>
+                  {schoolMeta ? <span className="text-[11px] font-bold text-slate-500">{schoolMeta}</span> : null}
+                </div>
                 {chips.length > 0 ? (
                   <ul className="mt-3 flex flex-wrap justify-center gap-1.5 sm:justify-start">
                     {chips.map((c) => (

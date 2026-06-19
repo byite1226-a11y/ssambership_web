@@ -257,15 +257,10 @@ function buildTierPrices(byTier: PlansByTier | null): { tierPrices: MentorTierPr
   return { tierPrices, minPriceKrw };
 }
 
-function schoolMatchesPreset(school: string, university: string): boolean {
-  const u = university.toLowerCase();
-  if (school === "서울대") return u.includes("서울");
-  if (school === "연대") return u.includes("연세") || u.includes("연대");
-  if (school === "고대") return u.includes("고려") || u.includes("고대");
-  if (school === "기타") {
-    return !u.includes("서울") && !u.includes("연세") && !u.includes("연대") && !u.includes("고려") && !u.includes("고대");
-  }
-  return true;
+function schoolTierMatchesFilter(school: string, display: MentorProfileDisplay): boolean {
+  if (!school) return true;
+  if (!display.schoolVerified) return false;
+  return display.schoolTier === school;
 }
 
 // 대분류 라벨 선택 시 그 대분류 + 소분류 라벨 어느 하나라도 멘토 과목 텍스트에 포함되면 매칭.
@@ -288,33 +283,44 @@ function gradeMatchesFilter(grades: MentorGradeFilter[], blob: string): boolean 
   });
 }
 
-function mentorTypeMatchesFilter(types: MentorTypeFilter[], blob: string): boolean {
+function mentorTypeMatchesFilter(types: MentorTypeFilter[], display: MentorProfileDisplay): boolean {
   if (!types.length) return true;
-  return types.some((t) => {
-    if (t === "메디컬계열") return /의대|한의|약대|수의|메디컬|간호|치대|메디컬계/.test(blob);
-    if (t === "교육학과") return /교육|교대|교원|교직|교육학/.test(blob);
-    if (t === "공대") return /공대|공학|기계|전자|컴공|화공|건축|토목|산공/.test(blob);
-    if (t === "경영경제대") return /경영|경제|상경|회계|금융|무역|경제대/.test(blob);
-    if (t === "문과대") return /문과|인문|국어|영어|사회|법학|정치|행정|언어|철학|역사/.test(blob);
-    if (t === "SKY") return /서울대|연세|고려|서연고|sky/.test(blob);
-    return false;
-  });
+  if (!display.schoolVerified) return false;
+  const category = display.verifiedMajorCategory?.trim();
+  if (!category) return false;
+  return types.some((type) => type === category);
 }
 
 function cardMatchesFilters(f: MentorsListFilters, card: MentorPublicListCard): boolean {
   const d = card.display;
-  const blob = [d.displayName, d.intro, d.subjects, d.tags, d.university, d.department, d.highSchool, d.grade]
+  const blob = [
+    d.displayName,
+    d.intro,
+    d.subjects,
+    d.tags,
+    d.university,
+    d.department,
+    d.rawUniversity,
+    d.rawDepartment,
+    d.verifiedMajorCategory,
+    d.schoolTier,
+    d.highSchool,
+    d.grade,
+  ]
     .join(" ")
     .toLowerCase();
 
   if (f.q && !blob.includes(f.q.toLowerCase())) return false;
-  if (f.school && !schoolMatchesPreset(f.school, d.university)) return false;
-  if (!f.school && f.university && !d.university.toLowerCase().includes(f.university.toLowerCase())) return false;
+  if (f.school && !schoolTierMatchesFilter(f.school, d)) return false;
+  if (!f.school && f.university) {
+    const verifiedUniversity = d.schoolVerified ? d.university.toLowerCase() : "";
+    if (!verifiedUniversity.includes(f.university.toLowerCase())) return false;
+  }
   if (f.subject && !subjectMatchesPreset(f.subject, d.subjects || d.tags)) return false;
   if (f.verifiedOnly && !mentorIsVerified(d.verification)) return false;
   if (f.verification && !d.verification.toLowerCase().includes(f.verification.toLowerCase())) return false;
   if (!gradeMatchesFilter(f.grades, blob)) return false;
-  if (!mentorTypeMatchesFilter(f.mentorTypes, blob)) return false;
+  if (!mentorTypeMatchesFilter(f.mentorTypes, d)) return false;
 
   const price = card.minPriceKrw;
   if (f.priceBand && price != null) {
@@ -611,7 +617,10 @@ export async function loadPublicMentorsList(
     sliced[0]?.mentorId === authId &&
     !filters.q &&
     !filters.school &&
-    !filters.subject;
+    !filters.university &&
+    !filters.subject &&
+    !filters.mentorTypes.length &&
+    !filters.priceBand;
 
   return {
     cards: sliced,
