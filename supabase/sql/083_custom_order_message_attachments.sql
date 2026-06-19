@@ -6,7 +6,7 @@
 --   - Does not touch custom request order state machines, escrow, payment,
 --     refund, 070 individual-question RPCs, or 077 verification objects.
 --   - Creates a new private Storage bucket and a new metadata table only.
---   - Access is limited to the order student, assigned mentor, and admins.
+--   - Access is limited to the canonical order student_id, mentor_id, and admins.
 --   - SQL is intended for manual Supabase SQL Editor execution.
 -- =============================================================================
 
@@ -137,23 +137,10 @@ as $function$
   select coalesce((
     select
       public.is_admin()
-      or j->>'student_id' = auth.uid()::text
-      or j->>'buyer_id' = auth.uid()::text
-      or j->>'client_id' = auth.uid()::text
-      or j->>'user_id' = auth.uid()::text
-      or j->>'author_id' = auth.uid()::text
-      or j->>'requester_id' = auth.uid()::text
-      or j->>'mentor_id' = auth.uid()::text
-      or j->>'mentor_user_id' = auth.uid()::text
-      or j->>'assignee_id' = auth.uid()::text
-      or j->>'assigned_mentor_id' = auth.uid()::text
-      or j->>'selected_mentor_id' = auth.uid()::text
-      or j->>'expert_id' = auth.uid()::text
-    from (
-      select to_jsonb(o) as j
-      from public.custom_request_orders o
-      where o.id = p_order_id
-    ) s
+      or o.student_id = (select auth.uid())
+      or o.mentor_id = (select auth.uid())
+    from public.custom_request_orders o
+    where o.id = p_order_id
   ), false);
 $function$;
 
@@ -236,6 +223,6 @@ comment on table public.custom_order_message_attachments is
   'Private custom-order chat attachments. Metadata only; file bytes live in custom-order-message-attachments Storage bucket.';
 
 comment on function public.custom_order_message_attachment_is_party(uuid) is
-  'Returns true when auth.uid() is the order student, assigned mentor, or admin. Used by order-message attachment table and Storage RLS.';
+  'Returns true when auth.uid() is custom_request_orders.student_id, custom_request_orders.mentor_id, or admin. Used by order-message attachment table and Storage RLS.';
 
 commit;

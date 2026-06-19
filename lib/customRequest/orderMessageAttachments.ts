@@ -279,18 +279,21 @@ export async function buildOrderMessageAttachmentViews(
   supabase: SupabaseClient,
   rows: OrderMessageAttachmentRow[]
 ): Promise<OrderMessageAttachmentView[]> {
+  const { data: authData } = await supabase.auth.getUser();
+  const hasAuthenticatedViewer = Boolean(authData.user?.id);
+
   return Promise.all(
     rows.map(async (row) => {
       const storagePath = String(row.storage_path ?? "").trim();
       const fileSizeBytes = Number(row.file_size_bytes);
-      const { url, error } = storagePath
+      const { url, error } = storagePath && hasAuthenticatedViewer
         ? await createSignedStorageUrl(
             supabase,
             ORDER_MESSAGE_ATTACHMENTS_BUCKET,
             storagePath,
             ORDER_MESSAGE_ATTACHMENT_SIGNED_URL_TTL_SEC
           )
-        : { url: null, error: "missing storage path" };
+        : { url: null, error: storagePath ? "authenticated order party required" : "missing storage path" };
 
       const mimeType = String(row.mime_type ?? "").toLowerCase().trim();
       return {
