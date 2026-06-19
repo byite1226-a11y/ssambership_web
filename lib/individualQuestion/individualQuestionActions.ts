@@ -65,6 +65,20 @@ function createErrorMessage(codeOrMessage: string | null | undefined): string {
   return "개별 질문을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
+function claimErrorMessage(codeOrMessage: string | null | undefined): string {
+  const value = (codeOrMessage ?? "").toLowerCase();
+  if (value.includes("mentor_school_verification_required")) {
+    return "이 질문은 학교·전공 인증을 완료한 멘토만 답변할 수 있어요.";
+  }
+  if (value.includes("mentor_qualification_not_met")) {
+    return "이 질문은 학생이 지정한 학교군·전공계열 자격을 가진 멘토만 답변할 수 있어요.";
+  }
+  if (value.includes("mentor_not_approved")) {
+    return "승인 완료 후 공개 질문을 가져갈 수 있어요.";
+  }
+  return "이미 다른 멘토가 답변을 맡았어요. 목록을 새로 확인해 주세요.";
+}
+
 function catalogHasCode(options: Array<{ code: string }>, code: string | null): boolean {
   if (!code) return true;
   return options.some((option) => option.code === code);
@@ -342,13 +356,13 @@ export async function claimOpenIndividualQuestionAction(formData: FormData) {
   if (!approval.ok) actionError(MENTOR_LIST_PATH, "승인 완료 후 공개 질문을 가져갈 수 있어요.");
 
   const admin = createServiceRoleClient();
-  const { data, error } = await admin.rpc("claim_individual_question", {
+  const { data, error } = await admin.rpc("claim_individual_question_v2", {
     p_question_id: questionId,
     p_mentor_id: user.id,
   });
   const result = firstRpcResult(data as IndividualQuestionRpcResult);
   if (error || !result?.ok || !result.question_id) {
-    actionError(MENTOR_LIST_PATH, "이미 다른 멘토가 답변을 맡았어요. 목록을 새로 확인해 주세요.");
+    actionError(MENTOR_LIST_PATH, claimErrorMessage(error?.message ?? result?.code ?? result?.message));
   }
 
   await setQuestionExpiryBestEffort(admin, result.question_id, "claimed");
