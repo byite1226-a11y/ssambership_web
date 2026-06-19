@@ -7,12 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import {
   buildMentorSchoolVerificationObjectPath,
   formatStudentIdImageStoredRef,
+  safeStudentIdImageFileExtension,
   STUDENT_ID_IMAGES_BUCKET,
 } from "@/lib/storage/studentIdImageStorage";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 
 const PATH = "/mentor/verification";
-const ALLOWED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif"]);
+const ALLOWED_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]);
 
 function redirectWith(kind: "ok" | "error", message: string): never {
   const q = new URLSearchParams();
@@ -21,10 +22,12 @@ function redirectWith(kind: "ok" | "error", message: string): never {
 }
 
 function fileLooksAllowed(file: File): boolean {
+  const ext = safeStudentIdImageFileExtension(file.name);
+  if (!ext) return false;
   const mime = file.type.toLowerCase();
-  if (ALLOWED_MIME_TYPES.has(mime)) return true;
-  if (mime.startsWith("image/")) return true;
-  return /\.pdf$/i.test(file.name);
+  if (!mime) return true;
+  if (mime === "image/jpg") return ext === "jpg";
+  return ALLOWED_MIME_TYPES.has(mime);
 }
 
 function fileFromForm(formData: FormData): File | null {
@@ -40,7 +43,7 @@ export async function submitMentorSchoolVerificationAction(formData: FormData) {
     redirectWith("error", "학교·전공 증명 서류 파일을 선택해 주세요.");
   }
   if (!fileLooksAllowed(file)) {
-    redirectWith("error", "JPG, PNG, PDF 형식의 서류만 업로드할 수 있습니다.");
+    redirectWith("error", "JPG, JPEG, PNG, PDF 형식의 서류만 업로드할 수 있습니다.");
   }
 
   const supabase = await createClient();
