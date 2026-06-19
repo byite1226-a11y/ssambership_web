@@ -170,7 +170,7 @@ export default async function MentorVerificationPage(props: PageProps) {
                 id="schoolVerificationDocument"
                 name="schoolVerificationDocument"
                 type="file"
-                accept="image/*,.pdf"
+                accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
                 disabled={!canSubmitSchoolDocument}
                 className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
               />

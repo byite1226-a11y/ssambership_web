@@ -174,6 +174,7 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
             <input
               name="attachment"
               type="file"
+              accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
               className="mt-2 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
             />
             <span className="mt-1 block text-xs font-semibold text-slate-500">내가 올린 파일은 언제든 다시 볼 수 있어요. 다른 멘토에게는 답변을 맡기 전까지 공개되지 않습니다.</span>

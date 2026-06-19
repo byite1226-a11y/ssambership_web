@@ -434,7 +434,12 @@ export function IndividualQuestionDetailView(props: {
                 <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-600">
                   <Paperclip className="h-4 w-4 text-blue-600" aria-hidden />
                   <span>파일 첨부</span>
-                  <input type="file" name="attachment" className="block max-w-[200px] text-xs text-slate-500" />
+                  <input
+                    type="file"
+                    name="attachment"
+                    accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                    className="block max-w-[200px] text-xs text-slate-500"
+                  />
                 </label>
                 <FormSubmitButton
                   idleLabel="보내기"

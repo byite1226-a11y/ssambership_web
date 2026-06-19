@@ -3,40 +3,30 @@ import "server-only";
 import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSignedStorageUrl } from "@/lib/storage/signedStorageUrl";
+import {
+  JPG_PNG_PDF_EXTENSION_ERROR,
+  normalizeJpgPngPdfExtension,
+  validateJpgPngPdfMagicBytes,
+  type JpgPngPdfKind,
+} from "@/lib/storage/uploadMagicBytes";
 
 export const INDIVIDUAL_QUESTION_ATTACHMENTS_BUCKET = "individual-question-attachments";
 
-const ALLOWED_MIME = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-  "application/pdf",
-  "application/zip",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-]);
-
 const MAX_BYTES = 20 * 1024 * 1024;
 
-function safeObjectName(name: string, mime: string): string {
-  const safe = name.replace(/[^\w.\-]+/g, "_").slice(0, 80) || "file";
-  const hasExt = /\.[a-z0-9]{1,8}$/i.test(safe);
-  const ext =
-    mime === "image/png"
-      ? "png"
-      : mime === "image/webp"
-        ? "webp"
-        : mime === "image/gif"
-          ? "gif"
-          : mime === "image/jpeg"
-            ? "jpg"
-            : "";
-  return hasExt || !ext ? safe : `${safe}.${ext}`;
+function fileExtension(name: string): string | null {
+  const match = /\.([A-Za-z0-9]+)$/.exec(name.trim());
+  return match?.[1]?.toLowerCase() ?? null;
 }
 
-function buildObjectPath(questionId: string, mime: string, originalName: string): string {
-  return `${questionId}/${randomUUID()}-${safeObjectName(originalName, mime)}`;
+function safeObjectName(name: string, extension: JpgPngPdfKind): string {
+  const withoutExt = name.replace(/\.[^/.]+$/, "");
+  const safe = withoutExt.replace(/[^\w.\-]+/g, "_").replace(/^\.+/, "").slice(0, 80) || "file";
+  return `${safe}.${extension}`;
+}
+
+function buildObjectPath(questionId: string, extension: JpgPngPdfKind, originalName: string): string {
+  return `${questionId}/${randomUUID()}-${safeObjectName(originalName, extension)}`;
 }
 
 export function fileHasContent(file: File | null | undefined): file is File {
@@ -51,19 +41,25 @@ export async function uploadIndividualQuestionAttachment(
     file: File;
   }
 ): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
-  const mime = params.file.type || "application/octet-stream";
-  if (!ALLOWED_MIME.has(mime)) {
-    return { ok: false, error: "지원하지 않는 파일 형식입니다." };
+  const extension = fileExtension(params.file.name);
+  if (!normalizeJpgPngPdfExtension(extension)) {
+    return { ok: false, error: JPG_PNG_PDF_EXTENSION_ERROR };
   }
   if (params.file.size > MAX_BYTES) {
     return { ok: false, error: "첨부 파일은 20MB 이하로 올려 주세요." };
   }
 
-  const buffer = Buffer.from(await params.file.arrayBuffer());
-  const path = buildObjectPath(params.questionId, mime, params.file.name);
+  const bytes = await params.file.arrayBuffer();
+  const verified = validateJpgPngPdfMagicBytes(bytes, extension);
+  if (!verified.ok) {
+    return { ok: false, error: verified.error };
+  }
+
+  const buffer = Buffer.from(bytes);
+  const path = buildObjectPath(params.questionId, verified.file.extension, params.file.name);
   const { error: uploadError } = await supabase.storage
     .from(INDIVIDUAL_QUESTION_ATTACHMENTS_BUCKET)
-    .upload(path, buffer, { contentType: mime, upsert: false });
+    .upload(path, buffer, { contentType: verified.file.mimeType, upsert: false });
 
   if (uploadError) {
     return { ok: false, error: uploadError.message };
@@ -74,7 +70,7 @@ export async function uploadIndividualQuestionAttachment(
     message_id: params.messageId,
     storage_path: path,
     file_name: params.file.name,
-    mime_type: mime,
+    mime_type: verified.file.mimeType,
   });
 
   if (insertError) {

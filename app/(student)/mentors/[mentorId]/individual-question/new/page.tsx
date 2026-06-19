@@ -153,9 +153,10 @@ export default async function NewDirectIndividualQuestionPage(props: PageProps) 
               <input
                 name="attachment"
                 type="file"
+                accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
                 className="mt-2 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
               />
-              <span className="mt-1 block text-xs font-semibold text-slate-500">이미지, PDF, ZIP, 문서 파일 20MB 이하</span>
+              <span className="mt-1 block text-xs font-semibold text-slate-500">JPG, PNG, PDF 파일 20MB 이하</span>
             </label>
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

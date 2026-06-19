@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { createSignedStorageUrl } from "@/lib/storage/signedStorageUrl";
+import { validateMagicBytesForMime } from "@/lib/storage/uploadMagicBytes";
 
 export { buildAttachmentMessageBody, parseAttachmentMessageBody } from "@/lib/qna/questionRoomAttachmentDisplay";
 export type { ParsedAttachment } from "@/lib/qna/questionRoomAttachmentDisplay";
@@ -49,6 +50,10 @@ export async function uploadQuestionRoomAttachment(
   }
   if (buffer.length > MAX_BYTES) {
     return { url: null, isImage, filename: name, storagePath: null, mime, error: "파일은 20MB 이하로 올려주세요." };
+  }
+  const magicError = validateMagicBytesForMime(buffer, mime);
+  if (magicError) {
+    return { url: null, isImage, filename: name, storagePath: null, mime, error: magicError };
   }
   const path = buildObjectPath(roomId, threadId, mime, name);
   const { error: upErr } = await supabase.storage
