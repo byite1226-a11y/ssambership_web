@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
 import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueries";
+import {
+  getOrderMessageAttachmentFileFromFormData,
+  insertOrderMessageAttachmentRow,
+  removeOrderMessageAttachmentObjectBestEffort,
+  uploadOrderMessageAttachment,
+  type OrderMessageAttachmentMeta,
+} from "@/lib/customRequest/orderMessageAttachments";
 import { isOrderRowTerminalForActions } from "@/lib/customRequest/orderLifecycleConstants";
 import { insertOrderRoomMessage, recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
 import { pickOrderStudentId } from "@/lib/customRequest/orderRoomMutations";
@@ -84,6 +91,7 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
 
   const orderId = orderIdEarly;
   const text = String(formData.get("messageBody") ?? "").trim();
+  const attachmentFile = getOrderMessageAttachmentFileFromFormData(formData, "attachment");
   if (!orderId) {
     logActionFailure("missing orderId", {
       orderId: "—",
@@ -96,8 +104,8 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
     });
     redirect("/custom-request?error=" + encodeURIComponent("orderId가 필요합니다."));
   }
-  if (!text) {
-    redirect(`${orderPath(orderId)}?error=${encodeURIComponent("메시지를 입력하세요.")}`);
+  if (!text && !attachmentFile) {
+    redirect(`${orderPath(orderId)}?error=${encodeURIComponent("메시지나 첨부 파일을 입력해 주세요.")}`);
   }
 
   const supabase = await createClient();
@@ -194,8 +202,25 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
     }
   }
 
-  const insertRes = await insertOrderRoomMessage(supabase, orderId, user.id, text, role);
+  let uploadedAttachment: OrderMessageAttachmentMeta | null = null;
+  if (attachmentFile) {
+    const uploadRes = await uploadOrderMessageAttachment(supabase, {
+      orderId,
+      userId: user.id,
+      file: attachmentFile,
+    });
+    if (!uploadRes.ok) {
+      redirect(`${orderPath(orderId)}?error=${encodeURIComponent("첨부 파일 업로드 실패. " + uploadRes.error)}`);
+    }
+    uploadedAttachment = uploadRes.meta;
+  }
+
+  const messageBody = text || "첨부 파일";
+  const insertRes = await insertOrderRoomMessage(supabase, orderId, user.id, messageBody, role);
   if (insertRes.error) {
+    if (uploadedAttachment) {
+      await removeOrderMessageAttachmentObjectBestEffort(supabase, uploadedAttachment.objectPath);
+    }
     logActionFailure("message insert failed", {
       orderId,
       userId: user.id,
@@ -208,7 +233,23 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
     redirect(`${orderPath(orderId)}?error=${encodeURIComponent("메시지 저장 실패. " + insertRes.error)}`);
   }
 
-  await recordOrderEventBestEffort(supabase, orderId, "message_created", user.id, { party: role });
+  if (uploadedAttachment) {
+    const attachmentRowRes = await insertOrderMessageAttachmentRow(supabase, {
+      orderId,
+      messageId: insertRes.id,
+      uploaderId: user.id,
+      fileMeta: uploadedAttachment,
+    });
+    if (attachmentRowRes.error) {
+      await removeOrderMessageAttachmentObjectBestEffort(supabase, uploadedAttachment.objectPath);
+      redirect(`${orderPath(orderId)}?error=${encodeURIComponent("첨부 파일 저장 실패. " + attachmentRowRes.error)}`);
+    }
+  }
+
+  await recordOrderEventBestEffort(supabase, orderId, "message_created", user.id, {
+    party: role,
+    has_attachment: Boolean(uploadedAttachment),
+  });
 
   const senderName = await fetchUserDisplayName(supabase, user.id);
   let recipientId: string | null = null;

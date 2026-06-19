@@ -11,6 +11,12 @@ import {
   pickMentorIdFromApplication,
 } from "@/lib/customRequest/customRequestQueries";
 import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
+import {
+  buildOrderMessageAttachmentViews,
+  groupOrderMessageAttachmentViews,
+  loadOrderMessageAttachmentRows,
+  type OrderMessageAttachmentView,
+} from "@/lib/customRequest/orderMessageAttachments";
 import { loadCustomOrderSettlementItemByOrderId } from "@/lib/customRequest/orderSettlementService";
 import { loadOrderMessages, loadOrderRevisions } from "@/lib/customRequest/orderRoomMutations";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
@@ -138,6 +144,9 @@ export type OrderDetailPageData = {
   latestDeliverable: Row | null;
   /** 주문방 thread 메시지(스키마 있을 때) */
   messages: CustomListResult;
+  messageAttachmentsByMessageId: Record<string, OrderMessageAttachmentView[]>;
+  looseMessageAttachments: OrderMessageAttachmentView[];
+  messageAttachmentLoadError: string | null;
   /** 학생 수정 요청(custom_order_revisions, 스키마 있을 때) */
   revisions: CustomListResult;
   /** 맞춤의뢰 정산 예정 1행(스키마·RLS에 따름) */
@@ -300,6 +309,9 @@ export async function loadOrderDetailPageData(
       header: buildHeader(null, null, null, null),
       latestDeliverable: null,
       messages: { table: null, sourceNote: "주문 없음", rows: [], error: null },
+      messageAttachmentsByMessageId: {},
+      looseMessageAttachments: [],
+      messageAttachmentLoadError: null,
       revisions: { table: null, sourceNote: "주문 없음", rows: [], error: null },
       settlementItem: null,
       settlementLoadError: null,
@@ -337,12 +349,15 @@ export async function loadOrderDetailPageData(
     }
   }
 
-  const [events, messages, revisions, settlementRes] = await Promise.all([
+  const [events, messages, revisions, settlementRes, attachmentRowsRes] = await Promise.all([
     loadOrderEventLog(supabase, orderId),
     loadOrderMessages(supabase, orderId),
     loadOrderRevisions(supabase, orderId),
     loadCustomOrderSettlementItemByOrderId(supabase, orderId),
+    loadOrderMessageAttachmentRows(supabase, orderId),
   ]);
+  const attachmentViews = await buildOrderMessageAttachmentViews(supabase, attachmentRowsRes.rows);
+  const attachmentGroups = groupOrderMessageAttachmentViews(attachmentViews);
   const delRows = (bundle.deliverables.rows as Row[]) ?? [];
   /** loadOrderBundle에서 version desc 등으로 정렬됨 */
   const latestDeliverable = delRows[0] ?? null;
@@ -362,6 +377,9 @@ export async function loadOrderDetailPageData(
     header,
     latestDeliverable,
     messages,
+    messageAttachmentsByMessageId: attachmentGroups.byMessageId,
+    looseMessageAttachments: attachmentGroups.loose,
+    messageAttachmentLoadError: attachmentRowsRes.error,
     revisions,
     settlementItem: settlementRes.row,
     settlementLoadError: settlementRes.error,

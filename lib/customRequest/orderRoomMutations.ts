@@ -136,19 +136,19 @@ export async function insertOrderRoomMessage(
   authorId: string,
   text: string,
   party: "student" | "mentor"
-): Promise<{ error: string | null }> {
+): Promise<{ id: string | null; error: string | null }> {
   const oT = await firstReadableCustomTable(supabase, ["custom_request_orders", "custom_orders", "request_orders"]);
   if (!oT.table) {
-    return { error: oT.error || "orders table missing" };
+    return { id: null, error: oT.error || "orders table missing" };
   }
   const dT = await firstReadableCustomTable(supabase, [...MESSAGE_TABLES]);
   if (!dT.table) {
-    return { error: dT.error || "messages table missing" };
+    return { id: null, error: dT.error || "messages table missing" };
   }
   const t = dT.table;
   const { column: fk } = await pickExistingColumn(supabase, t, [...ORDER_TO_DELIVERABLE_FK_CANDIDATES]);
   if (!fk) {
-    return { error: "messages: order fk column" };
+    return { id: null, error: "messages: order fk column" };
   }
   const idBase: Record<string, unknown> = await mergeOrderChildIdMirrorColumns(supabase, t, orderId, { [fk]: orderId });
 
@@ -175,15 +175,17 @@ export async function insertOrderRoomMessage(
 
   const withBodies: Record<string, unknown>[] = [{ ...idBase, body: text }];
   for (const payload of withBodies) {
-    const { error } = await supabase.from(t).insert(payload).select("id").limit(1);
+    const { data, error } = await supabase.from(t).insert(payload).select("id").limit(1);
     if (!error) {
-      return { error: null };
+      const row = Array.isArray(data) ? (data[0] as Row | undefined) : undefined;
+      const id = typeof row?.id === "string" ? row.id : null;
+      return { id, error: null };
     }
     if (!isMissingCol(error.message)) {
-      return { error: error.message };
+      return { id: null, error: error.message };
     }
   }
-  return { error: "메시지 insert: 스키마와 맞는 본문 열을 찾지 못했습니다." };
+  return { id: null, error: "메시지 insert: 스키마와 맞는 본문 열을 찾지 못했습니다." };
 }
 
 const REVISION_AUTHOR_KEYS = ["author_id", "user_id", "requester_id"] as const;
