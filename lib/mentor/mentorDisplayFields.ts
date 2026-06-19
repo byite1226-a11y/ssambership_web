@@ -61,7 +61,6 @@ export function buildMentorProfileDisplay(
         "is_open_for_subscriptions",
       ]) ?? false,
     photoUrl: getProfileFieldString(profileRow, [
-      "student_id_image_url",
       "profile_image_url",
       "avatar_url",
       "portrait_url",
