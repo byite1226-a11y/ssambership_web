@@ -161,7 +161,7 @@ export default async function MentorVerificationPage(props: PageProps) {
             </p>
           ) : null}
 
-          <form action={submitMentorSchoolVerificationAction} encType="multipart/form-data" className="space-y-3">
+          <form action={submitMentorSchoolVerificationAction} className="space-y-3">
             <div>
               <label htmlFor="schoolVerificationDocument" className="text-sm font-black text-slate-900">
                 학교·전공 증명 서류
