@@ -49,10 +49,8 @@ export type MentorPublicListCard = {
   userCreatedAt: string | null;
   reviewCount: number | null;
   avgRating: number | null;
-  reviewsProbe: string;
   priceLabel: string | null;
   byTier: PlansByTier | null;
-  plansProbe: string;
   tierPrices: MentorTierPrice[];
   minPriceKrw: number | null;
   stats: MentorListStats;
@@ -68,7 +66,6 @@ export type PublicMentorsListResult = {
   hasMore: boolean;
   usersError: string | null;
   profilesError: string | null;
-  probes: string[];
   onlySelfVisibleHint: boolean;
 };
 
@@ -426,7 +423,12 @@ async function batchMentorListStats(
   {
     const { error: pe } = await supabase.from("mentor_profiles").select("user_id").limit(1);
     if (!pe) {
-      const { data, error } = await supabase.from("mentor_profiles").select("*").in("user_id", mentorIds);
+      const { data, error } = await supabase
+        .from("mentor_profiles")
+        .select(
+          "user_id, total_answers, cumulative_answers, answer_count, connected_students, student_count, avg_response_minutes, average_response_minutes, satisfaction_percent, satisfaction_score"
+        )
+        .in("user_id", mentorIds);
       if (!error) {
         for (const row of (data as Row[]) ?? []) {
           const mentorUserId = row.user_id != null ? String(row.user_id) : "";
@@ -488,7 +490,7 @@ async function batchMentorListStats(
 }
 
 /**
- * 공개 멘토 목록: P0 `mentor_directory_list` + `mentor_profiles_for_directory` RPC(005), 미배포 시 RLS(본인만) fallback.
+ * 공개 멘토 목록: P0 v2 RPC whitelist only.
  * RLS로 행이 비면 cards는 빈 배열(더미 없음).
  */
 export async function loadPublicMentorsList(
@@ -499,7 +501,7 @@ export async function loadPublicMentorsList(
   const fetchLimit = opts?.fetchLimit ?? 200;
   const pageSize = opts?.pageSize ?? MENTORS_PAGE_SIZE;
   const page = filters.page;
-  const probes: string[] = [];
+  const diagnostics: string[] = [];
 
   const { data: authData } = await supabase.auth.getUser();
   const authId = authData.user?.id ?? null;
@@ -507,17 +509,17 @@ export async function loadPublicMentorsList(
   // Diagnostics
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
-  probes.push(`supabase_config: URL=${Boolean(url)}, Key=${Boolean(anonKey)}`);
+  diagnostics.push(`supabase_config: URL=${Boolean(url)}, Key=${Boolean(anonKey)}`);
 
   const dir = await loadMentorDirectoryUserRows(supabase, fetchLimit);
-  probes.push(dir.probe);
+  diagnostics.push(dir.probe);
   if (dir.error) {
     console.error("[mentors] loadPublicMentorsList: directory users failed", {
       error: dir.error,
       probe: dir.probe,
       usedRpc: dir.usedRpc,
       supabaseConfig: { url: Boolean(url), key: Boolean(anonKey) },
-      probes,
+      diagnostics,
     });
     return {
       cards: [],
@@ -527,13 +529,12 @@ export async function loadPublicMentorsList(
       hasMore: false,
       usersError: dir.error,
       profilesError: null,
-      probes,
       onlySelfVisibleHint: false,
     };
   }
 
   const users = dir.users;
-  probes.push(`mentors(디렉터리): ${users.length}행`);
+  diagnostics.push(`mentors(디렉터리): ${users.length}행`);
 
   const ids = users.map((u) => u.id);
   let profilesError: string | null = null;
@@ -541,7 +542,7 @@ export async function loadPublicMentorsList(
 
   if (ids.length) {
     const pBatch = await loadMentorProfilesForDirectory(supabase, ids);
-    probes.push(pBatch.probe);
+    diagnostics.push(pBatch.probe);
     if (pBatch.error) {
       profilesError = pBatch.error;
     } else {
@@ -556,8 +557,8 @@ export async function loadPublicMentorsList(
       ? await Promise.all([batchReviewStats(supabase, ids), batchPlanLabels(supabase, ids)])
       : [{ map: new Map<string, { count: number; avg: number | null }>(), probe: "skip" }, { byMentor: new Map(), probe: "skip" }];
 
-  probes.push(`reviews: ${revBatch.probe}`);
-  probes.push(`plans: ${planBatch.probe}`);
+  diagnostics.push(`reviews: ${revBatch.probe}`);
+  diagnostics.push(`plans: ${planBatch.probe}`);
 
   const statsMap = await batchMentorListStats(supabase, ids, revBatch.map);
   const capMap =
@@ -581,10 +582,8 @@ export async function loadPublicMentorsList(
       userCreatedAt: u.created_at ?? null,
       reviewCount: rev.count,
       avgRating: rev.avg,
-      reviewsProbe: revBatch.probe,
       priceLabel: plan?.label ? plan.label : null,
       byTier,
-      plansProbe: plan?.probe ?? planBatch.probe,
       tierPrices,
       minPriceKrw,
       stats: statsMap.get(u.id) ?? {
@@ -622,7 +621,6 @@ export async function loadPublicMentorsList(
     hasMore,
     usersError: null,
     profilesError,
-    probes,
     onlySelfVisibleHint,
   };
 }

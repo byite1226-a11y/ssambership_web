@@ -64,8 +64,6 @@ export function PlanComparisonCards(props: {
   selectedTier: SubscribePlanTier;
   onSelectTier?: (tier: SubscribePlanTier) => void;
   plansError: string | null;
-  plansProbe: string;
-  fillProbe: string;
   /**
    * checkout: 구독 본문 — 3열 비교, 선택 플랜 강조, CTA 하단 정렬.
    * rail: 멘토 상세 우측 — 세로 compact, 링크형 카드.
@@ -80,12 +78,8 @@ export function PlanComparisonCards(props: {
     selectedTier,
     onSelectTier,
     plansError,
-    plansProbe,
-    fillProbe,
     layout = "checkout",
   } = props;
-  void plansProbe;
-  void fillProbe;
   if (plansError) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5">

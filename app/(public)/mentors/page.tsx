@@ -29,10 +29,10 @@ export default async function MentorsPage(props: Props) {
   }
 
   if (list.usersError) {
-    console.error("[mentors] PUBLIC MENTOR LIST (USERS) ERROR:", list.usersError, "PROBES:", list.probes);
+    console.error("[mentors] PUBLIC MENTOR LIST (USERS) ERROR:", list.usersError);
   }
   if (list.profilesError) {
-    console.error("[mentors] PUBLIC MENTOR PROFILE ERROR:", list.profilesError, "PROBES:", list.probes);
+    console.error("[mentors] PUBLIC MENTOR PROFILE ERROR:", list.profilesError);
   }
 
   return (

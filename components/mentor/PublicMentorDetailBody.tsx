@@ -89,7 +89,7 @@ export function PublicMentorDetailBody(props: {
 }) {
   const { mentorId, display, bundle, viewer, reviewEligibility } = props;
   const isLoggedIn = props.isLoggedIn ?? Boolean(viewer);
-  const { byTier, fillProbe } = assignPlansByTier(bundle.plans.rows as Row[]);
+  const { byTier } = assignPlansByTier(bundle.plans.rows as Row[]);
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
   const freeQuestionHref = isLoggedIn
     ? `/question-room?mentorId=${encodeURIComponent(mentorId)}`
@@ -310,8 +310,6 @@ export function PublicMentorDetailBody(props: {
             mentorId={mentorId}
             byTier={byTier}
             plansError={bundle.plans.error}
-            plansProbe={bundle.plans.probe}
-            fillProbe={fillProbe}
             isLoggedIn={isLoggedIn}
             freeQuestionRemaining={props.freeQuestionRemaining}
             subscriptionClosed={props.subscriptionClosed}

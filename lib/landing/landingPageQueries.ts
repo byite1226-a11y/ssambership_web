@@ -150,7 +150,6 @@ export function emptyHomeLandingData(): HomeLandingData {
       hasMore: false,
       usersError: null,
       profilesError: null,
-      probes: [],
       onlySelfVisibleHint: false,
     },
     shorts: { rows: [], table: null, error: null },

@@ -16,8 +16,6 @@ export function MentorDetailSubscribeSidebar(props: {
   mentorId: string;
   byTier: PlansByTier;
   plansError: string | null;
-  plansProbe: string;
-  fillProbe: string;
   isLoggedIn: boolean;
   freeQuestionRemaining?: number | null;
   subscriptionClosed?: boolean;
@@ -50,8 +48,6 @@ export function MentorDetailSubscribeSidebar(props: {
             selectedTier={selectedTier}
             onSelectTier={setSelectedTier}
             plansError={props.plansError}
-            plansProbe={props.plansProbe}
-            fillProbe={props.fillProbe}
             layout="radio-rail"
           />
         </div>
