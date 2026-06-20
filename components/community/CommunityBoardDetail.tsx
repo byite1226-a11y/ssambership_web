@@ -216,7 +216,14 @@ export function CommunityBoardDetail(props: {
         </h3>
         {props.commentsError ? <StateBanner kind="error" message={props.commentsError} /> : null}
         {props.commentErrorCode ? (
-          <StateBanner kind="error" message={"\uB313\uAE00 \uB4F1\uB85D\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4."} />
+          <StateBanner
+            kind="error"
+            message={
+              props.commentErrorCode === "policy"
+                ? "외부 연락처·대필 요청은 정책상 제한됩니다."
+                : "\uB313\uAE00 \uB4F1\uB85D\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4."
+            }
+          />
         ) : null}
 
         {props.canInteract ? (

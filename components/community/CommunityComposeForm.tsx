@@ -27,7 +27,9 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
   }
 
   const err =
-    props.errorCode === "title"
+    props.errorCode === "policy"
+      ? "외부 연락처·대필 요청은 정책상 제한됩니다."
+      : props.errorCode === "title"
       ? "\uC81C\uBAA9\uC744 \uC785\uB825\uD574 \uC8FC\uC138\uC694."
       : props.errorCode === "body"
         ? "\uBCF8\uBB38\uC740 \uCD5C\uC18C 10\uC790 \uC774\uC0C1\uC785\uB2C8\uB2E4."

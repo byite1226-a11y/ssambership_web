@@ -7,10 +7,8 @@ import { submitCustomRequestNew } from "@/lib/customRequest/customRequestCompose
 import { CustomRequestFlowStepper } from "@/components/customRequest/CustomRequestFlowStepper";
 import { CustomRequestPolicyNotice } from "@/components/customRequest/CustomRequestPolicyNotice";
 import { ContactMaskingNotice } from "@/components/customRequest/ContactMaskingNotice";
-import {
-  CUSTOM_REQUEST_BANNED_WARNING,
-  findBannedPhrase,
-} from "@/lib/customRequest/bannedPhrases";
+import { CUSTOM_REQUEST_BANNED_WARNING } from "@/lib/customRequest/bannedPhrases";
+import { findRestrictedPhraseInText } from "@/lib/safety/trustSafetyText";
 import { POST_ATTACHMENT_MAX_FILES } from "@/lib/customRequest/postAttachmentConstants";
 
 const CATEGORIES = ["수학", "영어", "국어", "과학", "사회", "기타"] as const;
@@ -110,7 +108,7 @@ export function CustomRequestNewForm(props: { errorMessage: string | null; draft
     }
   }, [budgetMode]);
 
-  const bannedHit = useMemo(() => findBannedPhrase(`${subject}\n${body}`), [subject, body]);
+  const bannedHit = useMemo(() => findRestrictedPhraseInText(`${subject}\n${body}`), [subject, body]);
   const [showIncomplete, setShowIncomplete] = useState(false);
 
   const incompleteFields = useMemo(() => {

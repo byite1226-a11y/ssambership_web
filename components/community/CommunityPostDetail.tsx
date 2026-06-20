@@ -44,6 +44,7 @@ function formatCommentTime(iso: string): string {
 function mapCommentError(code: string | null | undefined): string | null {
   if (!code) return null;
   if (code === "length") return "댓글은 1자 이상 1,000자 이하로 입력해 주세요.";
+  if (code === "policy") return "외부 연락처·대필 요청은 정책상 제한됩니다.";
   if (code === "save") return "댓글을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.";
   if (code === "invalid") return "요청을 처리하지 못했어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.";
   return "요청을 처리하지 못했어요.";

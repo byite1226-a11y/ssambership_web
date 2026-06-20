@@ -14,6 +14,11 @@ import {
 import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
 import { uploadShortformVideo } from "@/lib/community/communityShortformStorage";
 import { createClient } from "@/lib/supabase/server";
+import {
+  TRUST_SAFETY_COMMUNITY_ERROR_CODE,
+  findRestrictedPhraseInText,
+  maskContactInUserText,
+} from "@/lib/safety/trustSafetyText";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -51,6 +56,10 @@ export async function submitShortformUploadAction(formData: FormData) {
 
   if (!rights && status === "published") err(returnPath, "rights");
   if (!title) err(returnPath, "title");
+  if (findRestrictedPhraseInText(title, body)) err(returnPath, TRUST_SAFETY_COMMUNITY_ERROR_CODE);
+
+  const safeTitle = maskContactInUserText(title);
+  const safeBody = maskContactInUserText(body);
 
   const videoFile = formData.get("video");
   let videoUrl = String(formData.get("videoUrl") ?? "").trim();
@@ -64,11 +73,11 @@ export async function submitShortformUploadAction(formData: FormData) {
 
   const label = profile?.nickname?.trim() || profile?.full_name?.trim() || COMMUNITY_BRAND_MENTOR_LABEL;
   const payload = {
-    title,
+    title: safeTitle,
     category,
     videoUrl,
     thumbnailUrl: null as string | null,
-    body,
+    body: safeBody,
     tags: [] as string[],
     source,
     status: status as "draft" | "published",

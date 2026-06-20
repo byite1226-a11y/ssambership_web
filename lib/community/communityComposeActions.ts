@@ -7,6 +7,11 @@ import { createClient } from "@/lib/supabase/server";
 import { normalizeCommunityPostCategory } from "@/lib/community/communityBoardConstants";
 import { insertMentorBoardPost, insertMentorShortformPost } from "@/lib/community/communityMutations";
 import { SHORTFORM_CATEGORIES, type ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
+import {
+  TRUST_SAFETY_COMMUNITY_ERROR_CODE,
+  findRestrictedPhraseInText,
+  maskContactInUserText,
+} from "@/lib/safety/trustSafetyText";
 
 const NEW_PATH = "/mentor/community/new";
 
@@ -40,13 +45,16 @@ export async function submitMentorCommunityPost(formData: FormData) {
   if (!rights) {
     redirect(buildErrorRedirect("validation_rights"));
   }
+  if (findRestrictedPhraseInText(title, body)) {
+    redirect(buildErrorRedirect(TRUST_SAFETY_COMMUNITY_ERROR_CODE));
+  }
 
   const boardCategory = normalizeCommunityPostCategory(categoryRaw);
   const shortformHit = SHORTFORM_CATEGORIES.find((c) => c.slug === categoryRaw && c.slug !== "all");
   const shortformCategory: ShortformCategorySlug = shortformHit ? shortformHit.slug : "study";
   const category = postType === "shortform" ? shortformCategory : boardCategory;
 
-  const input = { title, body, category, source };
+  const input = { title: maskContactInUserText(title), body: maskContactInUserText(body), category, source };
 
   if (postType === "shortform") {
     const r = await insertMentorShortformPost(supabase, user.id, input);
