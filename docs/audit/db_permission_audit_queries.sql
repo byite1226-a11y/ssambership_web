@@ -1,4 +1,4 @@
-﻿-- docs/audit/db_permission_audit_queries.sql
+-- docs/audit/db_permission_audit_queries.sql
 -- Read-only Supabase production permission audit queries.
 -- Run in Supabase SQL Editor and compare the output with docs/audit/db_expected_state.md.
 -- Every statement below is SELECT-only. Expected values are written above each query.
