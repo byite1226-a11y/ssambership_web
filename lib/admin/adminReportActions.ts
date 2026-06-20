@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { logAdminAction } from "@/lib/admin/adminActionLog";
 import { createClient } from "@/lib/supabase/server";
+import { insertAdminReportNote, tryInsertAdminReportNote } from "@/lib/admin/adminCaseNotes";
 
 const PATH = "/admin/moderation";
 const TABLE = "content_reports";
@@ -70,6 +71,8 @@ export async function updateContentReportStatusAction(formData: FormData) {
     redirect(errUrl(safeMsg("이미 처리되었거나 변경할 수 없는 상태입니다.")));
   }
 
+  await tryInsertAdminReportNote(supabase, { reportId, note, adminId: user.id });
+
   await logAdminAction(supabase, {
     adminId: user.id,
     actionType: "content_report_status",
@@ -110,6 +113,8 @@ export async function updateContentReportModerationAction(formData: FormData) {
   if (error) redirect(errUrl(safeMsg(error.message)));
   if (!data?.length) redirect(errUrl(safeMsg("처리할 수 없습니다.")));
 
+  await tryInsertAdminReportNote(supabase, { reportId, note, adminId: user.id });
+
   await logAdminAction(supabase, {
     adminId: user.id,
     actionType: `content_report_${intent}`,
@@ -120,4 +125,34 @@ export async function updateContentReportModerationAction(formData: FormData) {
 
   revalidatePath(PATH);
   redirect(okUrl(intent));
+}
+
+export async function saveContentReportAdminNoteAction(formData: FormData) {
+  const { user } = await requireRole("admin");
+  const reportId = textFromForm(formData.get("reportId"));
+  const note = textFromForm(formData.get("adminNote"));
+
+  if (!reportId) redirect(errUrl(safeMsg("신고를 식별할 수 없습니다.")));
+  if (!note) redirect(errUrl(safeMsg("메모 내용을 입력해 주세요.")));
+
+  const supabase = await createClient();
+  const result = await insertAdminReportNote(supabase, { reportId, note, adminId: user.id });
+  if (!result.ok) {
+    if (result.missing) {
+      redirect(errUrl(safeMsg("운영 메모 테이블이 아직 적용되지 않았습니다. 084 SQL 적용 후 다시 시도해 주세요.")));
+    }
+    redirect(errUrl(safeMsg(result.error)));
+  }
+
+  await logAdminAction(supabase, {
+    adminId: user.id,
+    actionType: "content_report_note_created",
+    targetType: "content_report",
+    targetId: reportId,
+    detail: { note },
+  });
+
+  revalidatePath(PATH);
+  revalidatePath(`/admin/reports/${reportId}`);
+  redirect(`/admin/reports/${encodeURIComponent(reportId)}?ok=note`);
 }

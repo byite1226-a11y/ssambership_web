@@ -34,14 +34,15 @@ export function SurfaceCard(props: SurfaceCardProps) {
       ? "border-ds-border-emphasis"
       : tone !== "neutral"
         ? toneClasses.border
-        : "border-ds-border-subtle";
+        : "border-ds-border-emphasis";
 
   const showHeader = Boolean(header || title || headerAction);
 
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-2xl border",
+        // 목록 카드(ListCard)와 동일한 진한 테두리 + 옅은 그림자로 밀도 통일. (액센트바는 없음)
+        "overflow-hidden rounded-2xl border shadow-[0_1px_4px_rgba(0,0,0,0.05)]",
         tone !== "neutral" ? toneClasses.surface : "bg-ds-surface",
         borderClass,
         className,

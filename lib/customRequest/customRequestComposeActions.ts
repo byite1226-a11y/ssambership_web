@@ -13,7 +13,7 @@ import {
 } from "@/lib/customRequest/customRequestMutations";
 import { isAuthorOfPost, loadCustomPostById } from "@/lib/customRequest/customRequestQueries";
 import { isDraftCustomRequestPost } from "@/lib/customRequest/customRequestPostMappers";
-import { findBannedPhrase } from "@/lib/customRequest/bannedPhrases";
+import { findRestrictedPhraseInText } from "@/lib/safety/trustSafetyText";
 import {
   buildPostAttachmentStorageObjectPath,
   getOriginalFilenameForDisplay,
@@ -70,7 +70,7 @@ export async function submitCustomRequestNew(formData: FormData) {
   }
 
   const combined = `${subject}\n${goal}\n${body}`;
-  const banned = findBannedPhrase(combined);
+  const banned = findRestrictedPhraseInText(combined);
   if (!isDraft && banned) {
     redirect(errRedirect(CUSTOM_REQUEST_BANNED_WARNING, draftId));
   }

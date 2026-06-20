@@ -3,6 +3,10 @@ import { createSignedStorageUrl } from "@/lib/storage/signedStorageUrl";
 
 export const STUDENT_ID_IMAGES_BUCKET = "student-id-images" as const;
 export const STUDENT_ID_IMAGE_SIGNED_URL_TTL_SEC = 300;
+export const STUDENT_ID_IMAGE_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"] as const;
+const SCHOOL_VERIFICATION_DIR = "school-verifications";
+
+export type StudentIdImageAllowedExtension = (typeof STUDENT_ID_IMAGE_ALLOWED_EXTENSIONS)[number];
 
 /** DB `mentor_profiles.student_id_image_url` 에 저장할 값 (버킷/경로만, 공개 URL 아님) */
 export function formatStudentIdImageStoredRef(objectPath: string): string {
@@ -13,10 +17,34 @@ export function formatStudentIdImageStoredRef(objectPath: string): string {
   return `${STUDENT_ID_IMAGES_BUCKET}/${p}`;
 }
 
-/** 업로드 객체 경로: `{userId}/{filename}` */
+export function safeStudentIdImageFileExtension(fileName: string): StudentIdImageAllowedExtension | null {
+  const match = /\.([A-Za-z0-9]+)$/.exec(fileName.trim());
+  const ext = match?.[1]?.toLowerCase();
+  return STUDENT_ID_IMAGE_ALLOWED_EXTENSIONS.includes(ext as StudentIdImageAllowedExtension)
+    ? (ext as StudentIdImageAllowedExtension)
+    : null;
+}
+
+function randomStorageToken(): string {
+  const randomUuid =
+    typeof globalThis.crypto?.randomUUID === "function" ? globalThis.crypto.randomUUID().replace(/-/g, "") : "";
+  if (randomUuid) return randomUuid;
+  return Math.random().toString(36).slice(2, 14);
+}
+
+function buildSafeStorageFileName(fileName: string): string {
+  const ext = safeStudentIdImageFileExtension(fileName) ?? "bin";
+  return `${Date.now()}-${randomStorageToken()}.${ext}`;
+}
+
+/** 업로드 객체 경로: `{userId}/{timestamp-random.ext}` */
 export function buildStudentIdImageObjectPath(userId: string, fileName: string): string {
-  const safeName = fileName.replace(/[^\w.가-힣-]+/g, "_");
-  return `${userId}/${Date.now()}-${safeName}`;
+  return `${userId}/${buildSafeStorageFileName(fileName)}`;
+}
+
+/** 학교·전공 증명 서류 업로드 경로: `{userId}/school-verifications/{timestamp-random.ext}` */
+export function buildMentorSchoolVerificationObjectPath(userId: string, fileName: string): string {
+  return `${userId}/${SCHOOL_VERIFICATION_DIR}/${buildSafeStorageFileName(fileName)}`;
 }
 
 /**

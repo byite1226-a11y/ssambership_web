@@ -8,7 +8,7 @@ export function CommunityBoardEmptyPanel(props: { role: AppRole | null | undefin
     : "멘토가 공유하는 공부법·해설·학습 팁 글이 올라오면 이곳에서 읽을 수 있어요.";
 
   return (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-emerald-50/20 p-8 text-center">
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
       <p className="text-base font-extrabold text-slate-900">{title}</p>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">{desc}</p>
       {isMentor ? (

@@ -73,8 +73,8 @@ export function StudentCustomRequestOrdersBrowseClient({ cards }: { cards: Stude
             return (
               <li key={card.id}>
                 <div
-                  className={`relative overflow-hidden rounded-2xl border bg-ds-surface p-5 pl-6 transition hover:border-slate-300 ${
-                    isDispute ? "border-red-200" : "border-ds-border-subtle"
+                  className={`relative overflow-hidden rounded-2xl border bg-ds-surface p-5 pl-6 transition-[box-shadow,border-color] duration-150 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)] ${
+                    isDispute ? "border-red-200 hover:border-red-400" : "border-ds-border-subtle hover:border-violet-400"
                   }`}
                 >
                   <span

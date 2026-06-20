@@ -40,9 +40,29 @@ function subscriptionStatusBadgeClass(tone: ActiveSubscriptionCard["statusTone"]
   }
 }
 
+/** 카드 hover 시 테두리 색 — 배지 색 매핑과 동일 계열로 통일(회색 배경 hover 대신). */
+function subscriptionHoverBorderClass(tone: ActiveSubscriptionCard["statusTone"]): string {
+  switch (tone) {
+    case "active":
+      return "hover:border-blue-400";
+    case "scheduled":
+    case "pastDue":
+      return "hover:border-amber-400";
+    case "expired":
+    case "refunded":
+    case "neutral":
+    default:
+      return "hover:border-slate-300";
+  }
+}
+
 function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
   return (
-    <article className="rounded-2xl border border-[#e2e8f2] bg-white p-5 transition hover:border-[#cbd5e1]">
+    <article
+      className={`rounded-2xl border border-[#e2e8f2] bg-white p-5 transition-[box-shadow,border-color] duration-150 ${subscriptionHoverBorderClass(
+        item.statusTone,
+      )} hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]`}
+    >
       <div className="flex gap-4 sm:gap-5">
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white bg-white shadow-sm">
           {item.photoUrl ? (
@@ -66,7 +86,7 @@ function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
               {item.statusLabel}
             </span>
           </div>
-          <p className="mt-1 text-sm font-bold text-[#2563eb]">{item.planLabel}</p>
+          <p className="mt-1 text-sm font-bold text-[#1A56DB]">{item.planLabel}</p>
           <dl className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>
               <dt className="font-semibold text-slate-500">현재 기간</dt>
@@ -89,7 +109,7 @@ function SubscriptionRow({ item }: { item: ActiveSubscriptionCard }) {
       </div>
       <Link
         href={`/question-room?mentorId=${encodeURIComponent(item.mentorId)}`}
-        className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-[#2563eb] px-4 text-sm font-bold text-white transition hover:bg-[#1d4ed8] sm:w-auto"
+        className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-[#1A56DB] px-4 text-sm font-bold text-white transition hover:bg-[#1d4ed8] sm:w-auto"
       >
         질문하러 가기
       </Link>
@@ -150,11 +170,11 @@ export function MypageSubscriptionsCard() {
   }, [load]);
 
   return (
-    <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
+    <section className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-6 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
-            <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+            <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#1A56DB]" aria-hidden />
             구독 현황
           </h2>
           <p className="mt-1 text-xs font-medium leading-relaxed text-[#8a96a8]">활성 구독 중인 멘토와 질문 한도를 확인하세요.</p>
@@ -187,7 +207,7 @@ export function MypageSubscriptionsCard() {
             <p className="mt-2 text-sm font-medium text-slate-600">나에게 맞는 멘토를 찾아 구독해보세요.</p>
             <Link
               href="/mentors"
-              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563eb] px-5 text-sm font-extrabold text-white hover:bg-[#1d4ed8]"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1d4ed8]"
             >
               멘토 찾기
             </Link>

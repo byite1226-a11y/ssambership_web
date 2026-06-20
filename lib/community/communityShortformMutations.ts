@@ -96,3 +96,33 @@ export async function updateShortformPost(
   const id = data && typeof (data as { id: string }).id === "string" ? (data as { id: string }).id : postId;
   return { ok: true, id };
 }
+
+export async function toggleShortformLike(
+  supabase: SupabaseClient,
+  userId: string,
+  shortformId: string
+): Promise<{ ok: true; active: boolean } | { ok: false; error: string }> {
+  const { data: existing, error: selectError } = await supabase
+    .from("shortform_reactions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("shortform_id", shortformId)
+    .eq("type", "like")
+    .maybeSingle();
+
+  if (selectError) {
+    return { ok: false, error: selectError.message };
+  }
+
+  if (existing?.id) {
+    const { error } = await supabase.from("shortform_reactions").delete().eq("id", existing.id);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true, active: false };
+  }
+
+  const { error } = await supabase
+    .from("shortform_reactions")
+    .insert({ user_id: userId, shortform_id: shortformId, type: "like" });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, active: true };
+}

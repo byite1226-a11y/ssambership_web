@@ -547,3 +547,82 @@ export async function saveConnectionNoteAction(formData: FormData) {
     })
   );
 }
+
+// 연결 노트 수정 — 본인 author 만(RLS cn_update + 앱 author 검증 이중).
+export async function updateConnectionNoteAction(formData: FormData) {
+  const { user, actor } = await requireQnaActor();
+  const noteId = textFromForm(formData.get("noteId"));
+  const roomId = textFromForm(formData.get("roomId"));
+  const contextThreadId = textFromForm(formData.get("contextThreadId")) || null;
+  const content = readNoteFromForm(formData);
+  if (!roomId || !noteId) {
+    redirect(listPathForActor(actor) + "?error=" + encodeURIComponent("노트 정보가 없습니다."));
+  }
+
+  const supabase = await createClient();
+  const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
+  if (roomErr) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: userFacingActionError("note", roomErr) }));
+  }
+  if (!content.trim()) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: "노트 내용을 입력해 주세요." }));
+  }
+
+  // 작성자 본인 확인(앱 1차). RLS cn_update 가 author_id = auth.uid() 로 최종 보장.
+  const { data: noteRow } = await supabase
+    .from("connection_notes")
+    .select("author_id")
+    .eq("id", noteId)
+    .maybeSingle();
+  const authorId = typeof (noteRow as Record<string, unknown> | null)?.author_id === "string"
+    ? String((noteRow as Record<string, unknown>).author_id)
+    : null;
+  if (!authorId || authorId !== user.id) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: "본인이 작성한 노트만 수정할 수 있습니다." }));
+  }
+
+  const { error } = await supabase.from("connection_notes").update({ body: content.trim() }).eq("id", noteId);
+  if (error) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: userFacingActionError("note", error.message) }));
+  }
+
+  revalidatePath(detailBasePath(roomId, actor));
+  redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", ok: "노트를 수정했습니다." }));
+}
+
+// 연결 노트 삭제 — 본인 author 만(RLS cn_delete + 앱 author 검증 이중).
+export async function deleteConnectionNoteAction(formData: FormData) {
+  const { user, actor } = await requireQnaActor();
+  const noteId = textFromForm(formData.get("noteId"));
+  const roomId = textFromForm(formData.get("roomId"));
+  const contextThreadId = textFromForm(formData.get("contextThreadId")) || null;
+  if (!roomId || !noteId) {
+    redirect(listPathForActor(actor) + "?error=" + encodeURIComponent("노트 정보가 없습니다."));
+  }
+
+  const supabase = await createClient();
+  const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
+  if (roomErr) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: userFacingActionError("note", roomErr) }));
+  }
+
+  const { data: noteRow } = await supabase
+    .from("connection_notes")
+    .select("author_id")
+    .eq("id", noteId)
+    .maybeSingle();
+  const authorId = typeof (noteRow as Record<string, unknown> | null)?.author_id === "string"
+    ? String((noteRow as Record<string, unknown>).author_id)
+    : null;
+  if (!authorId || authorId !== user.id) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: "본인이 작성한 노트만 삭제할 수 있습니다." }));
+  }
+
+  const { error } = await supabase.from("connection_notes").delete().eq("id", noteId);
+  if (error) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: userFacingActionError("note", error.message) }));
+  }
+
+  revalidatePath(detailBasePath(roomId, actor));
+  redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", ok: "노트를 삭제했습니다." }));
+}

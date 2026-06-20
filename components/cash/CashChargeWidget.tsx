@@ -89,7 +89,7 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
     <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
       <div>
         <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
-          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#1A56DB]" aria-hidden />
           충전 금액 선택
         </h2>
         <p className="mt-1 text-xs font-medium leading-relaxed text-[#8a96a8]">필요한 금액을 선택하면 보너스와 예상 잔액을 바로 확인할 수 있어요.</p>
@@ -108,12 +108,12 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
                   }}
                   className={`relative flex min-h-[100px] w-full flex-col items-start rounded-2xl border p-4 text-left transition ${
                     active
-                      ? "border-[#2563eb] bg-[#eef4ff]"
+                      ? "border-[#1A56DB] bg-[#eef4ff]"
                       : "border-[#e2e8f2] bg-white hover:border-[#cbd5e1]"
                   }`}
                 >
                   {active ? (
-                    <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#2563eb] text-white">
+                    <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#1A56DB] text-white">
                       <Check className="h-4 w-4" strokeWidth={3} aria-hidden />
                     </span>
                   ) : null}
@@ -140,7 +140,7 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
 
       <div>
         <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
-          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#1A56DB]" aria-hidden />
           결제 수단
         </h2>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -157,7 +157,7 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
                   "relative inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition",
                   m.ready
                     ? active
-                      ? "border-[#2563eb] bg-[#eef4ff] text-[#0f172a]"
+                      ? "border-[#1A56DB] bg-[#eef4ff] text-[#0f172a]"
                       : "border-[#e2e8f2] bg-white text-slate-700 hover:border-[#cbd5e1]"
                     : "cursor-not-allowed border-[#e2e8f2] bg-slate-50 text-slate-400 opacity-70",
                 ].join(" ")}
@@ -178,7 +178,7 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
 
       <div>
         <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
-          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563eb]" aria-hidden />
+          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#1A56DB]" aria-hidden />
           충전 후 예상 잔액
         </h2>
         <div className="mt-4 rounded-2xl border border-[#bfdbfe] bg-[#eef4ff] p-5">
@@ -214,7 +214,7 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
         type="button"
         disabled={loading || paymentMethod !== "card"}
         onClick={() => void handleCharge()}
-        className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#2563eb] px-5 py-3.5 text-base font-extrabold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#1A56DB] px-5 py-3.5 text-base font-extrabold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? "결제창 여는 중…" : "캐시 충전하기"}
       </button>

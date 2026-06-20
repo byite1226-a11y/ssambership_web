@@ -22,6 +22,12 @@ import {
 import { communityComposePath } from "@/lib/community/communityComposeTab";
 import { uploadCommunityPostImages } from "@/lib/community/communityStorage";
 import { createClient } from "@/lib/supabase/server";
+import {
+  TRUST_SAFETY_COMMUNITY_ERROR_CODE,
+  findRestrictedPhraseInText,
+  maskContactInUserText,
+  sanitizeTrustSafetyText,
+} from "@/lib/safety/trustSafetyText";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DEFAULT_RETURN = "/community/new";
@@ -62,6 +68,10 @@ export async function submitCommunityBoardPostAction(formData: FormData) {
 
   if (!title) redirect(errRedirect(returnPath, "title"));
   if (body.length < 10 && status === "published") redirect(errRedirect(returnPath, "body"));
+  if (findRestrictedPhraseInText(title, body)) redirect(errRedirect(returnPath, TRUST_SAFETY_COMMUNITY_ERROR_CODE));
+
+  const safeTitle = maskContactInUserText(title);
+  const safeBody = maskContactInUserText(body);
 
   const supabase = await createClient();
   const imageUrls: string[] = [];
@@ -95,8 +105,8 @@ export async function submitCommunityBoardPostAction(formData: FormData) {
 
   const { label, role } = await authorLabelFor(user.id);
   const payload = {
-    title,
-    body,
+    title: safeTitle,
+    body: safeBody,
     category,
     imageUrls,
     hashtags: [] as string[],
@@ -155,12 +165,19 @@ export async function submitBoardCommentAction(formData: FormData) {
 
   if (!UUID_RE.test(postId) || !returnPath.startsWith("/")) redirect("/community");
 
+  const safety = sanitizeTrustSafetyText(content.trim());
+  if (!safety.ok) {
+    const q = new URLSearchParams();
+    q.set("commentError", TRUST_SAFETY_COMMUNITY_ERROR_CODE);
+    redirect(`${returnPath}?${q.toString()}`);
+  }
+
   const { label } = await authorLabelFor(user.id);
   const supabase = await createClient();
   const r = await insertBoardComment(supabase, user.id, {
     postId,
     parentId: parentId && UUID_RE.test(parentId) ? parentId : null,
-    content,
+    content: safety.text,
     authorLabel: label,
   });
 

@@ -144,7 +144,7 @@ export function CustomRequestPublicPostBody(props: {
       {!profile ? (
         <p className="mt-4 text-sm font-medium text-[var(--c-secondary,#3f4b5f)]">
           <Link
-            className="font-extrabold text-[#2563eb] underline decoration-blue-200 underline-offset-2 hover:text-blue-800"
+            className="font-extrabold text-[#1A56DB] underline decoration-blue-200 underline-offset-2 hover:text-blue-800"
             href={`/login/mentor?next=${encodeURIComponent(`/custom-request/${postId}`)}`}
           >
             멘토로 로그인

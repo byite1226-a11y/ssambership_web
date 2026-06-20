@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, HelpCircle, PlayCircle } from "lucide-react";
+import { Camera, Eye, HelpCircle, PlayCircle } from "lucide-react";
 import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
 import { getSubscribeCatalogPlan } from "@/lib/subscribe/subscribePlanCatalog";
@@ -50,6 +50,10 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
   const photo = d.photoUrl?.trim();
   const ratingLabel = formatMentorRatingLabel(stats.avgRating);
   const reviewLabel = formatMentorReviewCountLabel(stats.reviewCount);
+  // preview(학생 시점 미리보기): 빈 값을 휑하게 두지 않고 신규/0건으로. (공용 포맷터는 미터치)
+  const previewRatingText =
+    stats.avgRating != null && Number.isFinite(stats.avgRating) ? stats.avgRating.toFixed(1) : "신규";
+  const previewReviewText = `${stats.reviewCount ?? 0}건`;
   const priceLabel = formatMentorPriceLabel(stats.priceLabel);
   const showPrice = mentorHasRealPriceLabel(stats.priceLabel);
   const mediaCount = stats.mediaCount ?? 0;
@@ -59,11 +63,24 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
   const padX = isDense ? "px-4 pb-4" : "px-6 pb-8";
   const nameCls = isDense ? "text-base font-black" : "text-xl font-black";
   const introClamp = isHub ? "line-clamp-3" : isCompact ? "line-clamp-2" : "line-clamp-3";
-  const cardRadius = isDense ? "rounded-2xl" : "rounded-3xl";
-  const shadowCls = isDense ? "shadow-sm" : "shadow-lg ring-1 ring-slate-900/5";
+  const cardRadius = "rounded-2xl";
+  // preview(프로필 편집 미리보기): 다른 카드와 톤 통일 — 사방 균일 1.5px slate-300 + 옅은 그림자, 좌측 액센트 바 없음.
+  // dense(hub/compact)는 기존 외형 유지.
+  const shadowCls = isDense ? "shadow-sm" : "shadow-[0_1px_4px_rgba(0,0,0,0.05)]";
+  // preview(학생 시점): 좌측 섹션 카드(187)와 동일 구조 — 왼쪽만 4px 파랑(#1A56DB) 액센트 바 + 삼면 1px slate-300.
+  const borderCls = isDense
+    ? "border border-slate-200"
+    : "border border-l-[4px] border-slate-300 border-l-[#1A56DB]";
+  const bgCls = "bg-white";
 
   return (
-    <div className={`overflow-hidden border border-slate-200 bg-white ${cardRadius} ${shadowCls} ${className}`}>
+    <div className={`overflow-hidden ${borderCls} ${bgCls} ${cardRadius} ${shadowCls} ${className}`}>
+      {!isDense ? (
+        <div className="flex items-center gap-1.5 bg-[#EBF1FE] px-4 py-2 text-[11px] font-extrabold text-[#1A56DB]">
+          <Eye className="h-3.5 w-3.5" aria-hidden />
+          학생에게 보이는 화면
+        </div>
+      ) : null}
       <div className={`${bannerH} bg-gradient-to-br from-slate-100 via-slate-50 to-white`} aria-hidden />
       <div className={`relative ${padX}`}>
         <div className={`${avatarSize} overflow-hidden rounded-2xl border-white bg-white shadow-md`}>
@@ -121,17 +138,21 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
           </ul>
         ) : null}
 
-        <div className={`mt-3 grid grid-cols-3 gap-1.5 rounded-lg border border-slate-100 ${isDense ? "p-2" : "p-3"} text-center`}>
+        <div
+          className={`grid grid-cols-3 gap-1.5 text-center ${
+            isDense ? "mt-3 rounded-lg border border-slate-100 p-2" : "mt-4 border-t border-slate-100 pt-4"
+          }`}
+        >
           <div>
             <p className="text-[9px] font-extrabold uppercase tracking-wide text-slate-500">평점</p>
             <p className={`mt-0.5 font-black tabular-nums text-slate-900 ${isDense ? "text-sm" : "text-base"}`}>
-              {ratingLabel}
+              {isDense ? ratingLabel : previewRatingText}
             </p>
           </div>
           <div>
             <p className="text-[9px] font-extrabold uppercase tracking-wide text-slate-500">리뷰</p>
             <p className={`mt-0.5 font-black tabular-nums text-slate-900 ${isDense ? "text-sm" : "text-base"}`}>
-              {reviewLabel}
+              {isDense ? reviewLabel : previewReviewText}
             </p>
           </div>
           <div>
@@ -143,20 +164,32 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
         </div>
 
         {!isCompact ? (
-          <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-xs">
+          <dl
+            className={`mt-4 grid gap-3 border-t border-slate-100 pt-4 text-xs ${
+              d.grade ? "grid-cols-2" : "grid-cols-1"
+            }`}
+          >
             <div>
               <dt className="font-bold text-slate-500">학교·전공</dt>
               <dd className="mt-0.5 font-extrabold leading-snug text-slate-800">{mentorSchoolLine(d)}</dd>
             </div>
-            <div>
-              <dt className="font-bold text-slate-500">학년</dt>
-              <dd className="mt-0.5 font-extrabold text-slate-800">{d.grade || "—"}</dd>
-            </div>
+            {d.grade ? (
+              <div>
+                <dt className="font-bold text-slate-500">학년</dt>
+                <dd className="mt-0.5 font-extrabold text-slate-800">{d.grade}</dd>
+              </div>
+            ) : null}
           </dl>
         ) : null}
 
         {isCompact || isHub || stats?.byTier ? (
-          <div className={`mt-3 rounded-xl border border-slate-100 bg-slate-50/70 ${isDense ? "p-2" : "p-3"}`}>
+          <div
+            className={
+              isDense
+                ? "mt-3 rounded-xl border border-slate-100 bg-slate-50/70 p-2"
+                : "mt-4 border-t border-slate-100 pt-4"
+            }
+          >
             {!isCompact ? (
               <p className="mb-2 text-[9px] font-extrabold uppercase tracking-wide text-slate-500">구독 요금제</p>
             ) : null}
@@ -165,12 +198,15 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
                 const row = stats?.byTier?.[tier] ?? null;
                 const price = priceLabelFromPlanRow(row, tier);
                 const label = getSubscribeCatalogPlan(tier).label;
-                const badgeColor =
-                  tier === "limited"
+                const badgeColor = isDense
+                  ? tier === "limited"
                     ? "bg-emerald-50 text-emerald-800 border-emerald-100"
                     : tier === "standard"
                       ? "bg-blue-50 text-blue-800 border-blue-100"
-                      : "bg-violet-50 text-violet-800 border-violet-100";
+                      : "bg-violet-50 text-violet-800 border-violet-100"
+                  : tier === "standard"
+                    ? "bg-blue-50 text-[#1A56DB] border-blue-100"
+                    : "bg-slate-50 text-slate-600 border-slate-200";
 
                 return (
                   <div key={tier} className="min-w-0 rounded-lg border border-slate-200 bg-white p-1.5 sm:p-2">

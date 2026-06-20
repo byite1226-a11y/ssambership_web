@@ -96,7 +96,8 @@ export function QuestionRoomWorkspace(props: {
   messageCountsByThreadId?: Record<string, number>;
   lastMessageByThreadId?: Record<string, Record<string, unknown>>;
   unreadCountsByRoomId?: Record<string, number>;
-  subscriptionContext?: import("@/lib/qna/questionRoomStudentContext").QuestionRoomSubscriptionContext;
+  subscriptionContext?: import("@/lib/qna/questionRoomStudentContext").QuestionRoomSubscriptionContext | null;
+  studentWeeklyUsage?: import("@/lib/qna/weeklyQuestionUsageDisplay").WeeklyQuestionUsage | null;
   subjectOptions?: string[];
   roomHrefBase?: string;
   listStartQuestion?: { href: string; label: string };
@@ -196,6 +197,8 @@ export function QuestionRoomWorkspace(props: {
         formRevision={rev}
         threadDetailMode={props.threadDetailMode}
         backHref={props.backHref}
+        subscriptionContext={props.subscriptionContext}
+        studentWeeklyUsage={props.studentWeeklyUsage}
         actionFeedback={{
           ok: props.actionFeedback?.ok ?? null,
           error: props.actionFeedback?.error ?? null,
@@ -220,7 +223,7 @@ export function QuestionRoomWorkspace(props: {
         messageCountsByThreadId={props.messageCountsByThreadId}
         lastMessageByThreadId={props.lastMessageByThreadId}
         unreadCountsByRoomId={props.unreadCountsByRoomId}
-        subscriptionContext={props.subscriptionContext}
+        subscriptionContext={props.subscriptionContext ?? undefined}
         subjectOptions={props.subjectOptions}
         actionFeedback={props.actionFeedback}
         draftMessageBody={props.draftMessageBody}
@@ -280,7 +283,7 @@ export function QuestionRoomWorkspace(props: {
                     key={id}
                     href={href}
                     className={`w-full flex flex-col gap-1 px-6 py-5 transition-all text-left border-b border-slate-50 relative ${
-                      isActive ? "bg-slate-50 shadow-[inset_3px_0_0_0_#2563eb]" : "hover:bg-slate-50/80"
+                      isActive ? "bg-blue-50/70 shadow-[inset_3px_0_0_0_#1A56DB]" : "hover:bg-blue-50/40"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">

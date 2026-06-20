@@ -133,7 +133,7 @@ export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilte
                     ) : (
                     <Link
                       href={`/custom-request/${id}/applications`}
-                      className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                      className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-[box-shadow,border-color] duration-150 hover:border-blue-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <span className="inline-flex rounded-full border border-blue-200 bg-white px-2.5 py-0.5 text-xs font-bold text-[#1A56DB]">

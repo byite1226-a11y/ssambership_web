@@ -6,6 +6,7 @@ import { MentorDetailHeaderActions } from "@/components/mentor/MentorDetailHeade
 import { MentorDetailSubjectTabs } from "@/components/mentor/MentorDetailSubjectTabs";
 import { MentorDetailSubscribeSidebar } from "@/components/mentor/MentorDetailSubscribeSidebar";
 import { MentorReviewsCarousel } from "@/components/mentor/MentorReviewsCarousel";
+import { SurfaceCard } from "@/components/design-system/SurfaceCard";
 import { mentorVerificationKo, type MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import type { PublicMentorLoadResult } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
@@ -13,6 +14,9 @@ import {
   mentorIntroFallback,
   mentorIsVerified,
   mentorSchoolGradeLine,
+  mentorSchoolVerificationBadgeClass,
+  mentorSchoolVerificationBadgeLabel,
+  mentorSchoolVerificationMetaLine,
   mentorSubjectChips,
 } from "@/lib/mentor/mentorPublicProfileDisplay";
 import type { AppRole, UserRow } from "@/lib/types/user";
@@ -88,7 +92,7 @@ export function PublicMentorDetailBody(props: {
 }) {
   const { mentorId, display, bundle, viewer, reviewEligibility } = props;
   const isLoggedIn = props.isLoggedIn ?? Boolean(viewer);
-  const { byTier, fillProbe } = assignPlansByTier(bundle.plans.rows as Row[]);
+  const { byTier } = assignPlansByTier(bundle.plans.rows as Row[]);
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(mentorId)}`;
   const freeQuestionHref = isLoggedIn
     ? `/question-room?mentorId=${encodeURIComponent(mentorId)}`
@@ -100,6 +104,7 @@ export function PublicMentorDetailBody(props: {
 
   const verified = mentorIsVerified(display.verification);
   const schoolLine = mentorSchoolGradeLine(display);
+  const schoolMeta = mentorSchoolVerificationMetaLine(display);
   const chips = mentorSubjectChips(display.subjects || display.tags, 8);
   const introShort = mentorIntroFallback(display.intro);
   const introLong =
@@ -145,10 +150,10 @@ export function PublicMentorDetailBody(props: {
 
   const trustBadges = [
     {
-      title: `${display.university || "대학"} 인증`,
-      sub: verified ? "재학 인증 완료" : "인증 검토 중",
+      title: display.schoolVerified ? `${display.university || "대학"} 인증` : "학교·전공 미인증",
+      sub: display.schoolVerified ? "학교·전공 검증 완료" : "자유입력 참고 정보",
     },
-    { title: "학생증 인증", sub: verified ? "본인 인증 완료" : "서류 제출 대기" },
+    { title: "멘토 승인", sub: verified ? "멘토 인증 완료" : "승인 검토 중" },
     { title: "활동 인증", sub: verified ? "우수 멘토" : "활동 검증 예정" },
     {
       title:
@@ -181,15 +186,15 @@ export function PublicMentorDetailBody(props: {
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-12 xl:gap-10">
         <div className="min-w-0 space-y-6 xl:col-span-8">
           {/* 프로필 헤더 */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <SurfaceCard tone="neutral" bodyClassName="sm:p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
               <div className="relative mx-auto h-[120px] w-[120px] shrink-0 sm:mx-0">
-                <div className="h-[120px] w-[120px] overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-2 ring-slate-100">
+                <div className="h-[120px] w-[120px] overflow-hidden rounded-full border-4 border-white bg-blue-50 shadow-md ring-2 ring-slate-100">
                   {photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photo} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 text-3xl font-black text-slate-600">
+                    <div className="flex h-full w-full items-center justify-center bg-blue-50 text-3xl font-black text-blue-600">
                       {(display.displayName || "멘").trim().slice(0, 1)}
                       <Camera className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 opacity-0" aria-hidden />
                     </div>
@@ -206,7 +211,15 @@ export function PublicMentorDetailBody(props: {
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-sm font-bold text-slate-700">{schoolLine}</p>
+                <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5 text-sm font-bold text-slate-700 sm:justify-start">
+                  <span>{schoolLine}</span>
+                  <span
+                    className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-black ${mentorSchoolVerificationBadgeClass(display)}`}
+                  >
+                    {mentorSchoolVerificationBadgeLabel(display)}
+                  </span>
+                  {schoolMeta ? <span className="text-[11px] font-bold text-slate-500">{schoolMeta}</span> : null}
+                </div>
                 {chips.length > 0 ? (
                   <ul className="mt-3 flex flex-wrap justify-center gap-1.5 sm:justify-start">
                     {chips.map((c) => (
@@ -240,14 +253,13 @@ export function PublicMentorDetailBody(props: {
                 </li>
               ))}
             </ul>
-          </section>
+          </SurfaceCard>
 
           {/* 멘토 소개 */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <h2 className="text-lg font-black text-slate-900">멘토 소개</h2>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{introLong}</p>
+          <SurfaceCard tone="neutral" title="멘토 소개">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{introLong}</p>
             <p className="mt-3 text-xs text-slate-500">인증 상태: {verKo}</p>
-          </section>
+          </SurfaceCard>
 
           {/* 통계 4카드 */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -275,9 +287,8 @@ export function PublicMentorDetailBody(props: {
           <MentorReviewsCarousel mentorId={mentorId} />
 
           {viewer?.role === "student" ? (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black text-slate-900">리뷰 작성</h2>
-              <div className="mt-4 space-y-4">
+            <SurfaceCard tone="neutral" title="리뷰 작성">
+              <div className="space-y-4">
                 <ReviewEligibilityBanner
                   eligibilityKnown={reviewEligibility != null}
                   eligible={reviewEligibility?.eligible === true}
@@ -291,7 +302,7 @@ export function PublicMentorDetailBody(props: {
                   }
                 />
               </div>
-            </section>
+            </SurfaceCard>
           ) : null}
 
           <MentorDetailCTASection
@@ -311,8 +322,6 @@ export function PublicMentorDetailBody(props: {
             mentorId={mentorId}
             byTier={byTier}
             plansError={bundle.plans.error}
-            plansProbe={bundle.plans.probe}
-            fillProbe={fillProbe}
             isLoggedIn={isLoggedIn}
             freeQuestionRemaining={props.freeQuestionRemaining}
             subscriptionClosed={props.subscriptionClosed}

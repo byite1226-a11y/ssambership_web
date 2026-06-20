@@ -119,7 +119,7 @@ export default function DesignSystemPreviewPage() {
         <dl className="grid gap-2 text-ds-caption sm:grid-cols-2">
           <div>
             <dt className="font-bold text-ds-secondary">Accent student</dt>
-            <dd className="text-ds-accent-student">#2563eb</dd>
+            <dd className="text-ds-accent-student">#1A56DB</dd>
           </div>
           <div>
             <dt className="font-bold text-ds-secondary">Accent mentor</dt>

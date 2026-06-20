@@ -2,8 +2,10 @@ import { createClient } from "@/lib/supabase/client";
 import {
   buildStudentIdImageObjectPath,
   formatStudentIdImageStoredRef,
+  safeStudentIdImageFileExtension,
   STUDENT_ID_IMAGES_BUCKET,
 } from "@/lib/storage/studentIdImageStorage";
+import { validateJpgPngPdfMagicBytes } from "@/lib/storage/uploadMagicBytes";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
 import type { AppRole } from "@/lib/types/user";
 
@@ -99,14 +101,25 @@ export async function syncAfterSignUpWithSession(i: SyncInput): Promise<SyncResu
     if (i.studentIdFile) {
       const objectPath = buildStudentIdImageObjectPath(i.userId, i.studentIdFile.name);
       const storedRef = formatStudentIdImageStoredRef(objectPath);
+      let studentIdUploaded = false;
 
       try {
+        const extension = safeStudentIdImageFileExtension(i.studentIdFile.name);
+        if (!extension) {
+          throw new Error("JPG, JPEG, PNG, PDF 형식의 파일만 업로드할 수 있습니다.");
+        }
+        const bytes = await i.studentIdFile.arrayBuffer();
+        const verified = validateJpgPngPdfMagicBytes(bytes, extension);
+        if (!verified.ok) {
+          throw new Error(verified.error);
+        }
         const { error: upErr } = await supabase.storage
           .from(STUDENT_ID_IMAGES_BUCKET)
-          .upload(objectPath, i.studentIdFile, { cacheControl: "3600", upsert: true });
+          .upload(objectPath, bytes, { cacheControl: "3600", contentType: verified.file.mimeType, upsert: true });
         if (upErr) {
           throw upErr;
         }
+        studentIdUploaded = true;
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         warnings.push(
@@ -114,17 +127,19 @@ export async function syncAfterSignUpWithSession(i: SyncInput): Promise<SyncResu
         );
       }
 
-      try {
-        const { error: mErr } = await supabase
-          .from("mentor_profiles")
-          .update({ student_id_image_url: storedRef, updated_at: now })
-          .eq("user_id", i.userId);
-        if (mErr) {
-          throw mErr;
+      if (studentIdUploaded) {
+        try {
+          const { error: mErr } = await supabase
+            .from("mentor_profiles")
+            .update({ student_id_image_url: storedRef, updated_at: now })
+            .eq("user_id", i.userId);
+          if (mErr) {
+            throw mErr;
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          warnings.push(`[학생증 경로 반영] ${mapDataErrorMessage(msg)}`);
         }
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        warnings.push(`[학생증 경로 반영] ${mapDataErrorMessage(msg)}`);
       }
     }
   }

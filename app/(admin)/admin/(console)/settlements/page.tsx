@@ -9,6 +9,7 @@ import {
   type AdminSettlementListItem,
 } from "@/lib/admin/adminQueries";
 import { adminListErrorDescription } from "@/lib/admin/adminDisplayError";
+import { refreshSubscriptionSettlementItemsBestEffort } from "@/lib/mentor/subscriptionSettlementItems";
 
 const SETTLEMENTS_BADGE_RESULT: AdminListResult = {
   table: null,
@@ -54,8 +55,10 @@ function SettlementTable({ rows }: { rows: AdminSettlementListItem[] }) {
         <thead>
           <tr className="border-b border-slate-200/60 bg-slate-50/40">
             <th className="px-5 py-3 text-xs font-bold text-slate-600">정산 ID</th>
-            <th className="px-5 py-3 text-xs font-bold text-slate-600">주문 ID</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">유형</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">주문/이벤트 ID</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">멘토</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">정산 계좌</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">학생</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">총 결제금액</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">플랫폼 수수료</th>
@@ -71,6 +74,9 @@ function SettlementTable({ rows }: { rows: AdminSettlementListItem[] }) {
               <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-800" title={r.id}>
                 {shortUuid(r.id)}
               </td>
+              <td className="whitespace-nowrap px-5 py-4 text-xs font-bold text-slate-700">
+                {r.sourceType === "subscription" ? "구독" : "맞춤의뢰"}
+              </td>
               <td
                 className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-800"
                 title={r.orderMetaLine ? `${r.customRequestOrderId}\n${r.orderMetaLine}` : r.customRequestOrderId}
@@ -79,6 +85,9 @@ function SettlementTable({ rows }: { rows: AdminSettlementListItem[] }) {
               </td>
               <td className="max-w-[100px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={r.mentorId}>
                 {shortUuid(r.mentorId)}
+              </td>
+              <td className="max-w-[150px] truncate px-5 py-4 text-xs font-bold text-slate-700" title={r.payoutAccountDisplay}>
+                {r.payoutAccountDisplay}
               </td>
               <td className="max-w-[100px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={r.studentId ?? ""}>
                 {r.studentId ? shortUuid(r.studentId) : "—"}
@@ -103,6 +112,7 @@ function SettlementTable({ rows }: { rows: AdminSettlementListItem[] }) {
 
 export default async function AdminSettlementsPage() {
   const supabase = await createClient();
+  await refreshSubscriptionSettlementItemsBestEffort();
   const { rows, summary, queryOk, byMentorHint } = await loadAdminSettlementsList(supabase, 50);
 
   const summaryBody = queryOk

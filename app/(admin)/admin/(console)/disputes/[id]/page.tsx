@@ -8,6 +8,7 @@ import { loadDisputeActorSummaries, loadDisputeById } from "@/lib/disputes/dispu
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { loadAdminDisputeEscrowSplitPanelState } from "@/lib/admin/adminDisputeEscrowSplitQueries";
 import { CUSTOM_ORDER_PLATFORM_FEE_RATE } from "@/lib/customRequest/orderSettlementAmounts";
+import { loadAdminDisputeNotes } from "@/lib/admin/adminCaseNotes";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -52,6 +53,7 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
   const actors = row ? await loadDisputeActorSummaries(supabase, row as Record<string, unknown>) : null;
 
   const escrowReadClient = adminBypass ?? supabase;
+  const adminNotes = row ? await loadAdminDisputeNotes(escrowReadClient, id) : { status: "ready" as const, notes: [], error: null };
   const escrowSplitPanelState = row
     ? await loadAdminDisputeEscrowSplitPanelState(
         escrowReadClient,
@@ -104,6 +106,7 @@ export default async function AdminDisputeDetailPage(props: PageProps) {
             bundle={bundle}
             actors={actors}
             disputeId={id}
+            adminNotes={adminNotes}
             escrowSplitPanelState={escrowSplitPanelState}
             platformFeeRate={CUSTOM_ORDER_PLATFORM_FEE_RATE}
           />

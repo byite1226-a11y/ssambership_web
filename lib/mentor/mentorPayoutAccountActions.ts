@@ -12,8 +12,11 @@ export async function updateMentorPayoutAccountAction(formData: FormData) {
   const bankName = String(formData.get("bankName") ?? "").trim();
   const accountNumber = String(formData.get("accountNumber") ?? "").replace(/\D/g, "").trim();
 
-  if (!bankName || accountNumber.length < 8) {
-    return { ok: false as const, error: "은행명과 계좌번호를 확인해 주세요." };
+  if (!bankName) {
+    return { ok: false as const, error: "은행을 선택해 주세요." };
+  }
+  if (!accountNumber || accountNumber.length < 8 || accountNumber.length > 24) {
+    return { ok: false as const, error: "계좌번호는 숫자 8~24자리로 입력해 주세요." };
   }
 
   const supabase = await createClient();
@@ -33,8 +36,8 @@ export async function updateMentorPayoutAccountAction(formData: FormData) {
     [acctCol.column]: accountNumber,
   };
 
-  const { error } = await supabase.from("mentor_profiles").update(patch).eq("user_id", user.id);
-  if (error) {
+  const { data, error } = await supabase.from("mentor_profiles").update(patch).eq("user_id", user.id).select("user_id").maybeSingle();
+  if (error || !data) {
     return { ok: false as const, error: "계좌 정보를 저장하지 못했습니다." };
   }
 

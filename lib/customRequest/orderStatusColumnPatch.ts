@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import { markCustomOrderDeliveredRpc } from "@/lib/customRequest/orderTransitionRpc";
 
 type OwnerFilter = { column: string; userId: string };
 
 /**
- * `custom_request_orders.order_status` 전이 (상태 머신).
- * 스키마에 `order_status` 열이 없으면 실패를 반환한다.
+ * Compatibility wrapper for old order_status patches.
+ * M-1 step 1 moves custom_request_orders state changes to RPCs before RLS lockdown.
  */
 export async function patchCustomOrderOrderStatus(
   supabase: SupabaseClient,
@@ -15,32 +15,19 @@ export async function patchCustomOrderOrderStatus(
   nextOrderStatus: string,
   options?: { requireOrderStatus?: string }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { column: orderStatusCol } = await pickExistingColumn(supabase, table, ["order_status"]);
-  if (!orderStatusCol) {
-    return { ok: false, error: "주문에 order_status 컬럼이 없습니다." };
+  void owner;
+  if (table !== "custom_request_orders") {
+    return { ok: false, error: "맞춤의뢰 주문 상태 전이는 custom_request_orders RPC로만 처리할 수 있습니다." };
   }
 
-  const patch: Record<string, unknown> = { [orderStatusCol]: nextOrderStatus };
-  const { column: uCol } = await pickExistingColumn(supabase, table, ["updated_at"]);
-  if (uCol) {
-    patch[uCol] = new Date().toISOString();
+  if (nextOrderStatus === "delivered") {
+    const result = await markCustomOrderDeliveredRpc(supabase, orderId);
+    return result.ok ? { ok: true } : { ok: false, error: result.error };
   }
 
-  let q = supabase.from(table).update(patch).eq("id", orderId).eq(owner.column, owner.userId);
-  if (options?.requireOrderStatus) {
-    q = q.eq(orderStatusCol, options.requireOrderStatus);
+  if (nextOrderStatus === "revision_requested" && options?.requireOrderStatus === "delivered") {
+    return { ok: false, error: "수정 요청 상태 전이는 custom_order_student_request_revision RPC를 사용해야 합니다." };
   }
-  const { data, error } = await q.select("id").maybeSingle();
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-  if (!data) {
-    return {
-      ok: false,
-      error: options?.requireOrderStatus
-        ? `주문 상태가 '${options.requireOrderStatus}'가 아니어서 갱신할 수 없습니다.`
-        : "주문 상태를 갱신하지 못했습니다.",
-    };
-  }
-  return { ok: true };
+
+  return { ok: false, error: `지원하지 않는 맞춤의뢰 주문 상태 전이입니다: ${nextOrderStatus}` };
 }

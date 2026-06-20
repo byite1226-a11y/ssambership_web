@@ -11,7 +11,10 @@ import {
 import {
   loadLastMessageByThreadId,
   loadMessageCountsByThreadId,
+  loadQuestionRoomSubscriptionContext,
 } from "@/lib/qna/questionRoomStudentContext";
+import { fetchWeeklyQuestionUsageWithFallback } from "@/lib/qna/weeklyQuestionUsage";
+import { partyUserIdFromRoomRow } from "@/lib/qna/questionRoomUiLabels";
 import { extractNoteText } from "@/lib/qna/questionRoomMutations";
 import { paramToDraft } from "@/lib/qna/draftQuery";
 import { mapDataErrorMessage } from "@/lib/utils/mapDataError";
@@ -72,6 +75,17 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
 
   const initialNoteText = extractNoteText(bundle.notes.rows[0]);
 
+  // 이 학생의 구독 요금제·이번 주 잔여 질문(읽기 전용 표시용). 기존 학생 로직 재사용.
+  const currentRoom = listBundle.rooms.rows.find((r) => r && String(r.id) === String(roomId)) ?? null;
+  const studentId = currentRoom ? partyUserIdFromRoomRow(currentRoom, "student") : null;
+  const [subscriptionContext, weeklyUsageResult] = studentId
+    ? await Promise.all([
+        loadQuestionRoomSubscriptionContext(supabase, studentId, currentRoom),
+        fetchWeeklyQuestionUsageWithFallback(supabase, studentId, user.id),
+      ])
+    : [null, null];
+  const studentWeeklyUsage = weeklyUsageResult?.usage ?? null;
+
   return (
     <PageScaffold
       hideHero
@@ -105,6 +119,8 @@ export default async function MentorQuestionRoomDetailPage(props: Props) {
         initialNoteText={initialNoteText}
         draftMessageBody={draftMessageBody}
         formRevision={formRevision}
+        subscriptionContext={subscriptionContext}
+        studentWeeklyUsage={studentWeeklyUsage}
       />
     </PageScaffold>
   );

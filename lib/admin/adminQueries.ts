@@ -1,8 +1,13 @@
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+﻿import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
 import type { AdminReviewModerationPlan } from "@/lib/admin/reviewLabels";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
+import {
+  loadSubscriptionSettlementRowsForAdmin,
+  minorCentsToCash,
+  subscriptionSettlementStatus,
+} from "@/lib/mentor/subscriptionSettlementItems";
 
 type Row = Record<string, unknown>;
 
@@ -726,9 +731,11 @@ export function adminSettlementStatusLabel(status: string): string {
   const map: Record<string, string> = {
     pending: "지급 대기",
     on_hold: "보류",
+    hold: "보류",
     payable: "지급 가능",
     paid: "지급 완료",
     cancelled: "취소",
+    canceled: "취소",
   };
   return map[s] ?? `${status} (확인 필요)`;
 }
@@ -755,8 +762,10 @@ export type AdminSettlementSummary = {
 
 export type AdminSettlementListItem = {
   id: string;
+  sourceType: "custom_request" | "subscription";
   customRequestOrderId: string;
   mentorId: string;
+  payoutAccountDisplay: string;
   studentId: string | null;
   grossAmount: number;
   platformFeeAmount: number;
@@ -790,17 +799,17 @@ function summarizeSettlementRows(rows: AdminSettlementListItem[]): AdminSettleme
   for (const r of rows) {
     const st = r.status.trim().toLowerCase();
     const m = r.mentorAmount;
-    if (st === "pending" || st === "on_hold" || st === "payable") {
+    if (st === "pending" || st === "on_hold" || st === "hold" || st === "payable") {
       s.pendingMentorAmountSum += m;
     }
     if (st === "paid") {
       s.paidMentorAmountSum += m;
     }
     if (st === "pending") s.pendingCount += 1;
-    else if (st === "on_hold") s.onHoldCount += 1;
+    else if (st === "on_hold" || st === "hold") s.onHoldCount += 1;
     else if (st === "payable") s.payableCount += 1;
     else if (st === "paid") s.paidCount += 1;
-    else if (st === "cancelled") s.cancelledCount += 1;
+    else if (st === "cancelled" || st === "canceled") s.cancelledCount += 1;
   }
   return s;
 }
@@ -812,8 +821,10 @@ function parseCosItem(r: Row): AdminSettlementListItem | null {
   const feeNum = typeof feeRaw === "number" ? feeRaw : Number(feeRaw);
   return {
     id,
+    sourceType: "custom_request",
     customRequestOrderId: String(r.custom_request_order_id ?? ""),
     mentorId: String(r.mentor_id ?? ""),
+    payoutAccountDisplay: "미등록",
     studentId: r.student_id != null && String(r.student_id).length ? String(r.student_id) : null,
     grossAmount: toMoneyInt(r.gross_amount),
     platformFeeAmount: toMoneyInt(r.platform_fee_amount),
@@ -828,6 +839,77 @@ function parseCosItem(r: Row): AdminSettlementListItem | null {
   };
 }
 
+
+function parseSubscriptionSettlementItem(r: Row): AdminSettlementListItem | null {
+  const id = r.id != null ? String(r.id) : "";
+  if (!id) return null;
+  const billingEventId = String(r.billing_event_id ?? "");
+  const feeRaw = r.fee_rate;
+  const feeNum = typeof feeRaw === "number" ? feeRaw : Number(feeRaw);
+  const periodStart = typeof r.period_start === "string" && r.period_start ? r.period_start.slice(0, 10) : "";
+  const periodEnd = typeof r.period_end === "string" && r.period_end ? r.period_end.slice(0, 10) : "";
+  const meta = [
+    "\uAD6C\uB3C5 \uC815\uC0B0",
+    r.event_type != null ? String(r.event_type) : "",
+    periodStart || periodEnd ? `${periodStart || "?"}~${periodEnd || "?"}` : "",
+  ].filter(Boolean).join(" · ");
+  return {
+    id,
+    sourceType: "subscription",
+    customRequestOrderId: billingEventId || String(r.subscription_id ?? ""),
+    mentorId: String(r.mentor_id ?? ""),
+    payoutAccountDisplay: "미등록",
+    studentId: r.student_id != null && String(r.student_id).length ? String(r.student_id) : null,
+    grossAmount: minorCentsToCash(r.gross_cents),
+    platformFeeAmount: minorCentsToCash(r.platform_fee_cents),
+    mentorAmount: minorCentsToCash(r.mentor_amount_cents),
+    feeRate: Number.isFinite(feeNum) ? feeNum : 0.3,
+    status: subscriptionSettlementStatus(r.status),
+    reason: r.hold_reason != null && String(r.hold_reason).length ? String(r.hold_reason) : null,
+    paidAt: r.paid_at != null ? String(r.paid_at) : null,
+    createdAt: String(r.billing_at ?? r.created_at ?? ""),
+    updatedAt: String(r.updated_at ?? r.created_at ?? r.billing_at ?? ""),
+    orderMetaLine: meta || null,
+  };
+}
+function maskAdminPayoutAccount(bank: unknown, account: unknown): string {
+  const digits = String(account ?? "").replace(/\D/g, "");
+  if (!digits) return "미등록";
+  const bankName = String(bank ?? "은행").trim() || "은행";
+  const tail = digits.length >= 4 ? digits.slice(-4) : digits;
+  return `${bankName} ****${tail}`;
+}
+
+async function fetchMentorPayoutAccountDisplayMap(
+  supabase: SupabaseClient,
+  mentorIds: string[]
+): Promise<Map<string, string>> {
+  const unique = [...new Set(mentorIds.map((id) => id.trim()).filter(Boolean))];
+  const out = new Map<string, string>();
+  for (const id of unique) out.set(id, "미등록");
+  if (!unique.length) return out;
+
+  const db = mentorProfilesAdminReadClient(supabase);
+  const bankCol = await pickExistingColumn(db, "mentor_profiles", ["payout_bank_name", "bank_name"]);
+  const acctCol = await pickExistingColumn(db, "mentor_profiles", [
+    "payout_account_number",
+    "bank_account_number",
+    "account_number",
+  ]);
+  if (!acctCol.column) return out;
+
+  const cols = ["user_id", bankCol.column, acctCol.column].filter(Boolean).join(", ");
+  for (const part of chunkIds(unique, 80)) {
+    const { data, error } = await db.from("mentor_profiles").select(cols).in("user_id", part);
+    if (error || !data) continue;
+    for (const row of data as unknown as Row[]) {
+      const mentorId = String(row.user_id ?? "");
+      if (!mentorId) continue;
+      out.set(mentorId, maskAdminPayoutAccount(bankCol.column ? row[bankCol.column] : null, row[acctCol.column]));
+    }
+  }
+  return out;
+}
 function chunkIds(ids: string[], size: number): string[][] {
   const out: string[][] = [];
   for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
@@ -845,7 +927,7 @@ async function fetchCustomRequestOrdersMap(supabase: SupabaseClient, orderIds: s
       .select("id, payment_status, status, state, order_status, agreed_price, proposed_price, price, amount, completed_at")
       .in("id", part);
     if (error || !data) continue;
-    for (const row of data as Row[]) {
+    for (const row of data as unknown as Row[]) {
       const oid = String(row.id ?? "");
       if (oid) map.set(oid, row);
     }
@@ -906,20 +988,42 @@ export async function loadAdminSettlementsList(
     if (it) items.push(it);
   }
 
-  const orderMap = await fetchCustomRequestOrdersMap(
-    supabase,
-    items.map((i) => i.customRequestOrderId)
-  );
-  for (const it of items) {
-    const o = orderMap.get(it.customRequestOrderId);
-    if (o) it.orderMetaLine = buildOrderMetaLine(o);
+  const subscriptionResult = await loadSubscriptionSettlementRowsForAdmin(limit);
+  for (const r of subscriptionResult.rows) {
+    const it = parseSubscriptionSettlementItem(r);
+    if (it) items.push(it);
+  }
+  if (subscriptionResult.error) {
+    console.error("[loadAdminSettlementsList] subscription settlements", subscriptionResult.error);
   }
 
+  const customItems = items.filter((i) => i.sourceType === "custom_request");
+  const [orderMap, payoutAccountMap] = await Promise.all([
+    fetchCustomRequestOrdersMap(
+      supabase,
+      customItems.map((i) => i.customRequestOrderId)
+    ),
+    fetchMentorPayoutAccountDisplayMap(
+      supabase,
+      items.map((i) => i.mentorId)
+    ),
+  ]);
+  for (const it of items) {
+    it.payoutAccountDisplay = payoutAccountMap.get(it.mentorId) ?? "미등록";
+    if (it.sourceType === "custom_request") {
+      const o = orderMap.get(it.customRequestOrderId);
+      if (o) it.orderMetaLine = buildOrderMetaLine(o);
+    }
+  }
+
+  const rows = items
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, limit);
+
   return {
-    rows: items,
-    summary: summarizeSettlementRows(items),
-    queryOk: true,
+    rows,
+    summary: summarizeSettlementRows(rows),
+    queryOk: !subscriptionResult.error,
     byMentorHint,
   };
 }
-

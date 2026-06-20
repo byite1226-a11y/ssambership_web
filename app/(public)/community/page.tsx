@@ -10,8 +10,8 @@ export default async function CommunityLandingPage() {
   const supabase = await createClient();
 
   const [shortform, popular] = await Promise.all([
-    listShortformFeed(supabase, { limit: 5 }),
-    listCommunityBoardPosts(supabase, { limit: 5 }),
+    listShortformFeed(supabase, { limit: 5, sort: "popular" }),
+    listCommunityBoardPosts(supabase, { limit: 5, sort: "popular" }),
   ]);
 
   if (shortform.error) console.error("[community] shortform", shortform.error);

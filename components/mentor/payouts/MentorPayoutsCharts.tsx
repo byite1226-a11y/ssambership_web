@@ -13,7 +13,7 @@ import { MentorRevenueChart } from "@/components/mentor/mypage/MentorRevenueChar
 import { formatCashKrw } from "./payoutUi";
 
 const PRIMARY = "#1A56DB";
-const CUSTOM_GREEN = "#10B981";
+const CUSTOM_GREEN = "#059669";
 
 type DonutProps = {
   subscription: number;

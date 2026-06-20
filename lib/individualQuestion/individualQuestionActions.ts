@@ -15,6 +15,7 @@ import { expiryDateForStatus, type IndividualQuestionExpirableStatus } from "@/l
 import { fetchUserDisplayName, insertNotificationBestEffort } from "@/lib/notifications/notificationInsert";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { loadSchoolClassificationCatalogs } from "@/lib/mentor/schoolClassificationCatalog";
 
 const STUDENT_LIST_PATH = "/individual-questions";
 const MENTOR_LIST_PATH = "/mentor/individual-questions";
@@ -58,7 +59,29 @@ function createErrorMessage(codeOrMessage: string | null | undefined): string {
   if (value.includes("invalid_price")) {
     return "개별 질문 단가가 올바르지 않습니다.";
   }
+  if (value.includes("invalid_required_")) {
+    return "답변 자격 조건이 올바르지 않습니다.";
+  }
   return "개별 질문을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+}
+
+function claimErrorMessage(codeOrMessage: string | null | undefined): string {
+  const value = (codeOrMessage ?? "").toLowerCase();
+  if (value.includes("mentor_school_verification_required")) {
+    return "이 질문은 학교·전공 인증을 완료한 멘토만 답변할 수 있어요.";
+  }
+  if (value.includes("mentor_qualification_not_met")) {
+    return "이 질문은 학생이 지정한 학교군·전공계열 자격을 가진 멘토만 답변할 수 있어요.";
+  }
+  if (value.includes("mentor_not_approved")) {
+    return "승인 완료 후 공개 질문을 가져갈 수 있어요.";
+  }
+  return "이미 다른 멘토가 답변을 맡았어요. 목록을 새로 확인해 주세요.";
+}
+
+function catalogHasCode(options: Array<{ code: string }>, code: string | null): boolean {
+  if (!code) return true;
+  return options.some((option) => option.code === code);
 }
 
 async function setQuestionExpiryBestEffort(
@@ -261,6 +284,8 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
   const body = textValue(formData, "body");
   const subject = optionalText(formData, "subject");
   const topic = optionalText(formData, "topic");
+  const requiredSchoolTier = optionalText(formData, "requiredSchoolTier");
+  const requiredMajorCategory = optionalText(formData, "requiredMajorCategory");
   // 폼 입력은 캐시(=원) 단위. 저장은 정규 cents(=캐시×100)로 변환.
   const priceCash = positiveIntegerValue(formData, "priceCents");
   const attachment = formData.get("attachment");
@@ -274,7 +299,15 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
   }
 
   const admin = createServiceRoleClient();
-  const { data, error } = await admin.rpc("create_individual_question_with_hold", {
+  const catalogs = await loadSchoolClassificationCatalogs(admin);
+  if (!catalogHasCode(catalogs.schoolTiers, requiredSchoolTier)) {
+    actionError(returnPath, "학교군 자격 조건이 올바르지 않습니다.");
+  }
+  if (!catalogHasCode(catalogs.majorCategories, requiredMajorCategory)) {
+    actionError(returnPath, "전공계열 자격 조건이 올바르지 않습니다.");
+  }
+
+  const { data, error } = await admin.rpc("create_individual_question_with_hold_v2", {
     p_student_id: user.id,
     p_question_type: "open",
     p_mentor_id: null,
@@ -284,6 +317,8 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
     p_body: body,
     p_price_cents: amountCentsFromCashKrw(priceCash),
     p_idempotency_key: idempotencyKey,
+    p_required_school_tier: requiredSchoolTier,
+    p_required_major_category: requiredMajorCategory,
   });
 
   const result = firstRpcResult(data as IndividualQuestionRpcResult);
@@ -321,13 +356,13 @@ export async function claimOpenIndividualQuestionAction(formData: FormData) {
   if (!approval.ok) actionError(MENTOR_LIST_PATH, "승인 완료 후 공개 질문을 가져갈 수 있어요.");
 
   const admin = createServiceRoleClient();
-  const { data, error } = await admin.rpc("claim_individual_question", {
+  const { data, error } = await admin.rpc("claim_individual_question_v2", {
     p_question_id: questionId,
     p_mentor_id: user.id,
   });
   const result = firstRpcResult(data as IndividualQuestionRpcResult);
   if (error || !result?.ok || !result.question_id) {
-    actionError(MENTOR_LIST_PATH, "이미 다른 멘토가 답변을 맡았어요. 목록을 새로 확인해 주세요.");
+    actionError(MENTOR_LIST_PATH, claimErrorMessage(error?.message ?? result?.code ?? result?.message));
   }
 
   await setQuestionExpiryBestEffort(admin, result.question_id, "claimed");

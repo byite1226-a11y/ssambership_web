@@ -2,14 +2,17 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
-import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { loadMentorSettlementItemsForPayouts } from "@/lib/mentor/mentorPayoutsQueries";
+import {
+  formatSubscriptionSettlementPeriod,
+  loadSubscriptionSettlementRowsForMentor,
+  minorCentsToCash,
+  subscriptionSettlementStatus,
+} from "@/lib/mentor/subscriptionSettlementItems";
 import {
   DEFAULT_MASKED_BANK_DISPLAY,
   MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE,
   MENTOR_CUSTOM_REQUEST_SHARE,
-  MENTOR_SUBSCRIPTION_PLATFORM_SHARE,
-  MENTOR_SUBSCRIPTION_SHARE,
   minorUnitsToCash,
 } from "@/lib/mentor/mentorPayoutsConstants";
 import { buildPayoutScheduleInfo, detailLineToSettlementRow } from "@/lib/mentor/mentorPayoutsDisplay";
@@ -97,78 +100,69 @@ function orderGrossWon(order: Row | null): number {
 }
 
 function maskBankDisplay(bank: string | null, account: string | null): string {
-  if (!bank && !account) return DEFAULT_MASKED_BANK_DISPLAY;
-  const b = (bank ?? "은행").trim();
   const a = (account ?? "").replace(/\D/g, "");
-  if (a.length >= 4) {
-    const head = a.slice(0, 4);
-    const tail = a.slice(-3);
-    return `${b} ${head}-**-****${tail}`;
-  }
-  return `${b} ****`;
+  if (!a) return DEFAULT_MASKED_BANK_DISPLAY;
+  const b = (bank ?? "은행").trim() || "은행";
+  const tail = a.length >= 4 ? a.slice(-4) : a;
+  return `${b} ****${tail}`;
 }
 
 async function readClient(supabase: SupabaseClient): Promise<SupabaseClient> {
   return supabase;
 }
 
-async function subscriptionIdsForMentor(client: SupabaseClient, mentorId: string): Promise<string[]> {
-  const { data, error } = await client.from("subscriptions").select("id").eq("mentor_id", mentorId).limit(500);
-  if (error || !data) return [];
-  return (data as Row[]).map((r) => String(r.id ?? "")).filter(Boolean);
+const SUBSCRIPTION_SETTLEMENT_LABEL = "\uAD6C\uB3C5 \uC815\uC0B0";
+const SUBSCRIPTION_STUDENT_LABEL = "\uAD6C\uB3C5 \uD559\uC0DD";
+
+function subscriptionSettlementDate(row: Row): string {
+  for (const k of ["billing_at", "paid_at", "created_at", "updated_at"]) {
+    const v = row[k];
+    if (typeof v === "string" && v) return v;
+  }
+  return pickTs(row);
+}
+
+function subscriptionSettlementDescription(row: Row): string {
+  const period = formatSubscriptionSettlementPeriod(row);
+  const billingEventId = String(row.billing_event_id ?? "");
+  const suffix = period || (billingEventId ? billingEventId.slice(0, 8) : "");
+  return suffix ? `${SUBSCRIPTION_SETTLEMENT_LABEL} - ${suffix}` : SUBSCRIPTION_SETTLEMENT_LABEL;
+}
+
+function payoutLineStatusKind(status: string): "pending" | "paid" | "hold" | "canceled" {
+  const raw = status.trim();
+  const s = raw.toLowerCase();
+  if (s === "canceled" || s === "cancelled" || raw.includes("\uCDE8\uC18C")) return "canceled";
+  if (s === "paid" || raw.includes("\uC9C0\uAE09\uC644\uB8CC") || raw.includes("\uC815\uC0B0\uC644\uB8CC")) return "paid";
+  if (s === "hold" || s === "on_hold" || raw.includes("\uBCF4\uB958")) return "hold";
+  return "pending";
+}
+
+function isPaidPayoutLine(line: MentorPayoutDetailLine): boolean {
+  return payoutLineStatusKind(line.status) === "paid";
+}
+
+function isPendingPayoutLine(line: MentorPayoutDetailLine): boolean {
+  const kind = payoutLineStatusKind(line.status);
+  return kind === "pending" || kind === "hold";
 }
 
 async function loadSubscriptionLines(client: SupabaseClient, mentorId: string): Promise<MentorPayoutDetailLine[]> {
-  const subIds = await subscriptionIdsForMentor(client, mentorId);
-  if (!subIds.length) return [];
-
-  let ledger: Row[] = [];
-  const q = await client
-    .from("cash_ledger")
-    .select("*")
-    .eq("reason", "subscription_payment")
-    .eq("ref_type", "subscriptions")
-    .in("ref_id", subIds.slice(0, 200))
-    .order("created_at", { ascending: false })
-    .limit(300);
-
-  if (!q.error && q.data) {
-    ledger = q.data as Row[];
-  } else {
-    try {
-      const admin = createServiceRoleClient();
-      const a = await admin
-        .from("cash_ledger")
-        .select("*")
-        .eq("reason", "subscription_payment")
-        .eq("ref_type", "subscriptions")
-        .in("ref_id", subIds.slice(0, 200))
-        .order("created_at", { ascending: false })
-        .limit(300);
-      if (!a.error && a.data) ledger = a.data as Row[];
-    } catch {
-      /* ignore */
-    }
-  }
-
-  return ledger.map((r) => {
-    const payment = minorUnitsToCash(intWon(r.delta_cents));
-    const fee = Math.floor(payment * MENTOR_SUBSCRIPTION_PLATFORM_SHARE);
-    const net = Math.floor(payment * MENTOR_SUBSCRIPTION_SHARE);
-    const subId = String(r.ref_id ?? "");
+  const rows = await loadSubscriptionSettlementRowsForMentor(client, mentorId, 300);
+  return rows.map((r) => {
+    const itemId = String(r.id ?? r.billing_event_id ?? r.subscription_id ?? "");
     return {
-      id: `sub-${String(r.id ?? subId)}`,
+      id: `sub-${itemId}`,
       type: "subscription" as const,
-      date: pickTs(r),
-      description: `구독 결제${subId ? ` · ${subId.slice(0, 8)}` : ""}`,
-      paymentAmount: payment,
-      feeAmount: fee,
-      netAmount: net,
-      status: "정산예정",
+      date: subscriptionSettlementDate(r),
+      description: subscriptionSettlementDescription(r),
+      paymentAmount: minorCentsToCash(r.gross_cents),
+      feeAmount: minorCentsToCash(r.platform_fee_cents),
+      netAmount: minorCentsToCash(r.mentor_amount_cents),
+      status: subscriptionSettlementStatus(r.status),
     };
   });
 }
-
 async function loadCustomRequestLines(client: SupabaseClient, mentorId: string): Promise<MentorPayoutDetailLine[]> {
   const settlement = await loadMentorSettlementItemsForPayouts(client, mentorId);
   const fromSettlement: MentorPayoutDetailLine[] = settlement.lines.map(({ settlement: s, order }) => {
@@ -246,6 +240,16 @@ function sumNetByType(lines: MentorPayoutDetailLine[], type: PayoutLineType, ym?
     .reduce((a, l) => a + l.netAmount, 0);
 }
 
+function sumNetByStatus(
+  lines: MentorPayoutDetailLine[],
+  ym: string | undefined,
+  predicate: (line: MentorPayoutDetailLine) => boolean
+): number {
+  return lines
+    .filter((l) => predicate(l) && (ym ? inYm(l.date, ym) : true))
+    .reduce((a, l) => a + l.netAmount, 0);
+}
+
 export async function loadMentorPayoutBankAccount(
   supabase: SupabaseClient,
   mentorId: string
@@ -280,11 +284,10 @@ export async function loadMentorPayoutBankAccount(
 export async function loadMentorPayoutSummary(supabase: SupabaseClient, mentorId: string): Promise<MentorPayoutSummary> {
   const client = await readClient(supabase);
   const ym = currentYm();
-  const [subLines, crLines, bank, settlement] = await Promise.all([
+  const [subLines, crLines, bank] = await Promise.all([
     loadSubscriptionLines(client, mentorId),
     loadCustomRequestLines(client, mentorId),
     loadMentorPayoutBankAccount(client, mentorId),
-    loadMentorSettlementItemsForPayouts(client, mentorId),
   ]);
 
   const all = [...subLines, ...crLines];
@@ -292,17 +295,8 @@ export async function loadMentorPayoutSummary(supabase: SupabaseClient, mentorId
   const thisMonthCustomRequest = sumNetByType(all, "custom_request", ym);
   const thisMonthRevenue = thisMonthSubscription + thisMonthCustomRequest;
 
-  const paidThisMonth = settlement.lines
-    .filter(({ settlement: s }) => String(s.status ?? "").toLowerCase() === "paid" && inYm(pickTs(s), ym))
-    .reduce((a, { settlement: s }) => a + intWon(s.mentor_amount), 0);
-
-  const expectedThisMonth = settlement.lines
-    .filter(({ settlement: s }) => {
-      const st = String(s.status ?? "").toLowerCase();
-      return ["pending", "on_hold", "payable"].includes(st) && inYm(pickTs(s), ym);
-    })
-    .reduce((a, { settlement: s }) => a + intWon(s.mentor_amount), 0);
-
+  const paidThisMonth = sumNetByStatus(all, ym, isPaidPayoutLine);
+  const expectedThisMonth = sumNetByStatus(all, ym, isPendingPayoutLine);
   const thisMonthScheduledPayout =
     expectedThisMonth > 0 ? expectedThisMonth : Math.max(0, thisMonthRevenue - paidThisMonth);
 
@@ -315,6 +309,8 @@ export async function loadMentorPayoutSummary(supabase: SupabaseClient, mentorId
     lifetimeCustomRequest: sumNetByType(all, "custom_request"),
     bankDisplay: bank.display,
     bankEditable: bank.editable,
+    bankName: bank.bankName,
+    bankAccountNumber: bank.accountRaw,
   };
 }
 
@@ -324,10 +320,9 @@ export async function loadMentorPayoutMonthlyCards(
   months = 6
 ): Promise<MentorPayoutMonthlyCard[]> {
   const client = await readClient(supabase);
-  const [subLines, crLines, settlement] = await Promise.all([
+  const [subLines, crLines] = await Promise.all([
     loadSubscriptionLines(client, mentorId),
     loadCustomRequestLines(client, mentorId),
-    loadMentorSettlementItemsForPayouts(client, mentorId),
   ]);
   const all = [...subLines, ...crLines];
 
@@ -337,15 +332,8 @@ export async function loadMentorPayoutMonthlyCards(
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const ym = ymKey(d);
     const revenue = sumNet(all, ym);
-    const paidInMonth = settlement.lines
-      .filter(({ settlement: s }) => String(s.status ?? "").toLowerCase() === "paid" && inYm(pickTs(s), ym))
-      .reduce((a, { settlement: s }) => a + intWon(s.mentor_amount), 0);
-    const pendingInMonth = settlement.lines
-      .filter(({ settlement: s }) => {
-        const st = String(s.status ?? "").toLowerCase();
-        return ["pending", "on_hold", "payable"].includes(st) && inYm(pickTs(s), ym);
-      })
-      .reduce((a, { settlement: s }) => a + intWon(s.mentor_amount), 0);
+    const paidInMonth = sumNetByStatus(all, ym, isPaidPayoutLine);
+    const pendingInMonth = sumNetByStatus(all, ym, isPendingPayoutLine);
 
     const scheduledPayout = pendingInMonth > 0 ? pendingInMonth : Math.max(0, revenue - paidInMonth);
     const status: MentorPayoutMonthlyCard["status"] =
@@ -398,8 +386,14 @@ async function loadLifetimePaidPayouts(client: SupabaseClient, mentorId: string)
       return sum;
     }, 0);
   }
-  const settlement = await loadMentorSettlementItemsForPayouts(client, mentorId);
-  return settlement.totals.paidMentorAmount;
+  const [settlement, subscriptionRows] = await Promise.all([
+    loadMentorSettlementItemsForPayouts(client, mentorId),
+    loadSubscriptionSettlementRowsForMentor(client, mentorId, 500),
+  ]);
+  const paidSubscriptions = subscriptionRows
+    .filter((r) => subscriptionSettlementStatus(r.status) === "paid")
+    .reduce((sum, r) => sum + minorCentsToCash(r.mentor_amount_cents), 0);
+  return settlement.totals.paidMentorAmount + paidSubscriptions;
 }
 
 function orderTitle(o: Row): string {
@@ -453,29 +447,18 @@ async function loadPerformanceLines(
     }
   }
 
-  const subIds = await subscriptionIdsForMentor(client, mentorId);
-  if (subIds.length) {
-    const q = await client
-      .from("cash_ledger")
-      .select("*")
-      .eq("reason", "subscription_payment")
-      .in("ref_id", subIds.slice(0, 100))
-      .order("created_at", { ascending: false })
-      .limit(40);
-    if (!q.error && q.data) {
-      for (const r of q.data as Row[]) {
-        const payment = minorUnitsToCash(intWon(r.delta_cents));
-        rows.push({
-          id: `perf-sub-${String(r.id ?? "")}`,
-          date: pickTs(r),
-          type: "subscription",
-          title: "구독 결제",
-          studentName: "구독 학생",
-          amount: Math.floor(payment * MENTOR_SUBSCRIPTION_SHARE),
-          uiStatus: "done",
-        });
-      }
-    }
+  const subscriptionRows = await loadSubscriptionSettlementRowsForMentor(client, mentorId, 40);
+  for (const r of subscriptionRows) {
+    const status = subscriptionSettlementStatus(r.status);
+    rows.push({
+      id: `perf-sub-${String(r.id ?? r.billing_event_id ?? "")}`,
+      date: subscriptionSettlementDate(r),
+      type: "subscription",
+      title: SUBSCRIPTION_SETTLEMENT_LABEL,
+      studentName: SUBSCRIPTION_STUDENT_LABEL,
+      amount: minorCentsToCash(r.mentor_amount_cents),
+      uiStatus: status === "paid" ? "done" : status === "canceled" ? "cancelled" : "in_progress",
+    });
   }
 
   rows.sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -490,13 +473,12 @@ export async function loadMentorPayoutsPageData(
   const ym = currentYm();
   const prev = prevYm(ym);
 
-  const [summary, months, subLines, crLines, settlement, lifetimePaid, performanceLines] =
+  const [summary, months, subLines, crLines, lifetimePaid, performanceLines] =
     await Promise.all([
       loadMentorPayoutSummary(supabase, mentorId),
       loadMentorPayoutMonthlyCards(supabase, mentorId, 6),
       loadSubscriptionLines(client, mentorId),
       loadCustomRequestLines(client, mentorId),
-      loadMentorSettlementItemsForPayouts(client, mentorId),
       loadLifetimePaidPayouts(client, mentorId),
       loadPerformanceLines(client, mentorId),
     ]);
@@ -520,13 +502,11 @@ export async function loadMentorPayoutsPageData(
     customRequestPct: Math.round((thisCr / shareTotal) * 100),
   };
 
-  const paidThisMonth = settlement.lines
-    .filter(({ settlement: s }) => String(s.status ?? "").toLowerCase() === "paid" && inYm(pickTs(s), ym))
-    .reduce((a, { settlement: s }) => a + intWon(s.mentor_amount), 0);
+  const paidThisMonth = sumNetByStatus(all, ym, isPaidPayoutLine);
 
   const schedule = buildPayoutScheduleInfo(
     summary.thisMonthScheduledPayout,
-    paidThisMonth > 0 ? paidThisMonth : settlement.totals.paidMentorAmount
+    paidThisMonth > 0 ? paidThisMonth : lifetimePaid
   );
 
   return {

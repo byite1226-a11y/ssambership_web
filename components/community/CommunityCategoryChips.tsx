@@ -39,7 +39,7 @@ export function CommunityCategoryChips({ categories, name, defaultSlug = "free",
               onClick={() => setSelected(c.slug)}
               className={[
                 "rounded-full px-3.5 py-1.5 text-xs font-bold transition",
-                active ? "bg-[#2563eb] text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50",
+                active ? "bg-[#1A56DB] text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50",
               ].join(" ")}
               aria-pressed={active}
             >

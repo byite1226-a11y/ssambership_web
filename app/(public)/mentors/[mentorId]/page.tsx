@@ -11,6 +11,7 @@ import { loadMentorCapUsage } from "@/lib/subscribe/mentorCapService";
 import { mentorVerificationStatusAllowsActivity } from "@/lib/mentor/mentorVerificationGate";
 import { loadMentorAvgResponseHours } from "@/lib/mentor/avgResponseHoursDisplay";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
+import { applySchoolClassificationLabels, loadSchoolClassificationCatalogs } from "@/lib/mentor/schoolClassificationCatalog";
 
 type Props = {
   params: Promise<{ mentorId: string }>;
@@ -58,7 +59,8 @@ export default async function MentorDetailByIdPage(props: Props) {
     );
   }
 
-  const display = buildMentorProfileDisplay(bundle.profileRow, bundle.userRow);
+  const catalogs = await loadSchoolClassificationCatalogs(supabase);
+  const display = applySchoolClassificationLabels(buildMentorProfileDisplay(bundle.profileRow, bundle.userRow), catalogs);
   const canViewUnapproved = viewer?.role === "admin" || viewer?.userId === mentorId;
   if (!canViewUnapproved && !mentorVerificationStatusAllowsActivity(bundle.profileRow?.verification_status)) {
     return (

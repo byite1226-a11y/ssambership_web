@@ -6,6 +6,7 @@ import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
 import { createClient } from "@/lib/supabase/server";
 import { insertCommunityComment } from "@/lib/community/communityMutations";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
+import { TRUST_SAFETY_COMMUNITY_ERROR_CODE, sanitizeTrustSafetyText } from "@/lib/safety/trustSafetyText";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -43,6 +44,10 @@ export async function submitCommunityCommentAction(formData: FormData) {
   if (t.length < 1 || t.length > 1000) {
     redirect(buildCommentRedirect(returnPath, "length"));
   }
+  const safety = sanitizeTrustSafetyText(t);
+  if (!safety.ok) {
+    redirect(buildCommentRedirect(returnPath, TRUST_SAFETY_COMMUNITY_ERROR_CODE));
+  }
 
   const supabase = await createClient();
   const { data: profile } = await getUserProfileById(supabase, user.id);
@@ -57,7 +62,7 @@ export async function submitCommunityCommentAction(formData: FormData) {
   const r = await insertCommunityComment(supabase, user.id, {
     postType,
     postId,
-    body: t,
+    body: safety.text,
     authorLabel,
   });
 

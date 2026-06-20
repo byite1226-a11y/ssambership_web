@@ -7,7 +7,7 @@ import { RoleLoginForm } from "@/components/auth/RoleLoginForm";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { loginLandingCopy, type AuthLoginRole } from "@/components/auth/loginRoleContent";
 
-const STUDENT_PRIMARY = "#2563eb";
+const STUDENT_PRIMARY = "#1A56DB";
 const MENTOR_PRIMARY = "#16A34A";
 
 function benefitLines(role: AuthLoginRole): string[] {
@@ -38,7 +38,7 @@ export function LoginRoleCard(props: {
         "flex h-full min-h-[520px] flex-col rounded-2xl border bg-white p-6 transition sm:p-7",
         isStudent
           ? active
-            ? "border-[#2563eb] ring-2 ring-[#2563eb]/15"
+            ? "border-[#1A56DB] ring-2 ring-[#1A56DB]/15"
             : "border-slate-200 hover:border-slate-300"
           : active
             ? "border-[#16A34A] ring-2 ring-[#16A34A]/15"

@@ -26,7 +26,9 @@ export function CommunityShortformUploadForm(props: { errorCode: string | null; 
   const [previewName, setPreviewName] = useState<string | null>(null);
 
   const err =
-    props.errorCode === "mentor_only"
+    props.errorCode === "policy"
+      ? "외부 연락처·대필 요청은 정책상 제한됩니다."
+      : props.errorCode === "mentor_only"
       ? "멘토 계정만 업로드할 수 있어요."
       : props.errorCode === "rights"
         ? "권리 보유 확인이 필요합니다."

@@ -6,15 +6,34 @@ import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
 import { COMMUNITY_BRAND_MENTOR_LABEL } from "@/lib/community/communityAuthorLabels";
 import { communityComposePath } from "@/lib/community/communityComposeTab";
-import { insertShortformPost, updateShortformPost } from "@/lib/community/communityShortformMutations";
+import {
+  insertShortformPost,
+  toggleShortformLike,
+  updateShortformPost,
+} from "@/lib/community/communityShortformMutations";
 import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
 import { uploadShortformVideo } from "@/lib/community/communityShortformStorage";
 import { createClient } from "@/lib/supabase/server";
+import {
+  TRUST_SAFETY_COMMUNITY_ERROR_CODE,
+  findRestrictedPhraseInText,
+  maskContactInUserText,
+} from "@/lib/safety/trustSafetyText";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function err(path: string, code: string): never {
   redirect(`${path}?error=${encodeURIComponent(code)}`);
+}
+
+function safeShortformReturnPath(raw: string): string {
+  const path = raw.trim();
+  return path.startsWith("/community/shortform") ? path : "/community/shortform";
+}
+
+function appendQuery(path: string, key: string, value: string): string {
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}${key}=${encodeURIComponent(value)}`;
 }
 
 export async function submitShortformUploadAction(formData: FormData) {
@@ -37,6 +56,10 @@ export async function submitShortformUploadAction(formData: FormData) {
 
   if (!rights && status === "published") err(returnPath, "rights");
   if (!title) err(returnPath, "title");
+  if (findRestrictedPhraseInText(title, body)) err(returnPath, TRUST_SAFETY_COMMUNITY_ERROR_CODE);
+
+  const safeTitle = maskContactInUserText(title);
+  const safeBody = maskContactInUserText(body);
 
   const videoFile = formData.get("video");
   let videoUrl = String(formData.get("videoUrl") ?? "").trim();
@@ -50,11 +73,11 @@ export async function submitShortformUploadAction(formData: FormData) {
 
   const label = profile?.nickname?.trim() || profile?.full_name?.trim() || COMMUNITY_BRAND_MENTOR_LABEL;
   const payload = {
-    title,
+    title: safeTitle,
     category,
     videoUrl,
     thumbnailUrl: null as string | null,
-    body,
+    body: safeBody,
     tags: [] as string[],
     source,
     status: status as "draft" | "published",
@@ -76,4 +99,30 @@ export async function submitShortformUploadAction(formData: FormData) {
 
   if (status === "published") redirect(`/community/shortform/${r.id}`);
   redirect(communityComposePath("shortform", { draft: "1", draftId: r.id }));
+}
+
+export async function toggleShortformLikeAction(formData: FormData) {
+  const postId = String(formData.get("postId") ?? "").trim();
+  const returnPath = safeShortformReturnPath(String(formData.get("returnPath") ?? "/community/shortform"));
+
+  const { user } = await getServerAuthUser();
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(returnPath)}`);
+  }
+  if (!UUID_RE.test(postId)) {
+    redirect(returnPath);
+  }
+
+  const supabase = await createClient();
+  const result = await toggleShortformLike(supabase, user.id, postId);
+
+  revalidatePath(returnPath);
+  revalidatePath(`/community/shortform/${postId}`);
+  revalidatePath("/community/shortform");
+  revalidatePath("/community");
+
+  if (!result.ok) {
+    redirect(appendQuery(returnPath, "likeError", "not_ready"));
+  }
+  redirect(returnPath);
 }

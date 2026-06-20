@@ -7,6 +7,10 @@ import {
   type CommunityAuthorNameRow,
 } from "@/lib/community/communityAuthorLabels";
 import { pickAuthorRoleSummary, pickTitle } from "@/lib/community/communityQueries";
+import {
+  resolveShortformThumbnailUrl,
+  resolveShortformVideoUrl,
+} from "@/lib/community/communityShortformStorage";
 
 type Row = Record<string, unknown>;
 
@@ -35,7 +39,7 @@ async function shortformAuthorNameMap(
 function pickThumb(row: Row): string | null {
   for (const k of ["thumbnail_url", "thumbnailUrl", "cover_url"] as const) {
     const v = row[k];
-    if (typeof v === "string" && v.startsWith("http")) return v;
+    if (typeof v === "string" && v.trim()) return v.trim();
   }
   return null;
 }
@@ -43,7 +47,7 @@ function pickThumb(row: Row): string | null {
 function pickVideo(row: Row): string | null {
   for (const k of ["video_url", "videoUrl", "source_url", "source"] as const) {
     const v = row[k];
-    if (typeof v === "string" && v.startsWith("http")) return v;
+    if (typeof v === "string" && v.trim()) return v.trim();
   }
   return null;
 }
@@ -81,6 +85,21 @@ export function mapShortformRow(row: Row, userMap?: Map<string, CommunityAuthorN
   };
 }
 
+async function resolveShortformCardMedia(
+  supabase: SupabaseClient,
+  card: ShortformCard
+): Promise<ShortformCard> {
+  const [thumbnailUrl, videoUrl] = await Promise.all([
+    resolveShortformThumbnailUrl(supabase, card.thumbnailUrl),
+    resolveShortformVideoUrl(supabase, card.videoUrl),
+  ]);
+  return {
+    ...card,
+    thumbnailUrl,
+    videoUrl,
+  };
+}
+
 export type ShortformFeedSort = "all" | "latest" | "popular";
 
 function buildShortformFeedQuery(
@@ -94,6 +113,7 @@ function buildShortformFeedQuery(
           .select("*")
           .order("like_count", { ascending: false })
           .order("view_count", { ascending: false })
+          .order("created_at", { ascending: false })
       : supabase.from("shortform_posts").select("*").order("created_at", { ascending: false });
   q = q.limit(opts.limit);
   if (opts.category && opts.category !== "all") q = q.eq("category", opts.category);
@@ -113,12 +133,14 @@ export async function listShortformFeed(
     if (fb.error) return { items: [], error: fb.error.message };
     const fbRows = (fb.data as Row[]) ?? [];
     const userMap = await shortformAuthorNameMap(supabase, fbRows);
-    return { items: fbRows.map((r) => mapShortformRow(r, userMap)), error: null };
+    const cards = await Promise.all(fbRows.map((r) => resolveShortformCardMedia(supabase, mapShortformRow(r, userMap))));
+    return { items: cards, error: null };
   }
   const rows = (data as Row[]) ?? [];
   const published = rows.filter((r) => !r.status || r.status === "published");
   const userMap = await shortformAuthorNameMap(supabase, published);
-  return { items: published.map((r) => mapShortformRow(r, userMap)), error: null };
+  const cards = await Promise.all(published.map((r) => resolveShortformCardMedia(supabase, mapShortformRow(r, userMap))));
+  return { items: cards, error: null };
 }
 
 export async function getShortformDetail(
@@ -131,7 +153,24 @@ export async function getShortformDetail(
   const row = data as Row;
   if (row.status === "hidden") return { item: null, row, error: null };
   const userMap = await shortformAuthorNameMap(supabase, [row]);
-  return { item: mapShortformRow(row, userMap), row, error: null };
+  return { item: await resolveShortformCardMedia(supabase, mapShortformRow(row, userMap)), row, error: null };
+}
+
+export async function getShortformReactionFlags(
+  supabase: SupabaseClient,
+  shortformId: string,
+  userId: string | null
+): Promise<{ liked: boolean }> {
+  if (!userId) return { liked: false };
+  const { data, error } = await supabase
+    .from("shortform_reactions")
+    .select("id")
+    .eq("shortform_id", shortformId)
+    .eq("user_id", userId)
+    .eq("type", "like")
+    .maybeSingle();
+  if (error) return { liked: false };
+  return { liked: Boolean(data) };
 }
 
 export type ShortformDraftRow = {

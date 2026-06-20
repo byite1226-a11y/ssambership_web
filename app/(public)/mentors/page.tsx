@@ -4,6 +4,7 @@ import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { loadFavoriteMentorIdsForUser } from "@/lib/mentor/mentorFavorites";
 import { parseMentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
 import { loadPublicMentorsList } from "@/lib/mentor/publicMentorsListQueries";
+import { loadSchoolClassificationCatalogs } from "@/lib/mentor/schoolClassificationCatalog";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -19,7 +20,11 @@ export default async function MentorsPage(props: Props) {
   const sp = (await props.searchParams) ?? {};
   const filters = parseMentorsListFilters(sp);
   const supabase = await createClient();
-  const list = await loadPublicMentorsList(supabase, filters);
+  const catalogs = await loadSchoolClassificationCatalogs(supabase);
+  const list = await loadPublicMentorsList(supabase, filters, {
+    schoolTierLabels: catalogs.schoolTierLabels,
+    majorCategoryLabels: catalogs.majorCategoryLabels,
+  });
 
   const { user } = await getServerUserWithProfile();
   const favoriteIds: string[] = [];
@@ -29,10 +34,10 @@ export default async function MentorsPage(props: Props) {
   }
 
   if (list.usersError) {
-    console.error("[mentors] PUBLIC MENTOR LIST (USERS) ERROR:", list.usersError, "PROBES:", list.probes);
+    console.error("[mentors] PUBLIC MENTOR LIST (USERS) ERROR:", list.usersError);
   }
   if (list.profilesError) {
-    console.error("[mentors] PUBLIC MENTOR PROFILE ERROR:", list.profilesError, "PROBES:", list.probes);
+    console.error("[mentors] PUBLIC MENTOR PROFILE ERROR:", list.profilesError);
   }
 
   return (
@@ -41,6 +46,8 @@ export default async function MentorsPage(props: Props) {
       list={list}
       favoriteIds={favoriteIds}
       isLoggedIn={Boolean(user)}
+      schoolOptions={[{ id: "", label: "전체" }, ...catalogs.schoolTiers.map((option) => ({ id: option.code, label: option.label }))]}
+      mentorTypeOptions={catalogs.majorCategories.map((option) => ({ id: option.code, label: option.label }))}
     />
   );
 }

@@ -16,7 +16,7 @@ const inputBase =
   "w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 sm:min-h-[3.1rem] sm:px-5";
 
 const inputByRole: Record<AuthLoginRole, string> = {
-  student: `${inputBase} focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20`,
+  student: `${inputBase} focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20`,
   mentor: `${inputBase} focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20`,
 };
 
@@ -27,7 +27,7 @@ const labelByRole: Record<AuthLoginRole, string> = {
 
 const ctaByRole: Record<AuthLoginRole, string> = {
   student:
-    "w-full min-h-14 rounded-2xl bg-[#2563eb] text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
+    "w-full min-h-14 rounded-2xl bg-[#1A56DB] text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A56DB] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
   mentor:
     "w-full min-h-14 rounded-2xl bg-[#16A34A] text-base font-extrabold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A34A] disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3.5rem] sm:text-lg",
 };
@@ -75,12 +75,15 @@ export function RoleLoginForm({
   const setPassword = (value: string) =>
     onPasswordChange ? onPasswordChange(value) : setPasswordState(value);
   const [error, setError] = useState<string | null>(null);
+  // 안내(중립) 톤 — 실제 에러(빨강)와 구분. 예: 다른 역할 계정으로 로그인 시도.
+  const [notice, setNotice] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setSuccess(null);
     setLoading(true);
 
@@ -151,7 +154,7 @@ export function RoleLoginForm({
         /* */
       }
       setError(
-        "가입 프로필(공용 users)이 없습니다. `001_initial_auth_profile.sql` 적용·가입 흐름을 확인하거나 운영자에 문의해 주세요."
+        "로그인에 문제가 생겼어요. 잠시 후 다시 시도하거나, 계속되면 고객센터에 문의해 주세요."
       );
       setLoading(false);
       return;
@@ -163,7 +166,7 @@ export function RoleLoginForm({
       } catch {
         /* */
       }
-      setError("이 로그인 화면은 멘토 계정 전용입니다. 학생 계정이면 학생 로그인을 이용해 주세요.");
+      setNotice("이 화면은 멘토 계정 전용이에요. 학생 계정이면 학생 로그인을 이용해 주세요.");
       setLoading(false);
       return;
     }
@@ -173,7 +176,7 @@ export function RoleLoginForm({
       } catch {
         /* */
       }
-      setError("이 로그인 화면은 학생 계정 전용입니다. 멘토 계정이면 멘토 로그인을 이용해 주세요.");
+      setNotice("이 화면은 학생 계정 전용이에요. 멘토 계정이면 멘토 로그인을 이용해 주세요.");
       setLoading(false);
       return;
     }
@@ -211,6 +214,14 @@ export function RoleLoginForm({
           role="alert"
         >
           {error}
+        </p>
+      ) : null}
+      {notice && !error ? (
+        <p
+          className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 sm:text-base"
+          role="status"
+        >
+          {notice}
         </p>
       ) : null}
       {success ? (

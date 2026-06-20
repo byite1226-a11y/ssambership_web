@@ -153,8 +153,10 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
                 <Link
                   href={href}
                   className={[
-                    "flex h-full items-start justify-between gap-3 rounded-2xl border border-ds-border-subtle bg-white px-5 py-4 transition hover:bg-slate-50/80",
-                    isDispute ? "border-l-[3px] border-l-red-600" : "border-l-[3px] border-l-violet-600",
+                    "flex h-full items-start justify-between gap-3 rounded-2xl border border-ds-border-subtle bg-white px-5 py-4 transition-[box-shadow,border-color] duration-150 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]",
+                    isDispute
+                      ? "border-l-[3px] border-l-red-600 hover:border-red-400"
+                      : "border-l-[3px] border-l-violet-600 hover:border-violet-400",
                   ].join(" ")}
                 >
                   <div className="min-w-0 flex-1">

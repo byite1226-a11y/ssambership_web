@@ -12,6 +12,15 @@ export type MentorProfileDisplay = {
   intro: string;
   university: string;
   department: string;
+  rawUniversity?: string;
+  rawDepartment?: string;
+  verifiedUniversity?: string;
+  verifiedDepartment?: string;
+  verifiedMajorCategory?: string;
+  verifiedMajorCategoryLabel?: string;
+  schoolTier?: string;
+  schoolTierLabel?: string;
+  schoolVerified?: boolean;
   subjects: string;
   highSchool: string;
   tags: string;
@@ -46,11 +55,28 @@ export function buildMentorProfileDisplay(
   profileRow: Row | null,
   userRow: UserRow | null
 ): MentorProfileDisplay {
+  const rawUniversity = getProfileFieldString(profileRow, ["university_name"]);
+  const rawDepartment = getProfileFieldString(profileRow, ["department_name", "major_name"]);
+  const verifiedUniversity = getProfileFieldString(profileRow, ["verified_university_name"]);
+  const verifiedDepartment = getProfileFieldString(profileRow, ["verified_department_name"]);
+  const verifiedMajorCategory = getProfileFieldString(profileRow, ["verified_major_category"]);
+  const schoolTier = getProfileFieldString(profileRow, ["school_tier"]);
+  const schoolVerified = getProfileFieldBool(profileRow, ["school_verified"]) ?? false;
+
   return {
     displayName: mentorDisplayNameFromUser(userRow),
     intro: getProfileFieldString(profileRow, ["intro_line", "bio", "about"]),
-    university: getProfileFieldString(profileRow, ["university_name"]),
-    department: getProfileFieldString(profileRow, ["department_name", "major_name"]),
+    university: schoolVerified ? verifiedUniversity || rawUniversity : rawUniversity,
+    department: schoolVerified ? verifiedDepartment || rawDepartment : rawDepartment,
+    rawUniversity,
+    rawDepartment,
+    verifiedUniversity,
+    verifiedDepartment,
+    verifiedMajorCategory,
+    verifiedMajorCategoryLabel: verifiedMajorCategory,
+    schoolTier,
+    schoolTierLabel: schoolTier,
+    schoolVerified,
     subjects: getProfileFieldString(profileRow, ["teaching_subjects", "subjects", "subject_list"]),
     highSchool: getProfileFieldString(profileRow, ["high_school_name"]),
     tags: getProfileFieldString(profileRow, ["tags", "featured_tags", "label_list"]),
@@ -61,7 +87,6 @@ export function buildMentorProfileDisplay(
         "is_open_for_subscriptions",
       ]) ?? false,
     photoUrl: getProfileFieldString(profileRow, [
-      "student_id_image_url",
       "profile_image_url",
       "avatar_url",
       "portrait_url",

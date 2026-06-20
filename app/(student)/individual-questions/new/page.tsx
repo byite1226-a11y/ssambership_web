@@ -5,6 +5,8 @@ import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createOpenIndividualQuestionAction } from "@/lib/individualQuestion/individualQuestionActions";
 import { OPEN_INDIVIDUAL_QUESTION_PRICE_PLACEHOLDER_CASH } from "@/lib/individualQuestion/individualQuestionTypes";
+import { loadSchoolClassificationCatalogs } from "@/lib/mentor/schoolClassificationCatalog";
+import { createClient } from "@/lib/supabase/server";
 import { SubjectSelectOptions } from "@/components/subjects/SubjectSelectOptions";
 
 type PageProps = {
@@ -22,6 +24,8 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
   const sp = (await props.searchParams) ?? {};
   const error = firstParam(sp.error);
   const idempotencyKey = `iq_open:${randomUUID()}`;
+  const supabase = await createClient();
+  const qualificationCatalogs = await loadSchoolClassificationCatalogs(supabase);
 
   return (
     <div className="cr-landing cr-detail-v5 cr-detail-shell mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
@@ -43,7 +47,7 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
           </p>
         ) : null}
 
-        <dl className="grid gap-3 rounded-2xl bg-[#eef4ff] p-4 sm:grid-cols-2">
+        <dl className="grid gap-3 rounded-2xl bg-[#eef4ff] p-4 sm:grid-cols-3">
           <div>
             <dt className="text-xs font-extrabold text-blue-700">질문 방식</dt>
             <dd className="mt-1 text-sm font-black text-slate-900">공개형 · 먼저 답변하는 멘토 1명</dd>
@@ -51,6 +55,10 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
           <div>
             <dt className="text-xs font-extrabold text-blue-700">제시 금액</dt>
             <dd className="mt-1 text-sm font-black text-slate-900">자유롭게 제시하세요</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-extrabold text-blue-700">답변 자격</dt>
+            <dd className="mt-1 text-sm font-black text-slate-900">선택 안 하면 전체 허용</dd>
           </div>
         </dl>
 
@@ -79,6 +87,45 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
               />
             </label>
           </div>
+
+          <fieldset className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+            <legend className="px-1 text-sm font-extrabold text-slate-900">답변 자격 조건</legend>
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              조건을 걸면 학교·전공 인증이 승인된 멘토만 답변을 맡을 수 있어요.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-extrabold text-slate-900">학교군</span>
+                <select
+                  name="requiredSchoolTier"
+                  defaultValue=""
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">조건 없음(전체 허용)</option>
+                  {qualificationCatalogs.schoolTiers.map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-sm font-extrabold text-slate-900">전공계열</span>
+                <select
+                  name="requiredMajorCategory"
+                  defaultValue=""
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                >
+                  <option value="">조건 없음(전체 허용)</option>
+                  {qualificationCatalogs.majorCategories.map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </fieldset>
 
           <label className="block">
             <span className="text-sm font-extrabold text-slate-900">제시 금액</span>
@@ -127,6 +174,7 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
             <input
               name="attachment"
               type="file"
+              accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
               className="mt-2 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
             />
             <span className="mt-1 block text-xs font-semibold text-slate-500">내가 올린 파일은 언제든 다시 볼 수 있어요. 다른 멘토에게는 답변을 맡기 전까지 공개되지 않습니다.</span>

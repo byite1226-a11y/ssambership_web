@@ -16,8 +16,8 @@ import {
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
 import { hasDeliverableRowsForOrder } from "@/lib/customRequest/orderStudentActions";
-import { insertOrderRevisionRequest, recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
-import { patchCustomOrderOrderStatus } from "@/lib/customRequest/orderStatusColumnPatch";
+import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
+import { requestCustomOrderRevisionRpc } from "@/lib/customRequest/orderTransitionRpc";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 
@@ -119,21 +119,9 @@ export async function submitCustomOrderRevisionRequestAction(formData: FormData)
     }
   }
 
-  const ins = await insertOrderRevisionRequest(supabase, orderId, user.id, note);
-  if (ins.error) {
-    redirectWithError(orderId, "수정 요청 저장에 실패했습니다. " + ins.error);
-  }
-
-  const statusPatch = await patchCustomOrderOrderStatus(
-    supabase,
-    table,
-    orderId,
-    { column: stuCol, userId: user.id },
-    "revision_requested",
-    { requireOrderStatus: "delivered" }
-  );
-  if (!statusPatch.ok) {
-    redirectWithError(orderId, statusPatch.error);
+  const transition = await requestCustomOrderRevisionRpc(supabase, orderId, note);
+  if (!transition.ok) {
+    redirectWithError(orderId, transition.error);
   }
 
   await recordOrderEventBestEffort(supabase, orderId, "revision_requested", user.id, { noteLength: note.length });

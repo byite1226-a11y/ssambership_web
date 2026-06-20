@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarX } from "lucide-react";
+import { EmptyState } from "@/components/common/EmptyState";
 import type { MentorPayoutSettlementTableRow } from "@/lib/mentor/mentorPayoutsTypes";
 import {
   formatCashKrw,
@@ -19,13 +20,13 @@ export function MentorPayoutsSettlementTable(props: {
   const netLabel = props.variant === "detail" ? "순수령액" : "정산액";
   if (!props.rows.length) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-16 text-center">
-        <CalendarX className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
-        <h3 className="mt-4 text-lg font-black text-slate-900">선택한 기간에 정산 내역이 없어요</h3>
-        <p className="mt-2 max-w-md text-sm font-medium text-slate-600">
-          해당 기간에 완료된 구독 또는 맞춤의뢰가 없습니다.
-        </p>
-      </div>
+      <EmptyState
+        compact
+        iconTone="neutral"
+        icon={<CalendarX className="h-5 w-5" strokeWidth={1.8} aria-hidden />}
+        title="선택한 기간에 정산 내역이 없어요"
+        description="해당 기간에 완료된 구독 또는 맞춤의뢰가 없습니다."
+      />
     );
   }
 

@@ -6,18 +6,26 @@ import type { MentorsListFilters } from "@/lib/mentor/mentorsListSearchParams";
 import {
   MENTOR_GRADE_OPTIONS,
   MENTOR_PRICE_BAND_OPTIONS,
+  MENTOR_SCHOOL_OPTIONS,
   MENTOR_SUBJECT_OPTIONS,
   MENTOR_TYPE_OPTIONS,
   filtersToHrefRecord,
 } from "@/lib/mentor/mentorsListSearchParams";
+import type { MentorSchoolFilter, MentorTypeFilter } from "@/lib/mentor/mentorsListSearchParams";
+
+type FilterOption<T extends string> = { id: T; label: string };
 
 export function MentorsListFilterSidebar(props: {
   filters: MentorsListFilters;
   totalCount: number;
   className?: string;
   idPrefix?: string;
+  schoolOptions?: FilterOption<MentorSchoolFilter>[];
+  mentorTypeOptions?: FilterOption<MentorTypeFilter>[];
 }) {
   const id = props.idPrefix ?? "mentors";
+  const schoolOptions = props.schoolOptions ?? MENTOR_SCHOOL_OPTIONS;
+  const mentorTypeOptions = props.mentorTypeOptions ?? MENTOR_TYPE_OPTIONS;
   const [extraSort, setExtraSort] = useState(
     props.filters.sort === "rating" || props.filters.sort === "response" ? props.filters.sort : "",
   );
@@ -78,6 +86,27 @@ export function MentorsListFilterSidebar(props: {
                 </label>
               ))}
               </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend className="text-[12px] font-black text-slate-900">학교군</legend>
+            <div className="mt-2 space-y-2">
+              {schoolOptions.map((o) => (
+                <label
+                  key={o.id || "all"}
+                  className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700"
+                >
+                  <input
+                    type="radio"
+                    name="school"
+                    value={o.id}
+                    defaultChecked={props.filters.school === o.id}
+                    className="accent-[#1A56DB]"
+                  />
+                  {o.label}
+                </label>
+              ))}
             </div>
           </fieldset>
 
@@ -152,9 +181,9 @@ export function MentorsListFilterSidebar(props: {
           </fieldset>
 
           <fieldset>
-            <legend className="text-[12px] font-black text-slate-900">멘토 유형</legend>
+            <legend className="text-[12px] font-black text-slate-900">전공 계열</legend>
             <div className="mt-2 space-y-2">
-              {MENTOR_TYPE_OPTIONS.map((o) => (
+              {mentorTypeOptions.map((o) => (
                 <label
                   key={o.id}
                   className="flex cursor-pointer items-center gap-2 text-[12px] font-medium text-slate-700"

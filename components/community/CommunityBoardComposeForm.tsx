@@ -28,7 +28,9 @@ export function CommunityBoardComposeForm(props: Props) {
   }, [props.draftSaved]);
 
   const err =
-    props.errorCode === "title"
+    props.errorCode === "policy"
+      ? "외부 연락처·대필 요청은 정책상 제한됩니다."
+      : props.errorCode === "title"
       ? "제목을 입력해 주세요."
       : props.errorCode === "body"
         ? "본문은 최소 10자 이상입니다."

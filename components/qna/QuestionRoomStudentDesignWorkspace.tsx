@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { QuestionRoomNewNoteModal } from "@/components/qna/QuestionRoomNewNoteModal";
+import { ConnectionNotesPanel } from "@/components/qna/ConnectionNotesPanel";
+import { listCardClassName, type ListCardTone } from "@/components/design-system/ListCard";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -50,7 +51,13 @@ import { mentorSchoolLine, mentorSubjectChips } from "@/lib/mentor/mentorPublicP
 
 type Row = Record<string, unknown>;
 type SortKey = "newest" | "oldest";
-type NoteTab = "all" | "toMentor" | "fromMentor";
+
+// 질문 상태 tone(답변대기=amber / 진행중=blue / 답변완료=emerald) → 목록 카드 톤(좌측 액센트 바).
+const THREAD_TONE_TO_CARD_TONE: Record<"amber" | "blue" | "emerald", ListCardTone> = {
+  amber: "amber",
+  blue: "blue",
+  emerald: "green",
+};
 
 function messageBody(m: Row): string {
   return (
@@ -156,9 +163,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
-  const [noteTab, setNoteTab] = useState<NoteTab>("all");
   const [newQuestionOpen, setNewQuestionOpen] = useState(false);
-  const [newNoteOpen, setNewNoteOpen] = useState(false);
   const [weeklyUsage, setWeeklyUsage] = useState<WeeklyUsageSnapshot | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [usageByMentorId, setUsageByMentorId] = useState<Record<string, WeeklyUsageSnapshot>>(
@@ -234,50 +239,6 @@ export function QuestionRoomStudentDesignWorkspace(props: {
     : ("pending" as const);
 
   const subjectChipsRoom = roomSubjectChips(currentRoom ?? {}, props.mentorDisplays, 4);
-
-  const noteCards = useMemo(() => {
-    const cards: {
-      id: string;
-      tag: string;
-      body: string;
-      author: string;
-      date: string;
-      tone: string;
-      statusLabel: string;
-      statusDone: boolean;
-    }[] = [];
-    for (const n of props.notes.rows) {
-      const body =
-        (typeof n.body === "string" && n.body) ||
-        (typeof n.content === "string" && n.content) ||
-        (typeof n.note === "string" && n.note) ||
-        "";
-      if (!body.trim()) continue;
-      const authorId = messageAuthorId(n);
-      const isStudent = authorId === props.currentUserId;
-      const rawStatus = String(n.status ?? n.note_status ?? n.state ?? "").toLowerCase();
-      const noteDone = ["done", "completed", "closed", "finished", "resolved"].some((s) =>
-        rawStatus.includes(s)
-      );
-      cards.push({
-        id: String(n.id ?? `${authorId}-${body.slice(0, 8)}`),
-        tag: isStudent ? "멘토에게 요청" : "멘토가 요청",
-        body: body.trim(),
-        author: isStudent ? "나" : roomMentorLabel(currentRoom ?? {}, props.mentorDisplays),
-        date: formatMinutesAgo(n.updated_at ?? n.created_at),
-        tone: isStudent ? "toMentor" : "fromMentor",
-        statusLabel: noteDone ? "완료" : "진행중",
-        statusDone: noteDone,
-      });
-    }
-    return cards;
-  }, [props.notes.rows, props.currentUserId, currentRoom, props.mentorDisplays, mentorDisplay]);
-
-  const filteredNoteCards = noteCards.filter((c) => {
-    if (noteTab === "all") return true;
-    if (noteTab === "toMentor") return c.tone === "toMentor";
-    return c.tone === "fromMentor";
-  });
 
   if (!props.rooms.loading && props.rooms.rows.length === 0) {
     return (
@@ -638,7 +599,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     return (
                       <article
                         key={id}
-                        className="rounded-xl border border-slate-100 bg-white p-4 transition hover:border-slate-200 hover:shadow-sm"
+                        className={listCardClassName(THREAD_TONE_TO_CARD_TONE[status.tone], true)}
                       >
                         <Link
                           href={threadInRoomPath("/question-room", props.roomId, id)}
@@ -706,84 +667,33 @@ export function QuestionRoomStudentDesignWorkspace(props: {
             </>
             )}
           </div>
+          {/* 모바일: 중앙 하단 토글 */}
+          <div className="shrink-0 border-t border-slate-100 bg-white p-3 lg:hidden">
+            <ConnectionNotesPanel
+              room={currentRoom}
+              notes={props.notes.rows}
+              viewerRole="student"
+              currentUserId={props.currentUserId}
+              roomId={props.roomId}
+              threadId={props.threadId}
+              threadCount={props.threads.rows.length}
+              mentorName={roomMentorLabel(currentRoom ?? {}, props.mentorDisplays)}
+              variant="mobile"
+            />
+          </div>
         </main>
 
-        {/* 우측 패널: 연결 노트 (2·3단계 상주) */}
-        <aside className="flex w-[320px] shrink-0 flex-col bg-[#f8fafc]">
-          <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-2.5">
-            <p className="text-[13px] font-black text-slate-900">연결 노트</p>
-          </div>
-
-            <div className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-[12px] font-black text-slate-900">방 전체 연결 노트</p>
-                <button
-                  type="button"
-                  className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] font-black text-slate-700 hover:bg-slate-50"
-                  onClick={() => setNewNoteOpen(true)}
-                >
-                  새 노트 작성
-                </button>
-              </div>
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {(
-                  [
-                    ["all", "전체 노트"],
-                    ["toMentor", "멘토에게 요청"],
-                    ["fromMentor", "멘토가 요청"],
-                  ] as const
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setNoteTab(key)}
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-black transition ${
-                      noteTab === key ? "bg-[#1A56DB] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {filteredNoteCards.length === 0 ? (
-                <p className="py-6 text-center text-[11px] font-bold text-slate-400">아직 연결 노트가 없어요</p>
-              ) : (
-                <ul className="space-y-2">
-                  {filteredNoteCards.map((card) => (
-                    <li
-                      key={card.id}
-                      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
-                    >
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[9px] font-black ${
-                          card.tone === "toMentor"
-                            ? "bg-blue-50 text-blue-800 border border-blue-100"
-                            : "bg-violet-50 text-violet-800 border border-violet-100"
-                        }`}
-                      >
-                        {card.tag}
-                      </span>
-                      <p className="mt-2 line-clamp-2 text-[11px] font-medium leading-relaxed text-slate-700">{card.body}</p>
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <p className="text-[9px] font-bold text-slate-400">
-                          {card.author} · {card.date}
-                        </p>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black ${
-                            card.statusDone
-                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                              : "bg-amber-50 text-amber-800 border border-amber-200"
-                          }`}
-                        >
-                          {card.statusLabel}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-        </aside>
+        {/* 우측 패널: 연결 노트 (공용 컴포넌트 — 멘토/학생 통합, 데스크톱) */}
+        <ConnectionNotesPanel
+          room={currentRoom}
+          notes={props.notes.rows}
+          viewerRole="student"
+          currentUserId={props.currentUserId}
+          roomId={props.roomId}
+          threadId={props.threadId}
+          threadCount={props.threads.rows.length}
+          mentorName={roomMentorLabel(currentRoom ?? {}, props.mentorDisplays)}
+        />
       </div>
 
       <QuestionRoomNewQuestionModal
@@ -794,14 +704,6 @@ export function QuestionRoomStudentDesignWorkspace(props: {
         usage={weeklyUsage}
         usageLoading={usageLoading}
         subjectOptions={props.subjectOptions ?? subjectChipsRoom}
-      />
-
-      <QuestionRoomNewNoteModal
-        open={newNoteOpen}
-        onClose={() => setNewNoteOpen(false)}
-        roomId={props.roomId}
-        threadId={props.threadId}
-        defaultBody={props.draftNoteBody}
       />
 
       <style jsx global>{`

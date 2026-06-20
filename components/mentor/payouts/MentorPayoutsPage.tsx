@@ -1,6 +1,7 @@
 import type { MentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsTypes";
 import { MentorPayoutsHeroCard } from "./MentorPayoutsHeroCard";
 import { MentorPayoutsMain } from "./MentorPayoutsMain";
+import { MentorPayoutAccountPanel } from "./MentorPayoutAccountPanel";
 import { MentorPayoutsRightPanel } from "./MentorPayoutsRightPanel";
 
 export function MentorPayoutsPage(props: { data: MentorPayoutsPageData }) {
@@ -16,6 +17,11 @@ export function MentorPayoutsPage(props: { data: MentorPayoutsPageData }) {
             summary={props.data.summary}
             schedule={props.data.schedule}
             lifetimePaid={props.data.kpis.lifetimePaid}
+          />
+          <MentorPayoutAccountPanel
+            bankName={props.data.summary.bankName}
+            accountNumber={props.data.summary.bankAccountNumber}
+            editable={props.data.summary.bankEditable}
           />
           <MentorPayoutsMain data={props.data} hideHero />
         </div>

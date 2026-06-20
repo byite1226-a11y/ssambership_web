@@ -15,13 +15,19 @@ export type BuildSignupOptions = {
   teachingSubjectsCsv: string;
   highSchoolName: string;
   introLine: string;
+  isMinor?: boolean;
+  guardianConsent?: boolean;
+  guardianConsentVersion?: string;
+  guardianRef?: string;
+  ageGateCheckedAt?: string;
+  guardianVerificationMethod?: string;
 };
 
 /**
  * supabase.auth.signUp({ options: { data }}) 및 DB 트리거 handle_new_auth_user()와 키를 맞출 것
  */
 export function buildSignupUserMetadata(o: BuildSignupOptions): Record<string, string> {
-  return {
+  const meta: Record<string, string> = {
     app_role: o.role,
     full_name: o.fullName.trim(),
     nickname: o.nickname.trim(),
@@ -36,5 +42,13 @@ export function buildSignupUserMetadata(o: BuildSignupOptions): Record<string, s
     teaching_subjects_csv: o.teachingSubjectsCsv.trim(),
     high_school_name: o.highSchoolName.trim(),
     intro_line: o.introLine.trim(),
+    is_minor: o.isMinor ? "true" : "false",
+    guardian_consent: o.guardianConsent ? "true" : "false",
+    consent_version: (o.guardianConsentVersion ?? "").trim(),
+    guardian_ref: (o.guardianRef ?? "").trim(),
+    age_gate_checked_at: (o.ageGateCheckedAt ?? "").trim(),
+    guardian_verification_method: (o.guardianVerificationMethod ?? "").trim(),
   };
+
+  return meta;
 }

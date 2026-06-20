@@ -13,9 +13,14 @@ import {
   pickOrderStudentId,
 } from "@/lib/customRequest/orderRoomMutations";
 import type { AppRole } from "@/lib/types/user";
-import { MessageSquare, User } from "lucide-react";
+import { Download, FileText, Image as ImageIcon, MessageSquare, Paperclip, User } from "lucide-react";
 
 type Row = Record<string, unknown>;
+type MessageAttachmentView = OrderDetailPageData["messageAttachmentsByMessageId"][string][number];
+
+const ORDER_MESSAGE_ATTACHMENT_ACCEPT =
+  "application/pdf,image/png,image/jpeg,image/webp,application/zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pdf,.png,.jpg,.jpeg,.webp,.zip,.docx,.pptx";
+
 type Props = {
   detail: OrderDetailPageData;
   orderId: string;
@@ -30,6 +35,79 @@ type Props = {
 
 function messageText(m: Row) {
   return pickDisplayField(m, ["body"]);
+}
+
+function attachmentsForMessage(detail: OrderDetailPageData, message: Row): MessageAttachmentView[] {
+  const id = message.id == null ? "" : String(message.id);
+  if (!id) return [];
+  return detail.messageAttachmentsByMessageId[id] ?? [];
+}
+
+function OrderMessageAttachmentPreviewList({
+  attachments,
+  isOwnMessage,
+}: {
+  attachments: MessageAttachmentView[];
+  isOwnMessage: boolean;
+}) {
+  if (attachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 space-y-2">
+      {attachments.map((attachment) => {
+        const canOpen = Boolean(attachment.signedUrl);
+        const cardClass = isOwnMessage
+          ? "border-white/70 bg-white text-slate-900 hover:border-blue-200"
+          : "border-ds-border-subtle bg-white text-slate-900 hover:border-blue-200";
+
+        return (
+          <a
+            key={attachment.id}
+            href={attachment.signedUrl ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={!canOpen}
+            className={`block overflow-hidden rounded-xl border ${cardClass} transition ${
+              canOpen ? "cursor-pointer" : "cursor-not-allowed opacity-70"
+            }`}
+          >
+            {attachment.isImage && attachment.signedUrl ? (
+              <div className="bg-slate-50">
+                <img
+                  src={attachment.signedUrl}
+                  alt={attachment.fileName}
+                  className="max-h-56 w-full object-contain"
+                  loading="lazy"
+                />
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between gap-3 p-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                  {attachment.isImage ? (
+                    <ImageIcon className="h-4 w-4" strokeWidth={2.2} />
+                  ) : (
+                    <FileText className="h-4 w-4" strokeWidth={2.2} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-[11px] font-bold">{attachment.fileName}</p>
+                  <p className="text-[10px] font-semibold text-slate-500">
+                    {[attachment.isPdf ? "PDF" : attachment.mimeType, attachment.displaySize]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+              </div>
+              <Download className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2.2} />
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  );
 }
 
 function formatMessageGroupDate(dateStr: unknown) {
@@ -127,6 +205,7 @@ export function OrderProgressSection(props: Props) {
             const senderName = role === "학생" ? "의뢰 학생" : `${detail.header.mentorName || "배정"} 멘토`;
             const dateStr = formatMessageGroupDate(m.created_at);
             const timeStr = formatMessageTime(m.created_at);
+            const attachments = attachmentsForMessage(detail, m);
 
             const showDateHeader = dateStr !== lastDateStr;
             if (showDateHeader) {
@@ -163,6 +242,7 @@ export function OrderProgressSection(props: Props) {
                         }`}
                       >
                         <p className="whitespace-pre-wrap">{messageText(m)}</p>
+                        <OrderMessageAttachmentPreviewList attachments={attachments} isOwnMessage={isMe} />
                       </div>
                       {!isMe && <span className="text-[9px] font-bold text-slate-400 tabular-nums">{timeStr}</span>}
                     </div>
@@ -189,9 +269,20 @@ export function OrderProgressSection(props: Props) {
               placeholder="메시지를 입력해 주세요..."
               className="w-full rounded-xl border border-slate-200 bg-white pl-4 pr-20 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-inner resize-none leading-normal"
               maxLength={4000}
-              required
             />
             <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
+              <label
+                className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-blue-600"
+                title="파일 첨부"
+              >
+                <Paperclip className="h-4 w-4" strokeWidth={2.2} />
+                <input
+                  type="file"
+                  name="attachment"
+                  accept={ORDER_MESSAGE_ATTACHMENT_ACCEPT}
+                  className="sr-only"
+                />
+              </label>
               <button
                 type="submit"
                 className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-black text-white hover:bg-blue-700 transition"
@@ -334,6 +425,7 @@ function OrderProgressSectionMentor({
             const bodyLine = messageText(m);
             const hasText = bodyLine !== "—" && bodyLine.trim().length > 0;
             const attachment = pickAttachmentFromMessage(m);
+            const attachments = attachmentsForMessage(detail, m);
 
             return (
               <div key={String(m.id || idx)} className={showDateHeader ? "pt-2 first:pt-0" : ""}>
@@ -351,6 +443,7 @@ function OrderProgressSectionMentor({
                         {hasText ? (
                           <p className="whitespace-pre-wrap break-words">{bodyLine}</p>
                         ) : null}
+                        <OrderMessageAttachmentPreviewList attachments={attachments} isOwnMessage={isMe} />
                         {attachment ? (
                           <MessageAttachmentChip href={attachment.href} label={attachment.label} />
                         ) : null}
@@ -372,6 +465,7 @@ function OrderProgressSectionMentor({
                           {hasText ? (
                             <p className="whitespace-pre-wrap break-words">{bodyLine}</p>
                           ) : null}
+                          <OrderMessageAttachmentPreviewList attachments={attachments} isOwnMessage={isMe} />
                           {attachment ? (
                             <MessageAttachmentChip href={attachment.href} label={attachment.label} />
                           ) : null}
@@ -399,20 +493,21 @@ function OrderProgressSectionMentor({
                 placeholder="메시지를 입력하세요..."
                 className="flex-1 border-none bg-transparent py-1.5 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-500"
                 maxLength={4000}
-                required
                 autoComplete="off"
               />
               <div className="flex shrink-0 items-center gap-3">
-                <button
-                  type="button"
-                  disabled
-                  className="cursor-not-allowed text-slate-300"
-                  title="파일 첨부는 준비 중입니다"
+                <label
+                  className="cursor-pointer text-slate-500 transition hover:text-blue-600"
+                  title="파일 첨부"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                </button>
+                  <Paperclip className="h-5 w-5" strokeWidth={2.2} />
+                  <input
+                    type="file"
+                    name="attachment"
+                    accept={ORDER_MESSAGE_ATTACHMENT_ACCEPT}
+                    className="sr-only"
+                  />
+                </label>
                 <button
                   type="submit"
                   className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-5 text-xs font-bold text-white transition-colors hover:bg-blue-700"

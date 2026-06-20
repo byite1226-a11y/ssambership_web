@@ -3,7 +3,7 @@ import { resolveShellUserDisplayName, shellUserHeaderDisplay } from "@/lib/shell
 
 const BADGE_CLASS: Record<AppRole, string> = {
   student: "border-blue-100 bg-blue-50 text-blue-600",
-  mentor: "border-violet-100 bg-violet-50 text-violet-700",
+  mentor: "border-emerald-100 bg-emerald-50 text-emerald-700",
   admin: "border-violet-200 bg-violet-50 text-violet-800",
 };
 

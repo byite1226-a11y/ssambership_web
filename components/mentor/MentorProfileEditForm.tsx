@@ -14,7 +14,7 @@ import {
   mentorPlanCashKrw,
   mentorSubscriptionPriceRule,
 } from "@/lib/subscribe/mentorPlanPricing";
-import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus } from "lucide-react";
+import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus, User, FileText, BookOpen, Coins, ShieldCheck } from "lucide-react";
 import { MentorSubjectCheckboxes } from "@/components/subjects/MentorSubjectCheckboxes";
 import { subjectCodesFromText } from "@/lib/subjects/subjectCatalog";
 
@@ -48,10 +48,15 @@ function priceInputName(tier: string): string {
   return `subscriptionPriceKrw_${tier}`;
 }
 
-function SectionHeader(props: { number: string; title: string; required?: boolean; optional?: boolean }) {
+function SectionHeader(props: { number: string; title: string; required?: boolean; optional?: boolean; icon?: ReactNode }) {
   return (
     <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
+        {props.icon ? (
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#EBF1FE] text-[#1A56DB]">
+            {props.icon}
+          </span>
+        ) : null}
         <h2 className="text-lg font-black text-slate-900">
           <span className="mr-1.5">{props.number}.</span>
           {props.title}
@@ -173,8 +178,8 @@ export function MentorProfileEditForm(props: {
           )}
 
           {/* 1. 기본 정보 */}
-          <section className="space-y-6">
-            <SectionHeader number="1" title="기본 정보" required />
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+            <SectionHeader number="1" title="기본 정보" required icon={<User className="h-4 w-4" aria-hidden />} />
             
             <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
               <div className="flex flex-col items-center gap-3">
@@ -279,8 +284,8 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 2. 소개 */}
-          <section className="space-y-6">
-            <SectionHeader number="2" title="소개" required />
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+            <SectionHeader number="2" title="소개" required icon={<FileText className="h-4 w-4" aria-hidden />} />
             
             <div className="space-y-5">
               <div>
@@ -319,8 +324,8 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 3. 전공 및 과목 */}
-          <section className="space-y-6">
-            <SectionHeader number="3" title="전공 및 과목" required />
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+            <SectionHeader number="3" title="전공 및 과목" required icon={<BookOpen className="h-4 w-4" aria-hidden />} />
             <div>
               <label className={labelClass}>담당 과목</label>
               <p className="mt-1 text-xs font-medium text-slate-500">
@@ -336,8 +341,8 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 4. 요금제 */}
-          <section className="space-y-4">
-            <SectionHeader number="4" title="요금제 설정" />
+          <section className="space-y-4 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+            <SectionHeader number="4" title="요금제 설정" icon={<Coins className="h-4 w-4" aria-hidden />} />
             <p className="text-xs font-medium text-slate-500">
               구독 요금은 멘토가 직접 설정할 수 있어요. 권장 범위를 벗어나면 경고만 표시되고 저장은 가능합니다.
             </p>
@@ -376,7 +381,7 @@ export function MentorProfileEditForm(props: {
                         type="number"
                         inputMode="numeric"
                         min={1}
-                        step={100}
+                        step={1}
                         className={inputClass}
                         value={rawValue}
                         onChange={(e) => handlePlanPriceChange(plan.tier, e.target.value)}
@@ -426,7 +431,7 @@ export function MentorProfileEditForm(props: {
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  step={100}
+                  step={1}
                   placeholder="예: 5000"
                   className={inputClass}
                   value={individualQuestionPrice}
@@ -438,8 +443,8 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 5. 인증 서류 */}
-          <section className="space-y-4">
-            <SectionHeader number="5" title="인증 서류" />
+          <section className="space-y-4 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+            <SectionHeader number="5" title="인증 서류" icon={<ShieldCheck className="h-4 w-4" aria-hidden />} />
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
               <p className="text-sm font-bold text-slate-800">
                 학생증 업로드 상태:{" "}
@@ -466,8 +471,8 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 6. 대표 콘텐츠 설정 */}
-          <section className="space-y-6">
-            <SectionHeader number="6" title="대표 콘텐츠 설정" optional />
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+            <SectionHeader number="6" title="대표 콘텐츠 설정" optional icon={<LayoutGrid className="h-4 w-4" aria-hidden />} />
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <button 
@@ -554,7 +559,7 @@ export function MentorProfileEditForm(props: {
 
         {/* Right Column: Preview */}
         <div className="lg:col-span-5">
-          <div className="sticky top-10 space-y-6">
+          <div className="space-y-6">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-black text-slate-900">학생에게 보여지는 프로필 미리보기</h2>
               <HelpCircle className="h-4 w-4 text-slate-300" />

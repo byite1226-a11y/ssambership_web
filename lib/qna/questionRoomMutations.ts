@@ -3,6 +3,7 @@ import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 import { CONNECTION_NOTES_ROOM_FK_CANDIDATES, QUESTION_THREADS_ROOM_FK_CANDIDATES } from "@/lib/qna/questionThreadRoomRef";
 import { normalizeQuestionSubjectCode, questionSubjectLabelFromCode } from "@/lib/qna/questionSubjects";
+import { sanitizeTrustSafetyText } from "@/lib/safety/trustSafetyText";
 
 type QnaRole = "student" | "mentor";
 
@@ -202,9 +203,12 @@ export async function createQuestionMessage(params: {
   content: string;
 }): Promise<{ ok: true; row: Record<string, unknown> | null } | MutationFail> {
   const { supabase, role, userId, roomId, threadId, content } = params;
+  const trimmedContent = content.trim();
   if (!threadId.trim()) return { ok: false, error: "thread를 먼저 선택하세요." };
-  if (!content.trim()) return { ok: false, error: "메시지 내용을 입력하세요." };
+  if (!trimmedContent) return { ok: false, error: "메시지 내용을 입력하세요." };
 
+  const safety = sanitizeTrustSafetyText(trimmedContent);
+  if (!safety.ok) return { ok: false, error: safety.error };
   const scopeError = await ensureRoomScope(supabase, role, userId, roomId);
   if (scopeError) return scopeError;
 
@@ -217,7 +221,7 @@ export async function createQuestionMessage(params: {
   const created = await insertWithCandidates<Record<string, unknown>>(
     supabase,
     "question_messages",
-    buildMessagePayloads(threadColumn, threadId, content.trim(), role, userId)
+    buildMessagePayloads(threadColumn, threadId, safety.text, role, userId)
   );
   if (!created.ok) {
     console.error("[createQuestionMessage] insert failed", {

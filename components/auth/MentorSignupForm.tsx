@@ -243,7 +243,7 @@ export function MentorSignupForm({ value, onChange, disabled, fieldErrors }: Men
             <input
               id="m-student-id"
               type="file"
-              accept="image/*,.pdf"
+              accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
               className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
               onChange={(e) => {
                 const f = e.target.files?.[0] ?? null;

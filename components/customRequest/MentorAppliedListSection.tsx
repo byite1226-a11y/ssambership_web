@@ -72,7 +72,7 @@ export function MentorAppliedListSection(props: { items: MentorApplicationWithPo
           <li key={String(a.id)} className="min-h-0">
             <Link
               href={it.href}
-              className="flex h-full items-start justify-between gap-3 rounded-2xl border border-ds-border-subtle border-l-[3px] border-l-indigo-600 bg-white px-5 py-4 transition hover:bg-slate-50/80"
+              className="flex h-full items-start justify-between gap-3 rounded-2xl border border-ds-border-subtle border-l-[3px] border-l-indigo-600 bg-white px-5 py-4 transition-[box-shadow,border-color] duration-150 hover:border-indigo-400 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-slate-900">{titleText}</p>

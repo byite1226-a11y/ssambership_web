@@ -399,7 +399,7 @@ export function MentorCustomRequestDashboardView(props: DashboardViewProps) {
                       <li key={id}>
                         <Link
                           href={mentorCustomOrderWorkroomHref(id)}
-                          className="flex items-center justify-between gap-2 px-4 py-3 transition hover:bg-slate-50/80"
+                          className="flex items-center justify-between gap-2 px-4 py-3 transition-[box-shadow] duration-150 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)] hover:ring-1 hover:ring-inset hover:ring-blue-300"
                         >
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-bold text-slate-900">
