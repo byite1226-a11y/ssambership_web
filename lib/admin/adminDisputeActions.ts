@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 import { firstReadableAdminTable } from "@/lib/admin/adminQueries";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { recordCustomOrderDisputeSplitRpc } from "@/lib/customRequest/customOrderDisputeSplitService";
+import { insertAdminDisputeNote } from "@/lib/admin/adminCaseNotes";
+import { logAdminAction } from "@/lib/admin/adminActionLog";
 
 const LIST_PATH = "/admin/disputes";
 
@@ -181,15 +183,15 @@ export async function dismissDisputeAction(formData: FormData) {
 }
 
 /**
- * 운영 메모 저장(admin_note 등). `runDisputeUpdate(..., statusIn: null)`으로 접수·검토·종결 등
- * 모든 분쟁 상태에서 저장 가능(운영 정책: 종결 후에도 내부 메모 보강 허용).
- * 이 액션은 메모(및 updated_at 등)만 갱신하며 status·환불·정산·주문 상태는 변경하지 않는다.
+ * 운영 메모 저장. 새 관리자 전용 타임라인(admin_case_notes)에 append 한다.
+ * 이 액션은 메모만 추가하며 status·환불·정산·주문 상태는 변경하지 않는다.
  */
 export async function saveDisputeAdminNoteAction(formData: FormData) {
-  await requireRole("admin");
+  const { user } = await requireRole("admin");
   const disputeId = textFromForm(formData.get("disputeId"));
   const note = textFromForm(formData.get("adminNote"));
   if (!disputeId) redirect(`${LIST_PATH}?error=${encodeURIComponent(safeMsg("분쟁을 식별할 수 없습니다."))}`);
+  if (!note) redirect(errUrlDetail(disputeId, safeMsg("메모 내용을 입력해 주세요.")));
 
   let admin: SupabaseClient;
   try {
@@ -197,27 +199,28 @@ export async function saveDisputeAdminNoteAction(formData: FormData) {
   } catch {
     admin = await createClient();
   }
-  const table = await resolveDisputeTable(admin);
-  if (!table) redirect(errUrlDetail(disputeId, safeMsg("분쟁 테이블을 찾지 못했습니다.")));
 
-  const noteCol = await pickExistingColumn(admin, table, ["admin_note", "internal_note", "operator_note", "resolution_note"]);
-  if (!noteCol.column) {
-    redirect(errUrlDetail(disputeId, safeMsg("운영 메모를 저장할 수 있는 필드가 아직 없습니다. 스키마 담당자에게 문의해 주세요.")));
+  const result = await insertAdminDisputeNote(admin, { disputeId, note, adminId: user.id });
+  if (!result.ok) {
+    if (result.missing) {
+      redirect(errUrlDetail(disputeId, safeMsg("운영 메모 테이블이 아직 적용되지 않았습니다. 084 SQL 적용 후 다시 시도해 주세요.")));
+    }
+    redirect(errUrlDetail(disputeId, safeMsg(result.error)));
   }
 
-  const patch: Record<string, unknown> = { [noteCol.column]: note };
-  await appendTimestampColumns(admin, table, patch);
-
-  const { touched, errorMsg } = await runDisputeUpdate(table, disputeId, patch, null);
-  if (errorMsg) redirect(errUrlDetail(disputeId, safeMsg(errorMsg)));
-  if (!touched) redirect(errUrlDetail(disputeId, safeMsg("분쟁을 찾지 못했습니다.")));
+  await logAdminAction(admin, {
+    adminId: user.id,
+    actionType: "dispute_note_created",
+    targetType: "dispute",
+    targetId: disputeId,
+    detail: { note },
+  });
 
   revalidatePath(LIST_PATH);
   revalidatePath("/admin");
   revalidatePath(`/admin/disputes/${disputeId}`);
   redirect(okUrl(disputeId, "note"));
 }
-
 function parseNonNegativeIntWon(raw: string, label: string): number | { error: string } {
   const t = raw.trim();
   if (!t || !/^\d+$/.test(t)) {

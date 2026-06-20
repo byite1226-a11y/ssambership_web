@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { logAdminAction } from "@/lib/admin/adminActionLog";
 import { createClient } from "@/lib/supabase/server";
+import { tryInsertAdminDisputeNote } from "@/lib/admin/adminCaseNotes";
 
 const PATH = "/admin/disputes";
 
@@ -37,6 +38,8 @@ export async function applyDisputeSanctionAction(formData: FormData) {
 
   const { error } = await supabase.from("disputes").update(patch).eq("id", disputeId);
   if (error) redirect(errUrl("처리에 실패했습니다."));
+
+  await tryInsertAdminDisputeNote(supabase, { disputeId, note, adminId: user.id });
 
   await logAdminAction(supabase, {
     adminId: user.id,

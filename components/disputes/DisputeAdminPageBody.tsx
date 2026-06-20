@@ -5,12 +5,13 @@ import { DisputeKeyValueList } from "@/components/disputes/DisputeKeyValueList";
 import {
   dismissDisputeAction,
   resolveDisputeAction,
-  saveDisputeAdminNoteAction,
   setDisputeUnderReviewAction,
 } from "@/lib/admin/adminDisputeActions";
 import { adminDisputeStatusLabel } from "@/lib/admin/disputeLabels";
 import type { AdminDisputeEscrowSplitPanelState } from "@/lib/admin/adminDisputeEscrowSplitTypes";
 import { DisputeEscrowSplitPanel } from "@/components/disputes/DisputeEscrowSplitPanel";
+import { AdminCaseNotesPanel } from "@/components/admin/AdminCaseNotesPanel";
+import type { AdminCaseNotesResult } from "@/lib/admin/adminCaseNotes";
 
 type Row = Record<string, unknown>;
 
@@ -45,6 +46,7 @@ export function DisputeAdminPageBody(props: {
   bundle: DisputeBundle;
   actors: { reporter: DisputeActorSummary; student: DisputeActorSummary; mentor: DisputeActorSummary } | null;
   disputeId: string;
+  adminNotes: AdminCaseNotesResult;
   escrowSplitPanelState: AdminDisputeEscrowSplitPanelState;
   platformFeeRate: number;
 }) {
@@ -173,35 +175,16 @@ export function DisputeAdminPageBody(props: {
               <p className="text-xs text-slate-600">이미 종료된 분쟁이거나, 상태를 더 바꿀 수 없습니다.</p>
             ) : null}
           </div>
-          <form action={saveDisputeAdminNoteAction} className="mt-4 space-y-2 border-t border-slate-100 pt-4">
-            <input type="hidden" name="disputeId" value={props.disputeId} />
-            <label className="block text-sm font-extrabold text-slate-800" htmlFor="admin-dispute-note">
-              운영 메모
-            </label>
-            <p className="text-xs text-slate-500">
-              운영 메모 필드가 스키마에 있을 때만 저장됩니다. (미적용 시 안내 메시지가 표시됩니다.)
-            </p>
-            <p className="text-xs text-slate-600">
-              종결된 분쟁도 내부 메모는 보강할 수 있습니다. 메모 저장은 환불·정산·주문 상태를 변경하지 않습니다.
-            </p>
-            <textarea
-              id="admin-dispute-note"
-              name="adminNote"
-              defaultValue={noteDefault}
-              rows={4}
-              className="w-full rounded-xl border border-slate-200 bg-white p-2 text-sm text-slate-900"
-              placeholder="내부 공유용 메모를 입력하세요."
-            />
-            <button type="submit" className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-extrabold text-white hover:bg-slate-800">
-              메모 저장
-            </button>
-          </form>
         </section>
       ) : (
         <p className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
           상태·메모 조치는 표준 분쟁 기록에만 사용할 수 있습니다. 현재 건은 다른 형식으로 연결되어 있어 이 화면에서 조치할 수 없습니다.
         </p>
       )}
+
+      {isDisputesTable ? (
+        <AdminCaseNotesPanel targetKind="dispute" targetId={props.disputeId} notes={props.adminNotes} legacyNote={noteDefault} />
+      ) : null}
 
       <div className="grid gap-2 md:grid-cols-2">
         <DisputeKeyValueList title="분쟁 기록(핵심 필드)" row={d} maxKeys={16} />
