@@ -13,7 +13,7 @@ type StudentSignupFormProps = {
   value: StudentSignupFormValues;
   onChange: (v: StudentSignupFormValues) => void;
   disabled?: boolean;
-  fieldErrors?: Partial<Record<"nickname" | "gradeLevel", string>>;
+  fieldErrors?: Partial<Record<"nickname" | "gradeLevel" | "birthDate", string>>;
 };
 
 const input =
@@ -46,6 +46,10 @@ function SectionHeader({ n, id, children }: { n: string; id: string; children: R
 }
 
 export function StudentSignupForm({ value, onChange, disabled, fieldErrors }: StudentSignupFormProps) {
+  const today = new Date();
+  const todayInputMax = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate()
+  ).padStart(2, "0")}`;
   function h<K extends keyof StudentSignupFormValues>(k: K, ev: ChangeEvent<HTMLInputElement>) {
     onChange(patch(value, { [k]: ev.target.value } as Pick<StudentSignupFormValues, K>));
   }
@@ -77,6 +81,29 @@ export function StudentSignupForm({ value, onChange, disabled, fieldErrors }: St
               </p>
             ) : (
               <p className={hint}>멘토·학생에게 노출되는 이름이에요.</p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="st-birth-date" className={label}>
+              생년월일 <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="st-birth-date"
+              type="date"
+              className={input}
+              value={value.birthDate}
+              onChange={(e) => h("birthDate", e)}
+              disabled={disabled}
+              autoComplete="bday"
+              max={todayInputMax}
+              aria-invalid={!!fieldErrors?.birthDate}
+            />
+            {fieldErrors?.birthDate ? (
+              <p className="mt-1.5 text-sm text-red-600" role="alert">
+                {fieldErrors.birthDate}
+              </p>
+            ) : (
+              <p className={hint}>만 14세 미만 여부를 확인하기 위한 필수 정보입니다.</p>
             )}
           </div>
           <div>

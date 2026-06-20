@@ -14,6 +14,12 @@ import { buildSignupUserMetadata } from "@/lib/auth/buildSignupUserMetadata";
 import { syncAfterSignUpWithSession } from "@/lib/auth/syncAfterSignUpSession";
 import { safeInternalNextPath } from "@/lib/auth/getPostLoginPath";
 import { signupFieldErrorsByRole, type SignupFieldErrors } from "@/lib/auth/signupValidation";
+import { isUnderMinimumSignupAge } from "@/lib/auth/minorAgeGate";
+import {
+  MINOR_CONSENT_COPY,
+  MINOR_CONSENT_VERIFICATION_METHOD_PLACEHOLDER,
+  MINOR_CONSENT_VERSION,
+} from "@/lib/auth/minorConsentPlaceholders";
 import { mapSupabaseAuthError } from "@/lib/utils/mapSupabaseAuthError";
 import type { AppRole } from "@/lib/types/user";
 
@@ -182,6 +188,8 @@ function SignupPageContent() {
   const [termsAgree, setTermsAgree] = useState(false);
   const [privacyAgree, setPrivacyAgree] = useState(false);
   const [marketingAgree, setMarketingAgree] = useState(false);
+  const [guardianConsentAgree, setGuardianConsentAgree] = useState(false);
+  const [minorConsentPrompt, setMinorConsentPrompt] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<SignupFieldErrors>({});
@@ -203,6 +211,14 @@ function SignupPageContent() {
     target.focus({ preventScroll: true });
   }, [role, step]);
 
+  function handleStudentChange(next: StudentSignupFormValues) {
+    setStudent(next);
+    if (!isUnderMinimumSignupAge(next.birthDate)) {
+      setGuardianConsentAgree(false);
+      setMinorConsentPrompt(false);
+    }
+  }
+
   function goNext() {
     setError(null);
     setFieldErrors({});
@@ -218,6 +234,8 @@ function SignupPageContent() {
   function goBackToRoleSelect() {
     setError(null);
     setFieldErrors({});
+    setGuardianConsentAgree(false);
+    setMinorConsentPrompt(false);
     setStep(1);
   }
 
@@ -256,9 +274,18 @@ function SignupPageContent() {
       return;
     }
 
+    const isMinorSignup = currentRole === "student" && isUnderMinimumSignupAge(student.birthDate);
+    if (isMinorSignup && !guardianConsentAgree) {
+      setMinorConsentPrompt(true);
+      setFieldErrors({ guardianConsent: MINOR_CONSENT_COPY.requiredError });
+      setError(MINOR_CONSENT_COPY.requiredError);
+      return;
+    }
+
     const email = currentRole === "student" ? studentEmail : mentorEmail;
     const password = currentRole === "student" ? studentPassword : mentorPassword;
     const nextRaw = searchParams.get("next");
+    const ageGateCheckedAt = currentRole === "student" && student.birthDate ? new Date().toISOString() : "";
 
     const displayName = currentRole === "student" ? student.nickname : mentor.nickname;
 
@@ -279,6 +306,12 @@ function SignupPageContent() {
       teachingSubjectsCsv: currentRole === "mentor" ? mentor.teachingSubjectsCsv : "",
       highSchoolName: currentRole === "mentor" ? mentor.highSchoolName : "",
       introLine: currentRole === "mentor" ? mentor.introLine : "",
+      isMinor: isMinorSignup,
+      guardianConsent: isMinorSignup && guardianConsentAgree,
+      guardianConsentVersion: MINOR_CONSENT_VERSION,
+      guardianRef: "",
+      ageGateCheckedAt,
+      guardianVerificationMethod: MINOR_CONSENT_VERIFICATION_METHOD_PLACEHOLDER,
     });
 
     let newUser: { id: string } | null = null;
@@ -385,6 +418,8 @@ function SignupPageContent() {
 
     setLoading(false);
   }
+
+  const showMinorConsent = role === "student" && (minorConsentPrompt || isUnderMinimumSignupAge(student.birthDate));
 
   return (
     <AuthPageLayout
@@ -598,11 +633,12 @@ function SignupPageContent() {
                   <div className="mt-7 border-t border-slate-100 pt-6 sm:mt-8 sm:pt-7">
                     <StudentSignupForm
                       value={student}
-                      onChange={setStudent}
+                      onChange={handleStudentChange}
                       disabled={loading}
                       fieldErrors={{
                         nickname: fieldErrors.nickname,
                         gradeLevel: fieldErrors.gradeLevel,
+                        birthDate: fieldErrors.birthDate,
                       }}
                     />
                   </div>
@@ -621,6 +657,12 @@ function SignupPageContent() {
                       privacyUrl
                     )}
                     <FieldError message={fieldErrors.terms} />
+                    {showMinorConsent ? (
+                      <div className="mt-4">
+                        {minorGuardianConsentBlock(guardianConsentAgree, setGuardianConsentAgree, loading)}
+                        <FieldError message={fieldErrors.guardianConsent} />
+                      </div>
+                    ) : null}
                   </div>
 
                   <button
@@ -803,6 +845,40 @@ export default function SignupPage() {
     >
       <SignupPageContent />
     </Suspense>
+  );
+}
+
+function minorGuardianConsentBlock(
+  checked: boolean,
+  setChecked: (b: boolean) => void,
+  loading: boolean
+) {
+  return (
+    <section className="rounded-2xl border border-[#1A56DB]/25 bg-blue-50/40 p-5 sm:p-6" aria-label="보호자 동의">
+      <header className="border-b border-blue-100 pb-4">
+        <p className="text-xs font-extrabold tracking-wide text-[#1A56DB]">04 · 보호자 동의</p>
+        <h2 className="mt-1.5 text-lg font-extrabold text-slate-900 sm:text-xl">{MINOR_CONSENT_COPY.title}</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{MINOR_CONSENT_COPY.description}</p>
+      </header>
+      <div className="mt-4 rounded-xl border border-dashed border-blue-200 bg-white/70 p-4">
+        <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">{MINOR_CONSENT_COPY.legalSlotLabel}</p>
+        <ul className="mt-2 space-y-1.5 text-sm text-slate-600">
+          {MINOR_CONSENT_COPY.legalSlots.map((slot) => (
+            <li key={slot}>- {slot}</li>
+          ))}
+        </ul>
+      </div>
+      <label className="mt-4 flex items-start gap-3 text-slate-800 sm:gap-3.5">
+        <input
+          type="checkbox"
+          className="mt-1.5 h-5 w-5 shrink-0 rounded border-slate-300 text-[#1A56DB] focus:ring-[#1A56DB]"
+          checked={checked}
+          onChange={(e) => setChecked(e.target.checked)}
+          disabled={loading}
+        />
+        <span className="text-sm font-semibold leading-relaxed sm:text-base">{MINOR_CONSENT_COPY.checkboxLabel}</span>
+      </label>
+    </section>
   );
 }
 

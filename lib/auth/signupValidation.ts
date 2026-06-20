@@ -1,6 +1,7 @@
 import type { StudentSignupFormValues } from "@/components/auth/StudentSignupForm";
 import type { MentorSignupFormValues } from "@/components/auth/MentorSignupForm";
 import type { AppRole } from "@/lib/types/user";
+import { isFutureBirthDate, parseBirthDateParts } from "@/lib/auth/minorAgeGate";
 
 export type StudentSignupFields = {
   email: string;
@@ -36,6 +37,13 @@ export function studentSignupFieldErrors(f: StudentSignupFields): SignupFieldErr
   }
   if (f.password !== f.passwordConfirm) {
     errors.passwordConfirm = "비밀번호가 서로 일치하지 않습니다.";
+  }
+  if (!f.student.birthDate.trim()) {
+    errors.birthDate = "생년월일을 입력해 주세요.";
+  } else if (!parseBirthDateParts(f.student.birthDate)) {
+    errors.birthDate = "생년월일 형식을 확인해 주세요.";
+  } else if (isFutureBirthDate(f.student.birthDate)) {
+    errors.birthDate = "생년월일은 오늘 이전이어야 합니다.";
   }
   if (!f.student.nickname.trim()) {
     errors.nickname = "닉네임을 입력해 주세요.";
