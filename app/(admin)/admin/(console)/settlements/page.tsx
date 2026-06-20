@@ -56,6 +56,7 @@ function SettlementTable({ rows }: { rows: AdminSettlementListItem[] }) {
             <th className="px-5 py-3 text-xs font-bold text-slate-600">정산 ID</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">주문 ID</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">멘토</th>
+            <th className="px-5 py-3 text-xs font-bold text-slate-600">정산 계좌</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">학생</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">총 결제금액</th>
             <th className="px-5 py-3 text-xs font-bold text-slate-600">플랫폼 수수료</th>
@@ -79,6 +80,9 @@ function SettlementTable({ rows }: { rows: AdminSettlementListItem[] }) {
               </td>
               <td className="max-w-[100px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={r.mentorId}>
                 {shortUuid(r.mentorId)}
+              </td>
+              <td className="max-w-[150px] truncate px-5 py-4 text-xs font-bold text-slate-700" title={r.payoutAccountDisplay}>
+                {r.payoutAccountDisplay}
               </td>
               <td className="max-w-[100px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={r.studentId ?? ""}>
                 {r.studentId ? shortUuid(r.studentId) : "—"}

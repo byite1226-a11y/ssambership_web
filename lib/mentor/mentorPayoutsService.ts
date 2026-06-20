@@ -97,15 +97,11 @@ function orderGrossWon(order: Row | null): number {
 }
 
 function maskBankDisplay(bank: string | null, account: string | null): string {
-  if (!bank && !account) return DEFAULT_MASKED_BANK_DISPLAY;
-  const b = (bank ?? "은행").trim();
   const a = (account ?? "").replace(/\D/g, "");
-  if (a.length >= 4) {
-    const head = a.slice(0, 4);
-    const tail = a.slice(-3);
-    return `${b} ${head}-**-****${tail}`;
-  }
-  return `${b} ****`;
+  if (!a) return DEFAULT_MASKED_BANK_DISPLAY;
+  const b = (bank ?? "은행").trim() || "은행";
+  const tail = a.length >= 4 ? a.slice(-4) : a;
+  return `${b} ****${tail}`;
 }
 
 async function readClient(supabase: SupabaseClient): Promise<SupabaseClient> {
@@ -315,6 +311,8 @@ export async function loadMentorPayoutSummary(supabase: SupabaseClient, mentorId
     lifetimeCustomRequest: sumNetByType(all, "custom_request"),
     bankDisplay: bank.display,
     bankEditable: bank.editable,
+    bankName: bank.bankName,
+    bankAccountNumber: bank.accountRaw,
   };
 }
 

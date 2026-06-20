@@ -23,4 +23,4 @@ export function formatCashKrw(n: number): string {
 
 export { formatCashKrwDisplay as formatCashAmount };
 
-export const DEFAULT_MASKED_BANK_DISPLAY = "카카오뱅크 3333-**-****789";
+export const DEFAULT_MASKED_BANK_DISPLAY = "정산 계좌 미등록";

@@ -1,4 +1,4 @@
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+﻿import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
 import type { AdminReviewModerationPlan } from "@/lib/admin/reviewLabels";
@@ -757,6 +757,7 @@ export type AdminSettlementListItem = {
   id: string;
   customRequestOrderId: string;
   mentorId: string;
+  payoutAccountDisplay: string;
   studentId: string | null;
   grossAmount: number;
   platformFeeAmount: number;
@@ -814,6 +815,7 @@ function parseCosItem(r: Row): AdminSettlementListItem | null {
     id,
     customRequestOrderId: String(r.custom_request_order_id ?? ""),
     mentorId: String(r.mentor_id ?? ""),
+    payoutAccountDisplay: "미등록",
     studentId: r.student_id != null && String(r.student_id).length ? String(r.student_id) : null,
     grossAmount: toMoneyInt(r.gross_amount),
     platformFeeAmount: toMoneyInt(r.platform_fee_amount),
@@ -828,6 +830,45 @@ function parseCosItem(r: Row): AdminSettlementListItem | null {
   };
 }
 
+
+function maskAdminPayoutAccount(bank: unknown, account: unknown): string {
+  const digits = String(account ?? "").replace(/\D/g, "");
+  if (!digits) return "미등록";
+  const bankName = String(bank ?? "은행").trim() || "은행";
+  const tail = digits.length >= 4 ? digits.slice(-4) : digits;
+  return `${bankName} ****${tail}`;
+}
+
+async function fetchMentorPayoutAccountDisplayMap(
+  supabase: SupabaseClient,
+  mentorIds: string[]
+): Promise<Map<string, string>> {
+  const unique = [...new Set(mentorIds.map((id) => id.trim()).filter(Boolean))];
+  const out = new Map<string, string>();
+  for (const id of unique) out.set(id, "미등록");
+  if (!unique.length) return out;
+
+  const db = mentorProfilesAdminReadClient(supabase);
+  const bankCol = await pickExistingColumn(db, "mentor_profiles", ["payout_bank_name", "bank_name"]);
+  const acctCol = await pickExistingColumn(db, "mentor_profiles", [
+    "payout_account_number",
+    "bank_account_number",
+    "account_number",
+  ]);
+  if (!acctCol.column) return out;
+
+  const cols = ["user_id", bankCol.column, acctCol.column].filter(Boolean).join(", ");
+  for (const part of chunkIds(unique, 80)) {
+    const { data, error } = await db.from("mentor_profiles").select(cols).in("user_id", part);
+    if (error || !data) continue;
+    for (const row of data as unknown as Row[]) {
+      const mentorId = String(row.user_id ?? "");
+      if (!mentorId) continue;
+      out.set(mentorId, maskAdminPayoutAccount(bankCol.column ? row[bankCol.column] : null, row[acctCol.column]));
+    }
+  }
+  return out;
+}
 function chunkIds(ids: string[], size: number): string[][] {
   const out: string[][] = [];
   for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
@@ -845,7 +886,7 @@ async function fetchCustomRequestOrdersMap(supabase: SupabaseClient, orderIds: s
       .select("id, payment_status, status, state, order_status, agreed_price, proposed_price, price, amount, completed_at")
       .in("id", part);
     if (error || !data) continue;
-    for (const row of data as Row[]) {
+    for (const row of data as unknown as Row[]) {
       const oid = String(row.id ?? "");
       if (oid) map.set(oid, row);
     }
@@ -906,11 +947,18 @@ export async function loadAdminSettlementsList(
     if (it) items.push(it);
   }
 
-  const orderMap = await fetchCustomRequestOrdersMap(
-    supabase,
-    items.map((i) => i.customRequestOrderId)
-  );
+  const [orderMap, payoutAccountMap] = await Promise.all([
+    fetchCustomRequestOrdersMap(
+      supabase,
+      items.map((i) => i.customRequestOrderId)
+    ),
+    fetchMentorPayoutAccountDisplayMap(
+      supabase,
+      items.map((i) => i.mentorId)
+    ),
+  ]);
   for (const it of items) {
+    it.payoutAccountDisplay = payoutAccountMap.get(it.mentorId) ?? "미등록";
     const o = orderMap.get(it.customRequestOrderId);
     if (o) it.orderMetaLine = buildOrderMetaLine(o);
   }

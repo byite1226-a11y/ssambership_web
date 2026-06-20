@@ -30,6 +30,8 @@ export type MentorPayoutSummary = {
   lifetimeCustomRequest: number;
   bankDisplay: string;
   bankEditable: boolean;
+  bankName: string | null;
+  bankAccountNumber: string | null;
 };
 
 export type MentorPayoutDetailResult = {
