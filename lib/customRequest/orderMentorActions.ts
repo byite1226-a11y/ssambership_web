@@ -33,7 +33,7 @@ import {
 } from "@/lib/customRequest/orderDeliverableFiles";
 import { isCustomOrderPaymentConfirmed } from "@/lib/customRequest/orderPaymentPolicy";
 import { recordOrderEventBestEffort } from "@/lib/customRequest/orderRoomMutations";
-import { patchCustomOrderOrderStatus } from "@/lib/customRequest/orderStatusColumnPatch";
+import { markCustomOrderDeliveredRpc, startCustomOrderWorkRpc } from "@/lib/customRequest/orderTransitionRpc";
 import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { createClient } from "@/lib/supabase/server";
 
@@ -120,21 +120,9 @@ export async function startCustomOrderWorkAction(formData: FormData): Promise<vo
     redirectWithError(orderId, "주문 상태 컬럼을 찾을 수 없습니다.");
   }
 
-  const patch: Record<string, unknown> = { [stCol]: ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS };
-
-  const { column: startedCol } = await pickExistingColumn(supabase, table, [
-    "started_at",
-    "work_started_at",
-    "in_progress_at",
-    "mentor_started_at",
-  ]);
-  if (startedCol) {
-    patch[startedCol] = new Date().toISOString();
-  }
-
-  const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
-  if (ue) {
-    redirectWithError(orderId, ue.message || "상태를 갱신하지 못했습니다.");
+  const transition = await startCustomOrderWorkRpc(supabase, orderId);
+  if (!transition.ok) {
+    redirectWithError(orderId, transition.error);
   }
 
   await recordOrderEventBestEffort(supabase, orderId, "order_started", user.id, { from: norm });
@@ -393,22 +381,9 @@ export async function markMentorOrderDeliveredForReviewAction(formData: FormData
     redirect(`${mentorOrderWaitingReviewPath(orderId)}?ok=${encodeURIComponent("이미 완료된 주문입니다.")}`);
   }
 
-  const orderStatusPatch = await patchCustomOrderOrderStatus(
-    supabase,
-    table,
-    orderId,
-    { column: menCol, userId: user.id },
-    "delivered"
-  );
-  if (!orderStatusPatch.ok) {
-    redirectFilesWithError(orderId, orderStatusPatch.error);
-  }
-
-  const stCol = primaryOrderStatusColumnKey(row);
-  if (stCol) {
-    const patch: Record<string, unknown> = { [stCol]: "delivered" };
-    const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
-    if (ue) redirectFilesWithError(orderId, ue.message || "주문 상태를 갱신하지 못했습니다.");
+  const transition = await markCustomOrderDeliveredRpc(supabase, orderId);
+  if (!transition.ok) {
+    redirectFilesWithError(orderId, transition.error);
   }
 
   await recordOrderEventBestEffort(supabase, orderId, "deliverable_submitted", user.id, {
@@ -625,25 +600,10 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
     norm === "revision_requested" ||
     norm === "delivered"
   ) {
-    const orderStatusPatch = await patchCustomOrderOrderStatus(
-      supabase,
-      table,
-      orderId,
-      { column: menCol, userId: user.id },
-      "delivered"
-    );
-    if (!orderStatusPatch.ok) {
-      console.error("[submitMentorOrderDeliverableAction] order_status update", orderId, orderStatusPatch.error);
-      redirectWithError(orderId, orderStatusPatch.error);
-    }
-    const stCol = primaryOrderStatusColumnKey(row);
-    if (stCol) {
-      const patch: Record<string, unknown> = { [stCol]: "delivered" };
-      const { error: ue } = await supabase.from(table).update(patch).eq("id", orderId).eq(menCol, user.id);
-      if (ue) {
-        console.error("[submitMentorOrderDeliverableAction] order status update failed", { orderId, ue: ue.message });
-        redirectWithError(orderId, ue.message || "주문 상태를 갱신하지 못했습니다.");
-      }
+    const transition = await markCustomOrderDeliveredRpc(supabase, orderId);
+    if (!transition.ok) {
+      console.error("[submitMentorOrderDeliverableAction] order delivered transition failed", orderId, transition.error);
+      redirectWithError(orderId, transition.error);
     }
   }
 
