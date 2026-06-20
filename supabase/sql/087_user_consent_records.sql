@@ -81,9 +81,12 @@ begin
     v_birth_date := null;
   end;
 
-  if v_birth_date is not null then
-    v_is_minor := v_birth_date > (current_date - interval '14 years')::date;
-  end if;
+  v_is_minor := coalesce(
+    nullif(trim(m->>'is_minor'), '')::boolean,
+    case when v_birth_date is not null
+         then (current_date < (v_birth_date + interval '14 years')::date)
+         else false end
+  );
 
   v_metadata := jsonb_build_object(
     'role', v_role,
