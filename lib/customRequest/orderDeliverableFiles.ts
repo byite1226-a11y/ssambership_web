@@ -3,6 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getStringField, pickExistingColumn } from "@/lib/qna/safeSelect";
+import { maskContactInText } from "@/lib/customRequest/contactMasking";
 
 type Row = Record<string, unknown>;
 
@@ -77,7 +78,11 @@ export function getOriginalFilenameForDisplay(name: string): string | null {
   if (cleaned.length === 0) {
     return null;
   }
-  return cleaned.length > 255 ? cleaned.slice(0, 255) : cleaned;
+  // 안전필터(파일명): 표시 전용 파일명에 숨긴 외부 연락처를 마스킹한다.
+  // 이 함수는 storage key에 쓰이지 않고 모든 첨부 모듈이 공유하므로,
+  // 여기서 한 번 막으면 메시지·납품물·입찰·의뢰 첨부 파일명이 모두 보호된다.
+  const masked = maskContactInText(cleaned);
+  return masked.length > 255 ? masked.slice(0, 255) : masked;
 }
 
 /**
