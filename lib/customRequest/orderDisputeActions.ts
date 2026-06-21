@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
+import { maskContactInUserText } from "@/lib/safety/trustSafetyText";
 import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueries";
 import { getDisputeRowsForOrderId, hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
 import {
@@ -222,7 +223,12 @@ export async function submitCustomOrderDisputeAction(formData: FormData): Promis
     redirectWithError(orderId, "배정 멘토 정보를 찾을 수 없어 분쟁을 기록할 수 없습니다.");
   }
 
-  const ins = await insertDisputeForCustomOrder(supabase, orderId, studentId, mentorId, body, user.id);
+  // 안전필터(분쟁 사유): 분쟁 글은 상대방도 열람하므로 외부 연락처는 마스킹한다.
+  // 단, 대필 금지어 '차단'은 적용하지 않는다 — "멘토가 대필했어요" 같은 정당한 신고를
+  // 금지어로 막아버리면 안 되기 때문이다. (마스킹만, 차단 없음)
+  const safeBody = maskContactInUserText(body);
+
+  const ins = await insertDisputeForCustomOrder(supabase, orderId, studentId, mentorId, safeBody, user.id);
   if (ins.error) {
     redirectWithError(orderId, ins.error);
   }

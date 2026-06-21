@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
+import { sanitizeTrustSafetyText } from "@/lib/safety/trustSafetyText";
 import {
   firstReadableCustomTable,
   ORDER_TO_DELIVERABLE_FK_CANDIDATES,
@@ -119,12 +120,20 @@ export async function submitCustomOrderRevisionRequestAction(formData: FormData)
     }
   }
 
-  const transition = await requestCustomOrderRevisionRpc(supabase, orderId, note);
+  // 안전필터: 수정요청 글은 멘토(상대방)가 읽는 통로이므로, 다른 채널과 동일하게
+  // 대필 금지어 차단 + 외부 연락처 마스킹을 적용한다.
+  const noteSafety = sanitizeTrustSafetyText(note);
+  if (!noteSafety.ok) {
+    redirectWithError(orderId, noteSafety.error);
+  }
+  const safeNote = noteSafety.text;
+
+  const transition = await requestCustomOrderRevisionRpc(supabase, orderId, safeNote);
   if (!transition.ok) {
     redirectWithError(orderId, transition.error);
   }
 
-  await recordOrderEventBestEffort(supabase, orderId, "revision_requested", user.id, { noteLength: note.length });
+  await recordOrderEventBestEffort(supabase, orderId, "revision_requested", user.id, { noteLength: safeNote.length });
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
   redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("수정 요청을 전달했습니다.")}`);
