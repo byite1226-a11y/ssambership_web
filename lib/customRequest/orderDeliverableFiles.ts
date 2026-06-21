@@ -81,7 +81,12 @@ export function getOriginalFilenameForDisplay(name: string): string | null {
   // 안전필터(파일명): 표시 전용 파일명에 숨긴 외부 연락처를 마스킹한다.
   // 이 함수는 storage key에 쓰이지 않고 모든 첨부 모듈이 공유하므로,
   // 여기서 한 번 막으면 메시지·납품물·입찰·의뢰 첨부 파일명이 모두 보호된다.
-  const masked = maskContactInText(cleaned);
+  // 확장자는 보존한다(@handle.pdf 처럼 마스킹이 확장자 라벨까지 삼키지 않도록 base만 마스킹).
+  const lastDot = cleaned.lastIndexOf(".");
+  const masked =
+    lastDot > 0 && lastDot < cleaned.length - 1 && cleaned.length - lastDot <= 8
+      ? maskContactInText(cleaned.slice(0, lastDot)) + cleaned.slice(lastDot)
+      : maskContactInText(cleaned);
   return masked.length > 255 ? masked.slice(0, 255) : masked;
 }
 
