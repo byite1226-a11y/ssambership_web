@@ -296,5 +296,5 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
 
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
-  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("메시지를 보돈습니다.")}`);
+  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("메시지를 보냈습니다.")}`);
 }
