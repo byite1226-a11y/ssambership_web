@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
+import { sanitizeTrustSafetyText } from "@/lib/safety/trustSafetyText";
 import { getActiveDisputeBlockMessage } from "@/lib/customRequest/orderDisputeHelpers";
 import { isCustomRequestOrderStatusDdlInRepo, MENTOR_START_SCHEMA_GATE_MESSAGE } from "@/lib/customRequest/orderSchemaGate";
 import {
@@ -312,13 +313,25 @@ export async function uploadMentorOrderWorkFileAction(formData: FormData): Promi
   if (!orderId) redirect("/mentor/custom-request/orders?error=" + encodeURIComponent("orderId가 필요합니다."));
   if (!file) redirectFilesWithError(orderId, "업로드할 파일을 선택해 주세요.");
 
+  // 안전필터(납품 메모): 멘토→학생 노출 통로 → 연락처 마스킹 + 대필 차단.
+  // 정상 작업물 설명의 오탐 감시를 위해 차단 시 로그를 남긴다.
+  let safeNote = note;
+  if (note) {
+    const noteSafety = sanitizeTrustSafetyText(note);
+    if (!noteSafety.ok) {
+      console.warn("[deliverable-note-blocked]", { orderId, bannedPhrase: noteSafety.bannedPhrase });
+      redirectFilesWithError(orderId, noteSafety.error);
+    }
+    safeNote = noteSafety.text;
+  }
+
   try {
     const { inserted, nextVersion } = await insertMentorDeliverableFromForm(
       supabase,
       user,
       orderId,
       file,
-      note,
+      safeNote,
       true
     );
     const eventMeta = buildDeliverableSubmittedEventMetadataFromRow(inserted, nextVersion);
@@ -421,6 +434,18 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
   }
   if (!file && !note) {
     redirectWithError(orderId, "납품 파일을 선택하거나 납품 설명(텍스트)을 입력하세요.");
+  }
+
+  // 안전필터(납품 메모): 멘토→학생 노출 통로 → 연락처 마스킹 + 대필 차단.
+  // 파일 업로드 전에 차단하여 고아 업로드를 막고, 차단 시 오탐 감시 로그를 남긴다.
+  let safeNote = note;
+  if (note) {
+    const noteSafety = sanitizeTrustSafetyText(note);
+    if (!noteSafety.ok) {
+      console.warn("[deliverable-note-blocked]", { orderId, bannedPhrase: noteSafety.bannedPhrase });
+      redirectWithError(orderId, noteSafety.error);
+    }
+    safeNote = noteSafety.text;
   }
   if (file) {
     const verr = validateDeliverableFileForUpload({
@@ -548,11 +573,11 @@ export async function submitMentorOrderDeliverableAction(formData: FormData): Pr
     };
   }
 
-  const primary = await buildDeliverableRowPayload(supabase, dT.table, idBase, orderId, nextVersion, note, fileMeta, user.id);
+  const primary = await buildDeliverableRowPayload(supabase, dT.table, idBase, orderId, nextVersion, safeNote, fileMeta, user.id);
   const fallbacks: Record<string, unknown>[] = [
     primary,
-    { ...idBase, note, file_url: null, version: nextVersion, status: "submitted" },
-    { ...idBase, body: note, file_url: null, version: nextVersion, status: "submitted" },
+    { ...idBase, note: safeNote, file_url: null, version: nextVersion, status: "submitted" },
+    { ...idBase, body: safeNote, file_url: null, version: nextVersion, status: "submitted" },
   ];
 
   let inserted: Row | null = null;
