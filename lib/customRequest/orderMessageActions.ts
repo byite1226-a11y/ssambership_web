@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { canAccessOrder } from "@/lib/customRequest/orderAccess";
+import { sanitizeTrustSafetyText } from "@/lib/safety/trustSafetyText";
 import { firstReadableCustomTable } from "@/lib/customRequest/customRequestQueries";
 import {
   getOrderMessageAttachmentFileFromFormData,
@@ -202,6 +203,17 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
     }
   }
 
+  // 안전필터: 다른 채널(질문방·커뮤니티)과 동일하게 외부 연락처 마스킹 + 대필 금지어 차단.
+  // 권한 확인을 마친 정당한 당사자에 한해 적용하고, 첨부 업로드 전에 차단하여 고아 업로드를 막는다.
+  let safeText = text;
+  if (text) {
+    const safety = sanitizeTrustSafetyText(text);
+    if (!safety.ok) {
+      redirect(`${orderPath(orderId)}?error=${encodeURIComponent(safety.error)}`);
+    }
+    safeText = safety.text;
+  }
+
   let uploadedAttachment: OrderMessageAttachmentMeta | null = null;
   if (attachmentFile) {
     const uploadRes = await uploadOrderMessageAttachment(supabase, {
@@ -215,7 +227,7 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
     uploadedAttachment = uploadRes.meta;
   }
 
-  const messageBody = text || "첨부 파일";
+  const messageBody = safeText || "첨부 파일";
   const insertRes = await insertOrderRoomMessage(supabase, orderId, user.id, messageBody, role);
   if (insertRes.error) {
     if (uploadedAttachment) {
@@ -284,5 +296,5 @@ export async function submitCustomOrderRoomMessageAction(formData: FormData): Pr
 
   revalidatePath(orderPath(orderId));
   revalidatePath("/custom-request");
-  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("메시지를 보냈습니다.")}`);
+  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("메시지를 보돈습니다.")}`);
 }
