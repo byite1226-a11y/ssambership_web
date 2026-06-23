@@ -3,6 +3,15 @@
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { cn } from "@/lib/utils/cn";
+
+/**
+ * 찜 버튼 기본 스타일(위치·크기·클릭영역).
+ * 호출부의 className은 이 위에 "덮어쓰기"가 아니라 "병합"된다.
+ * (cn = clsx + tailwind-merge 로 위치 보정 클래스가 기본값을 올바르게 덮음)
+ */
+const FAVORITE_BUTTON_BASE =
+  "absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 shadow-sm transition hover:scale-105 disabled:opacity-60";
 
 export function MentorFavoriteButton(props: {
   mentorId: string;
@@ -28,7 +37,10 @@ export function MentorFavoriteButton(props: {
             method: "DELETE",
           });
           const json = (await res.json()) as { ok?: boolean };
-          if (res.ok && json.ok) setFavorited(false);
+          if (res.ok && json.ok) {
+            setFavorited(false);
+            router.refresh();
+          }
         } else {
           const res = await fetch("/api/mentors/favorites", {
             method: "POST",
@@ -36,7 +48,10 @@ export function MentorFavoriteButton(props: {
             body: JSON.stringify({ mentorId: props.mentorId }),
           });
           const json = (await res.json()) as { ok?: boolean };
-          if (res.ok && json.ok) setFavorited(true);
+          if (res.ok && json.ok) {
+            setFavorited(true);
+            router.refresh();
+          }
         }
       } catch {
         /* ignore */
@@ -51,10 +66,7 @@ export function MentorFavoriteButton(props: {
       disabled={pending}
       aria-label={favorited ? "찜 해제" : "찜하기"}
       aria-pressed={favorited}
-      className={
-        props.className ??
-        "absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 shadow-sm transition hover:scale-105 disabled:opacity-60"
-      }
+      className={cn(FAVORITE_BUTTON_BASE, props.className)}
     >
       <Heart
         className={`h-4 w-4 ${favorited ? "fill-[#1A56DB] text-[#1A56DB]" : "text-slate-400"}`}
