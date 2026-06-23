@@ -192,10 +192,13 @@ export async function updateMentorProfile(
     .filter(Boolean);
 
   const now = new Date().toISOString();
+  // [학적 잠금] university_name 은 멘토가 직접 수정할 수 없다.
+  // 최초값은 가입(syncAfterSignUpSession)에서 설정되고, 이후 변경은
+  // 학적변경요청(mentor_academic_record_change_requests) 관리자 승인으로만 반영된다.
+  // 따라서 이 upsert 에서는 university_name 을 의도적으로 제외한다.
   const core: Record<string, unknown> = {
     user_id: input.userId,
     intro_line: input.intro || null,
-    university_name: input.university || null,
     department_name: input.department || null,
     teaching_subjects: subjects,
     high_school_name: input.highSchool || null,

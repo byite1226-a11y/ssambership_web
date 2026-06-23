@@ -2,6 +2,7 @@
 export const ADMIN_CONSOLE_NAV = [
   { href: "/admin/dashboard", label: "대시보드", icon: "dashboard" },
   { href: "/admin/mentor-approval", label: "멘토 승인", icon: "mentor" },
+  { href: "/admin/academic-record-changes", label: "학적변경 요청", icon: "mentor" },
   { href: "/admin/school-classifications", label: "분류 관리", icon: "settings" },
   { href: "/admin/moderation", label: "콘텐츠 검수", icon: "moderation" },
   { href: "/admin/reviews", label: "리뷰 관리", icon: "reviews" },
