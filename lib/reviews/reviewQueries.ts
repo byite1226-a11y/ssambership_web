@@ -3,6 +3,7 @@ import { pickExistingColumn } from "@/lib/qna/safeSelect";
 import { checkReviewEligibility } from "@/lib/reviews/checkReviewEligibility";
 import { formatGradeSubject, maskStudentName } from "@/lib/reviews/reviewDisplay";
 import { isPubliclyVisibleReview, mapReviewDbRow, type ReviewDbRow } from "@/lib/reviews/reviewRowMapper";
+import { maskContactInUserText } from "@/lib/safety/trustSafetyText";
 
 export type ReviewCardItem = {
   id: string;
@@ -179,11 +180,13 @@ export async function createReview(
     return { ok: false, error: "리뷰는 최대 500자까지 작성할 수 있습니다." };
   }
 
+  // [연락처 마스킹] 길이 검증은 원본 기준, 저장은 명백한 외부 연락처만 가린 값으로.
+  const safeBody = maskContactInUserText(text);
   const insertRow: Record<string, unknown> = {
     mentor_id: input.mentorId,
     author_id: authorId,
     rating,
-    body: text,
+    body: safeBody,
   };
 
   const subCountCol = await pickExistingColumn(supabase, "reviews", ["subscription_count"]);
