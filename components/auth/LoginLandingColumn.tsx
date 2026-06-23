@@ -8,7 +8,6 @@ import {
   StudentBenefitIcon2,
   StudentBenefitIcon3,
 } from "./icons/AuthBenefitIcons";
-import { SocialAuthButtons } from "./SocialAuthButtons";
 import { LoginStudentHeroIllustration } from "./illustrations/LoginStudentHeroIllustration";
 import { LoginMentorHeroIllustration } from "./illustrations/LoginMentorHeroIllustration";
 import { loginLandingCopy, type AuthLoginRole } from "./loginRoleContent";
@@ -131,7 +130,6 @@ function HeroVisual({ role, children }: { role: AuthLoginRole; children: ReactNo
 
 export function LoginLandingColumn({ role }: { role: AuthLoginRole }) {
   const t = loginLandingCopy[role];
-  const tone = role === "student" ? "student" : "mentor";
   const illust =
     role === "student" ? (
       <LoginStudentHeroIllustration className={studentIllustClass} />
@@ -169,7 +167,6 @@ export function LoginLandingColumn({ role }: { role: AuthLoginRole }) {
           <Link href={t.loginPath} className={cta[role]}>
             {t.ctaLabel}
           </Link>
-          <SocialAuthButtons tone={tone} disabled size="landing" />
         </div>
       </div>
 
