@@ -13,7 +13,7 @@ import {
 } from "@/lib/customRequest/customRequestMutations";
 import { isAuthorOfPost, loadCustomPostById } from "@/lib/customRequest/customRequestQueries";
 import { isDraftCustomRequestPost } from "@/lib/customRequest/customRequestPostMappers";
-import { findRestrictedPhraseInText } from "@/lib/safety/trustSafetyText";
+import { findRestrictedPhraseInText, maskContactInUserText } from "@/lib/safety/trustSafetyText";
 import {
   buildPostAttachmentStorageObjectPath,
   getOriginalFilenameForDisplay,
@@ -84,6 +84,13 @@ export async function submitCustomRequestNew(formData: FormData) {
     redirect(errRedirect("예산은 1,000~200,000 캐시 범위로 입력해 주세요.", draftId));
   }
 
+  // 안전필터(의뢰 내용): 학생이 작성해 멘토들에게 노출되는 필드의 연락처를 마스킹한다.
+  // (대필 금지어 차단은 위에서 이미 적용됨. 임시저장이어도 마스킹은 적용.)
+  const maskedSubject = maskContactInUserText(subject);
+  const maskedGoal = maskContactInUserText(goal);
+  const maskedBody = maskContactInUserText(body);
+  const maskedDeliverableFormat = maskContactInUserText(deliverableFormat);
+
   const attachFiles = getPostAttachmentFilesFromFormData(formData, "postAttachmentFiles");
   if (attachFiles.length > POST_ATTACHMENT_MAX_FILES) {
     redirect(errRedirect(`첨부 파일은 최대 ${POST_ATTACHMENT_MAX_FILES}개까지입니다.`, draftId));
@@ -115,13 +122,13 @@ export async function submitCustomRequestNew(formData: FormData) {
 
   const input = {
     category,
-    subject,
-    goal,
-    body,
+    subject: maskedSubject,
+    goal: maskedGoal,
+    body: maskedBody,
     deadline,
     budgetMin,
     budgetMax,
-    deliverableFormat,
+    deliverableFormat: maskedDeliverableFormat,
     agreedProhibited: true,
     agreedNoExternalContact: true,
     authorId: user.id,
