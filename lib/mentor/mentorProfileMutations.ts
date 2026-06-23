@@ -205,6 +205,20 @@ export async function updateMentorProfile(
     updated_at: now,
   };
 
+  // [안전장치] 정상 계정은 가입(syncAfterSignUpSession)에서 mentor_profiles 행이
+  // 이미 만들어지므로 위 upsert 는 UPDATE 가 되어 university_name 을 건드리지 않는다(잠금 유지).
+  // 다만 행이 없는 비정상 계정이면 이 upsert 가 INSERT 가 되는데, university_name 은
+  // NOT NULL(기본값 없음)이라 누락 시 저장이 통째로 실패한다. 그 경우에만 한해
+  // 최초 INSERT 를 성립시키기 위해 현재 표시값으로 채운다. 행이 이미 있으면 절대 덮어쓰지 않는다.
+  const { data: existingProfile } = await supabase
+    .from("mentor_profiles")
+    .select("user_id")
+    .eq("user_id", input.userId)
+    .maybeSingle();
+  if (!existingProfile) {
+    core.university_name = input.university?.trim() || "";
+  }
+
   const { error: upErr } = await supabase.from("mentor_profiles").upsert(core, { onConflict: "user_id" });
   if (upErr) {
     return { ok: false, error: upErr.message };
