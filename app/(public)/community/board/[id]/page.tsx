@@ -8,7 +8,8 @@ import {
   loadBoardComments,
 } from "@/lib/community/communityBoardQueries";
 import { isCommunityPostUuid } from "@/lib/community/communityQueries";
-import { incrementPostView } from "@/lib/community/communityBoardMutations";
+import { BoardViewTracker } from "@/components/community/BoardViewTracker";
+import { loadFavoriteMentorIdsForUser } from "@/lib/mentor/mentorFavorites";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -39,8 +40,18 @@ export default async function CommunityBoardDetailPage(props: Props) {
     } else if (res.post && res.row) {
       post = res.post;
       row = res.row;
-      await incrementPostView(supabase, id);
+      // 조회수는 클라이언트(BoardViewTracker)가 세션당 1회만 +1 — 서버 렌더 시 증가하지 않음.
     }
+  }
+
+  // 멘토가 쓴 글이면 작성자(멘토) 찜 상태를 가져온다(팔로우=찜 통합).
+  const authorRole = (post?.authorRole ?? "").toLowerCase();
+  const isMentorAuthor = (authorRole === "mentor" || post?.authorRole === "멘토") && !!post?.authorId;
+  const authorMentorId = isMentorAuthor ? (post?.authorId ?? null) : null;
+  let authorFavorited = false;
+  if (authorMentorId && user) {
+    const fav = await loadFavoriteMentorIdsForUser(supabase, user.id);
+    authorFavorited = fav.ids.has(authorMentorId);
   }
 
   const missing = !idOk || (!post && !loadError);
@@ -57,20 +68,25 @@ export default async function CommunityBoardDetailPage(props: Props) {
         {missing ? (
           <p className="text-sm text-slate-600">{"\uAC8C\uC2DC\uAE00\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
         ) : post && row ? (
-          <CommunityBoardDetail
-            post={post}
-            row={row}
-            postId={id}
-            returnPath={returnPath}
-            comments={comments}
-            commentsError={commentsError}
-            canInteract={loggedIn}
-            liked={reactions.liked}
-            scrapped={reactions.scrapped}
-            commentErrorCode={commentErrorCode}
-            reportOk={reportOk}
-            reportErrorCode={reportErrorCode}
-          />
+          <>
+            <BoardViewTracker postId={id} />
+            <CommunityBoardDetail
+              post={post}
+              row={row}
+              postId={id}
+              returnPath={returnPath}
+              comments={comments}
+              commentsError={commentsError}
+              canInteract={loggedIn}
+              liked={reactions.liked}
+              scrapped={reactions.scrapped}
+              commentErrorCode={commentErrorCode}
+              reportOk={reportOk}
+              reportErrorCode={reportErrorCode}
+              authorMentorId={authorMentorId}
+              authorFavorited={authorFavorited}
+            />
+          </>
         ) : null}
       </div>
     </CommunityLayoutShell>

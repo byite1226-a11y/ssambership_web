@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bookmark, Flag, ThumbsUp } from "lucide-react";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
+import { MentorFavoriteButton } from "@/components/mentor/MentorFavoriteButton";
 import { StateBanner } from "@/components/community/StateBanner";
 import type { CommunityBoardCommentNode, CommunityBoardPostCard } from "@/lib/community/communityBoardQueries";
 import { pickPostBody } from "@/lib/community/communityBoardQueries";
@@ -90,6 +91,9 @@ export function CommunityBoardDetail(props: {
   commentErrorCode: string | null;
   reportOk: boolean;
   reportErrorCode: string | null;
+  /** 작성자가 멘토면 그 멘토의 user_id(찜 대상). 아니면 null → 버튼 숨김. */
+  authorMentorId?: string | null;
+  authorFavorited?: boolean;
 }) {
   const body = pickPostBody(props.row);
   const images = props.post.imageUrls;
@@ -112,15 +116,15 @@ export function CommunityBoardDetail(props: {
             <p className="text-xs text-slate-500">{props.post.createdAtLabel}</p>
           </div>
         </div>
-        {props.canInteract ? (
-          <button
-            type="button"
-            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600"
-            disabled
-            title={"\uC900\uBE44 \uC911"}
-          >
-            {"\uD314\uB85C\uC6B0"}
-          </button>
+        {props.authorMentorId ? (
+          <MentorFavoriteButton
+            mentorId={props.authorMentorId}
+            initialFavorited={props.authorFavorited ?? false}
+            isLoggedIn={props.canInteract}
+            loginNext={props.returnPath}
+            showText
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600 transition hover:border-[#1A56DB] hover:text-[#1A56DB] disabled:opacity-60"
+          />
         ) : null}
       </header>
 

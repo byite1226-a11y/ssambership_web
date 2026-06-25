@@ -10,6 +10,8 @@ export function MentorFavoriteButton(props: {
   isLoggedIn: boolean;
   loginNext?: string;
   className?: string;
+  /** 하트 옆에 찜/찜됨 텍스트 표시(목록 카드의 떠있는 하트가 아닌 인라인 버튼용) */
+  showText?: boolean;
 }) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(props.initialFavorited);
@@ -60,6 +62,7 @@ export function MentorFavoriteButton(props: {
         className={`h-4 w-4 ${favorited ? "fill-[#1A56DB] text-[#1A56DB]" : "text-slate-400"}`}
         strokeWidth={2}
       />
+      {props.showText ? <span>{favorited ? "찜됨" : "찜"}</span> : null}
     </button>
   );
 }
