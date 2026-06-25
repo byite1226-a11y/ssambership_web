@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Bookmark, Flag, ThumbsUp } from "lucide-react";
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
 import { StateBanner } from "@/components/community/StateBanner";
 import type { CommunityBoardCommentNode, CommunityBoardPostCard } from "@/lib/community/communityBoardQueries";
@@ -155,11 +156,11 @@ export function CommunityBoardDetail(props: {
               <button
                 type="submit"
                 className={[
-                  "rounded-full px-3 py-1.5 text-xs font-bold",
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold",
                   props.liked ? "bg-[#1A56DB] text-white" : "border border-slate-200 text-slate-700",
                 ].join(" ")}
               >
-                {"\uC88B\uC544\uC694"} {props.post.likeCount}
+                <ThumbsUp className="h-3.5 w-3.5" aria-hidden /> \uC88B\uC544\uC694 {props.post.likeCount}
               </button>
             </form>
             <form action={toggleCommunityPostReactionAction} className="inline">
@@ -169,26 +170,28 @@ export function CommunityBoardDetail(props: {
               <button
                 type="submit"
                 className={[
-                  "rounded-full px-3 py-1.5 text-xs font-bold",
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold",
                   props.scrapped ? "bg-slate-800 text-white" : "border border-slate-200 text-slate-700",
                 ].join(" ")}
               >
-                {props.scrapped ? "\uC2A4\uD06C\uB7A9 \uCDE8\uC18C" : "\uC2A4\uD06C\uB7A9"}
+                <Bookmark className="h-3.5 w-3.5" aria-hidden /> {props.scrapped ? "\uC2A4\uD06C\uB7A9 \uCDE8\uC18C" : "\uC2A4\uD06C\uB7A9"}
               </button>
             </form>
           </>
         ) : (
-          <span className="text-xs text-slate-500">
-            {"\uC88B\uC544\uC694"} {props.post.likeCount} {"\u00B7"} {"\uC870\uD68C"} {props.post.viewCount}
+          <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+            <ThumbsUp className="h-3.5 w-3.5" aria-hidden /> \uC88B\uC544\uC694 {props.post.likeCount}
           </span>
         )}
-        <span className="text-xs text-slate-400">{"\uC870\uD68C"} {props.post.viewCount}</span>
+        <span className="ml-auto inline-flex items-center text-xs text-slate-400">\uC870\uD68C {props.post.viewCount}</span>
       </div>
 
       {props.canInteract ? (
-        <details className="rounded-xl border border-slate-200 p-3">
-          <summary className="cursor-pointer text-sm font-bold text-slate-700">{"\uC2E0\uACE0\uD558\uAE30"}</summary>
-          <form action={submitCommunityContentReportAction} className="mt-3 space-y-2">
+        <details className="text-xs">
+          <summary className="inline-flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 font-bold text-slate-500 transition hover:text-slate-700 [&::-webkit-details-marker]:hidden">
+            <Flag className="h-3.5 w-3.5" aria-hidden /> \uC2E0\uACE0
+          </summary>
+          <form action={submitCommunityContentReportAction} className="mt-2 max-w-sm space-y-2 rounded-xl border border-slate-200 p-3">
             <input type="hidden" name="postVariant" value="board" />
             <input type="hidden" name="postId" value={props.postId} />
             <input type="hidden" name="returnPath" value={props.returnPath} />
@@ -200,8 +203,8 @@ export function CommunityBoardDetail(props: {
               ))}
             </select>
             <textarea name="description" rows={2} className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm" placeholder={"\uC0C1\uC138 \uC124\uBA85 (\uC120\uD0DD)"} />
-            <button type="submit" className="rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ backgroundColor: PRIMARY }}>
-              {"\uC2E0\uACE0 \uC811\uC218"}
+            <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ backgroundColor: PRIMARY }}>
+              <Flag className="h-3.5 w-3.5" aria-hidden /> \uC2E0\uACE0 \uC811\uC218
             </button>
           </form>
         </details>
@@ -266,7 +269,7 @@ export function CommunityBoardDetail(props: {
       </section>
 
       <Link href="/community" className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
-        {"\u2190 \uCEE4\uBAE0\uB2C8\uD2F0 \uD648"}
+        \u2190 \uCEE4\uBBA4\uB2C8\uD2F0 \uD648
       </Link>
     </article>
   );
