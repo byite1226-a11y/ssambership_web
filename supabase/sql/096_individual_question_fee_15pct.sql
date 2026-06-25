@@ -1,4 +1,4 @@
--- 092_individual_question_fee_15pct.sql
+-- 096_individual_question_fee_15pct.sql
 -- 개별질문 플랫폼 수수료 0% → 15% (멘토 전액 → 85%). 수수료 정책 변경 255.
 --
 -- 변경점(돈): release_individual_question_payout 의 멘토 지급액을
@@ -11,7 +11,7 @@
 -- 표시: 개별질문은 멘토 정산 화면 합산·수수료 라벨이 없어 앱 변경 없음(멘토 cash_ledger/잔액에 85% 자동 반영).
 --
 -- 실행: 검토 후 Supabase SQL Editor에서 전체 실행. (service_role 전용 RPC)
--- ⚠️ 090(맞춤의뢰)·091(구독)·092(개별질문) 세 파일을 함께 실행 권장(번호순 090→091→092).
+-- ⚠️ 090(맞춤의뢰)·095(구독)·096(개별질문) 세 파일을 함께 실행 권장(번호순 090→095→096).
 
 begin;
 

@@ -1,4 +1,4 @@
--- 091_subscription_fee_15pct.sql
+-- 095_subscription_fee_15pct.sql
 -- 구독 플랫폼 수수료 30% → 15% (멘토 70% → 85%). 수수료 정책 변경 254.
 --
 -- 변경점(돈): refresh_subscription_settlement_items 의 0.30 → 0.15 (계산 2곳 + insert fee_rate 1곳).
