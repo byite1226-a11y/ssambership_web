@@ -5,8 +5,8 @@ import { loadApplicationById } from "@/lib/customRequest/customRequestQueries";
 
 type Row = Record<string, unknown>;
 
-/** 플랫폼 20% / 멘토 80% (1차 정책) */
-export const CUSTOM_ORDER_PLATFORM_FEE_RATE = 0.2 as const;
+/** 플랫폼 5% / 멘토 95% (수수료 정책 변경 252) */
+export const CUSTOM_ORDER_PLATFORM_FEE_RATE = 0.05 as const;
 
 function toPositiveIntWon(v: unknown): number | null {
   if (v === null || v === undefined) return null;

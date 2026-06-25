@@ -1,13 +1,13 @@
 /** 잠금값 — 멘토 몫 비율 */
 export const MENTOR_SUBSCRIPTION_SHARE = 0.7 as const;
-export const MENTOR_CUSTOM_REQUEST_SHARE = 0.8 as const;
+export const MENTOR_CUSTOM_REQUEST_SHARE = 0.95 as const;
 
 export const MENTOR_SUBSCRIPTION_PLATFORM_SHARE = 0.3 as const;
-export const MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE = 0.2 as const;
+export const MENTOR_CUSTOM_REQUEST_PLATFORM_SHARE = 0.05 as const;
 
 /** UI 표기 — 플랫폼 수수료(공제) */
 export const SUBSCRIPTION_PLATFORM_FEE_LABEL = "30% 공제 (플랫폼 수수료)" as const;
-export const CUSTOM_REQUEST_PLATFORM_FEE_LABEL = "20% 공제 (플랫폼 수수료)" as const;
+export const CUSTOM_REQUEST_PLATFORM_FEE_LABEL = "5% 공제 (플랫폼 수수료)" as const;
 
 import { formatCashKrw as formatCashKrwDisplay, minorUnitsToDisplayCash } from "@/lib/utils/formatDisplay";
 
