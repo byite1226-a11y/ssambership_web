@@ -164,7 +164,7 @@ export function CommunityBoardDetail(props: {
                   props.liked ? "bg-[#1A56DB] text-white" : "border border-slate-200 text-slate-700",
                 ].join(" ")}
               >
-                <ThumbsUp className="h-3.5 w-3.5" aria-hidden /> \uC88B\uC544\uC694 {props.post.likeCount}
+                <ThumbsUp className="h-3.5 w-3.5" aria-hidden /> {"\uC88B\uC544\uC694"} {props.post.likeCount}
               </button>
             </form>
             <form action={toggleCommunityPostReactionAction} className="inline">
@@ -184,16 +184,16 @@ export function CommunityBoardDetail(props: {
           </>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-            <ThumbsUp className="h-3.5 w-3.5" aria-hidden /> \uC88B\uC544\uC694 {props.post.likeCount}
+            <ThumbsUp className="h-3.5 w-3.5" aria-hidden /> {"\uC88B\uC544\uC694"} {props.post.likeCount}
           </span>
         )}
-        <span className="ml-auto inline-flex items-center text-xs text-slate-400">\uC870\uD68C {props.post.viewCount}</span>
+        <span className="ml-auto inline-flex items-center text-xs text-slate-400">{"\uC870\uD68C"} {props.post.viewCount}</span>
       </div>
 
       {props.canInteract ? (
         <details className="text-xs">
           <summary className="inline-flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 font-bold text-slate-500 transition hover:text-slate-700 [&::-webkit-details-marker]:hidden">
-            <Flag className="h-3.5 w-3.5" aria-hidden /> \uC2E0\uACE0
+            <Flag className="h-3.5 w-3.5" aria-hidden /> {"\uC2E0\uACE0"}
           </summary>
           <form action={submitCommunityContentReportAction} className="mt-2 max-w-sm space-y-2 rounded-xl border border-slate-200 p-3">
             <input type="hidden" name="postVariant" value="board" />
@@ -208,7 +208,7 @@ export function CommunityBoardDetail(props: {
             </select>
             <textarea name="description" rows={2} className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm" placeholder={"\uC0C1\uC138 \uC124\uBA85 (\uC120\uD0DD)"} />
             <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ backgroundColor: PRIMARY }}>
-              <Flag className="h-3.5 w-3.5" aria-hidden /> \uC2E0\uACE0 \uC811\uC218
+              <Flag className="h-3.5 w-3.5" aria-hidden /> {"\uC2E0\uACE0 \uC811\uC218"}
             </button>
           </form>
         </details>
@@ -273,7 +273,7 @@ export function CommunityBoardDetail(props: {
       </section>
 
       <Link href="/community" className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
-        \u2190 \uCEE4\uBBA4\uB2C8\uD2F0 \uD648
+        {"\u2190 \uCEE4\uBBA4\uB2C8\uD2F0 \uD648"}
       </Link>
     </article>
   );

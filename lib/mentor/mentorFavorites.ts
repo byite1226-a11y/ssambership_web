@@ -1,26 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const TABLE = "favorites";
-const MENTOR_PROFILES = "mentor_profiles";
-
-/** mentor_profiles PK는 user_id (id 아님) */
-async function mentorProfileExists(
-  supabase: SupabaseClient,
-  mentorUserId: string
-): Promise<{ ok: boolean; error: string | null }> {
-  const { data, error } = await supabase
-    .from(MENTOR_PROFILES)
-    .select("user_id")
-    .eq("user_id", mentorUserId)
-    .maybeSingle();
-  if (error) {
-    if (/does not exist|relation/i.test(error.message)) {
-      return { ok: true, error: null };
-    }
-    return { ok: false, error: error.message };
-  }
-  return { ok: Boolean(data?.user_id), error: null };
-}
 
 export async function loadFavoriteMentorIdsForUser(
   supabase: SupabaseClient,
@@ -46,10 +26,8 @@ export async function addMentorFavorite(
   userId: string,
   mentorId: string
 ): Promise<{ ok: boolean; error: string | null }> {
-  const exists = await mentorProfileExists(supabase, mentorId);
-  if (exists.error) return { ok: false, error: exists.error };
-  if (!exists.ok) return { ok: false, error: "멘토 프로필을 찾을 수 없습니다." };
-
+  // mentor_profiles 사전검사 제거: 해당 select는 mentor_select_own RLS(본인 행만)에 막혀
+  // 학생이 멘토를 찜할 때 항상 0행→500이 났다. favorites.mentor_id FK(users)가 무결성 보장.
   const { error } = await supabase.from(TABLE).insert({ user_id: userId, mentor_id: mentorId });
   if (error) {
     if (/duplicate|unique/i.test(error.message)) return { ok: true, error: null };
