@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
+import { sanitizeTrustSafetyText } from "@/lib/safety/trustSafetyText";
 import {
   insertCustomRequestApplicationAttachment,
   insertMentorApplication,
@@ -64,11 +65,27 @@ export async function submitMentorCustomRequestApplication(formData: FormData) {
   const deliveryAt = String(formData.get("deliveryAt") ?? "").trim();
   const coverNote = String(formData.get("coverNote") ?? "").trim();
   const extraAnswers = String(formData.get("extraAnswers") ?? "").trim();
-  const scope = coverNote;
 
   if (!proposedPrice || !deliveryAt || !coverNote) {
     back(postId, "제안 가격, 예상 납기, 제안 내용을 모두 입력해 주세요.", returnContext);
   }
+
+  // 안전필터: 입찰 제안서·답변은 멘토가 학생에게 처음 보내는 노출 통로 →
+  // 연락처 마스킹 + 대필 차단. (외부 유인·대필 광고 차단이 본문보다 더 중요한 자리)
+  const coverSafety = sanitizeTrustSafetyText(coverNote);
+  if (!coverSafety.ok) {
+    back(postId, coverSafety.error, returnContext);
+  }
+  const safeCoverNote = coverSafety.text;
+  let safeExtraAnswers = extraAnswers;
+  if (extraAnswers) {
+    const extraSafety = sanitizeTrustSafetyText(extraAnswers);
+    if (!extraSafety.ok) {
+      back(postId, extraSafety.error, returnContext);
+    }
+    safeExtraAnswers = extraSafety.text;
+  }
+  const scope = safeCoverNote;
 
   const attachFiles = getApplicationAttachmentFilesFromFormData(formData, "applicationAttachmentFiles");
   if (attachFiles.length > APPLICATION_ATTACHMENT_MAX_FILES) {
@@ -105,8 +122,8 @@ export async function submitMentorCustomRequestApplication(formData: FormData) {
     proposedPrice,
     deliveryAt,
     scope,
-    coverNote,
-    extraAnswers,
+    coverNote: safeCoverNote,
+    extraAnswers: safeExtraAnswers,
   });
   if (!r.ok) {
     onFailure(postId, r.error, returnContext);

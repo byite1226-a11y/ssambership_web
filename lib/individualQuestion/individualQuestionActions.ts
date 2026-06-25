@@ -13,6 +13,7 @@ import {
 } from "@/lib/individualQuestion/individualQuestionAttachmentStorage";
 import { expiryDateForStatus, type IndividualQuestionExpirableStatus } from "@/lib/individualQuestion/individualQuestionExpiryConfig";
 import { fetchUserDisplayName, insertNotificationBestEffort } from "@/lib/notifications/notificationInsert";
+import { maskContactInUserText } from "@/lib/safety/trustSafetyText";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { loadSchoolClassificationCatalogs } from "@/lib/mentor/schoolClassificationCatalog";
@@ -233,6 +234,10 @@ export async function createDirectIndividualQuestionAction(formData: FormData) {
     actionError(`/mentors/${encodeURIComponent(mentorId)}`, "이 멘토는 아직 개별 질문 단가를 설정하지 않았어요.");
   }
 
+  // [연락처 마스킹] 저장 전 명백한 외부 연락처만 가린다(질문방 메시지와 동일 정책).
+  const safeTitle = maskContactInUserText(title);
+  const safeBody = maskContactInUserText(body);
+
   const admin = createServiceRoleClient();
   const { data, error } = await admin.rpc("create_individual_question_with_hold", {
     p_student_id: user.id,
@@ -240,8 +245,8 @@ export async function createDirectIndividualQuestionAction(formData: FormData) {
     p_mentor_id: mentorId,
     p_subject: subject,
     p_topic: topic,
-    p_title: title,
-    p_body: body,
+    p_title: safeTitle,
+    p_body: safeBody,
     p_price_cents: price.amountCents,
     p_idempotency_key: idempotencyKey,
   });
@@ -307,14 +312,18 @@ export async function createOpenIndividualQuestionAction(formData: FormData) {
     actionError(returnPath, "전공계열 자격 조건이 올바르지 않습니다.");
   }
 
+  // [연락처 마스킹] 저장 전 명백한 외부 연락처만 가린다(질문방 메시지와 동일 정책).
+  const safeTitle = maskContactInUserText(title);
+  const safeBody = maskContactInUserText(body);
+
   const { data, error } = await admin.rpc("create_individual_question_with_hold_v2", {
     p_student_id: user.id,
     p_question_type: "open",
     p_mentor_id: null,
     p_subject: subject,
     p_topic: topic,
-    p_title: title,
-    p_body: body,
+    p_title: safeTitle,
+    p_body: safeBody,
     p_price_cents: amountCentsFromCashKrw(priceCash),
     p_idempotency_key: idempotencyKey,
     p_required_school_tier: requiredSchoolTier,
@@ -440,9 +449,11 @@ export async function sendIndividualQuestionMessageAction(formData: FormData) {
     actionError(detailPath, "정산이 완료된 질문입니다.");
   }
 
+  // [연락처 마스킹] 저장 전 명백한 외부 연락처만 가린다(질문방 메시지와 동일 정책).
+  const safeBody = body ? maskContactInUserText(body) : "";
   const { data: message, error: messageError } = await admin
     .from("individual_question_messages")
-    .insert({ question_id: questionId, author_id: user.id, body: body || "(첨부 파일)" })
+    .insert({ question_id: questionId, author_id: user.id, body: safeBody || "(첨부 파일)" })
     .select("id")
     .single();
 

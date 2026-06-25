@@ -4,7 +4,6 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Check, GraduationCap } from "lucide-react";
 import { RoleLoginForm } from "@/components/auth/RoleLoginForm";
-import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { loginLandingCopy, type AuthLoginRole } from "@/components/auth/loginRoleContent";
 
 const STUDENT_PRIMARY = "#1A56DB";
@@ -92,10 +91,6 @@ export function LoginRoleCard(props: {
             onPasswordChange={props.onPasswordChange}
           />
         </Suspense>
-
-        <div className="mt-4">
-          <SocialAuthButtons tone={role} disabled size="landing" />
-        </div>
 
         <p className="mt-5 text-center text-sm text-slate-600">
           계정이 없으신가요?{" "}

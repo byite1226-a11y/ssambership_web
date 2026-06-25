@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/individual-question-expiry",
-      "schedule": "0 * * * *"
+      "schedule": "40 18 * * *"
     }
   ]
 }

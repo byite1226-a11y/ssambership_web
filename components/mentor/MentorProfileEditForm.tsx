@@ -14,7 +14,7 @@ import {
   mentorPlanCashKrw,
   mentorSubscriptionPriceRule,
 } from "@/lib/subscribe/mentorPlanPricing";
-import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus, User, FileText, BookOpen, Coins, ShieldCheck } from "lucide-react";
+import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus, User, FileText, BookOpen, Coins, ShieldCheck, Lock } from "lucide-react";
 import { MentorSubjectCheckboxes } from "@/components/subjects/MentorSubjectCheckboxes";
 import { subjectCodesFromText } from "@/lib/subjects/subjectCatalog";
 
@@ -266,17 +266,34 @@ export function MentorProfileEditForm(props: {
                 </div>
 
                 <div>
-                  <label className={labelClass} htmlFor="university">대학교 <span className="ml-0.5 text-red-500">*</span></label>
+                  <label className={labelClass} htmlFor="university">
+                    대학교 <span className="ml-0.5 text-red-500">*</span>
+                    <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200">
+                      <Lock className="h-3 w-3" aria-hidden /> 잠금
+                    </span>
+                  </label>
                   <div className="relative mt-1.5">
                     <input
                       id="university"
                       name="university"
                       placeholder="대학교를 입력해주세요"
-                      className={inputClass}
+                      className={`${inputClass} cursor-not-allowed bg-slate-50 text-slate-500`}
                       value={formData.university}
-                      onChange={handleChange}
+                      readOnly
+                      aria-readonly="true"
                       maxLength={40}
                     />
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] font-medium text-slate-500">
+                      학교 정보는 인증값이라 직접 수정할 수 없어요. 변경이 필요하면 요청해 주세요.
+                    </p>
+                    <Link
+                      href="/mentor/academic-record-change"
+                      className="inline-flex items-center gap-1 rounded-lg border border-[#1A56DB] bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-[#1A56DB] transition hover:bg-blue-100"
+                    >
+                      <FileText className="h-3.5 w-3.5" aria-hidden /> 학적변경요청
+                    </Link>
                   </div>
                 </div>
               </div>

@@ -5,6 +5,7 @@ export const STUDENT_ID_IMAGES_BUCKET = "student-id-images" as const;
 export const STUDENT_ID_IMAGE_SIGNED_URL_TTL_SEC = 300;
 export const STUDENT_ID_IMAGE_ALLOWED_EXTENSIONS = ["jpg", "jpeg", "png", "pdf"] as const;
 const SCHOOL_VERIFICATION_DIR = "school-verifications";
+const ACADEMIC_RECORD_CHANGE_DIR = "academic-record-changes";
 
 export type StudentIdImageAllowedExtension = (typeof STUDENT_ID_IMAGE_ALLOWED_EXTENSIONS)[number];
 
@@ -45,6 +46,11 @@ export function buildStudentIdImageObjectPath(userId: string, fileName: string):
 /** 학교·전공 증명 서류 업로드 경로: `{userId}/school-verifications/{timestamp-random.ext}` */
 export function buildMentorSchoolVerificationObjectPath(userId: string, fileName: string): string {
   return `${userId}/${SCHOOL_VERIFICATION_DIR}/${buildSafeStorageFileName(fileName)}`;
+}
+
+/** 학적변경 증명 서류 업로드 경로: `{userId}/academic-record-changes/{timestamp-random.ext}` */
+export function buildMentorAcademicRecordChangeObjectPath(userId: string, fileName: string): string {
+  return `${userId}/${ACADEMIC_RECORD_CHANGE_DIR}/${buildSafeStorageFileName(fileName)}`;
 }
 
 /**

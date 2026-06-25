@@ -7,6 +7,7 @@ import {
   inferStorageFileExtension,
 } from "@/lib/customRequest/orderDeliverableFiles";
 import { createSignedStorageUrl } from "@/lib/storage/signedStorageUrl";
+import { maskContactInText } from "@/lib/customRequest/contactMasking";
 import { validateMagicBytesForMime } from "@/lib/storage/uploadMagicBytes";
 
 export const ORDER_MESSAGE_ATTACHMENTS_TABLE = "custom_order_message_attachments" as const;
@@ -119,7 +120,8 @@ export async function prepareOrderMessageAttachmentFile(
     return { ok: false, error: "지원하는 파일 형식만 첨부할 수 있습니다: PDF, PNG, JPEG, WebP, ZIP, Word(docx), PowerPoint(pptx)." };
   }
 
-  const originalName = getOriginalFilenameForDisplay(file.name) ?? "attachment";
+  // 안전필터(첨부 파일명): 파일명은 상대방에게 표시되므로, 파일명에 숨긴 외부 연락처를 마스킹한다.
+  const originalName = maskContactInText(getOriginalFilenameForDisplay(file.name) ?? "attachment");
   const buffer = await file.arrayBuffer();
   const magicError = validateMagicBytesForMime(buffer, mime);
   if (magicError) {
