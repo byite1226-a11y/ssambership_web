@@ -40,6 +40,7 @@
 --   - UPDATE 정책만 drop-if-exists 후 재생성(자기 자신 멱등 적용 위함).
 --
 -- Rollback:
+--   drop policy if exists "iqm_insert_party" on public.individual_question_messages;
 --   drop policy if exists "iq_update_claimed_mentor_answer" on public.individual_questions;
 --   drop function if exists public.claim_individual_question_as_mentor(uuid);
 --   drop function if exists public.create_individual_question_as_student(text, text, text, int, uuid, text);
@@ -201,5 +202,23 @@ create policy "iq_update_claimed_mentor_answer" on public.individual_questions
   for update to authenticated
   using ((select auth.uid()) = claimed_mentor_id)
   with check ((select auth.uid()) = claimed_mentor_id);
+
+-- ---------------------------------------------------------------------------
+-- 🔑 INSERT RLS policy: individual_question_messages (G — 대표 검토 회신)
+--   사실 정정: 070 은 이 테이블에 RLS 활성 + SELECT 정책(iqm_select_party,
+--   헬퍼 user_is_individual_question_party 기반)을 이미 두었다. 누락된 것은
+--   authenticated INSERT 정책뿐(070 주석: "mutations must go through
+--   service-role ... RPCs"). 앱 answer() 는 메시지를 직접 insert 하므로 막혀 있다.
+--   → SELECT 는 재정의하지 않고(기존 헬퍼 정책 유지), 누락된 INSERT 만 동일
+--     헬퍼 패턴으로 추가한다. 작성자 본인(author_id=auth.uid()) + 질문 당사자
+--     (학생/지정·담당 멘토/관리자)만 허용 → 과허용 아님.
+-- ---------------------------------------------------------------------------
+drop policy if exists "iqm_insert_party" on public.individual_question_messages;
+create policy "iqm_insert_party" on public.individual_question_messages
+  for insert to authenticated
+  with check (
+    (select auth.uid()) = author_id
+    and public.user_is_individual_question_party(question_id)
+  );
 
 commit;
