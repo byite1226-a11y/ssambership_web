@@ -20,6 +20,10 @@ function limitForTier(tier: SubscribePlanTier | null): number {
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Forward (non-discarded) thread states counted toward weekly usage.
+// Mirrors get_weekly_question_usage (098): quota is consumed on create.
+const COUNTED_THREAD_STATUSES = ["pending", "answered", "confirmed", "closed", "archived"];
+
 function isoFromRow(row: Record<string, unknown> | null | undefined, keys: string[]): string | null {
   for (const key of keys) {
     const value = row?.[key];
@@ -68,7 +72,7 @@ function parseRpcWeeklyUsage(data: unknown): WeeklyQuestionUsage {
   };
 }
 
-async function countConfirmedThisWeekFallback(
+async function countCreatedThisWeekFallback(
   supabase: SupabaseClient,
   studentId: string,
   mentorId: string,
@@ -85,14 +89,14 @@ async function countConfirmedThisWeekFallback(
 
   const { data, error } = await supabase
     .from("question_threads")
-    .select("id, status, updated_at, created_at")
+    .select("id, status, created_at")
     .in(fkCol, roomIds)
-    .eq("status", "confirmed");
+    .in("status", COUNTED_THREAD_STATUSES);
 
   if (error) return 0;
   let count = 0;
   for (const row of (data as Record<string, unknown>[]) ?? []) {
-    const ts = String(row.updated_at ?? row.created_at ?? "");
+    const ts = String(row.created_at ?? "");
     const ms = Date.parse(ts);
     if (!Number.isNaN(ms) && ms >= start.getTime() && ms < end.getTime()) count += 1;
   }
@@ -123,7 +127,7 @@ export async function fetchWeeklyQuestionUsageWithFallback(
   const limit = limitForTier(planTier);
   const anchor = isoFromRow(active?.row, ["started_at", "created_at"]);
   const bounds = subscriptionAnchorWeekBounds(anchor);
-  const used = await countConfirmedThisWeekFallback(supabase, studentId, mentorId, bounds);
+  const used = await countCreatedThisWeekFallback(supabase, studentId, mentorId, bounds);
 
   return {
     usage: {
