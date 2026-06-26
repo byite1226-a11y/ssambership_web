@@ -74,7 +74,6 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
         { title: "현재 학교", body: currentUniversity, status: profileRow ? "connected" : "skeleton" },
         { title: "요청 상태", body: statusLabel(status), status: status === "approved" ? "connected" : "skeleton" },
       ]}
-      dataPoints={["mentor_profiles.university_name", "mentor_academic_record_change_requests"]}
     >
       <div className="mx-auto max-w-3xl space-y-4">
         {okMessage ? (

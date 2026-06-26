@@ -49,11 +49,6 @@ export function NotificationItemCard(props: {
         >
           {badge.label}
         </span>
-        {typeK && typeK !== badge.label && (
-          <code className="text-[10px] text-slate-500" title="원본 type·kind">
-            {typeK.length > 40 ? `${typeK.slice(0, 40)}…` : typeK}
-          </code>
-        )}
         <span className="ml-auto text-slate-500">{formatNotificationTime(tiso)}</span>
       </div>
       <h3 className="mt-1 font-extrabold text-slate-900">{title}</h3>
@@ -73,17 +68,11 @@ export function NotificationItemCard(props: {
             </form>
           ) : null}
           {hub.readColumn && read ? <span className="text-[10px] font-bold text-slate-500">처리됨</span> : null}
-          {!hub.readColumn ? (
-            <span className="text-[10px] font-bold text-amber-800" title="스키마에 읽음 컬럼 없음">
-              읽음 컬럼 없음
-            </span>
-          ) : null}
           <Link className="font-bold text-blue-800 underline" href={href} prefetch={false}>
             열기 →
           </Link>
         </div>
       </div>
-      <p className="mt-1 text-[10px] text-slate-400">딥링크: {href}</p>
     </article>
   );
 }

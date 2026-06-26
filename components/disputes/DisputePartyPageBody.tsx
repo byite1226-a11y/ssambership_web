@@ -1,7 +1,6 @@
 import type { DisputeBundle } from "@/lib/disputes/disputeQueries";
 import { formatModLogLine, pickText, statusBadgeText, w22EntityLine } from "@/lib/disputes/disputeQueries";
 import { partyDisputeStatusKo, partyDisputeTypeKo, shortDisputeRef } from "@/lib/disputes/disputeListQueries";
-import { DisputeKeyValueList } from "@/components/disputes/DisputeKeyValueList";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Row = Record<string, unknown>;
@@ -72,13 +71,6 @@ export function DisputePartyPageBody(props: { bundle: DisputeBundle; reasonLabel
           <li>{w22EntityLine("맞춤의뢰 주문", bundle.customOrder.table, bundle.customOrder.row, bundle.customOrder.error)}</li>
         </ul>
       </section>
-
-      <div className="grid gap-2 md:grid-cols-2">
-        <DisputeKeyValueList title="환불 정보" row={bundle.refund.row} />
-        <DisputeKeyValueList title="결제 정보" row={bundle.payment.row} />
-        <DisputeKeyValueList title="구독 정보" row={bundle.subscription.row} />
-        <DisputeKeyValueList title="맞춤의뢰 주문 정보" row={bundle.customOrder.row} />
-      </div>
 
       <p className="text-xs text-slate-500">일부 항목은 진행 단계에 따라 비어 있을 수 있어요.</p>
     </div>

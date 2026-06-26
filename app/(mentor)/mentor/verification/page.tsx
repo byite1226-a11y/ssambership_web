@@ -88,7 +88,6 @@ export default async function MentorVerificationPage(props: PageProps) {
           status: schoolStatus === "approved" ? "connected" : "skeleton",
         },
       ]}
-      dataPoints={["mentor_profiles.verification_status", "mentor_school_verifications"]}
     >
       <div className="mx-auto max-w-3xl space-y-4">
         {schoolDocOk ? (

@@ -220,12 +220,6 @@ export function QuestionRoomListCatalog(props: {
                     멘토 찾기
                   </Link>
                   <Link
-                    href="/notes"
-                    className="block rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-bold text-slate-800 hover:border-blue-200 hover:bg-blue-50/60"
-                  >
-                    연결 노트
-                  </Link>
-                  <Link
                     href="/subscriptions"
                     className="block rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-bold text-slate-800 hover:border-blue-200 hover:bg-blue-50/60"
                   >

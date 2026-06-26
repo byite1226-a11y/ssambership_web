@@ -1,7 +1,6 @@
 import type { DisputeBundle } from "@/lib/disputes/disputeQueries";
 import { formatModLogLine, pickText, statusBadgeText } from "@/lib/disputes/disputeQueries";
 import { partyDisputeStatusKo } from "@/lib/disputes/disputeListQueries";
-import { DisputeKeyValueList } from "@/components/disputes/DisputeKeyValueList";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Row = Record<string, unknown>;
@@ -32,13 +31,6 @@ export function DisputeMentorPageBody(props: { bundle: DisputeBundle }) {
         </div>
         <p className="mt-1 text-xs text-slate-500">사건 정보를 불러왔습니다.</p>
       </section>
-
-      <div className="grid gap-2 md:grid-cols-2">
-        <DisputeKeyValueList title="맞춤의뢰/주문" row={bundle.customOrder.row} />
-        <DisputeKeyValueList title="결제" row={bundle.payment.row} />
-        <DisputeKeyValueList title="구독" row={bundle.subscription.row} />
-        <DisputeKeyValueList title="환불" row={bundle.refund.row} maxKeys={10} />
-      </div>
 
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
         증빙·첨부(멘토): <input type="file" disabled className="ml-1 text-xs" title="Storage 후속" />

@@ -14,7 +14,6 @@ export default function StudentSupportReportsPage() {
         { href: "/notifications", label: "알림 센터", tone: "slate" },
       ]}
       sections={[]}
-      dataPoints={["content_reports (reporter_id 기준 조회 필요)"]}
     >
       <EmptyState
         title="아직 연결된 신고 목록이 없습니다"
