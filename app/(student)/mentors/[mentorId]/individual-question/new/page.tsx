@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import "@/app/(public)/custom-request/landing.css";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { SubjectSelectOptions } from "@/components/subjects/SubjectSelectOptions";
+import { CommunityFileDropzone } from "@/components/community/CommunityFileDropzone";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createDirectIndividualQuestionAction } from "@/lib/individualQuestion/individualQuestionActions";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
@@ -148,16 +149,18 @@ export default async function NewDirectIndividualQuestionPage(props: PageProps) 
               />
             </label>
 
-            <label className="block">
+            <div className="block">
               <span className="text-sm font-extrabold text-slate-900">첨부 파일</span>
-              <input
-                name="attachment"
-                type="file"
-                accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
-                className="mt-2 block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600"
-              />
+              <div className="mt-2">
+                <CommunityFileDropzone
+                  name="attachment"
+                  accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                  buttonLabel="파일 선택"
+                  hint="JPG, PNG, PDF · 20MB 이하 · 클릭하거나 끌어다 놓으세요"
+                />
+              </div>
               <span className="mt-1 block text-xs font-semibold text-slate-500">JPG, PNG, PDF 파일 20MB 이하</span>
-            </label>
+            </div>
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Link

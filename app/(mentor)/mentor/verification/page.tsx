@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { CommunityFileDropzone } from "@/components/community/CommunityFileDropzone";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
@@ -162,17 +163,16 @@ export default async function MentorVerificationPage(props: PageProps) {
 
           <form action={submitMentorSchoolVerificationAction} className="space-y-3">
             <div>
-              <label htmlFor="schoolVerificationDocument" className="text-sm font-black text-slate-900">
-                학교·전공 증명 서류
-              </label>
-              <input
-                id="schoolVerificationDocument"
-                name="schoolVerificationDocument"
-                type="file"
-                accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
-                disabled={!canSubmitSchoolDocument}
-                className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
-              />
+              <p className="text-sm font-black text-slate-900">학교·전공 증명 서류</p>
+              <div className="mt-2">
+                <CommunityFileDropzone
+                  name="schoolVerificationDocument"
+                  accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                  disabled={!canSubmitSchoolDocument}
+                  buttonLabel="파일 선택"
+                  hint="JPG, PNG, PDF · 클릭하거나 파일을 끌어다 놓으세요"
+                />
+              </div>
               <p className="mt-2 text-xs leading-5 text-slate-500">
                 JPG, PNG, PDF 형식을 지원합니다. 제출한 서류는 비공개 저장소에 보관되고, 관리자 확인 후 인증됩니다.
               </p>

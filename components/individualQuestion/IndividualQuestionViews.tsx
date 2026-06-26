@@ -438,7 +438,7 @@ export function IndividualQuestionDetailView(props: {
                     type="file"
                     name="attachment"
                     accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
-                    className="block max-w-[200px] text-xs text-slate-500"
+                    className="sr-only"
                   />
                 </label>
                 <FormSubmitButton

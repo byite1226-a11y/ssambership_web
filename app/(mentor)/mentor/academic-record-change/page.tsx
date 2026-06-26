@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { CommunityFileDropzone } from "@/components/community/CommunityFileDropzone";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
@@ -169,17 +170,17 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
               />
             </div>
             <div>
-              <label htmlFor="academicRecordDocument" className="text-sm font-black text-slate-900">
-                학적 변동 증명 서류 <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="academicRecordDocument"
-                name="academicRecordDocument"
-                type="file"
-                accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
-                disabled={!canSubmit}
-                className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-black file:text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
-              />
+              <p className="text-sm font-black text-slate-900">학적 변동 증명 서류 <span className="text-red-500">*</span></p>
+              <div className="mt-2">
+                <CommunityFileDropzone
+                  name="academicRecordDocument"
+                  accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+                  required
+                  disabled={!canSubmit}
+                  buttonLabel="파일 선택"
+                  hint="JPG, PNG, PDF · 클릭하거나 파일을 끌어다 놓으세요"
+                />
+              </div>
               <p className="mt-2 text-xs leading-5 text-slate-500">
                 JPG, PNG, PDF 형식을 지원합니다. 제출한 서류는 비공개 저장소에 보관되고, 관리자만 열람합니다.
               </p>

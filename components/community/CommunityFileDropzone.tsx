@@ -10,6 +10,7 @@ type Props = {
   buttonLabel: string;
   hint?: string;
   maxFiles?: number;
+  disabled?: boolean;
   onFilesChange?: (files: FileList | null) => void;
 };
 
@@ -58,28 +59,39 @@ export function CommunityFileDropzone(props: Props) {
         accept={props.accept}
         multiple={props.multiple}
         required={props.required}
+        disabled={props.disabled}
         onChange={onChange}
         className="sr-only"
       />
       <div
         role="button"
-        tabIndex={0}
+        tabIndex={props.disabled ? -1 : 0}
+        aria-disabled={props.disabled}
         onKeyDown={(e) => {
+          if (props.disabled) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             inputRef.current?.click();
           }
         }}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => {
+          if (props.disabled) return;
+          inputRef.current?.click();
+        }}
         onDragOver={(e) => {
+          if (props.disabled) return;
           e.preventDefault();
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
+        onDrop={props.disabled ? undefined : onDrop}
         className={[
-          "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors",
-          dragOver ? "border-[#1A56DB] bg-blue-50/40" : "border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50",
+          "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors",
+          props.disabled
+            ? "cursor-not-allowed border-slate-200 bg-slate-50/60 opacity-60"
+            : dragOver
+              ? "cursor-pointer border-[#1A56DB] bg-blue-50/40"
+              : "cursor-pointer border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50",
         ].join(" ")}
       >
         <span className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-800">
