@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <BrandLogo href="/" className="justify-center" />
           <h1 className="mt-6 text-2xl font-black tracking-tight text-[#111827] sm:text-3xl">로그인</h1>
           <p className="mt-2 max-w-xl text-sm text-[#6B7280] sm:text-base">
-            학생·멘토 계정을 선택하고 이메일 또는 소셜 로그인으로 들어가세요.
+            학생·멘토 계정을 선택하고 이메일로 들어가세요.
           </p>
         </header>
 

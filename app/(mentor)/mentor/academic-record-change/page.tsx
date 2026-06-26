@@ -71,10 +71,6 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
       ctas={[
         { href: "/mentor/profile/edit", label: "프로필로 돌아가기", tone: "slate" },
       ]}
-      sections={[
-        { title: "현재 학교", body: currentUniversity, status: profileRow ? "connected" : "skeleton" },
-        { title: "요청 상태", body: statusLabel(status), status: status === "approved" ? "connected" : "skeleton" },
-      ]}
     >
       <div className="mx-auto max-w-3xl space-y-4">
         {okMessage ? (
@@ -111,8 +107,7 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
         <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-wider text-slate-500">Academic Record Change</p>
-              <h2 className="mt-1 text-xl font-black text-slate-900">학적변경 요청</h2>
+              <h2 className="text-xl font-black text-slate-900">학적변경요청</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
                 재학증명서, 졸업증명서, 합격증, 전과 확인서 등 학적 변동을 확인할 수 있는 서류를 제출해 주세요.
               </p>

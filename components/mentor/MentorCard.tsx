@@ -23,7 +23,7 @@ function formatStatLine(card: MentorPublicListCard): string {
   if (resp && resp !== "—") parts.push(`평균 답변 시간 ${resp}`);
   const ans = card.stats.totalAnswers;
   if (ans != null) parts.push(`누적 답변 ${ans.toLocaleString("ko-KR")}개`);
-  return parts.length ? parts.join(" · ") : "통계 준비 중";
+  return parts.length ? parts.join(" · ") : "신규 멘토 · 아직 활동 내역이 없어요";
 }
 
 export function MentorCard(props: {

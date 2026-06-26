@@ -53,8 +53,6 @@ export function isMainNavItemActive(pathname: string, itemHref: string, audience
         p === "/wallet" ||
         p.startsWith("/wallet/") ||
         p === "/payments" ||
-        p === "/subscribe" ||
-        p === "/subscriptions" ||
         p === "/pricing"
       );
     case "/mypage":
