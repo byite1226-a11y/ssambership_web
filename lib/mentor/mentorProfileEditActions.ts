@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { updateMentorProfile } from "@/lib/mentor/mentorProfileMutations";
+import { uploadMentorAvatar } from "@/lib/storage/mentorAvatarStorage";
 import { SUBSCRIBE_PLAN_TIERS } from "@/lib/subscribe/mentorPlanPricing";
 import type { SubscribePlanTier } from "@/lib/subscribe/subscribePageQueries";
 
@@ -51,6 +52,22 @@ export async function submitMentorProfileEdit(formData: FormData) {
     redirect(errQ("구독 요금은 1캐시 이상 숫자로 입력해 주세요."));
   }
 
+  // 프로필 사진(선택): 새 파일이 있을 때만 profile-avatars 버킷에 업로드 후 public URL 확보.
+  // 미선택이면 profileImageUrl = null → 기존 사진 유지(컬럼 미변경).
+  let profileImageUrl: string | null = null;
+  const profileImageFile = formData.get("profileImage");
+  if (profileImageFile instanceof File && profileImageFile.size > 0) {
+    const buffer = Buffer.from(await profileImageFile.arrayBuffer());
+    const uploaded = await uploadMentorAvatar(supabase, user.id, {
+      buffer,
+      mime: profileImageFile.type,
+    });
+    if (uploaded.error) {
+      redirect(errQ(uploaded.error));
+    }
+    profileImageUrl = uploaded.url;
+  }
+
   const r = await updateMentorProfile(supabase, {
     userId: user.id,
     intro,
@@ -63,6 +80,7 @@ export async function submitMentorProfileEdit(formData: FormData) {
     subscribeOpen,
     subscriptionPricesKrw,
     individualQuestionPriceCash: parseIndividualQuestionPriceCash(formData),
+    profileImageUrl,
   });
 
   if (!r.ok) {

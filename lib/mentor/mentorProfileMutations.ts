@@ -27,6 +27,8 @@ export type MentorProfileFormInput = {
   subscriptionPricesKrw?: Record<SubscribePlanTier, number | null>;
   /** 개별 질문(지정형) 답변 단가. null/미입력이면 변경하지 않음. 구독 요금제와 별개. */
   individualQuestionPriceCash?: number | null;
+  /** 프로필 사진 public URL. null/미입력이면 변경하지 않음(기존 사진 유지). */
+  profileImageUrl?: string | null;
 };
 
 const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "cancel_scheduled", "past_due"];
@@ -222,6 +224,18 @@ export async function updateMentorProfile(
   const { error: upErr } = await supabase.from("mentor_profiles").upsert(core, { onConflict: "user_id" });
   if (upErr) {
     return { ok: false, error: upErr.message };
+  }
+
+  // 프로필 사진: 새 URL이 있을 때만 갱신. core upsert와 분리해 컬럼 부재(SQL 미적용)
+  // 환경에서도 다른 필드 저장이 깨지지 않도록 missing-column 오류는 무시한다.
+  if (input.profileImageUrl) {
+    const { error: imgErr } = await supabase
+      .from("mentor_profiles")
+      .update({ profile_image_url: input.profileImageUrl, updated_at: now })
+      .eq("user_id", input.userId);
+    if (imgErr && !isMissingColumnError(imgErr)) {
+      return { ok: false, error: imgErr.message };
+    }
   }
 
   const extras: Record<string, unknown>[] = [

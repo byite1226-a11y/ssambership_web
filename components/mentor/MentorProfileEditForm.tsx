@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitMentorProfileEdit } from "@/lib/mentor/mentorProfileEditActions";
 import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
@@ -113,6 +113,36 @@ export function MentorProfileEditForm(props: {
       : "",
   );
 
+  // 프로필 사진: 숨김 file input + 클라이언트 검증(5MB·이미지) + 원형 미리보기.
+  // 실제 업로드는 폼 제출 시 서버액션(submitMentorProfileEdit)에서 처리.
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) {
+      setPhotoPreview(null);
+      setPhotoError(null);
+      return;
+    }
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setPhotoError("JPG, PNG, WEBP 이미지만 올릴 수 있어요.");
+      input.value = "";
+      setPhotoPreview(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError("이미지는 최대 5MB까지 올릴 수 있어요.");
+      input.value = "";
+      setPhotoPreview(null);
+      return;
+    }
+    setPhotoError(null);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
@@ -143,7 +173,7 @@ export function MentorProfileEditForm(props: {
     subjects: formData.subjects,
     tags: initial.tags,
     subOpen: formData.subOpen,
-    photoUrl: initial.photoUrl,
+    photoUrl: photoPreview ?? initial.photoUrl,
     verification: initial.verification,
   };
 
@@ -185,19 +215,35 @@ export function MentorProfileEditForm(props: {
               <div className="flex flex-col items-center gap-3">
                 <p className="w-full text-xs font-extrabold text-slate-500">프로필 사진</p>
                 <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-slate-100 bg-slate-50 shadow-inner">
-                  {initial.photoUrl ? (
-                    <img src={initial.photoUrl} alt="Profile" className="h-full w-full object-cover" />
+                  {photoPreview ?? initial.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photoPreview ?? initial.photoUrl} alt="프로필 사진" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-slate-300">
                       <Camera className="h-8 w-8" />
                     </div>
                   )}
                 </div>
-                <button type="button" className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  name="profileImage"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handlePhotoChange}
+                  className="sr-only"
+                />
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
                   사진 변경
                 </button>
+                {photoError ? (
+                  <p className="text-center text-[10px] font-bold text-red-600">{photoError}</p>
+                ) : null}
                 <div className="text-center text-[10px] leading-relaxed text-slate-400">
-                  권장 사이즈: 400x400px (JPG, PNG)<br />최대 5MB
+                  권장 사이즈: 400x400px (JPG, PNG, WEBP)<br />최대 5MB
                 </div>
               </div>
 
