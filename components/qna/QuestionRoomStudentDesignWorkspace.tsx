@@ -413,7 +413,10 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                   <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
                     <span>{weeklyQuestionQuotaLabel(weeklyUsage)}</span>
                     <span className="text-slate-400">
-                      {weeklyUsage?.planTier ? String(weeklyUsage.planTier).toUpperCase() : "플랜"}
+                      {(() => {
+                        const t = String(weeklyUsage?.planTier ?? "").toLowerCase();
+                        return t === "limited" ? "베이직" : t === "standard" ? "스탠다드" : t === "premium" ? "프리미엄" : "플랜";
+                      })()}
                     </span>
                   </div>
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">

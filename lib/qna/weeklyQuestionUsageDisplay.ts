@@ -26,13 +26,13 @@ export function weeklyUsageDisplayLimit(usage: WeeklyQuestionUsage): string {
   return String(usage.limit);
 }
 
-/** 질문방 UI — 주간 한도 표기 (예: 주 4개 질문 · 1/4) */
+/** 질문방 UI — 주간 한도 표기 (예: 주 4개 질문 · 잔여 3/4) */
 export function weeklyQuestionQuotaLabel(
   usage: Pick<WeeklyQuestionUsage, "used" | "limit"> | WeeklyUsageSnapshot | null | undefined
 ): string {
   if (!usage) return "주 —개 질문";
   if (usage.limit >= 999) return `주 무제한 질문 · ${usage.used} 사용`;
-  return `주 ${usage.limit}개 질문 · ${usage.used}/${usage.limit}`;
+  return `주 ${usage.limit}개 질문 · 잔여 ${Math.max(0, usage.limit - usage.used)}/${usage.limit}`;
 }
 
 export function weeklyUsageToSnapshot(usage: WeeklyQuestionUsage): WeeklyUsageSnapshot {

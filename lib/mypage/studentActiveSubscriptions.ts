@@ -100,8 +100,7 @@ export function formatQuestionsRemainingLabel(
         const cap =
           tier === "limited" ? 4 : tier === "standard" ? 9 : tier === "premium" ? 999 : null;
         if (cap != null && cap < 999) {
-          const used = Math.max(0, cap - v);
-          return `주 ${cap}개 질문 · ${used}/${cap}`;
+          return `주 ${cap}개 질문 · 잔여 ${Math.max(0, v)}/${cap}`;
         }
         return `남은 질문 ${v}회`;
       }

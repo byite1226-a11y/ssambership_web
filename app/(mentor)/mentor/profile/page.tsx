@@ -6,6 +6,7 @@ import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { buildMentorProfileDisplay, mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
+import { mentorSubjectChips } from "@/lib/mentor/mentorPublicProfileDisplay";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { fetchPlansForMentor } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
@@ -91,7 +92,7 @@ export default async function MentorProfilePage() {
             <p className="text-base font-extrabold text-slate-900">
               {display.university ? `${display.university} · ${display.department}` : "학교·학과 정보 준비 중"}
             </p>
-            <p className="mt-3 text-sm font-bold text-slate-800">과목: {display.subjects || "—"}</p>
+            <p className="mt-3 text-sm font-bold text-slate-800">과목: {mentorSubjectChips(display.subjects, 50).join(", ") || "—"}</p>
             <p className="mt-2 text-sm font-bold text-slate-800">태그: {display.tags || "—"}</p>
           </DashCard>
 
