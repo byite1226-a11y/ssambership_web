@@ -153,7 +153,7 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
                         {item.statusLabel}
                       </span>
                     </div>
-                    <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+                    <dl className="grid gap-3 text-sm break-keep sm:grid-cols-2">
                       <div className="rounded-xl bg-slate-50 px-4 py-3">
                         <dt className="text-xs font-bold text-slate-500">현재 기간</dt>
                         <dd className="mt-1 font-extrabold text-slate-900">{item.currentPeriodLabel}</dd>
@@ -170,7 +170,7 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
                         <dt className="text-xs font-bold text-slate-500">질문 리셋</dt>
                         <dd className="mt-1 font-extrabold text-slate-900">{item.weeklyResetLabel}</dd>
                       </div>
-                      <div className="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2 xl:col-span-4">
+                      <div className="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2">
                         <dt className="text-xs font-bold text-slate-500">예상 잔여 환불액</dt>
                         <dd className="mt-1 font-extrabold text-slate-900">{item.refundEstimateLabel}</dd>
                       </div>
