@@ -235,12 +235,6 @@ export function QuestionRoomListCatalog(props: {
                     마이페이지
                   </Link>
                   <Link
-                    href="/mentor/channel"
-                    className="block rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-bold text-slate-800 hover:border-emerald-200 hover:bg-emerald-50/60"
-                  >
-                    채널
-                  </Link>
-                  <Link
                     href="/mentor/question-room#question-rooms"
                     className="block rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center text-xs font-bold text-slate-800 hover:border-emerald-200 hover:bg-emerald-50/60"
                   >
