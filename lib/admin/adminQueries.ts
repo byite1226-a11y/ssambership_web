@@ -641,6 +641,454 @@ export async function loadAdminRefundsList(supabase: SupabaseClient, limit = 30)
   };
 }
 
+export type AdminListPagedResult = AdminListResult & { totalCount: number };
+
+/**
+ * PostgREST가 range 초과 시 'Requested range not satisfiable' (PGRST103) 에러를 던지며
+ * count=null 을 돌려준다. 그 경우 별도 head-count 쿼리로 진짜 total을 보정한다.
+ */
+function isRangeNotSatisfiableError(error: { message?: string; code?: string } | null): boolean {
+  if (!error) return false;
+  const m = String(error.message ?? "").toLowerCase();
+  const c = String(error.code ?? "");
+  return c === "PGRST103" || /range not satisfiable|invalid range/i.test(m);
+}
+
+/** 페이지네이션 쿼리 공통 처리: range 초과 시 head-count로 진짜 total 보정.
+ *  `.eq/.or` 가 가능한 PostgrestFilterBuilder 체인을 다루기 위해 타입은 ReturnType of `.select()` 사용.
+ */
+// .select() 이후 반환되는 PostgrestFilterBuilder — `.eq/.or/.range/.order` 모두 가능
+type PgRestQueryBuilder = ReturnType<ReturnType<SupabaseClient["from"]>["select"]>;
+async function runPagedListQuery(args: {
+  client: SupabaseClient;
+  table: string;
+  applyFilters: (q: PgRestQueryBuilder) => PgRestQueryBuilder;
+  from: number;
+  to: number;
+  orderColumn?: string;
+}): Promise<{ rows: Row[]; count: number; errorMsg: string | null }> {
+  const orderColumn = args.orderColumn ?? "created_at";
+  let q: PgRestQueryBuilder = args.client.from(args.table).select("*", { count: "exact" });
+  q = args.applyFilters(q);
+  const r1 = await q.order(orderColumn, { ascending: false }).range(args.from, args.to);
+  if (!r1.error) {
+    return { rows: ((r1.data as Row[] | null) ?? []), count: r1.count ?? 0, errorMsg: null };
+  }
+  if (isRangeNotSatisfiableError(r1.error)) {
+    let head: PgRestQueryBuilder = args.client.from(args.table).select("*", { count: "exact", head: true });
+    head = args.applyFilters(head);
+    const r2 = await head;
+    return { rows: [], count: r2.count ?? 0, errorMsg: null };
+  }
+  return { rows: [], count: 0, errorMsg: r1.error.message ?? null };
+}
+
+/**
+ * refunds 목록 검색·필터·페이지네이션 버전.
+ * - 검색: refund id / user_id / payment_id / subscription_id / custom_request_order_id / admin_note / reason 부분일치
+ * - 상태: pending / succeeded / rejected / canceled / all
+ * - 페이지네이션: PostgREST `.range()` 사용
+ * - 처리 로직(승인/거절 RPC) 무수정 — 목록 조회만.
+ */
+export async function loadAdminRefundsListPaged(
+  supabase: SupabaseClient,
+  args: { search: string; status: string; page: number; pageSize: number }
+): Promise<AdminListPagedResult> {
+  const { table, error: te } = await firstReadableAdminTable(supabase, ["refunds"]);
+  if (!table) {
+    return {
+      table: null,
+      sourceNote: "목록을 연결할 수 없습니다.",
+      rows: [],
+      error: te,
+      keyHints: {},
+      totalCount: 0,
+    };
+  }
+
+  const from = Math.max(0, (args.page - 1) * args.pageSize);
+  const to = from + args.pageSize - 1;
+  const applyFilters = (q: PgRestQueryBuilder): PgRestQueryBuilder => {
+    let r = q;
+    if (args.status && args.status !== "all") r = r.eq("status", args.status);
+    if (args.search) {
+      const s = args.search.replace(/[%_,]/g, " ").trim();
+      if (s) {
+        const looksLikeUuid = /^[0-9a-fA-F-]+$/.test(s);
+        const orParts: string[] = [];
+        if (looksLikeUuid) {
+          orParts.push(`id.ilike.${s}%`);
+          orParts.push(`user_id.ilike.${s}%`);
+          orParts.push(`payment_id.ilike.${s}%`);
+          orParts.push(`subscription_id.ilike.${s}%`);
+          orParts.push(`custom_request_order_id.ilike.${s}%`);
+        }
+        orParts.push(`admin_note.ilike.%${s}%`);
+        orParts.push(`reason.ilike.%${s}%`);
+        orParts.push(`request_type.ilike.%${s}%`);
+        r = r.or(orParts.join(","));
+      }
+    }
+    return r;
+  };
+  const paged = await runPagedListQuery({ client: supabase, table, applyFilters, from, to });
+
+  const pay = await pickExistingColumn(supabase, table, [
+    "payment_id",
+    "order_id",
+    "pg_payment_id",
+    "stripe_payment_intent",
+    "imp_uid",
+    "mcht_trd_no",
+  ] as const);
+  const st = await pickExistingColumn(supabase, table, ["status", "refund_status", "state"]);
+  const dCol = await pickExistingColumn(supabase, table, ["dispute_id", "case_id"]);
+
+  return {
+    table,
+    sourceNote: "최근 요청 기준으로 표시합니다.",
+    rows: paged.rows,
+    error: paged.errorMsg,
+    keyHints: { status: st.column, paymentRef: pay.column, disputeRef: dCol.column },
+    totalCount: paged.count,
+  };
+}
+
+/** 환불 상태별 카운트(탭 옆 표시용). 검색은 제외, 상태만. */
+export async function countAdminRefundsByStatus(
+  supabase: SupabaseClient
+): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  const statuses = ["pending", "succeeded", "rejected", "canceled"];
+  const { count: totalAll } = await supabase
+    .from("refunds")
+    .select("*", { count: "exact", head: true });
+  out.all = totalAll ?? 0;
+  for (const s of statuses) {
+    const { count } = await supabase
+      .from("refunds")
+      .select("*", { count: "exact", head: true })
+      .eq("status", s);
+    out[s] = count ?? 0;
+  }
+  return out;
+}
+
+/** content_reports 페이지네이션 버전. */
+export async function loadAdminReportsListPaged(
+  supabase: SupabaseClient,
+  args: { search: string; status: string; page: number; pageSize: number }
+): Promise<AdminListPagedResult> {
+  const TABLE = "content_reports";
+  const { error: probe } = await supabase.from(TABLE).select("id").limit(1);
+  if (probe) {
+    return {
+      table: null,
+      sourceNote: "목록을 연결할 수 없습니다.",
+      rows: [],
+      error: probe.message,
+      keyHints: {},
+      totalCount: 0,
+    };
+  }
+
+  const from = Math.max(0, (args.page - 1) * args.pageSize);
+  const to = from + args.pageSize - 1;
+  const applyFilters = (q: PgRestQueryBuilder): PgRestQueryBuilder => {
+    let r = q;
+    if (args.status && args.status !== "all") r = r.eq("status", args.status);
+    if (args.search) {
+      const s = args.search.replace(/[%_,]/g, " ").trim();
+      if (s) {
+        const looksLikeUuid = /^[0-9a-fA-F-]+$/.test(s);
+        const orParts: string[] = [];
+        if (looksLikeUuid) {
+          orParts.push(`id.ilike.${s}%`);
+          orParts.push(`target_id.ilike.${s}%`);
+          orParts.push(`reporter_id.ilike.${s}%`);
+          orParts.push(`resolved_by.ilike.${s}%`);
+        }
+        orParts.push(`reason.ilike.%${s}%`);
+        orParts.push(`description.ilike.%${s}%`);
+        orParts.push(`admin_note.ilike.%${s}%`);
+        orParts.push(`target_type.ilike.%${s}%`);
+        r = r.or(orParts.join(","));
+      }
+    }
+    return r;
+  };
+  const paged = await runPagedListQuery({ client: supabase, table: TABLE, applyFilters, from, to });
+  return {
+    table: TABLE,
+    sourceNote: "최근 신고 순.",
+    rows: paged.rows,
+    error: paged.errorMsg,
+    keyHints: { status: "status", targetType: "target_type" },
+    totalCount: paged.count,
+  };
+}
+
+export async function countAdminReportsByStatus(
+  supabase: SupabaseClient
+): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  const statuses = ["pending", "reviewing", "resolved", "rejected", "dismissed", "hidden", "removed"];
+  const { count: total } = await supabase
+    .from("content_reports")
+    .select("*", { count: "exact", head: true });
+  out.all = total ?? 0;
+  for (const s of statuses) {
+    const { count } = await supabase
+      .from("content_reports")
+      .select("*", { count: "exact", head: true })
+      .eq("status", s);
+    out[s] = count ?? 0;
+  }
+  return out;
+}
+
+/** custom_request_orders 페이지네이션. */
+export async function loadAdminCustomRequestOrdersListPaged(
+  supabase: SupabaseClient,
+  args: { search: string; status: string; page: number; pageSize: number }
+): Promise<AdminListPagedResult> {
+  const TABLE = "custom_request_orders";
+  const from = Math.max(0, (args.page - 1) * args.pageSize);
+  const to = from + args.pageSize - 1;
+  const applyFilters = (q: PgRestQueryBuilder): PgRestQueryBuilder => {
+    let r = q;
+    if (args.status && args.status !== "all") r = r.eq("status", args.status);
+    if (args.search) {
+      const s = args.search.replace(/[%_,]/g, " ").trim();
+      if (s) {
+        const orParts: string[] = [
+          `id.ilike.${s}%`,
+          `post_id.ilike.${s}%`,
+          `student_id.ilike.${s}%`,
+          `mentor_id.ilike.${s}%`,
+          `payment_status.ilike.%${s}%`,
+          `status.ilike.%${s}%`,
+        ];
+        r = r.or(orParts.join(","));
+      }
+    }
+    return r;
+  };
+  const paged = await runPagedListQuery({ client: supabase, table: TABLE, applyFilters, from, to });
+  return {
+    table: TABLE,
+    sourceNote: "최근 주문 순.",
+    rows: paged.rows,
+    error: paged.errorMsg,
+    keyHints: { status: "status" },
+    totalCount: paged.count,
+  };
+}
+
+export async function countAdminCustomRequestOrdersByStatus(
+  supabase: SupabaseClient
+): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  const statuses = [
+    "pending",
+    "open",
+    "delivered",
+    "revision_requested",
+    "completed",
+    "disputed",
+    "cancelled",
+    "refunded",
+  ];
+  const { count: total } = await supabase
+    .from("custom_request_orders")
+    .select("*", { count: "exact", head: true });
+  out.all = total ?? 0;
+  for (const s of statuses) {
+    const { count } = await supabase
+      .from("custom_request_orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", s);
+    out[s] = count ?? 0;
+  }
+  return out;
+}
+
+/** disputes 페이지네이션. */
+export async function loadAdminDisputesListPaged(
+  supabase: SupabaseClient,
+  args: { search: string; status: string; page: number; pageSize: number },
+  opts?: { adminBypassClient?: SupabaseClient }
+): Promise<AdminListPagedResult> {
+  const TABLE = "disputes";
+  // RLS 우회 — disputes 페이지는 service_role 클라이언트로 우선
+  const client = opts?.adminBypassClient ?? supabase;
+  const from = Math.max(0, (args.page - 1) * args.pageSize);
+  const to = from + args.pageSize - 1;
+  const applyFilters = (q: PgRestQueryBuilder): PgRestQueryBuilder => {
+    let r = q;
+    if (args.status && args.status !== "all") r = r.eq("status", args.status);
+    if (args.search) {
+      const s = args.search.replace(/[%_,]/g, " ").trim();
+      if (s) {
+        const orParts: string[] = [
+          `id.ilike.${s}%`,
+          `student_id.ilike.${s}%`,
+          `mentor_id.ilike.${s}%`,
+          `custom_request_order_id.ilike.${s}%`,
+          `subscription_id.ilike.${s}%`,
+          `body.ilike.%${s}%`,
+          `admin_note.ilike.%${s}%`,
+        ];
+        r = r.or(orParts.join(","));
+      }
+    }
+    return r;
+  };
+  const paged = await runPagedListQuery({ client, table: TABLE, applyFilters, from, to });
+  return {
+    table: TABLE,
+    sourceNote: "최근 분쟁 순.",
+    rows: paged.rows,
+    error: paged.errorMsg,
+    keyHints: { status: "status" },
+    totalCount: paged.count,
+  };
+}
+
+export async function countAdminDisputesByStatus(
+  supabase: SupabaseClient,
+  opts?: { adminBypassClient?: SupabaseClient }
+): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  const client = opts?.adminBypassClient ?? supabase;
+  const statuses = ["open", "under_review", "resolved", "dismissed", "escalated"];
+  const { count: total } = await client.from("disputes").select("*", { count: "exact", head: true });
+  out.all = total ?? 0;
+  for (const s of statuses) {
+    const { count } = await client
+      .from("disputes")
+      .select("*", { count: "exact", head: true })
+      .eq("status", s);
+    out[s] = count ?? 0;
+  }
+  return out;
+}
+
+/** mentor_profiles 페이지네이션 — 멘토 승인 화면. users join 검색을 위해 후처리(메모리). */
+export async function loadAdminMentorApprovalsListPaged(
+  supabase: SupabaseClient,
+  args: { search: string; status: string; page: number; pageSize: number }
+): Promise<AdminListPagedResult> {
+  const db = mentorProfilesAdminReadClient(supabase);
+  const TABLE = "mentor_profiles";
+  const from = Math.max(0, (args.page - 1) * args.pageSize);
+  const to = from + args.pageSize - 1;
+  const applyFilters = (q: PgRestQueryBuilder): PgRestQueryBuilder => {
+    let r = q;
+    if (args.status && args.status !== "all") r = r.eq("verification_status", args.status);
+    if (args.search) {
+      const s = args.search.replace(/[%_,]/g, " ").trim();
+      if (s) {
+        const orParts: string[] = [
+          `user_id.ilike.${s}%`,
+          `university_name.ilike.%${s}%`,
+          `department_name.ilike.%${s}%`,
+          `high_school_name.ilike.%${s}%`,
+          `intro_line.ilike.%${s}%`,
+        ];
+        r = r.or(orParts.join(","));
+      }
+    }
+    return r;
+  };
+  const paged = await runPagedListQuery({ client: db, table: TABLE, applyFilters, from, to });
+  return {
+    table: TABLE,
+    sourceNote: "최근 멘토 등록 순.",
+    rows: paged.rows,
+    error: paged.errorMsg,
+    keyHints: { status: "verification_status" },
+    totalCount: paged.count,
+  };
+}
+
+export async function countAdminMentorApprovalsByStatus(
+  supabase: SupabaseClient
+): Promise<Record<string, number>> {
+  const db = mentorProfilesAdminReadClient(supabase);
+  const out: Record<string, number> = {};
+  const statuses = ["pending", "submitted", "under_review", "approved", "rejected"];
+  const { count: total } = await db.from("mentor_profiles").select("*", { count: "exact", head: true });
+  out.all = total ?? 0;
+  for (const s of statuses) {
+    const { count } = await db
+      .from("mentor_profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("verification_status", s);
+    out[s] = count ?? 0;
+  }
+  return out;
+}
+
+/** mentor_academic_record_change_requests 페이지네이션. */
+export async function loadAdminAcademicRecordChangesListPaged(
+  supabase: SupabaseClient,
+  args: { search: string; status: string; page: number; pageSize: number }
+): Promise<AdminListPagedResult> {
+  const db = mentorProfilesAdminReadClient(supabase);
+  const TABLE = "mentor_academic_record_change_requests";
+  const from = Math.max(0, (args.page - 1) * args.pageSize);
+  const to = from + args.pageSize - 1;
+  const applyFilters = (q: PgRestQueryBuilder): PgRestQueryBuilder => {
+    let r = q;
+    if (args.status && args.status !== "all") r = r.eq("status", args.status);
+    if (args.search) {
+      const s = args.search.replace(/[%_,]/g, " ").trim();
+      if (s) {
+        const orParts: string[] = [
+          `id.ilike.${s}%`,
+          `mentor_id.ilike.${s}%`,
+          `change_reason.ilike.%${s}%`,
+          `requested_university_name.ilike.%${s}%`,
+          `approved_university_name.ilike.%${s}%`,
+          `reject_reason.ilike.%${s}%`,
+        ];
+        r = r.or(orParts.join(","));
+      }
+    }
+    return r;
+  };
+  const paged = await runPagedListQuery({ client: db, table: TABLE, applyFilters, from, to });
+  return {
+    table: TABLE,
+    sourceNote: "최근 학적변경 요청 순.",
+    rows: paged.rows,
+    error: paged.errorMsg,
+    keyHints: { status: "status" },
+    totalCount: paged.count,
+  };
+}
+
+export async function countAdminAcademicRecordChangesByStatus(
+  supabase: SupabaseClient
+): Promise<Record<string, number>> {
+  const db = mentorProfilesAdminReadClient(supabase);
+  const out: Record<string, number> = {};
+  const statuses = ["pending", "resubmit_required", "approved", "rejected"];
+  const { count: total } = await db
+    .from("mentor_academic_record_change_requests")
+    .select("*", { count: "exact", head: true });
+  out.all = total ?? 0;
+  for (const s of statuses) {
+    const { count } = await db
+      .from("mentor_academic_record_change_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("status", s);
+    out[s] = count ?? 0;
+  }
+  return out;
+}
+
 export async function loadAdminReviewsList(supabase: SupabaseClient, limit = 50): Promise<AdminListResult> {
   const { table, error: te } = await firstReadableAdminTable(supabase, ["reviews", "mentor_reviews", "mentor_review"]);
   if (!table) {

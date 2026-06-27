@@ -1,7 +1,14 @@
 import { AdminMentorApprovalWorkspace } from "@/components/admin/AdminMentorApprovalWorkspace";
+import { AdminListToolbar } from "@/components/admin/AdminListToolbar";
+import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { createClient } from "@/lib/supabase/server";
-import { fetchAdminUsersDisplayByIds, loadMentorApprovalsList } from "@/lib/admin/adminQueries";
+import {
+  countAdminMentorApprovalsByStatus,
+  fetchAdminUsersDisplayByIds,
+  loadAdminMentorApprovalsListPaged,
+} from "@/lib/admin/adminQueries";
 import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
+import { parseAdminListParams } from "@/lib/admin/adminListParams";
 import {
   fetchMentorSchoolVerificationProfilesByIds,
   loadMentorSchoolVerificationReviewRows,
@@ -43,12 +50,23 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
   const flashOkMessage = schoolFlashOk ?? flashOk;
 
   const supabase = await createClient();
-  const [list, schoolVerificationList, classificationCatalogs, schoolTierMappings] = await Promise.all([
-    loadMentorApprovalsList(supabase, 50),
+  const params = parseAdminListParams(sp, { defaultPageSize: 25, defaultStatus: "pending" });
+  const [list, byStatus, schoolVerificationList, classificationCatalogs, schoolTierMappings] = await Promise.all([
+    loadAdminMentorApprovalsListPaged(supabase, params),
+    countAdminMentorApprovalsByStatus(supabase),
     loadMentorSchoolVerificationReviewRows(supabase, 50),
     loadSchoolClassificationCatalogs(supabase),
     loadSchoolTierMappings(supabase),
   ]);
+  const MENTOR_APPROVAL_BASE_PATH = "/admin/mentor-approval";
+  const statusTabs = [
+    { value: "pending", label: "대기", count: byStatus.pending ?? 0 },
+    { value: "submitted", label: "제출됨", count: byStatus.submitted ?? 0 },
+    { value: "under_review", label: "검토 중", count: byStatus.under_review ?? 0 },
+    { value: "approved", label: "승인", count: byStatus.approved ?? 0 },
+    { value: "rejected", label: "반려", count: byStatus.rejected ?? 0 },
+    { value: "all", label: "전체", count: byStatus.all ?? 0 },
+  ];
   // [보안 주석] service_role로 RLS 우회
   // 이 페이지는 (admin)/layout.tsx + (admin)/(console)/layout.tsx
   // 이중 requireRole("admin") 가드로 보호됨.
@@ -109,6 +127,12 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
     <div className="space-y-4">
       {flashOkMessage ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">{flashOkMessage}</p> : null}
       {flashErr ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{flashErr}</p> : null}
+      <AdminListToolbar
+        basePath={MENTOR_APPROVAL_BASE_PATH}
+        params={params}
+        searchPlaceholder="멘토 ID/대학·학과/고교/소개로 검색"
+        statusTabs={statusTabs}
+      />
       <AdminMentorApprovalWorkspace
         rows={list.rows as Record<string, unknown>[]}
         userById={userById}
@@ -122,6 +146,12 @@ export default async function AdminMentorApprovalPage(props: PageProps) {
         schoolTierSuggestionByVerificationId={schoolTierSuggestionByVerificationId}
         statusFilter={filter}
         statusColumn={list.keyHints.status ?? null}
+      />
+      <AdminListPagination
+        basePath={MENTOR_APPROVAL_BASE_PATH}
+        params={params}
+        totalCount={list.totalCount}
+        rowsOnPage={list.rows.length}
       />
     </div>
   );

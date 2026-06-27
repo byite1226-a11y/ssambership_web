@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
+import { AdminListToolbar } from "@/components/admin/AdminListToolbar";
+import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { createClient } from "@/lib/supabase/server";
-import { loadAdminDashboardSummary, loadAdminRefundsList } from "@/lib/admin/adminQueries";
+import {
+  countAdminRefundsByStatus,
+  loadAdminDashboardSummary,
+  loadAdminRefundsListPaged,
+} from "@/lib/admin/adminQueries";
 import { approveAdminRefundAction, rejectAdminRefundAction } from "@/lib/admin/refundActions";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
+import { parseAdminListParams } from "@/lib/admin/adminListParams";
 
 type Row = Record<string, unknown>;
 
@@ -118,8 +125,21 @@ export default async function AdminRefundsPage(props: PageProps) {
   const flashErr = typeof errParam === "string" ? errParam : Array.isArray(errParam) ? errParam[0] : null;
 
   const supabase = await createClient();
-  const [list, summary] = await Promise.all([loadAdminRefundsList(supabase, 50), loadAdminDashboardSummary(supabase)]);
+  const params = parseAdminListParams(sp, { defaultPageSize: 25, defaultStatus: "pending" });
+  const [list, summary, byStatus] = await Promise.all([
+    loadAdminRefundsListPaged(supabase, params),
+    loadAdminDashboardSummary(supabase),
+    countAdminRefundsByStatus(supabase),
+  ]);
   const rows = (list.rows as Row[]) ?? [];
+  const REFUND_BASE_PATH = "/admin/refunds";
+  const statusTabs = [
+    { value: "pending", label: "대기", count: byStatus.pending ?? 0 },
+    { value: "succeeded", label: "승인", count: byStatus.succeeded ?? 0 },
+    { value: "rejected", label: "거절", count: byStatus.rejected ?? 0 },
+    { value: "canceled", label: "취소", count: byStatus.canceled ?? 0 },
+    { value: "all", label: "전체", count: byStatus.all ?? 0 },
+  ];
 
   return (
     <PageScaffold
@@ -180,10 +200,17 @@ export default async function AdminRefundsPage(props: PageProps) {
           </p>
         ) : null}
 
+        <AdminListToolbar
+          basePath={REFUND_BASE_PATH}
+          params={params}
+          searchPlaceholder="환불/사용자/결제/구독 ID, 사유, 메모로 검색"
+          statusTabs={statusTabs}
+        />
+
         <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-bold text-slate-800">환불 요청 목록</h2>
-            <AdminStatusBadge result={list} hint="최근 요청부터 최대 50건" />
+            <AdminStatusBadge result={list} hint={`현재 ${list.totalCount.toLocaleString("ko-KR")}건 매칭`} />
           </div>
           <p className="text-xs font-medium text-slate-400">환불 요청의 결제 정보와 처리 상태를 확인할 수 있습니다.</p>
         </div>
@@ -214,13 +241,14 @@ export default async function AdminRefundsPage(props: PageProps) {
                 {rows.length}건
               </span>
             </div>
-            <table className="w-full min-w-[960px] text-left text-sm">
+            <table className="w-full min-w-[1080px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/40">
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">환불 ID</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">사용자</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">환불 금액</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">상태</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">사유</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">결제 ID</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">맞춤의뢰 ID</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">요청일</th>
@@ -254,6 +282,31 @@ export default async function AdminRefundsPage(props: PageProps) {
                         <span className={`inline-block border rounded-lg px-2.5 py-1 text-xs font-bold ${statusBadgeClass(st)}`}>
                           {refundStatusLabel(st)}
                         </span>
+                      </td>
+                      <td className="max-w-[240px] px-5 py-4 text-xs text-slate-700">
+                        {(() => {
+                          const reason = firstString(row, ["reason"]);
+                          const reqType = firstString(row, ["request_type"]);
+                          const adminNote = firstString(row, ["admin_note"]);
+                          if (!reason && !reqType && !adminNote) return <span className="text-slate-400">—</span>;
+                          return (
+                            <div className="space-y-0.5 leading-snug">
+                              {reqType ? (
+                                <p className="text-[11px] font-extrabold uppercase text-blue-700">{reqType}</p>
+                              ) : null}
+                              {reason ? (
+                                <p className="break-words text-slate-800" title={reason}>
+                                  {reason}
+                                </p>
+                              ) : null}
+                              {adminNote ? (
+                                <p className="text-[11px] font-semibold text-slate-500" title={adminNote}>
+                                  메모: {adminNote}
+                                </p>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-600" title={payPv.title}>
                         {payPv.display}
@@ -312,6 +365,12 @@ export default async function AdminRefundsPage(props: PageProps) {
                 })}
               </tbody>
             </table>
+            <AdminListPagination
+              basePath={REFUND_BASE_PATH}
+              params={params}
+              totalCount={list.totalCount}
+              rowsOnPage={rows.length}
+            />
           </div>
         )}
       </div>

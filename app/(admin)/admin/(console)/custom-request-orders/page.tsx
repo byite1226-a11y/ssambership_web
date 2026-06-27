@@ -1,11 +1,22 @@
 import Link from "next/link";
 import { AdminDataTable } from "@/components/admin/AdminDataTable";
+import { AdminListToolbar } from "@/components/admin/AdminListToolbar";
+import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { requireRole } from "@/lib/auth/routeGuard";
-import { fetchAdminUsersDisplayByIds } from "@/lib/admin/adminQueries";
+import {
+  countAdminCustomRequestOrdersByStatus,
+  fetchAdminUsersDisplayByIds,
+  loadAdminCustomRequestOrdersListPaged,
+} from "@/lib/admin/adminQueries";
 import { mentorProfilesAdminReadClient } from "@/lib/admin/mentorProfilesAdminRead";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { parseAdminListParams } from "@/lib/admin/adminListParams";
+
+type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
+
+const ORDERS_BASE_PATH = "/admin/custom-request-orders";
 
 type Row = Record<string, unknown>;
 
@@ -36,7 +47,7 @@ function userLabel(userById: Map<string, { nickname: string | null; full_name: s
   return row?.full_name?.trim() || row?.nickname?.trim() || id.slice(0, 8);
 }
 
-async function loadOrders() {
+async function loadOrders(params: { search: string; status: string; page: number; pageSize: number }) {
   let db = await createClient();
   try {
     // 관리자 운영 목록은 RLS로 막힐 수 있어 service_role을 우선 사용한다.
@@ -46,14 +57,8 @@ async function loadOrders() {
     /* session client fallback */
   }
 
-  let query = db.from("custom_request_orders").select("*").order("created_at", { ascending: false }).limit(100);
-  let { data, error } = await query;
-  if (error && /column|schema cache|Could not find/i.test(error.message)) {
-    const fallback = await db.from("custom_request_orders").select("*").limit(100);
-    data = fallback.data;
-    error = fallback.error;
-  }
-  return { db, rows: ((data ?? []) as Row[]), error: error?.message ?? null };
+  const paged = await loadAdminCustomRequestOrdersListPaged(db, params);
+  return { db, rows: paged.rows as Row[], error: paged.error, totalCount: paged.totalCount };
 }
 
 async function loadPostTitles(db: Awaited<ReturnType<typeof createClient>>, postIds: string[]) {
@@ -69,10 +74,30 @@ async function loadPostTitles(db: Awaited<ReturnType<typeof createClient>>, post
   return map;
 }
 
-export default async function AdminCustomRequestOrdersPage() {
+export default async function AdminCustomRequestOrdersPage(props: PageProps) {
   await requireRole("admin");
-  const { db, rows, error } = await loadOrders();
+  const sp = (await props.searchParams) ?? {};
+  const params = parseAdminListParams(sp, { defaultPageSize: 25, defaultStatus: "all" });
+  const { db, rows, error, totalCount } = await loadOrders(params);
   const postTitles = await loadPostTitles(db, rows.map((r) => text(r, ["post_id", "custom_request_post_id"], "")));
+  // 상태별 카운트 — 동일 db 클라이언트로 안전하게.
+  let byStatus: Record<string, number> = {};
+  try {
+    byStatus = await countAdminCustomRequestOrdersByStatus(db);
+  } catch {
+    byStatus = { all: totalCount };
+  }
+  const statusTabs = [
+    { value: "all", label: "전체", count: byStatus.all ?? totalCount },
+    { value: "pending", label: "대기", count: byStatus.pending ?? 0 },
+    { value: "open", label: "작업 중", count: byStatus.open ?? 0 },
+    { value: "delivered", label: "납품 대기", count: byStatus.delivered ?? 0 },
+    { value: "revision_requested", label: "수정 요청", count: byStatus.revision_requested ?? 0 },
+    { value: "completed", label: "완료", count: byStatus.completed ?? 0 },
+    { value: "disputed", label: "분쟁", count: byStatus.disputed ?? 0 },
+    { value: "cancelled", label: "취소", count: byStatus.cancelled ?? 0 },
+    { value: "refunded", label: "환불", count: byStatus.refunded ?? 0 },
+  ];
 
   const userIds = new Set<string>();
   for (const row of rows) {
@@ -104,7 +129,13 @@ export default async function AdminCustomRequestOrdersPage() {
             주문 목록을 불러오지 못했습니다.
           </p>
         ) : null}
-        <AdminDataTable title="최근 주문" count={rows.length}>
+        <AdminListToolbar
+          basePath={ORDERS_BASE_PATH}
+          params={params}
+          searchPlaceholder="주문/공모/학생/멘토 ID, 상태 검색"
+          statusTabs={statusTabs}
+        />
+        <AdminDataTable title="주문 목록" count={totalCount}>
           <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
             <thead className="bg-slate-50 text-xs font-extrabold uppercase tracking-wide text-slate-500">
               <tr>
@@ -156,6 +187,12 @@ export default async function AdminCustomRequestOrdersPage() {
             </tbody>
           </table>
         </AdminDataTable>
+        <AdminListPagination
+          basePath={ORDERS_BASE_PATH}
+          params={params}
+          totalCount={totalCount}
+          rowsOnPage={rows.length}
+        />
       </div>
     </PageScaffold>
   );
