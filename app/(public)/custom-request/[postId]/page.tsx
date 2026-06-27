@@ -114,7 +114,7 @@ export default async function CustomRequestPostPublicPage(props: Props) {
         <p className="cr-detail-footer-link">
           <Link
             href="/custom-request"
-            className="font-extrabold text-[#1A56DB] underline decoration-blue-200 underline-offset-2 hover:text-blue-800"
+            className="font-extrabold text-[#2563EB] underline decoration-blue-200 underline-offset-2 hover:text-blue-800"
           >
             맞춤의뢰 홈으로
           </Link>

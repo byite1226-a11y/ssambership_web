@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import type { AdminDashboardExtended } from "@/lib/admin/adminDashboardExtended";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 
 const QUICK_LINKS = [
   { href: "/admin/mentor-approval", label: "멘토 승인" },
@@ -92,19 +92,25 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-extrabold text-slate-900">문의·신고 처리 상태</h2>
-          <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={donut} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
-                  {donut.map((entry) => (
-                    <Cell key={entry.name} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Legend />
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {donut.some((e) => e.value > 0) ? (
+            <div className="mt-4 h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={donut} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2}>
+                    {donut.map((entry) => (
+                      <Cell key={entry.name} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Legend />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="mt-4 flex h-64 items-center justify-center text-sm font-medium text-slate-500">
+              표시할 데이터가 없어요
+            </div>
+          )}
         </section>
       </div>
 
@@ -144,7 +150,7 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <Link href={row.href} className="font-bold text-[#1A56DB] hover:underline">
+                      <Link href={row.href} className="font-bold text-[#2563EB] hover:underline">
                         {row.title}
                       </Link>
                     </td>
@@ -161,7 +167,7 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
           </table>
         </div>
         <div className="border-t border-slate-100 px-5 py-3 text-center">
-          <button type="button" className="text-xs font-bold text-slate-500 hover:text-[#1A56DB]">
+          <button type="button" className="text-xs font-bold text-slate-500 hover:text-[#2563EB]">
             더 보기 ∨
           </button>
         </div>
@@ -175,7 +181,7 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
               <Link
                 key={q.href}
                 href={q.href}
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-xs font-bold text-slate-800 transition hover:border-[#1A56DB] hover:bg-blue-50 hover:text-[#1A56DB]"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-center text-xs font-bold text-slate-800 transition hover:border-[#2563EB] hover:bg-blue-50 hover:text-[#2563EB]"
               >
                 {q.label}
               </Link>
@@ -186,7 +192,7 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-extrabold text-slate-900">오늘 일정</h2>
-            <Link href="/admin/notices" className="text-xs font-bold text-[#1A56DB] hover:underline">
+            <Link href="/admin/notices" className="text-xs font-bold text-[#2563EB] hover:underline">
               전체 보기 &gt;
             </Link>
           </div>
@@ -196,7 +202,7 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
             ) : (
               schedule.map((s) => (
                 <li key={s.time} className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
-                  <span className="shrink-0 text-xs font-black text-[#1A56DB]">{s.time}</span>
+                  <span className="shrink-0 text-xs font-black text-[#2563EB]">{s.time}</span>
                   <span className="text-sm font-semibold text-slate-800">{s.title}</span>
                 </li>
               ))
@@ -204,7 +210,7 @@ export function AdminDashboardView(props: { data: AdminDashboardExtended }) {
           </ul>
           <button
             type="button"
-            className="mt-4 w-full rounded-xl border border-dashed border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:border-[#1A56DB] hover:text-[#1A56DB]"
+            className="mt-4 w-full rounded-xl border border-dashed border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:border-[#2563EB] hover:text-[#2563EB]"
           >
             + 일정 추가
           </button>

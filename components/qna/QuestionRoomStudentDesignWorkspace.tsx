@@ -117,7 +117,7 @@ function ChatSendButton(props: { disabled?: boolean }) {
       type="submit"
       disabled={props.disabled || pending}
       aria-label="전송"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#1A56DB] text-white hover:bg-[#1648c0] disabled:bg-slate-200"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#2563EB] text-white hover:bg-[#1D4ED8] disabled:bg-slate-200"
     >
       <Send className="h-4 w-4" />
     </button>
@@ -250,7 +250,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
         </p>
         <Link
           href="/mentors"
-          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
         >
           멘토 찾기
         </Link>
@@ -282,7 +282,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="멘토 또는 질문방 검색"
-                className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-[12px] font-medium outline-none focus:border-[#1A56DB] focus:ring-1 focus:ring-[#1A56DB]/30"
+                className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-[12px] font-medium outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB]/30"
               />
             </div>
           </div>
@@ -309,12 +309,12 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     href={`/question-room/${encodeURIComponent(rid)}`}
                     className={`relative mb-2 block rounded-xl border p-3 pr-8 transition ${
                       selected
-                        ? "border-l-[3px] border-l-[#1A56DB] border-slate-200 bg-[#EEF4FF] shadow-sm"
+                        ? "border-l-[3px] border-l-[#2563EB] border-slate-200 bg-[#EEF4FF] shadow-sm"
                         : "border-transparent hover:bg-slate-50"
                     }`}
                   >
                     {unread > 0 ? (
-                      <span className="absolute right-2 top-2 z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#1A56DB] px-1.5 text-[10px] font-black text-white">
+                      <span className="absolute right-2 top-2 z-10 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#2563EB] px-1.5 text-[10px] font-black text-white">
                         {unread > 9 ? "9+" : unread}
                       </span>
                     ) : null}
@@ -340,7 +340,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                         ) : (
                           <p className="mt-1 text-[10px] font-medium text-slate-400">과목 정보 없음</p>
                         )}
-                        <p className="mt-1 text-[10px] font-bold text-[#1A56DB]">
+                        <p className="mt-1 text-[10px] font-bold text-[#2563EB]">
                           {weeklyQuestionQuotaLabel(usage)}
                         </p>
                         <p className="mt-0.5 text-[9px] font-medium text-slate-400">
@@ -362,7 +362,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
           <div className="shrink-0 border-t border-slate-100 p-3">
             <Link
               href="/mentors"
-              className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#1A56DB]/40 bg-[#EEF4FF] text-[12px] font-black text-[#1A56DB] transition hover:bg-[#E0ECFF]"
+              className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#2563EB]/40 bg-[#EEF4FF] text-[12px] font-black text-[#2563EB] transition hover:bg-[#E0ECFF]"
             >
               <Plus className="h-4 w-4" />
               질문방 구독하기
@@ -389,7 +389,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                   <h1 className="text-[18px] font-black text-slate-900">
                     {roomMentorLabel(currentRoom ?? {}, props.mentorDisplays)}
                   </h1>
-                  <span className="inline-flex items-center gap-0.5 rounded-md bg-[#1A56DB] px-1.5 py-0.5 text-[10px] font-black text-white">
+                  <span className="inline-flex items-center gap-0.5 rounded-md bg-[#2563EB] px-1.5 py-0.5 text-[10px] font-black text-white">
                     <BadgeCheck className="h-3 w-3" />
                     인증
                   </span>
@@ -402,7 +402,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                     {subjectChipsRoom.map((c) => (
                       <span
                         key={c}
-                        className="rounded-md border border-[#1A56DB]/40 bg-white px-2 py-0.5 text-[10px] font-bold text-[#1A56DB]"
+                        className="rounded-md border border-[#2563EB]/40 bg-white px-2 py-0.5 text-[10px] font-bold text-[#2563EB]"
                       >
                         {c}
                       </span>
@@ -421,7 +421,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                   </div>
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className="h-full rounded-full bg-[#1A56DB] transition-all"
+                      className="h-full rounded-full bg-[#2563EB] transition-all"
                       style={{
                         width:
                           weeklyUsage && weeklyUsage.limit > 0 && weeklyUsage.limit < 999
@@ -572,7 +572,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
-                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 outline-none focus:border-[#1A56DB]"
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 outline-none focus:border-[#2563EB]"
               >
                 <option value="newest">최신순</option>
                 <option value="oldest">오래된순</option>
@@ -660,7 +660,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                   type="button"
                   disabled={weeklyUsage != null && !weeklyUsage.canAsk}
                   onClick={() => setNewQuestionOpen(true)}
-                  className="mx-auto flex h-11 items-center justify-center gap-2 rounded-full border border-[#1A56DB]/20 bg-[#EEF4FF] px-6 text-[13px] font-black text-[#1A56DB] transition hover:bg-[#E0ECFF] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="mx-auto flex h-11 items-center justify-center gap-2 rounded-full border border-[#2563EB]/20 bg-[#EEF4FF] px-6 text-[13px] font-black text-[#2563EB] transition hover:bg-[#E0ECFF] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <Plus className="h-4 w-4" />
                   새로운 질문하기

@@ -21,7 +21,7 @@ export function MentorsListQuickLinks(props: { favoriteCount: number }) {
       </Link>
       <Link
         href="/mentors?view=list"
-        className="inline-flex min-h-[44px] items-center rounded-xl border border-[#1A56DB]/30 bg-blue-50/50 px-3 text-xs font-extrabold text-[#1A56DB] hover:bg-blue-50 sm:px-4 sm:text-sm"
+        className="inline-flex min-h-[44px] items-center rounded-xl border border-[#2563EB]/30 bg-blue-50/50 px-3 text-xs font-extrabold text-[#2563EB] hover:bg-blue-50 sm:px-4 sm:text-sm"
       >
         찜한 멘토 {props.favoriteCount}
       </Link>

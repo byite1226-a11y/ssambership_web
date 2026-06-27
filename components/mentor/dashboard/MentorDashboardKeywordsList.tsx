@@ -8,7 +8,7 @@ export function MentorDashboardKeywordsList(props: { keywords: MentorHubKeywordR
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-2">
         <h3 className="text-sm font-extrabold text-slate-900">의뢰 분야별 인기 키워드</h3>
-        <Link href="/mentor/custom-request/posts" className="text-[12px] font-bold text-[#1A56DB] hover:underline">
+        <Link href="/mentor/custom-request/posts" className="text-[12px] font-bold text-[#2563EB] hover:underline">
           전체 보기 &gt;
         </Link>
       </div>
@@ -19,7 +19,7 @@ export function MentorDashboardKeywordsList(props: { keywords: MentorHubKeywordR
         <ol className="space-y-3">
           {keywords.map((row) => (
             <li key={`${row.rank}-${row.keyword}`} className="flex items-center gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xs font-black text-[#1A56DB]">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xs font-black text-[#2563EB]">
                 {row.rank}
               </span>
               <div className="min-w-0 flex-1">

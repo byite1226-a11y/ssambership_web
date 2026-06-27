@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppToast } from "@/components/ui/AppToast";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 const UPLOAD_PATH = "/community/shortform/new";
 
 type Props = {

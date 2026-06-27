@@ -20,7 +20,8 @@ const mutedLink =
 
 const greenCardPrimary = `${cardPrimary} border-green-200 bg-green-50 text-green-800 hover:bg-green-100`;
 const blueCardPrimary = `${cardPrimary} border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100`;
-const orangeNoticeCard = `${cardPrimary} border-orange-200 bg-orange-50 text-orange-900 hover:bg-orange-100`;
+// 분쟁 진행중 상태 알림 — 정의되지 않은 주황 대신 중립(secondary) 회색 보더로 통일
+const orangeNoticeCard = `${cardPrimary} border-slate-300 bg-slate-50 text-slate-800 hover:bg-slate-100`;
 
 /** 분쟁 신청 진입 — 보조(밑줄 위주). 주 액션과 시각 역할 분리 */
 const disputeSubtleHref = `${subtleLinkBar} text-red-900/95 hover:underline`;
@@ -267,12 +268,12 @@ function OrderActionBarMentor(props: Props) {
 
       <div className="flex flex-col gap-2">
         {hasActiveDispute ? (
-          <a href="#order-disputes" className="group flex w-full items-center justify-between gap-2 rounded-xl border border-orange-200 bg-orange-50/40 px-4 py-3 transition hover:border-orange-300 hover:bg-orange-50">
+          <a href="#order-disputes" className="group flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 transition hover:border-slate-400 hover:bg-slate-100">
             <span className="flex items-start gap-2.5">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" aria-hidden />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
               <span className="flex flex-col text-left">
-                <span className="text-sm font-bold text-orange-900">문제 해결 진행 중</span>
-                <span className="text-xs font-medium text-orange-800/80">현황을 확인하세요.</span>
+                <span className="text-sm font-bold text-slate-800">문제 해결 진행 중</span>
+                <span className="text-xs font-medium text-slate-500">현황을 확인하세요.</span>
               </span>
             </span>
             <ChevrMentor />

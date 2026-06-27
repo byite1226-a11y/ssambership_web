@@ -496,7 +496,7 @@ async function batchMentorListStats(
     if (label === "—") continue;
     const prev = out.get(id);
     if (prev) {
-      out.set(id, { ...prev, avgResponseLabel: `평균 ${label} 답변` });
+      out.set(id, { ...prev, avgResponseLabel: label });
     }
   }
 

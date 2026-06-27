@@ -7,7 +7,7 @@ import type { MentorPayoutScheduleInfo, MentorPayoutSummary } from "@/lib/mentor
 import { SURFACE_CARD } from "@/lib/ui/surfaceCard";
 import { formatCashKrw } from "./payoutUi";
 
-// 색 위계: 발생 전 단순 정보 = 중립 slate / "지급 완료 합계" = 완료 초록 #059669. (멘토 정체성 초록 #16A34A는 본문에 쓰지 않음)
+// 색 위계: 발생 전 단순 정보 = 중립 slate / "지급 완료 합계" = 완료 초록 #059669. (멘토 정체성 초록 #059669는 본문에 쓰지 않음)
 const TILE_NEUTRAL = "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] text-[#64748B]";
 const TILE_DONE = "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ECFDF5] text-[#059669]";
 
@@ -21,7 +21,7 @@ export function MentorPayoutsHeroCard(props: Props) {
   const { summary, schedule, lifetimePaid } = props;
 
   return (
-    <section className={`${SURFACE_CARD} border-l-[4px] border-l-[#1A56DB]`}>
+    <section className={`${SURFACE_CARD} border-l-[4px] border-l-[#2563EB]`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[13px] font-medium text-slate-500">이번 달 예상 정산 · {schedule.monthLabel}</p>

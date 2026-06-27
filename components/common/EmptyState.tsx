@@ -18,10 +18,10 @@ export function EmptyState(props: Props) {
   if (props.compact) {
     const tile =
       props.iconTone === "mentor"
-        ? "bg-[#E6F7F1] text-[#16A34A]"
+        ? "bg-[#E6F7F1] text-[#059669]"
         : props.iconTone === "neutral"
           ? "bg-[#F1F5F9] text-[#64748B]"
-          : "bg-[#EBF1FE] text-[#1A56DB]";
+          : "bg-[#EBF1FE] text-[#2563EB]";
     return (
       <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4">
         {props.icon ? (

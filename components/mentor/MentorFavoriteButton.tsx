@@ -71,7 +71,7 @@ export function MentorFavoriteButton(props: {
       className={cn(FAVORITE_BUTTON_BASE, props.className)}
     >
       <Heart
-        className={`h-4 w-4 ${favorited ? "fill-[#1A56DB] text-[#1A56DB]" : "text-slate-400"}`}
+        className={`h-4 w-4 ${favorited ? "fill-[#2563EB] text-[#2563EB]" : "text-slate-400"}`}
         strokeWidth={2}
       />
       {props.showText ? <span>{favorited ? "찜됨" : "찜"}</span> : null}

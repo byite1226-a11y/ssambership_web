@@ -99,7 +99,7 @@ export function ConnectionNotesPanel(props: {
 
   function NoteItem(opts: { card: NoteCard; isStudent: boolean }) {
     const { card, isStudent } = opts;
-    const accent = isStudent ? "border-blue-200 border-l-blue-600" : "border-slate-300 border-l-slate-500";
+    const accent = isStudent ? "border-blue-200 border-l-blue-600" : "border-emerald-200 border-l-emerald-600";
 
     if (editingId === card.id) {
       return (
@@ -115,7 +115,9 @@ export function ConnectionNotesPanel(props: {
             required
             defaultValue={card.body}
             rows={3}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] leading-relaxed outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] leading-relaxed outline-none focus:ring-2 ${
+              isStudent ? "focus:border-blue-400 focus:ring-blue-100" : "focus:border-emerald-400 focus:ring-emerald-100"
+            }`}
           />
           <div className="mt-2 flex justify-end gap-2">
             <button
@@ -128,7 +130,9 @@ export function ConnectionNotesPanel(props: {
             <FormSubmitButton
               idleLabel="저장"
               pendingLabel="저장 중…"
-              className="rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-extrabold text-white hover:bg-blue-700"
+              className={`rounded-lg px-3 py-1.5 text-[11px] font-extrabold text-white ${
+                isStudent ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
             />
           </div>
         </form>
@@ -179,19 +183,19 @@ export function ConnectionNotesPanel(props: {
     const isStudent = opts.side === "student";
     const canAdd = props.viewerRole === opts.side;
     return (
-      <section className={`rounded-2xl border p-3.5 ${isStudent ? "border-blue-200 bg-blue-50" : "border-slate-200 bg-slate-100/70"}`}>
+      <section className={`rounded-2xl border p-3.5 ${isStudent ? "border-blue-200 bg-blue-50" : "border-emerald-200 bg-emerald-50"}`}>
         <div className="flex items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-[13px] font-extrabold text-slate-900">
-            <span className={`h-2.5 w-2.5 rounded-full ${isStudent ? "bg-blue-600" : "bg-slate-500"}`} aria-hidden />
+            <span className={`h-2.5 w-2.5 rounded-full ${isStudent ? "bg-blue-600" : "bg-emerald-600"}`} aria-hidden />
             {opts.title}
-            <span className={`text-[11px] font-bold ${isStudent ? "text-blue-700" : "text-slate-600"}`}>{opts.cards.length}</span>
+            <span className={`text-[11px] font-bold ${isStudent ? "text-blue-700" : "text-emerald-700"}`}>{opts.cards.length}</span>
           </p>
           {canAdd ? (
             <button
               type="button"
               onClick={() => setNewNoteOpen(true)}
-              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-extrabold transition ${
-                isStudent ? "bg-blue-600 text-white hover:bg-blue-700" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-extrabold text-white transition ${
+                isStudent ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700"
               }`}
             >
               <Plus className="h-3.5 w-3.5" />내 노트 추가
@@ -212,23 +216,23 @@ export function ConnectionNotesPanel(props: {
   }
 
   const header = (
-    <div className="border-b border-blue-200 bg-blue-100 px-5 py-4">
-      <p className="flex items-center gap-2 text-[15px] font-extrabold text-blue-900">
-        <Notebook className="h-[18px] w-[18px] text-blue-700" aria-hidden />
+    <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+      <p className="flex items-center gap-2 text-[15px] font-extrabold text-slate-900">
+        <Notebook className="h-[18px] w-[18px] text-slate-500" aria-hidden />
         연결 노트
       </p>
-      <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-xl border border-blue-200 bg-white">
+      <div className="mt-3 grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="flex items-center gap-2 px-3 py-2.5">
-          <CalendarDays className="h-4 w-4 shrink-0 text-blue-700" aria-hidden />
+          <CalendarDays className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
           <span className="min-w-0">
-            <span className="block text-[10px] font-bold text-blue-700">함께한 기간</span>
+            <span className="block text-[10px] font-bold text-slate-500">함께한 기간</span>
             <span className="block text-[15px] font-black tabular-nums text-slate-900">{periodTogether(props.room?.created_at)}</span>
           </span>
         </div>
-        <div className="flex items-center gap-2 border-l border-blue-200 px-3 py-2.5">
-          <MessagesSquare className="h-4 w-4 shrink-0 text-blue-700" aria-hidden />
+        <div className="flex items-center gap-2 border-l border-slate-200 px-3 py-2.5">
+          <MessagesSquare className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
           <span className="min-w-0">
-            <span className="block text-[10px] font-bold text-blue-700">함께한 질문</span>
+            <span className="block text-[10px] font-bold text-slate-500">함께한 질문</span>
             <span className="block text-[15px] font-black tabular-nums text-slate-900">{props.threadCount}</span>
           </span>
         </div>
@@ -259,13 +263,13 @@ export function ConnectionNotesPanel(props: {
         <button
           type="button"
           onClick={() => setMobileOpen((o) => !o)}
-          className="flex w-full items-center justify-between rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[13px] font-extrabold text-blue-900"
+          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[13px] font-extrabold text-slate-900"
         >
           <span className="inline-flex items-center gap-2">
-            <Notebook className="h-4 w-4 text-blue-700" aria-hidden />
+            <Notebook className="h-4 w-4 text-slate-500" aria-hidden />
             연결 노트 ({totalCount})
           </span>
-          <span className="text-[12px] font-bold text-blue-700">{mobileOpen ? "닫기" : "보기"}</span>
+          <span className="text-[12px] font-bold text-slate-600">{mobileOpen ? "닫기" : "보기"}</span>
         </button>
         {mobileOpen ? (
           <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white">

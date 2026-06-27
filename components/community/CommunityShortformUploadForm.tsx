@@ -5,7 +5,7 @@ import Link from "next/link";
 import { submitShortformUploadAction } from "@/lib/community/communityShortformActions";
 import { SHORTFORM_CATEGORIES } from "@/lib/community/communityShortformConstants";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 
 const UPLOAD_TIPS = [
   "유익한 내용 — 학습에 도움이 되는 핵심만 담아 주세요",
@@ -55,7 +55,7 @@ export function CommunityShortformUploadForm(props: { errorCode: string | null; 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <Link href="/community/shortform" className="text-sm font-extrabold text-slate-600 hover:text-[#1A56DB]">
+        <Link href="/community/shortform" className="text-sm font-extrabold text-slate-600 hover:text-[#2563EB]">
           ← 뒤로
         </Link>
         <div className="flex flex-wrap gap-2">
@@ -89,7 +89,7 @@ export function CommunityShortformUploadForm(props: { errorCode: string | null; 
           게시글 작성
         </Link>
         <span
-          className="rounded-t-lg border border-b-0 border-slate-200 border-b-white bg-white px-4 py-2 text-sm font-extrabold text-[#1A56DB]"
+          className="rounded-t-lg border border-b-0 border-slate-200 border-b-white bg-white px-4 py-2 text-sm font-extrabold text-[#2563EB]"
           aria-current="page"
         >
           숏폼 업로드
@@ -173,7 +173,7 @@ export function CommunityShortformUploadForm(props: { errorCode: string | null; 
             </div>
             <ul className="mt-2 flex flex-wrap gap-2">
               {tags.map((t) => (
-                <li key={t} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1A56DB]">
+                <li key={t} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#2563EB]">
                   #{t}
                 </li>
               ))}
@@ -186,7 +186,7 @@ export function CommunityShortformUploadForm(props: { errorCode: string | null; 
           </label>
 
           <label className="flex items-start gap-2 text-sm text-slate-800">
-            <input type="checkbox" name="rightsAck" value="on" required className="mt-1 accent-[#1A56DB]" />
+            <input type="checkbox" name="rightsAck" value="on" required className="mt-1 accent-[#2563EB]" />
             <span>영상 및 콘텐츠의 권리를 보유하며 정책에 맞게 올립니다. (필수)</span>
           </label>
         </form>
@@ -210,7 +210,7 @@ export function CommunityShortformUploadForm(props: { errorCode: string | null; 
             <ul className="mt-2 space-y-2">
               {UPLOAD_TIPS.map((t) => (
                 <li key={t} className="flex gap-2 text-xs text-slate-600">
-                  <span className="text-[#1A56DB]" aria-hidden>
+                  <span className="text-[#2563EB]" aria-hidden>
                     •
                   </span>
                   {t}

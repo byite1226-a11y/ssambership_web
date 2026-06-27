@@ -25,6 +25,10 @@ export type SignupFieldErrors = Partial<Record<string, string>>;
 
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
+/** 비밀번호 최소 길이(보안 정책). 영문·숫자 조합은 안내로 권장. */
+export const SIGNUP_PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_RULE_MESSAGE = `비밀번호는 ${SIGNUP_PASSWORD_MIN_LENGTH}자 이상(영문·숫자 조합 권장)이어야 합니다.`;
+
 export function studentSignupFieldErrors(f: StudentSignupFields): SignupFieldErrors {
   const errors: SignupFieldErrors = {};
   if (!f.email.trim()) {
@@ -32,8 +36,8 @@ export function studentSignupFieldErrors(f: StudentSignupFields): SignupFieldErr
   } else if (!emailOk(f.email)) {
     errors.email = "이메일 형식을 확인해 주세요.";
   }
-  if (f.password.length < 6) {
-    errors.password = "비밀번호는 6자 이상이어야 합니다.";
+  if (f.password.length < SIGNUP_PASSWORD_MIN_LENGTH) {
+    errors.password = PASSWORD_RULE_MESSAGE;
   }
   if (f.password !== f.passwordConfirm) {
     errors.passwordConfirm = "비밀번호가 서로 일치하지 않습니다.";
@@ -61,8 +65,8 @@ export function mentorSignupFieldErrors(f: MentorSignupFields): SignupFieldError
   } else if (!emailOk(f.email)) {
     errors.email = "이메일 형식을 확인해 주세요.";
   }
-  if (f.password.length < 6) {
-    errors.password = "비밀번호는 6자 이상이어야 합니다.";
+  if (f.password.length < SIGNUP_PASSWORD_MIN_LENGTH) {
+    errors.password = PASSWORD_RULE_MESSAGE;
   }
   if (f.password !== f.passwordConfirm) {
     errors.passwordConfirm = "비밀번호가 서로 일치하지 않습니다.";

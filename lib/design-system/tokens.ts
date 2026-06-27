@@ -25,6 +25,6 @@ export const DS_LAYOUT = {
 
 /** 강조색 — 화면당 primary CTA 1곳 원칙 */
 export const DS_ACCENT = {
-  student: "#1A56DB",
+  student: "#2563EB",
   mentor: "#059669",
 } as const;

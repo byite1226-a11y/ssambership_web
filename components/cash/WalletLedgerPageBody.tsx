@@ -134,7 +134,7 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
           className={[
             "rounded-t-lg px-4 py-2.5 text-sm font-extrabold",
             onLedgerTab
-              ? "border border-b-0 border-slate-200 bg-white text-[#1A56DB]"
+              ? "border border-b-0 border-slate-200 bg-white text-[#2563EB]"
               : "text-slate-500 hover:text-slate-800",
           ].join(" ")}
           aria-current={onLedgerTab ? "page" : undefined}
@@ -168,7 +168,7 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
               }}
               className={[
                 "rounded-full px-3.5 py-1.5 text-xs font-bold",
-                period === key ? "bg-[#1A56DB] text-white" : "border border-slate-200 bg-white text-slate-700",
+                period === key ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
               ].join(" ")}
             >
               {label}
@@ -225,7 +225,7 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
               }}
               className={[
                 "rounded-full px-3.5 py-1.5 text-xs font-bold",
-                kind === key ? "bg-[#1A56DB] text-white" : "border border-slate-200 bg-white text-slate-700",
+                kind === key ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
               ].join(" ")}
             >
               {label}
@@ -246,7 +246,7 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
             </p>
             <Link
               href="/wallet/charge"
-              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
             >
               캐시 충전하기
             </Link>
@@ -282,7 +282,7 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
                         <td className="py-3 pr-3 font-semibold text-slate-800">{detailLabel(row)}</td>
                         <td
                           className={`py-3 pr-3 text-right font-extrabold tabular-nums ${
-                            credit ? "text-blue-600" : "text-red-600"
+                            credit ? "text-slate-900" : "text-red-600"
                           }`}
                         >
                           {credit && !amt.startsWith("+") && !amt.startsWith("-") ? `+${amt}` : amt}

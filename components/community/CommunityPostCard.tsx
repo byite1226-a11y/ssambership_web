@@ -4,7 +4,7 @@ import type { CommunityBoardPostCard } from "@/lib/community/communityBoardQueri
 import { AuthorRoleBadge } from "@/components/community/AuthorRoleBadge";
 import { listCardClassName } from "@/components/design-system/ListCard";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 
 export function CommunityPostCard(props: { post: CommunityBoardPostCard }) {
   const p = props.post;
@@ -31,7 +31,7 @@ export function CommunityPostCard(props: { post: CommunityBoardPostCard }) {
             </span>
           </div>
           <Link href={detailHref} className="mt-2 block group">
-            <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#1A56DB]">{p.title}</h3>
+            <h3 className="text-base font-extrabold text-slate-900 group-hover:text-[#2563EB]">{p.title}</h3>
             <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-600">{p.excerpt}</p>
           </Link>
           {thumb ? (
@@ -43,7 +43,7 @@ export function CommunityPostCard(props: { post: CommunityBoardPostCard }) {
           {p.hashtags.length ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {p.hashtags.map((tag) => (
-                <span key={tag} className="text-xs font-semibold text-[#1A56DB]">
+                <span key={tag} className="text-xs font-semibold text-[#2563EB]">
                   #{tag}
                 </span>
               ))}
@@ -60,7 +60,7 @@ export function CommunityPostCard(props: { post: CommunityBoardPostCard }) {
             </div>
             <Link
               href={detailHref}
-              className="inline-flex min-h-[36px] items-center rounded-lg bg-[#1A56DB] px-4 text-xs font-extrabold text-white hover:bg-[#1648c0]"
+              className="inline-flex min-h-[36px] items-center rounded-lg bg-[#2563EB] px-4 text-xs font-extrabold text-white hover:bg-[#1D4ED8]"
             >
               읽기
             </Link>

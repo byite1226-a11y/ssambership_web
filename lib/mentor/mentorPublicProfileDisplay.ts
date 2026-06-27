@@ -60,7 +60,7 @@ export function mentorSchoolVerificationBadgeLabel(display: MentorProfileDisplay
 
 export function mentorSchoolVerificationBadgeClass(display: MentorProfileDisplay): string {
   if (display.schoolVerified) {
-    return "bg-[#1A56DB] text-white";
+    return "bg-[#2563EB] text-white";
   }
   return "border border-slate-200 bg-slate-100 text-slate-600";
 }

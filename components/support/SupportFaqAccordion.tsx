@@ -50,7 +50,7 @@ export function SupportContactSection() {
           <dd className="mt-0.5">
             <a
               href="mailto:support@ssambership.example"
-              className="font-semibold text-[#1A56DB] hover:underline"
+              className="font-semibold text-[#2563EB] hover:underline"
             >
               support@ssambership.example
             </a>
@@ -64,7 +64,7 @@ export function SupportContactSection() {
       </dl>
       <p className="mt-4 text-xs text-slate-500">
         환불·분쟁 관련 정책은{" "}
-        <Link href="/legal/refund" className="font-bold text-[#1A56DB] hover:underline">
+        <Link href="/legal/refund" className="font-bold text-[#2563EB] hover:underline">
           환불 정책
         </Link>
         을 참고해 주세요.

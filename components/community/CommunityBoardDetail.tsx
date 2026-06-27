@@ -12,7 +12,7 @@ import {
 } from "@/lib/community/communityBoardActions";
 import { submitCommunityContentReportAction } from "@/lib/community/communityReportActions";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 const REPORT_REASONS = ["\uBD80\uC801\uC808\uD55C \uB0B4\uC6A9", "\uC2A4\uD338\u00B7\uAD11\uACE0", "\uC6B4\uC124\u00B7\uBE44\uBC29", "\uAC1C\uC778\uC815\uBCF4 \uB178\uCD9C", "\uAE30\uD0C0"] as const;
 
 function CommentItem(props: {
@@ -44,7 +44,7 @@ function CommentItem(props: {
               </form>
             ) : null}
             {depth === 0 ? (
-              <details className="text-[#1A56DB]">
+              <details className="text-[#2563EB]">
                 <summary className="cursor-pointer">{"\uB2F5\uAE00"}</summary>
                 <form action={submitBoardCommentAction} className="mt-2 space-y-2">
                   <input type="hidden" name="postId" value={props.postId} />
@@ -123,7 +123,7 @@ export function CommunityBoardDetail(props: {
             isLoggedIn={props.canInteract}
             loginNext={props.returnPath}
             showText
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600 transition hover:border-[#1A56DB] hover:text-[#1A56DB] disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-600 transition hover:border-[#2563EB] hover:text-[#2563EB] disabled:opacity-60"
           />
         ) : null}
       </header>
@@ -143,7 +143,7 @@ export function CommunityBoardDetail(props: {
       ) : null}
 
       {props.post.hashtags.length ? (
-        <p className="flex flex-wrap gap-2 text-sm font-semibold text-[#1A56DB]">
+        <p className="flex flex-wrap gap-2 text-sm font-semibold text-[#2563EB]">
           {props.post.hashtags.map((t) => (
             <span key={t}>#{t}</span>
           ))}
@@ -161,7 +161,7 @@ export function CommunityBoardDetail(props: {
                 type="submit"
                 className={[
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold",
-                  props.liked ? "bg-[#1A56DB] text-white" : "border border-slate-200 text-slate-700",
+                  props.liked ? "bg-[#2563EB] text-white" : "border border-slate-200 text-slate-700",
                 ].join(" ")}
               >
                 <ThumbsUp className="h-3.5 w-3.5" aria-hidden /> {"\uC88B\uC544\uC694"} {props.post.likeCount}
@@ -251,7 +251,7 @@ export function CommunityBoardDetail(props: {
           </form>
         ) : (
           <p className="text-sm text-slate-500">
-            <Link href={`/login?next=${encodeURIComponent(props.returnPath)}`} className="font-bold text-[#1A56DB]">
+            <Link href={`/login?next=${encodeURIComponent(props.returnPath)}`} className="font-bold text-[#2563EB]">
               {"\uB85C\uADF8\uC778"}
             </Link>
             {" \uD6C4 \uB313\uAE00\uC744 \uC791\uC131\uD560 \uC218 \uC788\uC5B4\uC694."}
@@ -272,7 +272,7 @@ export function CommunityBoardDetail(props: {
         </ul>
       </section>
 
-      <Link href="/community" className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
+      <Link href="/community" className="inline-flex text-sm font-bold text-[#2563EB] hover:underline">
         {"\u2190 \uCEE4\uBBA4\uB2C8\uD2F0 \uD648"}
       </Link>
     </article>

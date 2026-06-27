@@ -129,15 +129,10 @@ export async function loadAdminDashboardExtended(supabase: SupabaseClient): Prom
     trend.push({ date: dayKey(d0).slice(5), signups, cashKrw });
   }
 
-  const resolved = Math.max(0, (summary.reportOpenCount ?? 0) > 0 ? 2 : 8);
-  const pending = summary.reportOpenCount ?? 3;
-  const inProgress = summary.disputeActiveCount ?? 2;
-  const onHold = 1;
+  // 실집계만 사용 — KPI(신고 대기·분쟁 처리중)와 수치를 일치시킴. 임의 샘플값 제거.
   const donut = [
-    { name: "처리완료", value: resolved, fill: "#059669" },
-    { name: "처리중", value: inProgress, fill: "#1A56DB" },
-    { name: "대기", value: pending, fill: "#F59E0B" },
-    { name: "보류", value: onHold, fill: "#94A3B8" },
+    { name: "분쟁 처리중", value: summary.disputeActiveCount ?? 0, fill: "#2563EB" },
+    { name: "신고 대기", value: summary.reportOpenCount ?? 0, fill: "#F59E0B" },
   ];
 
   const issues: AdminIssueRow[] = [];
@@ -159,11 +154,8 @@ export async function loadAdminDashboardExtended(supabase: SupabaseClient): Prom
     });
   }
 
-  const schedule = [
-    { time: "10:00", title: "멘토 승인 큐 점검" },
-    { time: "14:00", title: "신고·분쟁 처리 회의" },
-    { time: "17:00", title: "환불 요청 마감 확인" },
-  ];
+  // 실데이터 연동 전까지 하드코딩 일정 제거 — 뷰에서 빈 상태("예정된 일정 없음") 처리
+  const schedule: { time: string; title: string }[] = [];
 
   return { summary, kpis, trend, donut, issues, schedule };
 }

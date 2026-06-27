@@ -36,7 +36,7 @@ export function MentorDashboardKpiCards(props: { kpis: MentorHubDashboardData["k
           <p
             className={[
               "mt-2 text-2xl font-black tabular-nums",
-              c.highlight ? "text-[#1A56DB]" : "text-slate-900",
+              c.highlight ? "text-[#2563EB]" : "text-slate-900",
             ].join(" ")}
           >
             {c.value}

@@ -13,7 +13,7 @@ const SUBJECT_CATEGORIES = [
 const DESC_BY_LABEL = Object.fromEntries(SUBJECT_CATEGORIES.map((c) => [c.label, c.desc])) as Record<string, string>;
 
 const CAT_COLORS = [
-  { cls: "blue", cc: "#1A56DB", cbg: "#eef4ff", cbd: "#c9dcfb" },
+  { cls: "blue", cc: "#2563EB", cbg: "#eef4ff", cbd: "#c9dcfb" },
   { cls: "violet", cc: "#7c3aed", cbg: "#f4eeff", cbd: "#dccdfb" },
   { cls: "emerald", cc: "#059669", cbg: "#e9f8f1", cbd: "#aeead0" },
   { cls: "sky", cc: "#0284c7", cbg: "#e8f5fd", cbd: "#b3e0fa" },

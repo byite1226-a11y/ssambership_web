@@ -124,7 +124,7 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-black text-slate-500">요청한 학교명</p>
-              <p className="mt-1 font-bold text-slate-900">{row?.requested_university_name || "—"}</p>
+              <p className="mt-1 font-bold text-slate-900">{row?.requested_university_name || "아직 요청 전이에요"}</p>
             </div>
           </div>
 
@@ -147,7 +147,7 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
                 disabled={!canSubmit}
                 placeholder="예: 서울대학교"
                 defaultValue={row?.requested_university_name ?? ""}
-                className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:border-[#059669] focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
               />
             </div>
             <div>
@@ -161,7 +161,7 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
                 maxLength={100}
                 disabled={!canSubmit}
                 placeholder="예: 편입 / 졸업 / 전과 등"
-                className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:border-[#059669] focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
               />
             </div>
             <div>
@@ -184,13 +184,13 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
               idleLabel={canSubmit ? "학적변경요청 제출" : "심사 대기 중"}
               pendingLabel="제출 중…"
               disabled={!canSubmit}
-              className="min-h-12 w-full rounded-xl bg-[#1A56DB] px-5 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="min-h-12 w-full rounded-xl bg-[#059669] px-5 text-sm font-black text-white shadow-sm transition hover:bg-[#047857] disabled:cursor-not-allowed disabled:bg-slate-300"
             />
           </form>
 
           <p className="text-xs text-slate-500">
             학교·전공 최초 인증은{" "}
-            <Link href="/mentor/verification" className="font-bold text-blue-700 underline">
+            <Link href="/mentor/verification" className="font-bold text-[#047857] underline">
               인증 상태
             </Link>{" "}
             화면에서 진행할 수 있어요.

@@ -40,7 +40,7 @@ export function WalletChargeRightSidebar(props: { ledgerRows: LedgerLineRow[] })
     <aside className="space-y-4 lg:sticky lg:top-8">
       <section className="rounded-2xl border border-[#e2e8f2] bg-white p-5 sm:p-6">
         <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
-          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#1A56DB]" aria-hidden />
+          <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563EB]" aria-hidden />
           이번 달 사용 요약
         </h2>
         <p className="mt-2 text-2xl font-black tabular-nums text-slate-900">

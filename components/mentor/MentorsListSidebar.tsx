@@ -12,21 +12,21 @@ export function MentorsListSidebar(props: {
         <h2 className="text-sm font-black text-slate-900">구독제 이용 안내</h2>
         <ul className="mt-3 space-y-2.5 text-xs font-medium leading-relaxed text-slate-600">
           <li className="flex gap-2">
-            <span className="text-[#1A56DB]">•</span>
+            <span className="text-[#2563EB]">•</span>
             정해진 질문 횟수 내에서 자유롭게 질문하고 답변을 받아보세요
           </li>
           <li className="flex gap-2">
-            <span className="text-[#1A56DB]">•</span>
+            <span className="text-[#2563EB]">•</span>
             요금제에 따라 주간 질문 한도가 달라집니다
           </li>
           <li className="flex gap-2">
-            <span className="text-[#1A56DB]">•</span>
+            <span className="text-[#2563EB]">•</span>
             모든 질문과 답변은 질문방에서 확인할 수 있어요
           </li>
         </ul>
         <Link
           href="/subscribe"
-          className="mt-4 inline-flex text-xs font-extrabold text-[#1A56DB] hover:underline"
+          className="mt-4 inline-flex text-xs font-extrabold text-[#2563EB] hover:underline"
         >
           자세히 보기 &gt;
         </Link>
@@ -47,7 +47,7 @@ export function MentorsListSidebar(props: {
                 <li key={c.mentorId}>
                   <Link
                     href={`/mentors/${c.mentorId}`}
-                    className="block rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 transition hover:border-[#1A56DB]/30"
+                    className="block rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 transition hover:border-[#2563EB]/30"
                   >
                     <p className="text-xs font-black text-slate-900">{c.display.displayName}</p>
                     <p className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
@@ -61,7 +61,7 @@ export function MentorsListSidebar(props: {
         )}
         <Link
           href="/mentors?view=list"
-          className="mt-4 inline-flex text-xs font-extrabold text-[#1A56DB] hover:underline"
+          className="mt-4 inline-flex text-xs font-extrabold text-[#2563EB] hover:underline"
         >
           찜 보기 &gt;
         </Link>

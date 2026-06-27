@@ -7,14 +7,13 @@ import { submitMentorProfileEdit } from "@/lib/mentor/mentorProfileEditActions";
 import type { MentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
 import { mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
 import { MentorPublicProfilePreviewCard } from "@/components/mentor/MentorPublicProfilePreviewCard";
-import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 import {
   isOutsideMentorPriceGuide,
   mentorPlanCashKrw,
   mentorSubscriptionPriceRule,
 } from "@/lib/subscribe/mentorPlanPricing";
-import { Camera, ChevronRight, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus, User, FileText, BookOpen, Coins, ShieldCheck, Lock } from "lucide-react";
+import { Camera, HelpCircle, PlayCircle, Info, LayoutGrid, Video, Plus, User, FileText, BookOpen, Coins, ShieldCheck, Lock } from "lucide-react";
 import { MentorSubjectCheckboxes } from "@/components/subjects/MentorSubjectCheckboxes";
 import { subjectCodesFromText } from "@/lib/subjects/subjectCatalog";
 
@@ -40,7 +39,7 @@ type I = {
 };
 
 const inputClass =
-  "min-h-[48px] w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30";
+  "min-h-[48px] w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 placeholder:text-slate-400 transition focus:border-emerald-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30";
 
 const labelClass = "flex items-center gap-1.5 text-sm font-extrabold text-slate-900";
 
@@ -53,7 +52,7 @@ function SectionHeader(props: { number: string; title: string; required?: boolea
     <div className="flex items-center justify-between border-b border-slate-100 pb-4">
       <div className="flex items-center gap-2.5">
         {props.icon ? (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#EBF1FE] text-[#1A56DB]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#ECFDF5] text-[#059669]">
             {props.icon}
           </span>
         ) : null}
@@ -62,7 +61,7 @@ function SectionHeader(props: { number: string; title: string; required?: boolea
           {props.title}
         </h2>
         {props.required && (
-          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600 ring-1 ring-blue-100">
+          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 ring-1 ring-emerald-100">
             필수
           </span>
         )}
@@ -208,7 +207,7 @@ export function MentorProfileEditForm(props: {
           )}
 
           {/* 1. 기본 정보 */}
-          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#059669] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
             <SectionHeader number="1" title="기본 정보" required icon={<User className="h-4 w-4" aria-hidden />} />
             
             <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
@@ -336,7 +335,7 @@ export function MentorProfileEditForm(props: {
                     </p>
                     <Link
                       href="/mentor/academic-record-change"
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#1A56DB] bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-[#1A56DB] transition hover:bg-blue-100"
+                      className="inline-flex items-center gap-1 rounded-lg border border-[#059669] bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-[#059669] transition hover:bg-emerald-100"
                     >
                       <FileText className="h-3.5 w-3.5" aria-hidden /> 학적변경요청
                     </Link>
@@ -347,7 +346,7 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 2. 소개 */}
-          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#059669] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
             <SectionHeader number="2" title="소개" required icon={<FileText className="h-4 w-4" aria-hidden />} />
             
             <div className="space-y-5">
@@ -387,7 +386,7 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 3. 전공 및 과목 */}
-          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#059669] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
             <SectionHeader number="3" title="전공 및 과목" required icon={<BookOpen className="h-4 w-4" aria-hidden />} />
             <div>
               <label className={labelClass}>담당 과목</label>
@@ -404,7 +403,7 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 4. 요금제 */}
-          <section className="space-y-4 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+          <section className="space-y-4 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#059669] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
             <SectionHeader number="4" title="요금제 설정" icon={<Coins className="h-4 w-4" aria-hidden />} />
             <p className="text-xs font-medium text-slate-500">
               구독 요금은 멘토가 직접 설정할 수 있어요. 권장 범위를 벗어나면 경고만 표시되고 저장은 가능합니다.
@@ -420,7 +419,7 @@ export function MentorProfileEditForm(props: {
                   <div
                     key={plan.tier}
                     className={`rounded-xl border p-4 ${
-                      plan.recommend ? "border-2 border-[#1A56DB] bg-blue-50/30" : "border-slate-200 bg-slate-50/50"
+                      plan.recommend ? "border-2 border-[#059669] bg-emerald-50/30" : "border-slate-200 bg-slate-50/50"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -429,7 +428,7 @@ export function MentorProfileEditForm(props: {
                         <p className="mt-1 text-[11px] font-semibold text-slate-600">{plan.weeklyLabel}</p>
                       </div>
                       {plan.recommend ? (
-                        <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
+                        <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
                           추천
                         </span>
                       ) : null}
@@ -470,10 +469,10 @@ export function MentorProfileEditForm(props: {
             </div>
 
             {/* 개별 질문 답변 단가 — 구독 요금제와 별개 */}
-            <div className="rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-4">
+            <div className="rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/40 p-4">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-black text-slate-900">개별 질문 답변 단가</p>
-                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-blue-600 ring-1 ring-blue-100">
+                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-emerald-600 ring-1 ring-emerald-100">
                   구독과 별개
                 </span>
               </div>
@@ -506,12 +505,12 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 5. 인증 서류 */}
-          <section className="space-y-4 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+          <section className="space-y-4 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#059669] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
             <SectionHeader number="5" title="인증 서류" icon={<ShieldCheck className="h-4 w-4" aria-hidden />} />
             <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
               <p className="text-sm font-bold text-slate-800">
                 학생증 업로드 상태:{" "}
-                <span className="text-[#1A56DB]">{mentorVerificationKo(initial.verification)}</span>
+                <span className="text-[#059669]">{mentorVerificationKo(initial.verification)}</span>
               </p>
               {initial.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -525,7 +524,7 @@ export function MentorProfileEditForm(props: {
               )}
               <Link
                 href="/mentor/verification"
-                className="mt-3 inline-block text-xs font-bold text-[#1A56DB] hover:underline"
+                className="mt-3 inline-block text-xs font-bold text-[#059669] hover:underline"
               >
                 인증 서류 제출하기 &gt;
               </Link>
@@ -534,7 +533,7 @@ export function MentorProfileEditForm(props: {
           </section>
 
           {/* 6. 대표 콘텐츠 설정 */}
-          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#1A56DB] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
+          <section className="space-y-6 rounded-2xl border border-l-[4px] border-slate-300 border-l-[#059669] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] sm:p-6">
             <SectionHeader number="6" title="대표 콘텐츠 설정" optional icon={<LayoutGrid className="h-4 w-4" aria-hidden />} />
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -584,7 +583,7 @@ export function MentorProfileEditForm(props: {
               {query.media.rows.length > 0 ? (
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {query.media.rows.map((r, i) => (
-                    <div key={i} className="group relative aspect-video overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200 transition hover:ring-blue-500">
+                    <div key={i} className="group relative aspect-video overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200 transition hover:ring-emerald-500">
                       <div className="absolute inset-0 flex items-center justify-center bg-black/5">
                         <PlayCircle className="h-8 w-8 text-white/80" />
                       </div>
@@ -602,9 +601,9 @@ export function MentorProfileEditForm(props: {
             </div>
           </section>
 
-          <div className="flex items-center gap-3 rounded-xl bg-blue-50/50 p-4">
-            <Info className="h-5 w-5 text-blue-500" />
-            <p className="text-xs font-bold text-blue-800">입력한 정보는 프로필(채널)에 공개되며, 언제든지 수정할 수 있습니다.</p>
+          <div className="flex items-center gap-3 rounded-xl bg-emerald-50/50 p-4">
+            <Info className="h-5 w-5 text-emerald-500" />
+            <p className="text-xs font-bold text-emerald-800">입력한 정보는 프로필(채널)에 공개되며, 언제든지 수정할 수 있습니다.</p>
           </div>
 
           <div className="flex items-center justify-between gap-4 pt-6">
@@ -614,7 +613,7 @@ export function MentorProfileEditForm(props: {
             <FormSubmitButton
               idleLabel="저장하기"
               pendingLabel="저장 중…"
-              className="min-h-[52px] flex-[2] rounded-xl bg-blue-600 px-8 text-sm font-extrabold text-white shadow-md transition hover:bg-blue-700 disabled:bg-slate-300"
+              className="min-h-[52px] flex-[2] rounded-xl bg-emerald-600 px-8 text-sm font-extrabold text-white shadow-md transition hover:bg-emerald-700 disabled:bg-slate-300"
             />
             <p className="hidden text-[11px] font-bold text-slate-400 sm:block">변경 사항은 저장 즉시 반영됩니다.</p>
           </div>

@@ -66,7 +66,7 @@ export function MentorOrderWaitingReviewView(props: MentorOrderWaitingReviewView
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate text-sm font-extrabold text-slate-900">{deliverable.fileName}</p>
-                  <span className="rounded-full bg-[#1A56DB] px-2 py-0.5 text-[10px] font-black text-white">
+                  <span className="rounded-full bg-[#2563EB] px-2 py-0.5 text-[10px] font-black text-white">
                     최신 버전
                   </span>
                 </div>

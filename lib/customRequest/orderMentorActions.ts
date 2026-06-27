@@ -142,10 +142,6 @@ function mentorOrderFilesPath(orderId: string) {
   return `/mentor/custom-request/orders/${encodeURIComponent(orderId)}/files`;
 }
 
-function mentorOrderWaitingReviewPath(orderId: string) {
-  return `/mentor/custom-request/orders/${encodeURIComponent(orderId)}/waiting-review`;
-}
-
 function redirectFilesWithError(orderId: string, msg: string): never {
   redirect(`${mentorOrderFilesPath(orderId)}?error=${encodeURIComponent(msg)}`);
 }
@@ -391,7 +387,7 @@ export async function markMentorOrderDeliveredForReviewAction(formData: FormData
 
   const norm = normalizedPrimaryOrderStatus(row);
   if (isOrderRowTerminalForActions(row)) {
-    redirect(`${mentorOrderWaitingReviewPath(orderId)}?ok=${encodeURIComponent("이미 완료된 주문입니다.")}`);
+    redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("이미 완료된 주문입니다.")}`);
   }
 
   const transition = await markCustomOrderDeliveredRpc(supabase, orderId);
@@ -404,9 +400,9 @@ export async function markMentorOrderDeliveredForReviewAction(formData: FormData
     from: norm,
   });
 
-  revalidatePath(mentorOrderWaitingReviewPath(orderId));
+  // 동선 통합(300): 납품 후 별도 검토 대기 페이지 대신 주문방(OrderRoom)으로 이동
   revalidatePath(orderPath(orderId));
-  redirect(`${mentorOrderWaitingReviewPath(orderId)}?ok=${encodeURIComponent("납품이 완료되었습니다. 학생 검토를 기다려 주세요.")}`);
+  redirect(`${orderPath(orderId)}?ok=${encodeURIComponent("납품이 완료되었습니다. 학생 검토를 기다려 주세요.")}`);
 }
 
 

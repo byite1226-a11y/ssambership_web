@@ -47,11 +47,11 @@ export function MentorsListTopFilterBar(props: {
               name="q"
               defaultValue={props.filters.q}
               placeholder="과목, 멘토 이름, 학교 등 검색"
-              className="min-h-[44px] flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
+              className="min-h-[44px] flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
             />
             <button
               type="submit"
-              className="min-h-[44px] shrink-0 rounded-xl bg-[#1A56DB] px-6 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+              className="min-h-[44px] shrink-0 rounded-xl bg-[#2563EB] px-6 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
             >
               검색
             </button>
@@ -92,7 +92,7 @@ export function MentorsListTopFilterBar(props: {
             <Link
               href={mentorsListHref(hrefBase, { view: "list", page: null })}
               className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition ${
-                props.filters.view === "list" ? "bg-[#1A56DB] text-white" : "text-slate-500 hover:bg-slate-100"
+                props.filters.view === "list" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:bg-slate-100"
               }`}
               aria-label="리스트 보기"
               title="리스트"
@@ -102,7 +102,7 @@ export function MentorsListTopFilterBar(props: {
             <Link
               href={mentorsListHref(hrefBase, { view: "grid", page: null })}
               className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition ${
-                props.filters.view === "grid" ? "bg-[#1A56DB] text-white" : "text-slate-500 hover:bg-slate-100"
+                props.filters.view === "grid" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:bg-slate-100"
               }`}
               aria-label="그리드 보기"
               title="그리드"

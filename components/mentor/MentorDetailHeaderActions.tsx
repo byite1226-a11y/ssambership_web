@@ -86,7 +86,7 @@ export function MentorDetailHeaderActions(props: {
         aria-pressed={favorited}
       >
         <Heart
-          className={`h-4 w-4 ${favorited ? "fill-[#1A56DB] text-[#1A56DB]" : "text-slate-400"}`}
+          className={`h-4 w-4 ${favorited ? "fill-[#2563EB] text-[#2563EB]" : "text-slate-400"}`}
           aria-hidden
         />
         찜하기 {favCount > 0 ? favCount.toLocaleString("ko-KR") : ""}

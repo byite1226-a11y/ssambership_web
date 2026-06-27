@@ -133,7 +133,7 @@ export function CommunityShortformComposeForm(props: Props) {
           </label>
 
           <label className="flex items-start gap-2 text-sm text-slate-800">
-            <input type="checkbox" name="rightsAck" value="on" className="mt-1 accent-[#1A56DB]" />
+            <input type="checkbox" name="rightsAck" value="on" className="mt-1 accent-[#2563EB]" />
             <span>영상 및 콘텐츠의 권리를 보유하며 정책에 맞게 올립니다. (올리기 시 필수)</span>
           </label>
         </form>
@@ -155,7 +155,7 @@ export function CommunityShortformComposeForm(props: Props) {
             <ul className="mt-2 space-y-2">
               {UPLOAD_TIPS.map((t) => (
                 <li key={t} className="flex gap-2 text-xs text-slate-600">
-                  <span className="text-[#1A56DB]" aria-hidden>
+                  <span className="text-[#2563EB]" aria-hidden>
                     •
                   </span>
                   {t}
@@ -169,7 +169,7 @@ export function CommunityShortformComposeForm(props: Props) {
             <ul className="mt-2 space-y-2">
               {UPLOAD_BENEFITS.map((b) => (
                 <li key={b} className="flex gap-2 text-xs text-slate-600">
-                  <span className="text-[#1A56DB]" aria-hidden>
+                  <span className="text-[#2563EB]" aria-hidden>
                     •
                   </span>
                   {b}

@@ -6,7 +6,6 @@ import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { submitCustomRequestNew } from "@/lib/customRequest/customRequestComposeActions";
 import { CustomRequestFlowStepper } from "@/components/customRequest/CustomRequestFlowStepper";
 import { CustomRequestPolicyNotice } from "@/components/customRequest/CustomRequestPolicyNotice";
-import { ContactMaskingNotice } from "@/components/customRequest/ContactMaskingNotice";
 import { CUSTOM_REQUEST_BANNED_WARNING } from "@/lib/customRequest/bannedPhrases";
 import { findRestrictedPhraseInText } from "@/lib/safety/trustSafetyText";
 import { POST_ATTACHMENT_MAX_FILES } from "@/lib/customRequest/postAttachmentConstants";
@@ -140,7 +139,6 @@ export function CustomRequestNewForm(props: { errorMessage: string | null; draft
 
               <div className="form-notices">
                 <CustomRequestPolicyNotice />
-                <ContactMaskingNotice />
               </div>
 
               <FormSection step="1" title="카테고리 선택" hint="필수 · 하나를 선택해 주세요">

@@ -18,7 +18,7 @@ export function AdminDataTable(props: Props) {
           <div className="flex items-center gap-2">
             {props.title ? <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">{props.title}</h2> : null}
             {props.count != null ? (
-              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-[#1A56DB]">{props.count}건</span>
+              <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-[#2563EB]">{props.count}건</span>
             ) : null}
           </div>
           {props.filters}

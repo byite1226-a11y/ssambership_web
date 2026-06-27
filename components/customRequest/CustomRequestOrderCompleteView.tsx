@@ -38,7 +38,7 @@ function SummaryItem(props: { label: string; value: string; accent?: boolean }) 
     <div>
       <dt className="text-xs font-bold text-slate-500">{props.label}</dt>
       <dd
-        className={`mt-0.5 text-sm font-extrabold ${props.accent ? "text-[#1A56DB]" : "text-slate-900"}`}
+        className={`mt-0.5 text-sm font-extrabold ${props.accent ? "text-[#2563EB]" : "text-slate-900"}`}
       >
         {props.value}
       </dd>
@@ -57,8 +57,8 @@ function ActionButton(props: {
     "inline-flex min-h-[48px] w-full items-center justify-center rounded-xl px-4 text-sm font-extrabold transition sm:w-auto sm:min-w-[220px]";
   const styles =
     props.variant === "secondary"
-      ? "border-2 border-[#1A56DB] bg-white text-[#1A56DB] hover:bg-blue-50/40"
-      : "bg-[#1A56DB] text-white hover:bg-[#1648c0]";
+      ? "border-2 border-[#2563EB] bg-white text-[#2563EB] hover:bg-blue-50/40"
+      : "bg-[#2563EB] text-white hover:bg-[#1D4ED8]";
 
   if (props.href && !props.disabled) {
     return (
@@ -113,7 +113,7 @@ export function CustomRequestOrderCompleteView(props: CustomRequestOrderComplete
                 <input type="hidden" name="deliverableId" value={deliverable.id} />
                 <button
                   type="submit"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-4 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-4 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
                 >
                   다운로드
                 </button>

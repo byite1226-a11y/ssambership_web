@@ -12,7 +12,7 @@ export function MentorDashboardNotifyBanner() {
         </div>
         <Link
           href="/notifications"
-          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#1A56DB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
         >
           알림 설정하기 &gt;
         </Link>

@@ -94,42 +94,6 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
           </div>
         </div>
 
-        {/* Tab Menu */}
-        <div className="border-b border-slate-200 flex gap-1 select-none">
-          <button
-            type="button"
-            disabled
-            title="필터 API 연결 후 활성화됩니다."
-            className="px-4 py-2 text-sm font-extrabold border-b-2 border-blue-600 text-blue-600 cursor-default"
-          >
-            전체
-          </button>
-          <button
-            type="button"
-            disabled
-            title="필터 API 연결 후 활성화됩니다."
-            className="px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
-          >
-            구독 중
-          </button>
-          <button
-            type="button"
-            disabled
-            title="필터 API 연결 후 활성화됩니다."
-            className="px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
-          >
-            만료 예정
-          </button>
-          <button
-            type="button"
-            disabled
-            title="필터 API 연결 후 활성화됩니다."
-            className="px-4 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
-          >
-            만료됨
-          </button>
-        </div>
-
         {subscriptionList.error ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
             구독 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
@@ -187,7 +151,7 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
                     ) : null}
                   </div>
 
-                  <div className="flex flex-col gap-2 sm:flex-row lg:min-w-[360px] lg:justify-end">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
                     {item.canCancel ? (
                       <form action={requestSubscriptionCancelAtPeriodEndAction}>
                         <input type="hidden" name="subscriptionId" value={item.subscriptionId} />

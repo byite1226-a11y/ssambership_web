@@ -25,7 +25,7 @@ export default function LegalMentorGuidePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
       <header>
-        <p className="text-xs font-extrabold uppercase tracking-wide text-[#16A34A]">멘토 지원</p>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-[#059669]">멘토 지원</p>
         <h1 className="mt-1 text-2xl font-black text-slate-900">멘토 가이드</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           쌤버십에서 멘토로 활동하는 방법, 시작 절차, 좋은 답변·콘텐츠 작성 팁을 정리했습니다. 요금·수수료·한도 등
@@ -79,7 +79,7 @@ export default function LegalMentorGuidePage() {
         </ol>
         <p>
           심사 중에도 가이드와 공지를 참고할 수 있습니다. 진행 상태는{" "}
-          <Link href="/mentor/mypage" className="font-bold text-[#1A56DB] hover:underline">
+          <Link href="/mentor/mypage" className="font-bold text-[#2563EB] hover:underline">
             멘토 대시보드
           </Link>
           와 마이페이지에서 확인하세요.
@@ -118,11 +118,11 @@ export default function LegalMentorGuidePage() {
         <p>
           수수료율·예상 정산액·지급 일정 등 <strong className="font-bold text-slate-900">구체 금액과 일정</strong>
           은{" "}
-          <Link href="/legal/payout-guide" className="font-bold text-[#16A34A] hover:underline">
+          <Link href="/legal/payout-guide" className="font-bold text-[#059669] hover:underline">
             정산 안내
           </Link>
           와 로그인 후{" "}
-          <Link href="/mentor/payouts" className="font-bold text-[#16A34A] hover:underline">
+          <Link href="/mentor/payouts" className="font-bold text-[#059669] hover:underline">
             정산 화면
           </Link>
           에서 확인하세요.
@@ -134,22 +134,22 @@ export default function LegalMentorGuidePage() {
           게시판·숏폼 업로드, 신고·제재, 권리 표기 등 커뮤니티 세부 규칙은 별도 문서를 따릅니다.
         </p>
         <p>
-          <Link href="/legal/community-guidelines" className="font-bold text-[#1A56DB] hover:underline">
+          <Link href="/legal/community-guidelines" className="font-bold text-[#2563EB] hover:underline">
             커뮤니티 이용규칙
           </Link>
           을 읽고 업로드·답변 시 준수해 주세요. 맞춤의뢰 금지 표현·약관·환불 정책도 함께 확인하는 것이 좋습니다.
         </p>
         <p className="text-slate-600">
           관련 링크:{" "}
-          <Link href="/legal/terms" className="font-bold text-[#1A56DB] hover:underline">
+          <Link href="/legal/terms" className="font-bold text-[#2563EB] hover:underline">
             이용약관
           </Link>
           {" · "}
-          <Link href="/legal/no-ghostwriting" className="font-bold text-[#1A56DB] hover:underline">
+          <Link href="/legal/no-ghostwriting" className="font-bold text-[#2563EB] hover:underline">
             대필 금지 안내
           </Link>
           {" · "}
-          <Link href="/legal/refund" className="font-bold text-[#1A56DB] hover:underline">
+          <Link href="/legal/refund" className="font-bold text-[#2563EB] hover:underline">
             환불 정책
           </Link>
         </p>
@@ -164,7 +164,7 @@ export default function LegalMentorGuidePage() {
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             href="/signup"
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#16A34A] px-6 text-sm font-extrabold text-white transition hover:bg-emerald-700"
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#059669] px-6 text-sm font-extrabold text-white transition hover:bg-emerald-700"
           >
             멘토 가입하기
           </Link>

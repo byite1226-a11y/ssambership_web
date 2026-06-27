@@ -31,7 +31,7 @@ export function MentorSubjectCheckboxes(props: {
               <span>{major.label}</span>
               <span className="flex items-center gap-2">
                 {selectedCount > 0 ? (
-                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-[#1A56DB]">
+                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-[#2563EB]">
                     {selectedCount}
                   </span>
                 ) : null}

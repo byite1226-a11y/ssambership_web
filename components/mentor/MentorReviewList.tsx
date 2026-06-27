@@ -27,7 +27,7 @@ function DistributionBar(props: { star: number; count: number; total: number }) 
     <div className="flex items-center gap-2 text-xs">
       <span className="w-6 font-bold text-slate-600">{props.star}점</span>
       <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full rounded-full bg-[#1A56DB]" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${pct}%` }} />
       </div>
       <span className="w-10 text-right tabular-nums text-slate-500">{pct}%</span>
     </div>
@@ -98,7 +98,7 @@ export function MentorReviewList(props: { mentorId: string }) {
     <div className="space-y-6">
       <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 sm:grid-cols-[140px_1fr]">
         <div className="text-center sm:text-left">
-          <p className="text-3xl font-black text-[#1A56DB] tabular-nums">{avgRating != null ? avgRating.toFixed(1) : "—"}</p>
+          <p className="text-3xl font-black text-[#2563EB] tabular-nums">{avgRating != null ? avgRating.toFixed(1) : "—"}</p>
           <p className="mt-1 text-sm text-amber-500">{avgRating != null ? starIcons(Math.round(avgRating)) : "☆☆☆☆☆"}</p>
           <p className="mt-1 text-xs text-slate-500">{total}개 리뷰</p>
         </div>
@@ -121,7 +121,7 @@ export function MentorReviewList(props: { mentorId: string }) {
             <li key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-start gap-3">
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1A56DB]/10 text-sm font-black text-[#1A56DB]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2563EB]/10 text-sm font-black text-[#2563EB]"
                   aria-hidden
                 >
                   {item.studentInitial}
@@ -136,8 +136,8 @@ export function MentorReviewList(props: { mentorId: string }) {
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-slate-800">{item.content}</p>
                   {item.mentorReply ? (
-                    <div className="mt-3 ml-2 border-l-2 border-[#1A56DB]/30 pl-3">
-                      <p className="text-[10px] font-bold text-[#1A56DB]">멘토 답글</p>
+                    <div className="mt-3 ml-2 border-l-2 border-[#2563EB]/30 pl-3">
+                      <p className="text-[10px] font-bold text-[#2563EB]">멘토 답글</p>
                       <p className="mt-1 text-sm text-slate-700">{item.mentorReply}</p>
                       {item.mentorRepliedAt ? (
                         <p className="mt-1 text-[10px] text-slate-400">{formatDate(item.mentorRepliedAt)}</p>

@@ -90,7 +90,7 @@ export function CommunityFileDropzone(props: Props) {
           props.disabled
             ? "cursor-not-allowed border-slate-200 bg-slate-50/60 opacity-60"
             : dragOver
-              ? "cursor-pointer border-[#1A56DB] bg-blue-50/40"
+              ? "cursor-pointer border-[#2563EB] bg-blue-50/40"
               : "cursor-pointer border-slate-200 bg-slate-50/60 hover:border-slate-300 hover:bg-slate-50",
         ].join(" ")}
       >

@@ -63,14 +63,14 @@ export function MentorReviewsCarousel(props: { mentorId: string }) {
           <h2 className="text-lg font-black text-slate-900">학생 후기</h2>
           {avgRating != null ? (
             <p className="mt-0.5 text-sm font-bold text-slate-600">
-              <span className="text-[#1A56DB]">★ {avgRating.toFixed(1)}</span>
+              <span className="text-[#2563EB]">★ {avgRating.toFixed(1)}</span>
               {total > 0 ? ` (${total.toLocaleString("ko-KR")})` : null}
             </p>
           ) : null}
         </div>
         <Link
           href={`/mentors/${props.mentorId}#reviews`}
-          className="text-xs font-extrabold text-[#1A56DB] hover:underline"
+          className="text-xs font-extrabold text-[#2563EB] hover:underline"
         >
           전체 보기 &gt;
         </Link>
@@ -91,7 +91,7 @@ export function MentorReviewsCarousel(props: { mentorId: string }) {
                 className="w-[260px] shrink-0 snap-start rounded-2xl border border-slate-200 bg-slate-50/50 p-4 lg:w-[calc(25%-0.75rem)] lg:min-w-[220px]"
               >
                 <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1A56DB]/10 text-sm font-black text-[#1A56DB]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#2563EB]/10 text-sm font-black text-[#2563EB]">
                     {item.studentInitial}
                   </div>
                   <div className="min-w-0">
@@ -117,7 +117,7 @@ export function MentorReviewsCarousel(props: { mentorId: string }) {
                   onClick={() => setActiveDot(i)}
                   className={[
                     "h-2 w-2 rounded-full transition",
-                    activeDot === i ? "bg-[#1A56DB] w-5" : "bg-slate-300 hover:bg-slate-400",
+                    activeDot === i ? "bg-[#2563EB] w-5" : "bg-slate-300 hover:bg-slate-400",
                   ].join(" ")}
                   aria-label={`후기 ${i + 1}페이지`}
                 />

@@ -73,7 +73,7 @@ export default async function AdminMentorApprovalDetailPage(props: Props) {
               className="h-full rounded-md"
               style={{
                 width: `${Math.min(100, capUsage.pct)}%`,
-                backgroundColor: capUsage.pct >= 80 ? "#e08a2f" : "#1A56DB",
+                backgroundColor: capUsage.pct >= 80 ? "#e08a2f" : "#2563EB",
               }}
             />
           </div>
@@ -94,7 +94,7 @@ export default async function AdminMentorApprovalDetailPage(props: Props) {
             </label>
             <button
               type="submit"
-              className="rounded-lg bg-[#1A56DB] px-4 py-2 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+              className="rounded-lg bg-[#2563EB] px-4 py-2 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
             >
               저장
             </button>

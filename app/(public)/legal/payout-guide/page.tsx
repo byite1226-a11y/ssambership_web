@@ -25,7 +25,7 @@ export default function LegalPayoutGuidePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-6">
       <header>
-        <p className="text-xs font-extrabold uppercase tracking-wide text-[#16A34A]">멘토 지원</p>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-[#059669]">멘토 지원</p>
         <h1 className="mt-1 text-2xl font-black text-slate-900">정산 안내</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           멘토가 구독·맞춤의뢰 등으로 발생한 수익을 정산받는 흐름을 설명합니다. 실제 금액·수수료·일정은 로그인 후
@@ -77,7 +77,7 @@ export default function LegalPayoutGuidePage() {
         </p>
         <p>
           구독 요금·플랜별 혜택·질문 한도 등 학생 측 요금 정보는{" "}
-          <Link href="/subscribe" className="font-bold text-[#1A56DB] hover:underline">
+          <Link href="/subscribe" className="font-bold text-[#2563EB] hover:underline">
             구독 안내
           </Link>
           화면을 참고해 주세요.
@@ -93,7 +93,7 @@ export default function LegalPayoutGuidePage() {
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             href="/mentor/payouts"
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#16A34A] px-6 text-sm font-extrabold text-white transition hover:bg-emerald-700"
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[#059669] px-6 text-sm font-extrabold text-white transition hover:bg-emerald-700"
           >
             정산 화면 보기
           </Link>
@@ -108,11 +108,11 @@ export default function LegalPayoutGuidePage() {
 
       <p className="text-center text-sm text-slate-600">
         멘토 활동을 시작하려면{" "}
-        <Link href="/signup" className="font-bold text-[#16A34A] hover:underline">
+        <Link href="/signup" className="font-bold text-[#059669] hover:underline">
           멘토 가입
         </Link>
         을 진행해 주세요. 활동 방법은{" "}
-        <Link href="/legal/mentor-guide" className="font-bold text-[#1A56DB] hover:underline">
+        <Link href="/legal/mentor-guide" className="font-bold text-[#2563EB] hover:underline">
           멘토 가이드
         </Link>
         에서 확인할 수 있습니다.

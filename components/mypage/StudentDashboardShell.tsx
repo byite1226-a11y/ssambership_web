@@ -1,5 +1,6 @@
 import Link from "next/link";
 import React from "react";
+import { FileText, CalendarDays, Wallet, Bell, ShieldAlert, type LucideIcon } from "lucide-react";
 import { SURFACE_CARD, PAGE_COL_GAP } from "@/lib/ui/surfaceCard";
 
 interface UserLike {
@@ -31,12 +32,13 @@ type Props = {
   children: React.ReactNode;
 };
 
-/** 상단 AppShell 네비와 겹치지 않는 보조 메뉴만 유지 */
-const NAV_ITEMS: { tab: Props["activeTab"]; href: string; label: string; icon: string }[] = [
-  { tab: "home", href: "/mypage", label: "마이페이지", icon: "📑" },
-  { tab: "subscriptions", href: "/subscriptions", label: "구독 현황", icon: "📅" },
-  { tab: "notifications", href: "/notifications", label: "알림", icon: "🔔" },
-  { tab: "support", href: "/support/disputes", label: "분쟁·환불 현황", icon: "⚠️" },
+/** 상단 AppShell 네비와 겹치지 않는 보조 메뉴만 유지 (아이콘은 lucide로 통일) */
+const NAV_ITEMS: { tab: Props["activeTab"]; href: string; label: string; Icon: LucideIcon }[] = [
+  { tab: "home", href: "/mypage", label: "마이페이지", Icon: FileText },
+  { tab: "subscriptions", href: "/subscriptions", label: "구독 현황", Icon: CalendarDays },
+  { tab: "wallet", href: "/wallet/ledger", label: "캐시 내역", Icon: Wallet },
+  { tab: "notifications", href: "/notifications", label: "알림", Icon: Bell },
+  { tab: "support", href: "/support/disputes", label: "분쟁·환불 현황", Icon: ShieldAlert },
 ];
 
 export function StudentDashboardShell({
@@ -104,20 +106,25 @@ export function StudentDashboardShell({
           ) : null}
 
           <nav className={`space-y-1 ${SURFACE_CARD} !py-3`}>
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold transition duration-150 ${
-                  activeTab === item.tab
-                    ? "bg-blue-50 font-extrabold text-blue-700"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
-                <span aria-hidden>{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.Icon;
+              const active = activeTab === item.tab;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold transition duration-150 ${
+                    active
+                      ? "bg-blue-50 font-extrabold text-blue-700"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </aside>
 
@@ -129,7 +136,7 @@ export function StudentDashboardShell({
           ) : (
             <section className={SURFACE_CARD}>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-400">결제 · 캐시</p>
-              <p className="mt-2 text-2xl font-black tabular-nums text-[#1A56DB]">
+              <p className="mt-2 text-2xl font-black tabular-nums text-[#2563EB]">
                 {cashBalanceKrw.toLocaleString("ko-KR")}
                 <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
               </p>

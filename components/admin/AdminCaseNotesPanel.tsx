@@ -28,7 +28,7 @@ export function AdminCaseNotesPanel(props: Props) {
           <h2 className="text-sm font-extrabold text-slate-900">운영 메모</h2>
           <p className="mt-1 text-xs text-slate-600">관리자 내부 타임라인으로 저장됩니다. 환불·정산·주문 상태는 변경하지 않습니다.</p>
         </div>
-        <span className="rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-bold text-[#1A56DB]">
+        <span className="rounded-lg border border-blue-100 bg-blue-50 px-2 py-1 text-[11px] font-bold text-[#2563EB]">
           {props.notes.notes.length}건
         </span>
       </div>
@@ -57,7 +57,7 @@ export function AdminCaseNotesPanel(props: Props) {
             className="w-full rounded-xl border border-slate-200 bg-white p-2 text-sm text-slate-900 placeholder:text-slate-400"
             placeholder="내부 공유용 메모를 입력하세요."
           />
-          <button type="submit" className="rounded-lg bg-[#1A56DB] px-3 py-2 text-xs font-extrabold text-white hover:bg-blue-800">
+          <button type="submit" className="rounded-lg bg-[#2563EB] px-3 py-2 text-xs font-extrabold text-white hover:bg-blue-800">
             메모 추가
           </button>
         </form>

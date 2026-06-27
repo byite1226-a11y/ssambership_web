@@ -141,7 +141,7 @@ export function AdminDisputesWorkspace(props: Props) {
                       </p>
                       <Link
                         href={`/admin/disputes/${encodeURIComponent(it.id)}`}
-                        className="mt-1 inline-block text-xs font-bold text-[#1A56DB] hover:underline"
+                        className="mt-1 inline-block text-xs font-bold text-[#2563EB] hover:underline"
                       >
                         상세 보기
                       </Link>
@@ -199,7 +199,7 @@ function FilterGroup<T extends string>(props: {
             onClick={() => props.onSelect(f.id)}
             className={[
               "rounded-full px-3 py-1 text-xs font-bold",
-              props.active === f.id ? "bg-[#1A56DB] text-white" : "border border-slate-200 text-slate-700",
+              props.active === f.id ? "bg-[#2563EB] text-white" : "border border-slate-200 text-slate-700",
             ].join(" ")}
           >
             {f.label}

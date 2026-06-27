@@ -21,7 +21,7 @@ function NavLinks({ collapsed }: { collapsed: boolean }) {
             title={collapsed ? item.label : undefined}
             className={[
               "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold transition select-none",
-              active ? "bg-[#1A56DB] text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+              active ? "bg-[#2563EB] text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
               collapsed ? "justify-center px-2" : "",
             ].join(" ")}
             aria-current={active ? "page" : undefined}
@@ -38,7 +38,7 @@ function NavLinks({ collapsed }: { collapsed: boolean }) {
 function BrandBlock({ collapsed }: { collapsed: boolean }) {
   return (
     <Link href="/admin/dashboard" className="block">
-      <p className={["font-black tracking-tight text-[#1A56DB]", collapsed ? "text-center text-sm" : "text-lg"].join(" ")}>
+      <p className={["font-black tracking-tight text-[#2563EB]", collapsed ? "text-center text-sm" : "text-lg"].join(" ")}>
         {collapsed ? "S" : "쌤버십 Admin"}
       </p>
       {!collapsed ? <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">운영 백오피스</p> : null}

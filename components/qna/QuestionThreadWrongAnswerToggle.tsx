@@ -48,7 +48,7 @@ export function QuestionThreadWrongAnswerToggle(props: {
           checked={checked}
           disabled={pending}
           onChange={(e) => void save(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1A56DB] focus:ring-[#1A56DB]"
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
         />
         <span>
           이 문제는 내가 틀렸던 문제예요

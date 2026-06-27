@@ -56,7 +56,7 @@ export function QuestionRoomNewNoteModal(props: {
             required
             defaultValue={props.defaultBody ?? ""}
             placeholder="멘토에게 전달할 배경·목표를 짧게 남겨 주세요."
-            className="h-32 w-full rounded-xl border border-slate-200 px-4 py-3 text-[13px] font-medium outline-none focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20"
+            className="h-32 w-full rounded-xl border border-slate-200 px-4 py-3 text-[13px] font-medium outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
           />
           <input type="hidden" name="roomId" value={props.roomId} />
           <input type="hidden" name="actor" value={props.actor ?? "student"} />
@@ -72,7 +72,7 @@ export function QuestionRoomNewNoteModal(props: {
             <FormSubmitButton
               idleLabel="저장"
               pendingLabel="저장 중…"
-              className="h-10 flex-1 rounded-xl bg-[#1A56DB] text-[12px] font-black text-white"
+              className="h-10 flex-1 rounded-xl bg-[#2563EB] text-[12px] font-black text-white"
             />
           </div>
         </form>

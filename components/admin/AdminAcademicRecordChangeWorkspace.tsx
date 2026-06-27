@@ -102,7 +102,7 @@ export function AdminAcademicRecordChangeWorkspace(props: {
                   href={signedUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-block text-sm font-bold text-[#1A56DB] underline"
+                  className="mt-1 inline-block text-sm font-bold text-[#2563EB] underline"
                 >
                   서류 열기 (단기 링크)
                 </a>

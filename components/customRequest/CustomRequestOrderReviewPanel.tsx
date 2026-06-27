@@ -33,7 +33,7 @@ export function CustomRequestOrderReviewPanel(props: { orderId: string; detail: 
                     <input type="hidden" name="deliverableId" value={id} />
                     <button
                       type="submit"
-                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-[#1A56DB] hover:bg-slate-50"
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-[#2563EB] hover:bg-slate-50"
                     >
                       {name}
                       <span>{"\uB2E4\uC6B4\uB85C\uB4DC"}</span>
@@ -50,7 +50,7 @@ export function CustomRequestOrderReviewPanel(props: { orderId: string; detail: 
         <h2 className="text-sm font-extrabold text-slate-900">{"\uCC98\uB9AC \uC120\uD0DD"}</h2>
         <form action={acceptCustomOrderDeliverableAction}>
           <input type="hidden" name="orderId" value={props.orderId} />
-          <button type="submit" className="w-full rounded-xl bg-[#1A56DB] py-3 text-sm font-bold text-white">
+          <button type="submit" className="w-full rounded-xl bg-[#2563EB] py-3 text-sm font-bold text-white">
             {"\uB0A9\uD488 \uC218\uB77D (\uC644\uB8CC)"}
           </button>
         </form>
@@ -82,7 +82,7 @@ export function CustomRequestOrderReviewPanel(props: { orderId: string; detail: 
         </form>
       </section>
 
-      <Link href={`/custom-request/orders/${props.orderId}`} className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
+      <Link href={`/custom-request/orders/${props.orderId}`} className="inline-flex text-sm font-bold text-[#2563EB] hover:underline">
         {"\u2190 \uC8FC\uBB38\uBC29\uC73C\uB85C"}
       </Link>
     </div>

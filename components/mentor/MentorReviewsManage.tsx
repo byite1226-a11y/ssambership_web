@@ -85,8 +85,8 @@ export function MentorReviewsManage(props: { initialItems: ReviewCardItem[] }) {
               <p className="mt-3 text-sm leading-relaxed text-slate-800">{item.content}</p>
 
               {item.mentorReply ? (
-                <div className="mt-4 border-l-2 border-[#1A56DB]/30 pl-3">
-                  <p className="text-xs font-bold text-[#1A56DB]">내 답글</p>
+                <div className="mt-4 border-l-2 border-[#2563EB]/30 pl-3">
+                  <p className="text-xs font-bold text-[#2563EB]">내 답글</p>
                   <p className="mt-1 text-sm text-slate-700">{item.mentorReply}</p>
                 </div>
               ) : (
@@ -103,7 +103,7 @@ export function MentorReviewsManage(props: { initialItems: ReviewCardItem[] }) {
                     type="button"
                     disabled={busyId === item.id || !(replyDraft[item.id] ?? "").trim()}
                     onClick={() => void submitReply(item.id)}
-                    className="rounded-xl bg-[#1A56DB] px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-xl bg-[#2563EB] px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
                   >
                     {busyId === item.id ? "저장 중…" : "답글 작성"}
                   </button>

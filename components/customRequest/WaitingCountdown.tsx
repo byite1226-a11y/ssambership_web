@@ -76,7 +76,7 @@ export function WaitingCountdown(props: Props) {
           key={u.label}
           className="flex min-w-[4.5rem] flex-col items-center rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
         >
-          <span className="text-xl font-black tabular-nums text-[#1A56DB] sm:text-2xl">
+          <span className="text-xl font-black tabular-nums text-[#2563EB] sm:text-2xl">
             {u.label === "일" ? u.value : pad(u.value)}
           </span>
           <span className="mt-0.5 text-[11px] font-bold text-slate-500">{u.label}</span>

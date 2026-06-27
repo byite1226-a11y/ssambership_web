@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 
 type Props = {
   backHref: string;
@@ -10,7 +10,7 @@ type Props = {
 export function CommunityComposeTopBar(props: Props) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-      <Link href={props.backHref} className="text-sm font-extrabold text-slate-600 hover:text-[#1A56DB]">
+      <Link href={props.backHref} className="text-sm font-extrabold text-slate-600 hover:text-[#2563EB]">
         ← 뒤로
       </Link>
       <div className="flex flex-wrap gap-2">

@@ -209,7 +209,7 @@ export function AdminMentorApprovalWorkspace(props: Props) {
                   onClick={() => setFilter(f.id)}
                   className={[
                     "rounded-full px-3.5 py-1.5 text-xs font-bold",
-                    filter === f.id ? "bg-[#1A56DB] text-white" : "border border-slate-200 bg-white text-slate-700",
+                    filter === f.id ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
                   ].join(" ")}
                 >
                   {f.label}
@@ -389,7 +389,7 @@ export function AdminMentorApprovalWorkspace(props: Props) {
                     <FormSubmitButton
                       idleLabel="검증값 저장 후 승인"
                       pendingLabel="승인 중..."
-                      className="w-full rounded-xl bg-[#1A56DB] py-2.5 text-sm font-bold text-white disabled:opacity-60"
+                      className="w-full rounded-xl bg-[#2563EB] py-2.5 text-sm font-bold text-white disabled:opacity-60"
                     />
                   </form>
 
@@ -447,7 +447,7 @@ export function AdminMentorApprovalWorkspace(props: Props) {
                       <form action={approveMentorApplicationAction} className="space-y-2">
                         <input type="hidden" name="mentorUserId" value={mentorUserId} />
                         <input name="adminNote" placeholder="승인 메모(선택)" className="w-full rounded-lg border px-3 py-2 text-sm" />
-                        <button type="submit" className="w-full rounded-xl bg-[#1A56DB] py-2.5 text-sm font-bold text-white">
+                        <button type="submit" className="w-full rounded-xl bg-[#2563EB] py-2.5 text-sm font-bold text-white">
                           승인
                         </button>
                       </form>

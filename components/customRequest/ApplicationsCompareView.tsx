@@ -118,7 +118,7 @@ export function ApplicationsCompareView(props: {
         <div className="grid gap-3 sm:grid-cols-1">
           <div className="cr-apps-card">
             <p className="text-sm font-extrabold text-[#0f172a]">지원 현황</p>
-            <p className="mt-1 text-2xl font-black text-[#1A56DB]">0건</p>
+            <p className="mt-1 text-2xl font-black text-[#2563EB]">0건</p>
             <p className="mt-1 text-sm font-medium text-[var(--c-secondary,#3f4b5f)]">멘토가 제안을 내면 카드로 쌓여요.</p>
           </div>
           <div className="cr-apps-card">
@@ -216,7 +216,7 @@ export function ApplicationsCompareView(props: {
                   </div>
                   {schoolLine ? <p className="mt-0.5 text-sm font-medium text-slate-600">{schoolLine}</p> : null}
                   <div className="mt-3 flex flex-wrap gap-4 text-sm">
-                    <span className="font-extrabold text-[#1A56DB]">{formatApplicationPriceKrwDisplay(r)}</span>
+                    <span className="font-extrabold text-[#2563EB]">{formatApplicationPriceKrwDisplay(r)}</span>
                     <span className="font-bold text-slate-700">예상 {formatApplicationDurationDays(r)}</span>
                   </div>
                   {preview ? (

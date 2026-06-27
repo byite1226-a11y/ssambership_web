@@ -20,7 +20,7 @@ export function MentorDetailSubjectTabs(props: { display: MentorProfileDisplay }
           {chips.map((c) => (
             <li
               key={c}
-              className="rounded-lg border border-[#1A56DB]/35 bg-blue-50/40 px-2.5 py-1 text-xs font-bold text-[#1A56DB]"
+              className="rounded-lg border border-[#2563EB]/35 bg-blue-50/40 px-2.5 py-1 text-xs font-bold text-[#2563EB]"
             >
               {c}
             </li>

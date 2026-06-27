@@ -54,7 +54,7 @@ export function QuestionThreadConfirmButton(props: {
             type="button"
             disabled={pending}
             onClick={() => void handleConfirm()}
-            className="rounded-lg bg-[#1A56DB] px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {pending ? "처리 중…" : "답변 확인 완료"}
           </button>

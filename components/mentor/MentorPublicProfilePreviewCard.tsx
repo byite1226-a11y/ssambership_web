@@ -67,16 +67,16 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
   // preview(프로필 편집 미리보기): 다른 카드와 톤 통일 — 사방 균일 1.5px slate-300 + 옅은 그림자, 좌측 액센트 바 없음.
   // dense(hub/compact)는 기존 외형 유지.
   const shadowCls = isDense ? "shadow-sm" : "shadow-[0_1px_4px_rgba(0,0,0,0.05)]";
-  // preview(학생 시점): 좌측 섹션 카드(187)와 동일 구조 — 왼쪽만 4px 파랑(#1A56DB) 액센트 바 + 삼면 1px slate-300.
+  // preview(학생 시점): 좌측 섹션 카드(187)와 동일 구조 — 왼쪽만 4px 파랑(#2563EB) 액센트 바 + 삼면 1px slate-300.
   const borderCls = isDense
     ? "border border-slate-200"
-    : "border border-l-[4px] border-slate-300 border-l-[#1A56DB]";
+    : "border border-l-[4px] border-slate-300 border-l-[#2563EB]";
   const bgCls = "bg-white";
 
   return (
     <div className={`overflow-hidden ${borderCls} ${bgCls} ${cardRadius} ${shadowCls} ${className}`}>
       {!isDense ? (
-        <div className="flex items-center gap-1.5 bg-[#EBF1FE] px-4 py-2 text-[11px] font-extrabold text-[#1A56DB]">
+        <div className="flex items-center gap-1.5 bg-[#EBF1FE] px-4 py-2 text-[11px] font-extrabold text-[#2563EB]">
           <Eye className="h-3.5 w-3.5" aria-hidden />
           학생에게 보이는 화면
         </div>
@@ -205,7 +205,7 @@ export function MentorPublicProfilePreviewCard(props: MentorPublicProfilePreview
                       ? "bg-blue-50 text-blue-800 border-blue-100"
                       : "bg-violet-50 text-violet-800 border-violet-100"
                   : tier === "standard"
-                    ? "bg-blue-50 text-[#1A56DB] border-blue-100"
+                    ? "bg-blue-50 text-[#2563EB] border-blue-100"
                     : "bg-slate-50 text-slate-600 border-slate-200";
 
                 return (

@@ -9,11 +9,8 @@ export function CustomRequestPolicyNotice() {
         요청해 주세요.
       </p>
       <p>
-        멘토가 선택되어 거래가 성립하기 전에는 <strong>외부 연락처(카카오, 전화, SNS 등) 교환</strong>을 하지 마세요. 플랫폼
-        내 흐름만 사용합니다.
-      </p>
-      <p className="text-slate-500">
-        자동 연락처 탐지·차단은 서버 검증 연동 후 강화 예정입니다. (
+        <strong>외부 연락처(카카오·전화·SNS 등) 교환</strong>은 금지되며, 적발 시 거래 제한·제재 대상이 됩니다. 모든 메시지와
+        거래는 플랫폼 안에서만 진행해 주세요. (
         <Link href="/legal/no-offplatform-contact" className="font-bold text-blue-700 underline">
           안내
         </Link>

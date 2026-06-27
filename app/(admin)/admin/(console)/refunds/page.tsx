@@ -166,7 +166,7 @@ export default async function AdminRefundsPage(props: PageProps) {
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-bold uppercase text-slate-500">정산 예정 금액</p>
-            <p className="mt-2 text-2xl font-black text-[#1A56DB]">
+            <p className="mt-2 text-2xl font-black text-[#2563EB]">
               {summary.settlementPendingAmount != null
                 ? `${new Intl.NumberFormat("ko-KR").format(summary.settlementPendingAmount)}원`
                 : "—"}

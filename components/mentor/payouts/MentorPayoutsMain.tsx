@@ -89,7 +89,7 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero
               className={[
                 "rounded-t-lg px-4 py-2.5 text-sm font-extrabold transition",
                 tab === id
-                  ? "border border-b-0 border-slate-200 bg-white text-[#1A56DB]"
+                  ? "border border-b-0 border-slate-200 bg-white text-[#2563EB]"
                   : "text-slate-500 hover:text-slate-800",
               ].join(" ")}
             >

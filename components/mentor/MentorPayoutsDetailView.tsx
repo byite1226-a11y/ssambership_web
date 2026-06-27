@@ -102,7 +102,7 @@ export function MentorPayoutsDetailView() {
     <div className="mx-auto max-w-6xl px-4 pb-16 pt-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-2">
-          <Link href="/mentor/payouts" className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
+          <Link href="/mentor/payouts" className="inline-flex text-sm font-bold text-[#2563EB] hover:underline">
             ← 정산 요약으로
           </Link>
           <div>
@@ -168,7 +168,7 @@ export function MentorPayoutsDetailView() {
             <span className="text-slate-600">
               수수료 합계 <span className="text-slate-900">{formatCashKrw(totals.feeAmount)}</span>
             </span>
-            <span className="text-[#1A56DB]">
+            <span className="text-[#2563EB]">
               순수령액 합계 <span className="font-black">{formatCashKrw(totals.netAmount)}</span>
             </span>
           </div>

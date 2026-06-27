@@ -114,7 +114,7 @@ export function MentorContentsSection(props: {
         <h2 className="text-lg font-black text-slate-900">대표 콘텐츠</h2>
         <Link
           href={`/mentors/${props.mentorId}#contents`}
-          className="text-xs font-extrabold text-[#1A56DB] hover:underline"
+          className="text-xs font-extrabold text-[#2563EB] hover:underline"
         >
           전체 보기 &gt;
         </Link>

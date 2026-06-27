@@ -3,9 +3,10 @@ import type { DisputeListItem } from "@/lib/disputes/disputeListQueries";
 
 const badge = (s: string) => {
   const u = (s || "").toLowerCase();
-  if (/open|new|submitted|pend|ing|under_review|escalat/i.test(u)) return "bg-amber-50 text-amber-700 border-amber-100";
-  if (/close|resolv|done|dismiss|approved|rejected|fail/i.test(u)) return "bg-slate-50 text-slate-600 border-slate-100";
-  return "bg-blue-50 text-blue-700 border-blue-100";
+  if (/escalat/i.test(u)) return "bg-red-50 text-red-700 border-red-100";
+  if (/open|new|submitted|pend|ing|under_review|review/i.test(u)) return "bg-amber-50 text-amber-700 border-amber-100";
+  if (/resolv|done|approved|complete/i.test(u)) return "bg-emerald-50 text-emerald-700 border-emerald-100";
+  return "bg-slate-50 text-slate-600 border-slate-100";
 };
 
 type Props = {
@@ -52,7 +53,7 @@ export function DisputesListView(props: Props) {
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3 flex items-center justify-between">
           <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">분쟁·환불 현황</h2>
-          <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded">
+          <span className="text-xs bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded">
             {items.length}건
           </span>
         </div>
@@ -71,7 +72,11 @@ export function DisputesListView(props: Props) {
               .map((it) => (
                 <tr key={it.id} className="hover:bg-slate-50/30 transition-colors">
                   <td className="max-w-[min(11rem,32vw)] min-w-0 px-5 py-4 text-slate-800 font-medium break-words">
-                    {it.typeLabel}
+                    {it.typeLabel && it.typeLabel !== "—" ? (
+                      it.typeLabel
+                    ) : (
+                      <span className="text-slate-400">유형 미지정</span>
+                    )}
                   </td>
                   <td className="px-5 py-4 align-middle">
                     <span
@@ -81,13 +86,17 @@ export function DisputesListView(props: Props) {
                     </span>
                   </td>
                   <td className="min-w-0 max-w-[min(20rem,45vw)] px-5 py-4 text-xs text-slate-600 leading-relaxed font-medium break-words">
-                    <span className="line-clamp-2" title={it.orderSummary}>
-                      {it.orderSummary}
-                    </span>
+                    {it.orderSummary && it.orderSummary !== "—" ? (
+                      <span className="line-clamp-2" title={it.orderSummary}>
+                        {it.orderSummary}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">연결된 주문 없음</span>
+                    )}
                   </td>
                   <td className="px-5 py-4 text-right">
                     <Link
-                      className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-4 text-xs font-bold transition-colors shadow-sm"
+                      className="inline-flex min-h-[36px] items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
                       href={detailHref(it.id)}
                     >
                       상세 보기

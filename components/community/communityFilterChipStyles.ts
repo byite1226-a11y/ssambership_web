@@ -3,7 +3,7 @@ export function communityFilterChipClass(active: boolean, size: "sm" | "md" = "m
   const sizeClass =
     size === "sm" ? "px-3.5 py-1.5 text-xs font-bold" : "px-4 py-2 text-sm font-medium";
   const stateClass = active
-    ? "bg-[#e8f0fe] text-[#1A56DB] font-semibold"
+    ? "bg-[#e8f0fe] text-[#2563EB] font-semibold"
     : "bg-[#f4f5f7] text-[#4b5563] hover:bg-[#eceef1]";
   return ["rounded-full transition-colors", sizeClass, stateClass].join(" ");
 }

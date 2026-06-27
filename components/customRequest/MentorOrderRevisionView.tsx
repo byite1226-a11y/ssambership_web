@@ -48,7 +48,7 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="text-lg font-black text-slate-900">수정 요청 내용</h2>
           <div className="mt-4 flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1A56DB]/10 text-sm font-black text-[#1A56DB]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#2563EB]/10 text-sm font-black text-[#2563EB]">
               {props.student.initial}
             </div>
             <div className="min-w-0 flex-1">
@@ -73,7 +73,7 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
                   className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <p className="text-xs font-black text-[#1A56DB]">{d.versionLabel}</p>
+                    <p className="text-xs font-black text-[#2563EB]">{d.versionLabel}</p>
                     <p className="mt-0.5 text-sm font-extrabold text-slate-900">{d.fileName}</p>
                     <p className="text-xs font-medium text-slate-500">{d.submittedAtLabel}</p>
                   </div>
@@ -83,7 +83,7 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
                       <input type="hidden" name="deliverableId" value={d.id} />
                       <button
                         type="submit"
-                        className="text-xs font-extrabold text-[#1A56DB] underline underline-offset-2"
+                        className="text-xs font-extrabold text-[#2563EB] underline underline-offset-2"
                       >
                         다운로드
                       </button>
@@ -112,7 +112,7 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
             className={`mt-4 inline-flex min-h-[48px] items-center justify-center rounded-xl px-5 text-sm font-extrabold text-white ${
               revisionUsage.exceeded
                 ? "cursor-not-allowed bg-slate-400"
-                : "bg-[#1A56DB] hover:bg-[#1648c0]"
+                : "bg-[#2563EB] hover:bg-[#1D4ED8]"
             }`}
             aria-disabled={revisionUsage.exceeded}
             tabIndex={revisionUsage.exceeded ? -1 : 0}
@@ -136,7 +136,7 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
             </div>
             <div>
               <dt className="font-bold text-slate-500">금액</dt>
-              <dd className="font-extrabold text-[#1A56DB]">{props.summary.amountLabel}</dd>
+              <dd className="font-extrabold text-[#2563EB]">{props.summary.amountLabel}</dd>
             </div>
             <div>
               <dt className="font-bold text-slate-500">마감일</dt>
@@ -149,17 +149,17 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
           <h2 className="text-sm font-black text-slate-900">빠른 메뉴</h2>
           <ul className="mt-3 space-y-2 text-sm font-extrabold">
             <li>
-              <Link href={roomHref} className="text-[#1A56DB] hover:underline">
+              <Link href={roomHref} className="text-[#2563EB] hover:underline">
                 작업방
               </Link>
             </li>
             <li>
-              <Link href={filesHref} className="text-[#1A56DB] hover:underline">
+              <Link href={filesHref} className="text-[#2563EB] hover:underline">
                 작업파일
               </Link>
             </li>
             <li>
-              <Link href={`/mentor/custom-request/orders/${orderId}/waiting-review`} className="text-[#1A56DB] hover:underline">
+              <Link href={`/mentor/custom-request/orders/${orderId}/waiting-review`} className="text-[#2563EB] hover:underline">
                 진행관리
               </Link>
             </li>

@@ -29,7 +29,7 @@ export function PublicNoticesList(props: { items: PublicNoticeItem[] }) {
                       중요
                     </span>
                   ) : null}
-                  <h2 className="min-w-0 flex-1 text-base font-extrabold text-slate-900 group-open:text-[#1A56DB]">
+                  <h2 className="min-w-0 flex-1 text-base font-extrabold text-slate-900 group-open:text-[#2563EB]">
                     {item.title}
                   </h2>
                   {item.createdAtLabel ? (

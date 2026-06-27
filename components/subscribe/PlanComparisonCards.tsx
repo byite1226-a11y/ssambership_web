@@ -107,7 +107,7 @@ export function PlanComparisonCards(props: {
               className={[
                 "relative flex cursor-pointer flex-col rounded-xl border p-3.5 transition",
                 selected
-                  ? "border-2 border-[#1A56DB] bg-blue-50/50 ring-1 ring-[#1A56DB]/20"
+                  ? "border-2 border-[#2563EB] bg-blue-50/50 ring-1 ring-[#2563EB]/20"
                   : "border-slate-200 bg-white hover:border-slate-300",
               ].join(" ")}
             >
@@ -117,13 +117,13 @@ export function PlanComparisonCards(props: {
                 value={tierId}
                 checked={selected}
                 onChange={() => onSelectTier?.(tierId)}
-                className="absolute right-3 top-3 h-4 w-4 accent-[#1A56DB]"
+                className="absolute right-3 top-3 h-4 w-4 accent-[#2563EB]"
               />
               <div className="pr-8">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-sm font-black text-slate-900">{t.label}</span>
                   {isRec ? (
-                    <span className="rounded bg-[#1A56DB] px-1.5 py-px text-[9px] font-bold text-white">
+                    <span className="rounded bg-[#2563EB] px-1.5 py-px text-[9px] font-bold text-white">
                       추천
                     </span>
                   ) : null}

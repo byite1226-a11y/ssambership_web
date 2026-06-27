@@ -34,7 +34,7 @@ export function WalletChargeRecentSummary(props: {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
-            <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#1A56DB]" aria-hidden />
+            <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563EB]" aria-hidden />
             최근 사용 내역
           </h2>
           <p className="mt-1 text-xs font-medium leading-relaxed text-[#8a96a8]">최근 캐시 충전과 사용 흐름입니다.</p>

@@ -11,7 +11,7 @@ export function mapSupabaseAuthError(message: string): string {
     return "이미 가입된 이메일입니다.";
   }
   if (m.includes("password should be at least") || m.includes("password is too short")) {
-    return "비밀번호는 Supabase 설정에 따라 최소 길이를 만족해야 합니다. (보통 6자 이상)";
+    return "비밀번호가 보안 기준을 충족하지 않습니다. 8자 이상으로 설정해 주세요.";
   }
   if (m.includes("email not confirmed") || m.includes("email not verified")) {
     return "이메일 인증을 먼저 완료해 주세요. 메일함(스팸 함 포함)의 링크를 확인해 주세요.";

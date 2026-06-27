@@ -10,7 +10,7 @@ const steps: { n: 1 | 2 | 3; label: string }[] = [
   { n: 3, label: "3. 가입 완료" },
 ];
 
-const lineDone = "bg-[#1A56DB]/30";
+const lineDone = "bg-[#2563EB]/30";
 const linePending = "bg-slate-200";
 
 export function SignupStepBar({ current }: SignupStepBarProps) {
@@ -35,10 +35,10 @@ export function SignupStepBar({ current }: SignupStepBarProps) {
                     className={[
                       "flex h-9 w-9 items-center justify-center text-sm font-extrabold transition sm:h-10 sm:w-10 sm:text-base",
                       here
-                        ? "rounded-full bg-[#1A56DB] text-white"
+                        ? "rounded-full bg-[#2563EB] text-white"
                         : "",
                       done && !here
-                        ? "rounded-full bg-[#1A56DB] text-white"
+                        ? "rounded-full bg-[#2563EB] text-white"
                         : "",
                       !here && !done
                         ? "rounded-full border border-slate-200 bg-white text-slate-400"

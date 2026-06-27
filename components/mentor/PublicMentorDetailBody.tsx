@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Camera } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { MentorContentsSection } from "@/components/mentor/MentorContentsList";
 import { MentorDetailCTASection } from "@/components/mentor/MentorDetailCTASection";
 import { MentorDetailHeaderActions } from "@/components/mentor/MentorDetailHeaderActions";
@@ -11,7 +11,6 @@ import { mentorVerificationKo, type MentorProfileDisplay } from "@/lib/mentor/me
 import type { PublicMentorLoadResult } from "@/lib/mentor/publicMentorBundle";
 import { assignPlansByTier } from "@/lib/subscribe/subscribePageQueries";
 import {
-  mentorIntroFallback,
   mentorIsVerified,
   mentorSchoolGradeLine,
   mentorSchoolVerificationBadgeClass,
@@ -106,7 +105,6 @@ export function PublicMentorDetailBody(props: {
   const schoolLine = mentorSchoolGradeLine(display);
   const schoolMeta = mentorSchoolVerificationMetaLine(display);
   const chips = mentorSubjectChips(display.subjects || display.tags, 8);
-  const introShort = mentorIntroFallback(display.intro);
   const introLong =
     display.intro?.trim() ||
     "멘토 소개가 곧 업데이트될 예정이에요. 구독 전 궁금한 점은 무료 질문권으로 먼저 확인해 보세요.";
@@ -118,6 +116,11 @@ export function PublicMentorDetailBody(props: {
 
   const photo = display.photoUrl?.trim();
   const verKo = mentorVerificationKo(display.verification);
+
+  // 표본이 적으면(리뷰<3) 만족도 %를 과장 노출하지 않고, 느린 응답(48시간 이상) 칸은 숨김
+  const enoughReviews = (stats.reviewCount ?? 0) >= 3;
+  const isSlowResponse =
+    !stats.avgResponseLabel || stats.avgResponseLabel === "—" || stats.avgResponseLabel.includes("48시간 이상");
 
   const statCards = [
     {
@@ -136,16 +139,12 @@ export function PublicMentorDetailBody(props: {
           : "—",
       hint: "누적 학생 수",
     },
-    {
-      label: "평균 답변 시간",
-      value: stats.avgResponseLabel,
-      hint: "빠른 답변",
-    },
-    {
-      label: "답변 만족도",
-      value: stats.satisfactionLabel,
-      hint: "실제 학생 평가",
-    },
+    ...(!isSlowResponse
+      ? [{ label: "평균 답변 시간", value: stats.avgResponseLabel, hint: "빠른 답변" }]
+      : []),
+    enoughReviews
+      ? { label: "답변 만족도", value: stats.satisfactionLabel, hint: "실제 학생 평가" }
+      : { label: "멘토 등급", value: "신규 멘토", hint: "리뷰가 쌓이면 공개돼요" },
   ];
 
   const trustBadges = [
@@ -156,14 +155,11 @@ export function PublicMentorDetailBody(props: {
     { title: "멘토 승인", sub: verified ? "멘토 인증 완료" : "승인 검토 중" },
     { title: "활동 인증", sub: verified ? "우수 멘토" : "활동 검증 예정" },
     {
-      title:
-        stats.avgRating != null
-          ? `★ ${stats.avgRating.toFixed(1)}`
-          : "★ —",
+      title: enoughReviews && stats.avgRating != null ? `★ ${stats.avgRating.toFixed(1)}` : "신규 멘토",
       sub:
-        stats.reviewCount != null
-          ? `(${stats.reviewCount.toLocaleString("ko-KR")}) · 만족도 ${stats.satisfactionLabel}`
-          : `답변 만족도 ${stats.satisfactionLabel}`,
+        enoughReviews && stats.reviewCount != null
+          ? `리뷰 ${stats.reviewCount.toLocaleString("ko-KR")}개`
+          : "리뷰가 쌓이는 중",
     },
   ];
 
@@ -172,7 +168,7 @@ export function PublicMentorDetailBody(props: {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/mentors"
-          className="inline-flex items-center text-sm font-extrabold text-slate-600 transition hover:text-[#1A56DB]"
+          className="inline-flex items-center text-sm font-extrabold text-slate-600 transition hover:text-[#2563EB]"
         >
           ← 멘토 찾기로 돌아가기
         </Link>
@@ -189,14 +185,13 @@ export function PublicMentorDetailBody(props: {
           <SurfaceCard tone="neutral" bodyClassName="sm:p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:gap-6">
               <div className="relative mx-auto h-[120px] w-[120px] shrink-0 sm:mx-0">
-                <div className="h-[120px] w-[120px] overflow-hidden rounded-full border-4 border-white bg-blue-50 shadow-md ring-2 ring-slate-100">
+                <div className="h-[120px] w-[120px] overflow-hidden rounded-full border-4 border-white bg-[#059669]/10 shadow-md ring-2 ring-slate-100">
                   {photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photo} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-blue-50 text-3xl font-black text-blue-600">
+                    <div className="flex h-full w-full items-center justify-center bg-[#059669]/10 text-3xl font-black text-[#059669]">
                       {(display.displayName || "멘").trim().slice(0, 1)}
-                      <Camera className="absolute bottom-2 right-2 h-5 w-5 text-slate-400 opacity-0" aria-hidden />
                     </div>
                   )}
                 </div>
@@ -205,7 +200,7 @@ export function PublicMentorDetailBody(props: {
                 <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                   <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">{display.displayName}</h1>
                   {verified ? (
-                    <span className="inline-flex items-center gap-0.5 rounded-md bg-[#1A56DB] px-2 py-0.5 text-xs font-black text-white">
+                    <span className="inline-flex items-center gap-0.5 rounded-md bg-[#059669] px-2 py-0.5 text-xs font-black text-white">
                       <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
                       인증
                     </span>
@@ -225,14 +220,13 @@ export function PublicMentorDetailBody(props: {
                     {chips.map((c) => (
                       <li
                         key={c}
-                        className="rounded-md border border-[#1A56DB]/40 bg-blue-50/30 px-2 py-0.5 text-[11px] font-bold text-[#1A56DB]"
+                        className="rounded-md border border-[#2563EB]/40 bg-blue-50/30 px-2 py-0.5 text-[11px] font-bold text-[#2563EB]"
                       >
                         {c}
                       </li>
                     ))}
                   </ul>
                 ) : null}
-                <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600">{introShort}</p>
                 {bundle.userError ? (
                   <p className="mt-2 text-xs font-bold text-amber-800">{USER_UI_MENTOR_USER_LOAD_FAILED}</p>
                 ) : null}
@@ -270,7 +264,7 @@ export function PublicMentorDetailBody(props: {
               >
                 <p className="text-[10px] font-bold text-slate-500">{s.label}</p>
                 <p className="mt-1 text-lg font-black tabular-nums text-slate-900">{s.value}</p>
-                <p className="mt-0.5 text-[10px] font-semibold text-[#1A56DB]">{s.hint}</p>
+                <p className="mt-0.5 text-[10px] font-semibold text-[#2563EB]">{s.hint}</p>
               </div>
             ))}
           </div>
@@ -341,7 +335,7 @@ export function PublicMentorNotFoundBody(props: { title: string; message: string
       <p className="mt-2 min-h-[1.25rem] text-sm text-slate-600">{props.message}</p>
       <Link
         href="/mentors"
-        className="mt-5 inline-block min-h-[44px] rounded-lg bg-[#1A56DB] px-4 py-2.5 text-sm font-bold text-white"
+        className="mt-5 inline-block min-h-[44px] rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white"
       >
         멘토 찾기로
       </Link>

@@ -34,7 +34,7 @@ export function MentorDetailSubscribeSidebar(props: {
       ? `무료 질문권 사용하기 [${props.freeQuestionRemaining}]`
       : props.isLoggedIn
         ? "무료 질문권 사용하기"
-        : "무료 질문권 — 로그인 후 확인";
+        : "무료 질문 7개 받기";
 
   return (
     <aside className="w-full min-w-0 lg:sticky lg:top-24 lg:self-start">
@@ -62,7 +62,7 @@ export function MentorDetailSubscribeSidebar(props: {
         ) : (
           <Link
             href={props.isLoggedIn ? subscribeHref : loginSubscribe}
-            className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#1A56DB] text-sm font-extrabold text-white shadow-md transition hover:bg-[#1648c0]"
+            className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-[#2563EB] text-sm font-extrabold text-white shadow-md transition hover:bg-[#1D4ED8]"
           >
             구독하기 →
           </Link>
@@ -70,7 +70,7 @@ export function MentorDetailSubscribeSidebar(props: {
 
         <Link
           href={freeHref}
-          className="mt-2 flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-[#1A56DB] bg-white text-sm font-extrabold text-[#1A56DB] transition hover:bg-blue-50/40"
+          className="mt-2 flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-[#2563EB] bg-white text-sm font-extrabold text-[#2563EB] transition hover:bg-blue-50/40"
         >
           {freeLabel}
         </Link>
@@ -84,8 +84,7 @@ export function MentorDetailSubscribeSidebar(props: {
           </Link>
         ) : (
           <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
-            <p className="text-xs font-extrabold text-slate-500">개별 질문 준비 중</p>
-            <p className="mt-1 text-[11px] font-medium text-slate-500">멘토가 단가를 설정하면 이용할 수 있어요.</p>
+            <p className="text-xs font-extrabold text-slate-500">이 멘토는 개별 질문을 받지 않아요</p>
           </div>
         )}
 
@@ -94,7 +93,7 @@ export function MentorDetailSubscribeSidebar(props: {
           <ul className="mt-2 space-y-2">
             {BENEFITS.map((b) => (
               <li key={b} className="flex gap-2 text-[11px] font-medium leading-snug text-slate-600">
-                <span className="shrink-0 text-[#1A56DB]" aria-hidden>
+                <span className="shrink-0 text-[#2563EB]" aria-hidden>
                   ✓
                 </span>
                 {b}

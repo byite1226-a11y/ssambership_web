@@ -96,7 +96,7 @@ export function CustomRequestApplicationsWaitingView(props: CustomRequestApplica
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-extrabold text-[#0f172a]">지원 현황</p>
-                <p className="mt-1 text-2xl font-black text-[#1A56DB]">
+                <p className="mt-1 text-2xl font-black text-[#2563EB]">
                   {applicantCount}
                   <span className="text-base font-bold text-[var(--c-tertiary,#8a96a8)]"> / 최대 {maxApplicants}명</span>
                 </p>
@@ -109,7 +109,7 @@ export function CustomRequestApplicationsWaitingView(props: CustomRequestApplica
             </div>
             <button
               type="button"
-              className="btn btn-ghost mt-4 !min-h-[40px] !border-[#1A56DB]/30 !bg-[#1A56DB]/5 !text-[#1A56DB] hover:!bg-[#1A56DB]/10"
+              className="btn btn-ghost mt-4 !min-h-[40px] !border-[#2563EB]/30 !bg-[#2563EB]/5 !text-[#2563EB] hover:!bg-[#2563EB]/10"
             >
               알림 설정
             </button>

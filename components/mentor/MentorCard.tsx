@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BadgeCheck, Camera } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { MentorFavoriteButton } from "@/components/mentor/MentorFavoriteButton";
 import { listCardClassName } from "@/components/design-system/ListCard";
 import type { MentorPublicListCard } from "@/lib/mentor/publicMentorsListQueries";
@@ -16,14 +16,41 @@ import {
 } from "@/lib/mentor/mentorPublicProfileDisplay";
 
 function formatStatLine(card: MentorPublicListCard): string {
+  const ans = card.stats.totalAnswers;
+  // 표본이 적은 신규 멘토는 과장될 수 있는 통계(만족도·응답시간)를 숨기고 중립 문구로 표시
+  if (ans == null || ans < 5) return "신규 멘토 · 곧 활동 내역이 쌓여요";
   const parts: string[] = [];
   const sat = card.stats.satisfactionLabel;
   if (sat && sat !== "—") parts.push(`답변 만족도 ${sat}`);
   const resp = card.stats.avgResponseLabel;
-  if (resp && resp !== "—") parts.push(`평균 답변 시간 ${resp}`);
-  const ans = card.stats.totalAnswers;
-  if (ans != null) parts.push(`누적 답변 ${ans.toLocaleString("ko-KR")}개`);
-  return parts.length ? parts.join(" · ") : "신규 멘토 · 아직 활동 내역이 없어요";
+  if (resp && resp !== "—" && !resp.includes("48시간 이상")) parts.push(`평균 답변 시간 ${resp}`);
+  parts.push(`누적 답변 ${ans.toLocaleString("ko-KR")}개`);
+  return parts.join(" · ");
+}
+
+/** 사진 있으면 사진, 없거나 로딩 실패 시 이름 첫 글자 이니셜(멘토 초록) 폴백. */
+function MentorAvatar(props: { photo?: string; name?: string; sizeClass: string; textClass: string }) {
+  const initial = (props.name || "멘").trim().slice(0, 1);
+  return (
+    <div
+      className={`relative overflow-hidden rounded-full border-2 border-white bg-[#059669]/10 shadow ring-1 ring-slate-100 ${props.sizeClass}`}
+    >
+      <span className={`absolute inset-0 flex items-center justify-center font-black text-[#059669] ${props.textClass}`}>
+        {initial}
+      </span>
+      {props.photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={props.photo}
+          alt=""
+          className="relative h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 export function MentorCard(props: {
@@ -57,22 +84,13 @@ export function MentorCard(props: {
         <div className="p-5">
           <div className="flex gap-3">
             <div className="relative h-16 w-16 shrink-0">
-              <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-white bg-blue-50 shadow ring-1 ring-slate-100">
-                {photo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photo} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-blue-300">
-                    <Camera className="h-6 w-6" aria-hidden />
-                  </div>
-                )}
-              </div>
+              <MentorAvatar photo={photo} name={d.displayName} sizeClass="h-16 w-16" textClass="text-xl" />
             </div>
             <div className="min-w-0 flex-1 pr-6">
               <div className="flex flex-wrap items-center gap-1">
                 <h3 className="truncate text-base font-black text-slate-900">{d.displayName}</h3>
                 {verified ? (
-                  <span className="inline-flex items-center gap-0.5 rounded-md bg-[#1A56DB] px-1.5 py-0.5 text-[10px] font-black text-white">
+                  <span className="inline-flex items-center gap-0.5 rounded-md bg-[#059669] px-1.5 py-0.5 text-[10px] font-black text-white">
                     <BadgeCheck className="h-3 w-3" />
                     인증
                   </span>
@@ -99,7 +117,7 @@ export function MentorCard(props: {
               {chips.slice(0, 4).map((c) => (
                 <span
                   key={c}
-                  className="rounded-md border border-[#1A56DB]/40 bg-white px-1.5 py-0.5 text-[10px] font-bold text-[#1A56DB]"
+                  className="rounded-md border border-[#2563EB]/40 bg-white px-1.5 py-0.5 text-[10px] font-bold text-[#2563EB]"
                 >
                   {c}
                 </span>
@@ -114,7 +132,7 @@ export function MentorCard(props: {
                 <span className="font-bold text-slate-600">
                   {t.label}
                   {t.recommend ? (
-                    <span className="ml-1 rounded bg-[#1A56DB] px-1 py-px text-[9px] text-white">추천</span>
+                    <span className="ml-1 rounded bg-[#2563EB] px-1 py-px text-[9px] text-white">추천</span>
                   ) : null}
                 </span>
                 <span className="font-black text-slate-900">{t.cashLabel}</span>
@@ -123,7 +141,7 @@ export function MentorCard(props: {
           </div>
           <Link
             href={profileHref}
-            className="mt-4 flex min-h-[40px] w-full items-center justify-center rounded-xl bg-[#1A56DB] text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            className="mt-4 flex min-h-[40px] w-full items-center justify-center rounded-xl bg-[#2563EB] text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
           >
             프로필 보기
           </Link>
@@ -136,16 +154,7 @@ export function MentorCard(props: {
     <article className={listCardClassName("neutral", true, "relative overflow-hidden p-0")}>
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
         <div className="relative shrink-0 sm:w-[88px]">
-          <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border-2 border-white bg-blue-50 shadow ring-1 ring-slate-100 sm:mx-0">
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-blue-300">
-                <Camera className="h-8 w-8" aria-hidden />
-              </div>
-            )}
-          </div>
+          <MentorAvatar photo={photo} name={d.displayName} sizeClass="mx-auto h-20 w-20 sm:mx-0" textClass="text-2xl" />
           <MentorFavoriteButton
             mentorId={card.mentorId}
             initialFavorited={props.isFavorited}
@@ -157,11 +166,11 @@ export function MentorCard(props: {
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Link href={profileHref} className="truncate text-lg font-black text-slate-900 hover:text-[#1A56DB]">
+            <Link href={profileHref} className="truncate text-lg font-black text-slate-900 hover:text-[#2563EB]">
               {d.displayName}
             </Link>
             {verified ? (
-              <span className="inline-flex items-center gap-0.5 rounded-md bg-[#1A56DB] px-1.5 py-0.5 text-[10px] font-black text-white">
+              <span className="inline-flex items-center gap-0.5 rounded-md bg-[#059669] px-1.5 py-0.5 text-[10px] font-black text-white">
                 <BadgeCheck className="h-3 w-3" aria-hidden />
                 인증
               </span>
@@ -187,7 +196,7 @@ export function MentorCard(props: {
               {chips.map((c) => (
                 <span
                   key={c}
-                  className="rounded-md border border-[#1A56DB]/40 bg-white px-2 py-0.5 text-[10px] font-bold text-[#1A56DB]"
+                  className="rounded-md border border-[#2563EB]/40 bg-white px-2 py-0.5 text-[10px] font-bold text-[#2563EB]"
                 >
                   {c}
                 </span>
@@ -213,7 +222,7 @@ export function MentorCard(props: {
                   <span className="text-xs font-black text-slate-800">
                     {t.label}
                     {t.recommend ? (
-                      <span className="ml-1 rounded bg-[#1A56DB] px-1.5 py-px text-[9px] font-bold text-white">
+                      <span className="ml-1 rounded bg-[#2563EB] px-1.5 py-px text-[9px] font-bold text-white">
                         추천
                       </span>
                     ) : null}
@@ -233,7 +242,7 @@ export function MentorCard(props: {
           ) : (
             <Link
               href={isLoggedIn ? subscribeHref : `/login?next=${encodeURIComponent(subscribeHref)}`}
-              className="mt-3 flex min-h-[40px] w-full items-center justify-center rounded-xl border border-[#1A56DB] bg-white text-sm font-extrabold text-[#1A56DB] hover:bg-blue-50"
+              className="mt-3 flex min-h-[40px] w-full items-center justify-center rounded-xl border border-[#2563EB] bg-white text-sm font-extrabold text-[#2563EB] hover:bg-blue-50"
             >
               구독하기
             </Link>

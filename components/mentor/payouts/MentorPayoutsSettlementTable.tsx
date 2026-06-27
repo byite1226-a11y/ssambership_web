@@ -72,7 +72,7 @@ export function MentorPayoutsSettlementTable(props: {
                 >
                   {row.isCancelled ? `+${formatCashKrw(row.feeAmount)}` : formatCashKrw(row.feeAmount)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums font-black text-[#1A56DB]">
+                <td className="px-4 py-3 text-right tabular-nums font-black text-[#2563EB]">
                   {formatCashKrw(row.netAmount)}
                 </td>
                 <td className="px-4 py-3">

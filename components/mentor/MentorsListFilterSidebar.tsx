@@ -66,7 +66,7 @@ export function MentorsListFilterSidebar(props: {
                   name="subject"
                   value=""
                   defaultChecked={!props.filters.subject}
-                  className="accent-[#1A56DB]"
+                  className="accent-[#2563EB]"
                 />
                 전체
               </label>
@@ -80,7 +80,7 @@ export function MentorsListFilterSidebar(props: {
                     name="subject"
                     value={o.id}
                     defaultChecked={props.filters.subject === o.id}
-                    className="accent-[#1A56DB]"
+                    className="accent-[#2563EB]"
                   />
                   {o.label}
                 </label>
@@ -102,7 +102,7 @@ export function MentorsListFilterSidebar(props: {
                     name="school"
                     value={o.id}
                     defaultChecked={props.filters.school === o.id}
-                    className="accent-[#1A56DB]"
+                    className="accent-[#2563EB]"
                   />
                   {o.label}
                 </label>
@@ -136,7 +136,7 @@ export function MentorsListFilterSidebar(props: {
                     name="grades"
                     value={o.id}
                     defaultChecked={props.filters.grades.includes(o.id)}
-                    className="accent-[#1A56DB]"
+                    className="accent-[#2563EB]"
                   />
                   {o.label}
                 </label>
@@ -171,7 +171,7 @@ export function MentorsListFilterSidebar(props: {
                       name="priceBand"
                       value={o.id}
                       defaultChecked={props.filters.priceBand === o.id}
-                      className="accent-[#1A56DB]"
+                      className="accent-[#2563EB]"
                     />
                     {o.label}
                   </label>
@@ -193,7 +193,7 @@ export function MentorsListFilterSidebar(props: {
                     name="mentorTypes"
                     value={o.id}
                     defaultChecked={props.filters.mentorTypes.includes(o.id)}
-                    className="accent-[#1A56DB]"
+                    className="accent-[#2563EB]"
                   />
                   {o.label}
                 </label>
@@ -211,7 +211,7 @@ export function MentorsListFilterSidebar(props: {
                   value="response"
                   checked={extraSort === "response"}
                   onChange={() => setExtraSort("response")}
-                  className="accent-[#1A56DB]"
+                  className="accent-[#2563EB]"
                 />
                 답변 속도 빠른 순
               </label>
@@ -222,7 +222,7 @@ export function MentorsListFilterSidebar(props: {
                   value="rating"
                   checked={extraSort === "rating"}
                   onChange={() => setExtraSort("rating")}
-                  className="accent-[#1A56DB]"
+                  className="accent-[#2563EB]"
                 />
                 평점 높은 순
               </label>
@@ -233,7 +233,7 @@ export function MentorsListFilterSidebar(props: {
                   value=""
                   checked={!extraSort}
                   onChange={() => setExtraSort("")}
-                  className="accent-[#1A56DB]"
+                  className="accent-[#2563EB]"
                 />
                 기본 정렬 유지
               </label>
@@ -244,7 +244,7 @@ export function MentorsListFilterSidebar(props: {
         <div className="mt-4 space-y-2 border-t border-slate-100 bg-white pt-4">
           <button
             type="submit"
-            className="min-h-[44px] w-full whitespace-nowrap rounded-xl bg-[#1A56DB] px-4 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            className="min-h-[44px] w-full whitespace-nowrap rounded-xl bg-[#2563EB] px-4 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
           >
             검색 결과 {props.totalCount.toLocaleString("ko-KR")}명 보기
           </button>

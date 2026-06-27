@@ -42,7 +42,7 @@ function CatalogEditor<T extends string>(props: {
           <h2 className="text-lg font-black text-slate-900">{props.title}</h2>
           <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">{props.description}</p>
         </div>
-        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1A56DB]">
+        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#2563EB]">
           {props.rows.length}개
         </span>
       </div>
@@ -78,13 +78,13 @@ function CatalogEditor<T extends string>(props: {
               />
             </label>
             <label className="flex min-h-[40px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700">
-              <input type="checkbox" name="isActive" defaultChecked={row.isActive} className="accent-[#1A56DB]" />
+              <input type="checkbox" name="isActive" defaultChecked={row.isActive} className="accent-[#2563EB]" />
               활성
             </label>
             <FormSubmitButton
               idleLabel="저장"
               pendingLabel="저장 중"
-              className="min-h-[40px] rounded-lg bg-[#1A56DB] px-3 text-sm font-extrabold text-white disabled:opacity-60"
+              className="min-h-[40px] rounded-lg bg-[#2563EB] px-3 text-sm font-extrabold text-white disabled:opacity-60"
             />
           </form>
         ))}
@@ -139,13 +139,13 @@ function MappingForm(props: {
         />
       </label>
       <label className="flex min-h-[40px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700">
-        <input type="checkbox" name="isActive" defaultChecked={mapping?.is_active ?? true} className="accent-[#1A56DB]" />
+        <input type="checkbox" name="isActive" defaultChecked={mapping?.is_active ?? true} className="accent-[#2563EB]" />
         활성
       </label>
       <FormSubmitButton
         idleLabel={mapping ? "저장" : "추가"}
         pendingLabel="처리 중"
-        className="min-h-[40px] rounded-lg bg-[#1A56DB] px-3 text-sm font-extrabold text-white disabled:opacity-60"
+        className="min-h-[40px] rounded-lg bg-[#2563EB] px-3 text-sm font-extrabold text-white disabled:opacity-60"
       />
     </form>
   );
@@ -219,7 +219,7 @@ export default async function AdminSchoolClassificationsPage(props: PageProps) {
               관리자 심사에서 학교군을 추천하기 위한 내부 매핑입니다. 공개/anon에는 노출하지 않습니다.
             </p>
           </div>
-          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1A56DB]">
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#2563EB]">
             {mappings.rows.length}개
           </span>
         </div>

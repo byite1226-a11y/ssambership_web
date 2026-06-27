@@ -283,7 +283,7 @@ export function QuestionRoomWorkspace(props: {
                     key={id}
                     href={href}
                     className={`w-full flex flex-col gap-1 px-6 py-5 transition-all text-left border-b border-slate-50 relative ${
-                      isActive ? "bg-blue-50/70 shadow-[inset_3px_0_0_0_#1A56DB]" : "hover:bg-blue-50/40"
+                      isActive ? "bg-blue-50/70 shadow-[inset_3px_0_0_0_#2563EB]" : "hover:bg-blue-50/40"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">

@@ -50,8 +50,8 @@ export function shortDisputeRef(v: unknown): string {
   if (v == null || v === "") return "";
   const s = String(v).trim();
   if (!s) return "";
-  if (isUuidLike(s)) return `···${s.slice(-6)}`;
-  if (s.length > 18) return `${s.slice(0, 8)}…`;
+  if (isUuidLike(s)) return `#${s.slice(-6).toUpperCase()}`;
+  if (s.length > 18) return `#${s.slice(0, 8).toUpperCase()}`;
   return s;
 }
 

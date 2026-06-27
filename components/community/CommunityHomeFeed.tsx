@@ -16,7 +16,7 @@ import {
   type CommunityBoardSortTab,
 } from "@/lib/community/communityBoardSort";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 
 type Props = {
   initialPosts: CommunityBoardPostCard[];
@@ -140,7 +140,7 @@ export function CommunityHomeFeed(props: Props) {
           <p className="mt-2 text-sm font-medium text-slate-600">이 카테고리에 첫 번째 글을 작성해보세요.</p>
           <Link
             href={writeHref}
-            className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
           >
             글 작성하기
           </Link>

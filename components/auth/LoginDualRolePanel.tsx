@@ -6,8 +6,8 @@ import { BookOpen, Check, GraduationCap } from "lucide-react";
 import { RoleLoginForm } from "@/components/auth/RoleLoginForm";
 import { loginLandingCopy, type AuthLoginRole } from "@/components/auth/loginRoleContent";
 
-const STUDENT_PRIMARY = "#1A56DB";
-const MENTOR_PRIMARY = "#16A34A";
+const STUDENT_PRIMARY = "#2563EB";
+const MENTOR_PRIMARY = "#059669";
 
 function benefitLines(role: AuthLoginRole): string[] {
   const items = loginLandingCopy[role].benefits;
@@ -37,10 +37,10 @@ export function LoginRoleCard(props: {
         "flex h-full min-h-[520px] flex-col rounded-2xl border bg-white p-6 transition sm:p-7",
         isStudent
           ? active
-            ? "border-[#1A56DB] ring-2 ring-[#1A56DB]/15"
+            ? "border-[#2563EB] ring-2 ring-[#2563EB]/15"
             : "border-slate-200 hover:border-slate-300"
           : active
-            ? "border-[#16A34A] ring-2 ring-[#16A34A]/15"
+            ? "border-[#059669] ring-2 ring-[#059669]/15"
             : "border-slate-200 hover:border-slate-300",
       ].join(" ")}
       onFocusCapture={onActivate}

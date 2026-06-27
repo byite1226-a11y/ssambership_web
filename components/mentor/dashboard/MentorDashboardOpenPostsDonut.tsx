@@ -22,7 +22,7 @@ export function MentorDashboardOpenPostsDonut(props: Props) {
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-2">
         <h3 className="text-sm font-extrabold text-slate-900">새 의뢰 현황</h3>
-        <Link href="/mentor/custom-request/posts" className="text-[12px] font-bold text-[#1A56DB] hover:underline">
+        <Link href="/mentor/custom-request/posts" className="text-[12px] font-bold text-[#2563EB] hover:underline">
           전체 보기 &gt;
         </Link>
       </div>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 function TrustInfoIcon({ className = "" }: { className?: string }) {
   return (
     <svg
@@ -58,7 +60,7 @@ export function SignupTrustBlock() {
       <aside className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
         <div className="flex items-start gap-4">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#1A56DB]"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2563EB]"
             aria-hidden
           >
             <TrustInfoIcon className="h-7 w-7" />
@@ -66,8 +68,11 @@ export function SignupTrustBlock() {
           <div className="min-w-0">
             <h3 className="text-lg font-extrabold text-slate-900 sm:text-xl">안내 사항</h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-              멘토는 대학(재) 인증·심사 단계가 이어질 수 있어요. 제출한 자료·프로필은 심사·이의·갱신(정책)에 맞게 조회·보관·삭제가
-              관리됩니다. 스팸함을 비우지 말고 인증 메일을 꼭 확인해 주세요.
+              멘토는 가입 후 학교·전공 인증 단계가 있어요. 인증 메일이 스팸함으로 갈 수 있으니 꼭 확인해 주세요. 개인정보 처리는{" "}
+              <Link href="/legal/privacy" className="font-bold text-[#2563EB] underline">
+                개인정보처리방침
+              </Link>
+              에서 확인할 수 있어요.
             </p>
           </div>
         </div>
@@ -75,7 +80,7 @@ export function SignupTrustBlock() {
       <aside className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7">
         <div className="flex items-start gap-4">
           <span
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#16A34A]"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#059669]"
             aria-hidden
           >
             <TrustShieldIcon className="h-7 w-7" />
@@ -83,8 +88,7 @@ export function SignupTrustBlock() {
           <div className="min-w-0">
             <h3 className="text-lg font-extrabold text-slate-900 sm:text-xl">안전한 연동</h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-              로그인·계정 정보·(멘토 가입 시) 첨부 파일은 팀이 설정한 접근 권한과 보안 정책에 따라 처리돼요. 비밀번호는 서비스가
-              권장하는 강도를 지키는 것이 좋아요(이미 6자 이상 검사).
+              로그인·계정 정보와 (멘토 가입 시) 첨부 파일은 안전하게 보호돼요. 비밀번호는 8자 이상으로 설정해 주세요.
             </p>
           </div>
         </div>

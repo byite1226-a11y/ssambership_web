@@ -30,6 +30,7 @@ import { OrderEventsLogPanel } from "@/components/customRequest/order/OrderEvent
 import { OrderProgressSection } from "@/components/customRequest/order/OrderProgressSection";
 import { OrderRevisionsPanel } from "@/components/customRequest/order/OrderRevisionsPanel";
 import { StudentOrderCompleteView } from "@/components/customRequest/order/StudentOrderCompleteView";
+import { DeliveryReviewCountdown } from "@/components/customRequest/DeliveryReviewCountdown";
 import {
   hasRightSettlementBlockContent,
   OrderPaymentSettlementBlock,
@@ -48,6 +49,28 @@ import {
 
 type Bundle = Awaited<ReturnType<typeof loadOrderBundle>>;
 type Row = Record<string, unknown>;
+
+// (revision/waiting-review 흡수) 순수 표시 헬퍼 — 서버 전용 모듈을 끌어오지 않도록 client에 인라인.
+function computeRevisionUsageLocal(deliverableCount: number, max = 2): { used: number; max: number; exceeded: boolean } {
+  const used = Math.max(0, deliverableCount - 1);
+  return { used, max, exceeded: used >= max };
+}
+function pickSubmittedRawLocal(row: Row | null): unknown {
+  if (!row) return null;
+  for (const k of ["submitted_at", "created_at", "updated_at"] as const) {
+    const v = row[k];
+    if (v != null && String(v).trim()) return v;
+  }
+  return null;
+}
+function reviewDeadlineIsoFromSubmittedLocal(submittedRaw: unknown): string | null {
+  const raw = submittedRaw == null ? "" : String(submittedRaw).trim();
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + 3);
+  return d.toISOString();
+}
 
 /** 분쟁 open/under_review/escalated 시 납품·수락·수정요청·작업시작을 잠금(서버 액션과 동기). */
 function disputeLifecycleBlockReason(detail: OrderDetailPageData): string | null {
@@ -359,6 +382,16 @@ export function OrderRoomView(props: {
   const amountLabel = detail.header.priceLine && detail.header.priceLine !== "—" ? detail.header.priceLine : "협의 중";
   const dueLabel = detail.header.dueLine && detail.header.dueLine !== "—" ? detail.header.dueLine : "—";
 
+  // (revision/waiting-review 페이지 흡수) — 납품 완료→학생 검토 대기 단계에서만 노출
+  const deliverableRows = (detail.bundle.deliverables.rows as Row[] | undefined) ?? [];
+  const inReviewStage = orderNorm === "delivered" && !isTerminalOrder;
+  const revisionUsage = computeRevisionUsageLocal(deliverableRows.length);
+  const reviewDeadlineIso = inReviewStage
+    ? reviewDeadlineIsoFromSubmittedLocal(pickSubmittedRawLocal(deliverableRows[0] ?? null))
+    : null;
+  const showReviewCountdown = inReviewStage && reviewDeadlineIso != null;
+  const showRevisionUsage = inReviewStage;
+
   return (
     <div className="cr-landing cr-detail-v5 cr-detail-shell py-3" data-views="custom-order-room">
       <article className="cr-detail-card">
@@ -374,10 +407,21 @@ export function OrderRoomView(props: {
           <p className="cr-detail-subtitle">
             선택한 멘토와 대화하며 작업을 진행하고, 납품 파일과 수정 요청, 문제 해결 내역을 한곳에서 확인할 수 있어요.
           </p>
-          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 py-1.5 text-xs font-extrabold text-[#1A56DB]">
+          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 py-1.5 text-xs font-extrabold text-[#2563EB]">
             <span aria-hidden>✓</span>
-            결제 확인이 완료된 주문이에요
+            결제 금액이 안전하게 예치되었어요
           </span>
+          {isTerminalOrder ? (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+              구매확정되어 멘토에게 지급되었습니다.
+            </div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-[#bfdbfe] bg-[#eff5ff] px-4 py-3 text-sm font-medium leading-relaxed text-slate-700">
+              결제하신 <strong className="font-extrabold text-[#2563EB]">{amountLabel}</strong>은 쌤버십이 안전하게
+              예치 중입니다. <strong className="font-extrabold">납품을 확인(구매확정)</strong>하면 멘토에게 지급돼요. 문제가
+              있으면 지급 전 환불·분쟁 신청이 가능합니다.
+            </div>
+          )}
         </header>
 
         <CustomRequestCoreStrip
@@ -423,6 +467,15 @@ export function OrderRoomView(props: {
               orderTerminal={isTerminalOrder}
               embedded
             />
+            {showReviewCountdown ? (
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
+                <p className="text-sm font-black text-slate-900">학생 검토 기간</p>
+                <DeliveryReviewCountdown reviewDeadlineIso={reviewDeadlineIso} className="mt-3" />
+                <p className="mt-2 text-xs font-medium text-slate-600">
+                  검토 기간 내 응답이 없으면 자동 완료 처리됩니다.
+                </p>
+              </div>
+            ) : null}
           </div>
         </CustomRequestSectionPane>
 
@@ -457,6 +510,20 @@ export function OrderRoomView(props: {
 
         <CustomRequestSectionPane title="수정 요청" hint="납품 검토 단계에서 필요한 수정 사항을 남길 수 있어요">
           <div className="mt-3">
+            {showRevisionUsage ? (
+              <div
+                className={`mb-3 rounded-xl border px-4 py-3 ${
+                  revisionUsage.exceeded ? "border-red-200 bg-red-50/60" : "border-slate-200 bg-slate-50"
+                }`}
+              >
+                <p className="text-sm font-extrabold text-slate-800">
+                  수정 {revisionUsage.used}/{revisionUsage.max}회 사용
+                </p>
+                {revisionUsage.exceeded ? (
+                  <p className="mt-1 text-xs font-bold text-red-800">최대 수정 횟수를 초과했습니다.</p>
+                ) : null}
+              </div>
+            ) : null}
             <OrderRevisionsPanel
               detail={detail}
               orderId={oid}

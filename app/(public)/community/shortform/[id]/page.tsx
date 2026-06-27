@@ -50,7 +50,7 @@ export default async function CommunityShortformDetailPage(props: Props) {
             <p className="mt-2 text-sm font-medium text-slate-600">삭제되었거나 존재하지 않는 콘텐츠예요.</p>
             <Link
               href="/community/shortform"
-              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
             >
               숏폼 목록으로
             </Link>

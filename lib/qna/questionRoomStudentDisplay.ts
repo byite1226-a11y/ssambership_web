@@ -7,7 +7,7 @@ import { readQuestionThreadWorkflowStatus } from "@/lib/qna/questionThreadStatus
 import type { QuestionRoomListPreview } from "@/lib/qna/questionRoomQueries";
 import { questionSubjectLabelFromCode } from "@/lib/qna/questionSubjects";
 
-export const QNA_PRIMARY_BLUE = "#1A56DB";
+export const QNA_PRIMARY_BLUE = "#2563EB";
 
 type Row = Record<string, unknown>;
 

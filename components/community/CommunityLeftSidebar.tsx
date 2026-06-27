@@ -16,7 +16,7 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
       href={href}
       className={[
         "block rounded-xl px-3 py-2 text-sm transition",
-        active ? "bg-[#eef4ff] font-semibold text-[#1A56DB]" : "font-medium text-slate-700 hover:bg-slate-50",
+        active ? "bg-[#eef4ff] font-semibold text-[#2563EB]" : "font-medium text-slate-700 hover:bg-slate-50",
       ].join(" ")}
     >
       {label}
@@ -44,7 +44,7 @@ export function CommunityLeftSidebar(props: { active: CommunityNavActive; logged
         <ol className="mt-2 space-y-2">
           {HOT_TOPICS.map((topic) => (
             <li key={topic.rank} className="flex items-start gap-2">
-              <span className="w-4 shrink-0 text-sm font-extrabold text-[#1A56DB]">{topic.rank}</span>
+              <span className="w-4 shrink-0 text-sm font-extrabold text-[#2563EB]">{topic.rank}</span>
               <span className="text-xs font-medium text-slate-700">{topic.label}</span>
             </li>
           ))}
@@ -52,12 +52,12 @@ export function CommunityLeftSidebar(props: { active: CommunityNavActive; logged
       </section>
 
       {!props.loggedIn ? (
-        <section className="rounded-2xl bg-[#1A56DB] px-3 py-4 text-white">
+        <section className="rounded-2xl bg-[#2563EB] px-3 py-4 text-white">
           <p className="text-xs font-extrabold leading-relaxed">로그인하면</p>
           <p className="mt-1 text-xs leading-relaxed text-blue-50">댓글·스크랩 이용</p>
           <Link
             href="/login?next=%2Fcommunity"
-            className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-[#1A56DB]"
+            className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-[#2563EB]"
           >
             로그인
           </Link>

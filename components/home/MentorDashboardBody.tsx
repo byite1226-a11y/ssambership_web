@@ -63,7 +63,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-12 text-sm text-slate-800">
       <header>
-        <p className="text-xs font-extrabold uppercase tracking-wide text-[#1A56DB]">멘토 홈</p>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-[#2563EB]">멘토 홈</p>
         <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">멘토 대시보드</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           오늘 처리할 질문·의뢰·알림을 한눈에 확인하세요.
@@ -103,7 +103,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-base font-bold text-slate-900">맞춤의뢰</h2>
-            <Link href="/mentor/custom-request/orders" className="text-xs font-bold text-[#1A56DB] hover:underline">
+            <Link href="/mentor/custom-request/orders" className="text-xs font-bold text-[#2563EB] hover:underline">
               전체 보기 &gt;
             </Link>
           </div>
@@ -118,7 +118,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
               >
                 <Link
                   href="/mentor/custom-request/posts"
-                  className="rounded-xl bg-[#1A56DB] px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                  className="rounded-xl bg-[#2563EB] px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
                 >
                   의뢰 둘러보기
                 </Link>
@@ -138,7 +138,7 @@ export function MentorDashboardBody({ data }: { data: MentorDashboardData }) {
                       {oid ? (
                         <Link
                           href={mentorCustomOrderWorkroomHref(oid)}
-                          className="block truncate text-sm font-bold text-slate-900 hover:text-[#1A56DB] hover:underline"
+                          className="block truncate text-sm font-bold text-slate-900 hover:text-[#2563EB] hover:underline"
                         >
                           {titleLine}
                         </Link>

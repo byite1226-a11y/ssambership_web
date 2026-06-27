@@ -27,7 +27,7 @@ type MentorSignupFormProps = {
 
 const input =
   "mt-2 w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 " +
-  "focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 sm:min-h-[3.1rem] sm:px-5";
+  "focus:border-[#059669] focus:ring-2 focus:ring-[#059669]/20 sm:min-h-[3.1rem] sm:px-5";
 
 const label = "mb-0 block text-sm font-bold text-slate-800 sm:text-base";
 const hint = "mt-1.5 text-sm leading-relaxed text-slate-500";
@@ -43,7 +43,7 @@ function patch(
 function SectionHeader({ n, id, children }: { n: string; id: string; children: ReactNode }) {
   return (
     <header className="mb-4 border-b border-slate-100 pb-3">
-      <p className="text-xs font-extrabold tracking-wide text-[#16A34A]">{n}</p>
+      <p className="text-xs font-extrabold tracking-wide text-[#059669]">{n}</p>
       <h3 id={id} className="mt-0.5 text-base font-extrabold text-slate-900 sm:text-lg">
         {children}
       </h3>
@@ -206,7 +206,7 @@ export function MentorSignupForm({ value, onChange, disabled, fieldErrors }: Men
         aria-labelledby="m-sec-id"
       >
         <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
-          <p className="text-xs font-extrabold tracking-wide text-[#16A34A]">4 · 인증</p>
+          <p className="text-xs font-extrabold tracking-wide text-[#059669]">4 · 인증</p>
           <h3 id="m-sec-id" className="mt-0.5 text-base font-extrabold text-slate-900 sm:text-lg">
             학생증 / 재학증명서
           </h3>
@@ -221,10 +221,10 @@ export function MentorSignupForm({ value, onChange, disabled, fieldErrors }: Men
           </p>
           <label
             htmlFor="m-student-id"
-            className="group relative flex min-h-[13rem] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white px-5 py-8 text-center transition focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 hover:border-[#16A34A]"
+            className="group relative flex min-h-[13rem] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-white px-5 py-8 text-center transition focus-within:border-[#059669] focus-within:ring-2 focus-within:ring-[#059669]/20 hover:border-[#059669]"
           >
             <span
-              className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-[#16A34A]"
+              className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-[#059669]"
               aria-hidden
             >
               <UploadCloud className="h-6 w-6" />

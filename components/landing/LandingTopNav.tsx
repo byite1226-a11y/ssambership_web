@@ -101,7 +101,7 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
                 </Link>
                 <Link
                   href="/signup"
-                  className="rounded-lg bg-[#1A56DB] px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-[#1648c0]"
+                  className="rounded-lg bg-[#2563EB] px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-[#1D4ED8]"
                 >
                   회원가입
                 </Link>
@@ -144,7 +144,7 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
                     href={href}
                     className={`flex h-12 items-center rounded-xl px-4 text-[16px] font-bold transition-colors ${
                       active
-                        ? "bg-blue-50 text-[#1A56DB]"
+                        ? "bg-blue-50 text-[#2563EB]"
                         : "text-slate-800 hover:bg-slate-50"
                     }`}
                     aria-current={active ? "page" : undefined}
@@ -169,7 +169,7 @@ export function LandingTopNav(props: { user: User | null; profile: UserRow | nul
                 </Link>
                 <Link
                   href="/signup"
-                  className="flex h-12 items-center justify-center rounded-xl bg-[#1A56DB] text-[15px] font-bold text-white hover:bg-[#1648c0]"
+                  className="flex h-12 items-center justify-center rounded-xl bg-[#2563EB] text-[15px] font-bold text-white hover:bg-[#1D4ED8]"
                   onClick={closeMenu}
                 >
                   회원가입

@@ -43,22 +43,22 @@ const emptyMentor: MentorSignupFormValues = {
   studentIdFile: null,
 };
 
-const STUDENT_PRIMARY = "#1A56DB";
-const MENTOR_PRIMARY = "#16A34A";
+const STUDENT_PRIMARY = "#2563EB";
+const MENTOR_PRIMARY = "#059669";
 
 const signupInputBase =
   "mt-2 w-full min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 sm:min-h-[3.1rem] sm:px-5";
 const inputClassStudent =
-  `${signupInputBase} focus:border-[#1A56DB] focus:ring-2 focus:ring-[#1A56DB]/20`;
+  `${signupInputBase} focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20`;
 const inputClassMentor =
-  `${signupInputBase} focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20`;
+  `${signupInputBase} focus:border-[#059669] focus:ring-2 focus:ring-[#059669]/20`;
 const labelClass =
   "mb-0 block break-keep text-sm font-bold text-slate-800 sm:text-base";
 const subhelper = "mt-1.5 text-sm leading-relaxed text-slate-500";
 const profileStudent =
-  "rounded-2xl border border-[#1A56DB] bg-white p-6 ring-2 ring-[#1A56DB]/15 sm:p-7";
+  "rounded-2xl border border-[#2563EB] bg-white p-6 ring-2 ring-[#2563EB]/15 sm:p-7";
 const profileMentor =
-  "rounded-2xl border border-[#16A34A] bg-white p-6 ring-2 ring-[#16A34A]/15 sm:p-7";
+  "rounded-2xl border border-[#059669] bg-white p-6 ring-2 ring-[#059669]/15 sm:p-7";
 const accountSection = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
 const accountSectionMentor = "rounded-2xl border border-slate-200 bg-white p-5 sm:p-6";
 
@@ -121,10 +121,10 @@ function SignupRoleChoiceCard({
         "relative flex h-full min-h-[270px] flex-col rounded-2xl border bg-white p-6 text-left transition sm:p-7",
         isStudent
           ? active
-            ? "border-[#1A56DB] ring-2 ring-[#1A56DB]/15"
+            ? "border-[#2563EB] ring-2 ring-[#2563EB]/15"
             : "border-slate-200 hover:border-slate-300"
           : active
-            ? "border-[#16A34A] ring-2 ring-[#16A34A]/15"
+            ? "border-[#059669] ring-2 ring-[#059669]/15"
             : "border-slate-200 hover:border-slate-300",
         disabled ? "cursor-not-allowed opacity-60" : "",
       ]
@@ -463,7 +463,7 @@ function SignupPageContent() {
                 </p>
                 <Link
                   href="/mentors"
-                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#1A56DB] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
+                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#2563EB] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
                 >
                   멘토 찾기
                 </Link>
@@ -475,7 +475,7 @@ function SignupPageContent() {
                 </p>
                 <Link
                   href="/mentor/profile"
-                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#16A34A] px-8 text-base font-extrabold text-white transition hover:bg-emerald-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
+                  className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#059669] px-8 text-base font-extrabold text-white transition hover:bg-emerald-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
                 >
                   프로필 관리
                 </Link>
@@ -544,7 +544,7 @@ function SignupPageContent() {
                   <button
                     type="button"
                     onClick={goBackToRoleSelect}
-                    className="mt-3 min-h-11 w-full rounded-2xl bg-[#1A56DB] py-2.5 text-sm font-extrabold text-white sm:text-base"
+                    className="mt-3 min-h-11 w-full rounded-2xl bg-[#2563EB] py-2.5 text-sm font-extrabold text-white sm:text-base"
                   >
                     역할 선택으로
                   </button>
@@ -560,7 +560,7 @@ function SignupPageContent() {
                   aria-label="학생 회원가입 폼"
                 >
                   <header className="border-b border-slate-100 pb-5">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#1A56DB]">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#2563EB]">
                       Student signup
                     </p>
                     <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
@@ -624,7 +624,7 @@ function SignupPageContent() {
                       {fieldErrors.passwordConfirm ? (
                         <FieldError message={fieldErrors.passwordConfirm} />
                       ) : (
-                        <p className={subhelper}>6자 이상, 영문/숫자/특수문자 조합을 권장해요.</p>
+                        <p className={subhelper}>8자 이상, 영문·숫자 조합을 권장해요.</p>
                       )}
                     </div>
                     </div>
@@ -672,7 +672,7 @@ function SignupPageContent() {
                       void handleSignUp("student");
                     }}
                     disabled={loading}
-                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#1A56DB] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A56DB] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
+                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#2563EB] px-8 text-base font-extrabold text-white transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
                   >
                     {loading ? "처리 중…" : "학생으로 가입하기"}
                   </button>
@@ -688,7 +688,7 @@ function SignupPageContent() {
                   aria-label="멘토 회원가입 폼"
                 >
                   <header className="border-b border-slate-100 pb-5">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#16A34A]">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#059669]">
                       Mentor signup
                     </p>
                     <h2 className="mt-1.5 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
@@ -752,7 +752,7 @@ function SignupPageContent() {
                       {fieldErrors.passwordConfirm ? (
                         <FieldError message={fieldErrors.passwordConfirm} />
                       ) : (
-                        <p className={subhelper}>6자 이상, 영문/숫자/특수문자 조합을 권장해요.</p>
+                        <p className={subhelper}>8자 이상, 영문·숫자 조합을 권장해요.</p>
                       )}
                     </div>
                     </div>
@@ -797,7 +797,7 @@ function SignupPageContent() {
                       void handleSignUp("mentor");
                     }}
                     disabled={loading}
-                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#16A34A] px-8 text-base font-extrabold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16A34A] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
+                    className="mt-7 w-full min-h-14 rounded-2xl bg-[#059669] px-8 text-base font-extrabold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#059669] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-8 sm:min-h-[3.5rem] sm:text-lg"
                   >
                     {loading ? "처리 중…" : "멘토로 가입하기"}
                   </button>
@@ -812,7 +812,7 @@ function SignupPageContent() {
                 type="button"
                 onClick={goNext}
                 disabled={loading || !role}
-                className="min-h-14 min-w-[11.5rem] rounded-2xl bg-[#1A56DB] px-10 text-base font-extrabold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg md:min-w-[12.5rem]"
+                className="min-h-14 min-w-[11.5rem] rounded-2xl bg-[#2563EB] px-10 text-base font-extrabold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-lg md:min-w-[12.5rem]"
               >
                 다음 — 정보 입력
               </button>
@@ -854,9 +854,9 @@ function minorGuardianConsentBlock(
   loading: boolean
 ) {
   return (
-    <section className="rounded-2xl border border-[#1A56DB]/25 bg-blue-50/40 p-5 sm:p-6" aria-label="보호자 동의">
+    <section className="rounded-2xl border border-[#2563EB]/25 bg-blue-50/40 p-5 sm:p-6" aria-label="보호자 동의">
       <header className="border-b border-blue-100 pb-4">
-        <p className="text-xs font-extrabold tracking-wide text-[#1A56DB]">04 · 보호자 동의</p>
+        <p className="text-xs font-extrabold tracking-wide text-[#2563EB]">04 · 보호자 동의</p>
         <h2 className="mt-1.5 text-lg font-extrabold text-slate-900 sm:text-xl">{MINOR_CONSENT_COPY.title}</h2>
         <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{MINOR_CONSENT_COPY.description}</p>
       </header>
@@ -871,7 +871,7 @@ function minorGuardianConsentBlock(
       <label className="mt-4 flex items-start gap-3 text-slate-800 sm:gap-3.5">
         <input
           type="checkbox"
-          className="mt-1.5 h-5 w-5 shrink-0 rounded border-slate-300 text-[#1A56DB] focus:ring-[#1A56DB]"
+          className="mt-1.5 h-5 w-5 shrink-0 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
           disabled={loading}
@@ -903,11 +903,11 @@ function termsBlock(
   const skin = "border-slate-200 bg-white";
   const sub = "text-slate-500";
   const headerBorder = "border-slate-100";
-  const kicker = isSky ? "text-[#1A56DB]" : "text-[#16A34A]";
-  const link = isSky ? "text-[#1A56DB] hover:text-blue-700" : "text-[#16A34A] hover:text-emerald-700";
+  const kicker = isSky ? "text-[#2563EB]" : "text-[#059669]";
+  const link = isSky ? "text-[#2563EB] hover:text-blue-700" : "text-[#059669] hover:text-emerald-700";
   const chk = isSky
-    ? "text-[#1A56DB] focus:ring-[#1A56DB]"
-    : "text-[#16A34A] focus:ring-[#16A34A]";
+    ? "text-[#2563EB] focus:ring-[#2563EB]"
+    : "text-[#059669] focus:ring-[#059669]";
 
   return (
     <section

@@ -24,7 +24,7 @@ export function WalletChargePageView(props: Props) {
     <div className="min-h-screen bg-white px-4 py-8 antialiased sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1120px]">
         <header>
-          <span className="inline-block rounded-full bg-[#e9f0ff] px-3.5 py-1.5 text-[13px] font-extrabold text-[#1A56DB]">
+          <span className="inline-block rounded-full bg-[#e9f0ff] px-3.5 py-1.5 text-[13px] font-extrabold text-[#2563EB]">
             캐시결제
           </span>
           <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
@@ -39,19 +39,19 @@ export function WalletChargePageView(props: Props) {
 
         <div className="mt-5 grid overflow-hidden rounded-2xl border border-[#bfdbfe] bg-[#eef4ff] sm:grid-cols-2 lg:grid-cols-4">
           <div className="border-b border-[#dbeafe] px-4 py-3 sm:border-r lg:border-b-0">
-            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#1A56DB]">현재 잔액</span>
+            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#2563EB]">현재 잔액</span>
             <span className="mt-1 block text-sm font-bold leading-snug text-[#0f172a]">{breakdown.totalCash.toLocaleString("ko-KR")}캐시</span>
           </div>
           <div className="border-b border-[#dbeafe] px-4 py-3 lg:border-b-0 lg:border-r">
-            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#1A56DB]">사용 가능</span>
+            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#2563EB]">사용 가능</span>
             <span className="mt-1 block text-sm font-bold leading-snug text-[#0f172a]">{breakdown.usableCash.toLocaleString("ko-KR")}캐시</span>
           </div>
           <div className="border-r border-[#dbeafe] px-4 py-3">
-            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#1A56DB]">보너스</span>
+            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#2563EB]">보너스</span>
             <span className="mt-1 block text-sm font-bold leading-snug text-[#0f172a]">{breakdown.bonusCash.toLocaleString("ko-KR")}캐시</span>
           </div>
           <div className="px-4 py-3">
-            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#1A56DB]">소멸 예정</span>
+            <span className="block text-[11px] font-bold tracking-[0.02em] text-[#2563EB]">소멸 예정</span>
             <span className="mt-1 block text-sm font-bold leading-snug text-[#0f172a]">{breakdown.expiringCash.toLocaleString("ko-KR")}캐시</span>
           </div>
         </div>

@@ -183,7 +183,7 @@ export function OpenIndividualQuestionBrowseCards(props: {
         action={
           <Link
             href="/mentor/profile/edit"
-            className="inline-flex items-center rounded-xl bg-[#1A56DB] px-4 py-2 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            className="inline-flex items-center rounded-xl bg-[#2563EB] px-4 py-2 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
           >
             단가 설정
           </Link>

@@ -20,7 +20,7 @@ function SectionTitle(props: { title: string; hint?: string }) {
   return (
     <div>
       <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
-        <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#1A56DB]" aria-hidden />
+        <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563EB]" aria-hidden />
         {props.title}
       </h2>
       {props.hint ? <p className="mt-1 text-xs font-medium leading-relaxed text-[#8a96a8]">{props.hint}</p> : null}
@@ -105,7 +105,7 @@ export default async function StudentMyPage() {
         </div>
         <div className="mt-4 flex flex-col gap-2">
           <Link
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#1A56DB] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]"
             href="/wallet/charge"
           >
             충전하기
@@ -124,19 +124,19 @@ export default async function StudentMyPage() {
         <ul className="divide-y divide-slate-100 text-sm">
           <li className="flex items-center justify-between gap-2 py-2.5">
             <span className="inline-flex items-center gap-2 font-medium text-slate-700">
-              <Bell className="h-4 w-4 text-[#1A56DB]" strokeWidth={2} aria-hidden />
+              <Bell className="h-4 w-4 text-[#2563EB]" strokeWidth={2} aria-hidden />
               알림
             </span>
-            <Link href="/notifications" className="text-xs font-bold text-[#1A56DB] hover:underline">
+            <Link href="/notifications" className="text-xs font-bold text-[#2563EB] hover:underline">
               {bundle.notifications.valueText} · 센터 →
             </Link>
           </li>
           <li className="flex items-center justify-between gap-2 py-2.5">
             <span className="inline-flex items-center gap-2 font-medium text-slate-700">
-              <HelpCircle className="h-4 w-4 text-[#1A56DB]" strokeWidth={2} aria-hidden />
+              <HelpCircle className="h-4 w-4 text-[#2563EB]" strokeWidth={2} aria-hidden />
               고객지원
             </span>
-            <Link href="/support/disputes" className="text-xs font-bold text-[#1A56DB] hover:underline">
+            <Link href="/support/disputes" className="text-xs font-bold text-[#2563EB] hover:underline">
               분쟁·환불 →
             </Link>
           </li>
@@ -158,7 +158,7 @@ export default async function StudentMyPage() {
     <main className="min-h-screen bg-white px-4 py-8 antialiased sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1120px]">
         <header>
-          <span className="inline-block rounded-full bg-[#e9f0ff] px-3.5 py-1.5 text-[13px] font-extrabold text-[#1A56DB]">
+          <span className="inline-block rounded-full bg-[#e9f0ff] px-3.5 py-1.5 text-[13px] font-extrabold text-[#2563EB]">
             마이페이지
           </span>
           <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
@@ -175,13 +175,13 @@ export default async function StudentMyPage() {
               <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
                 <div className="flex min-w-0 items-center gap-4">
                   <div
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#e9f0ff] text-xl font-black text-[#1A56DB]"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#e9f0ff] text-xl font-black text-[#2563EB]"
                     aria-hidden
                   >
                     {initial}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#1A56DB]">학생 프로필</p>
+                    <p className="text-xs font-bold text-[#2563EB]">학생 프로필</p>
                     <h2 className="mt-1 truncate text-xl font-black text-[#0f172a]">{displayName}</h2>
                     <p className="mt-1 truncate text-sm font-medium text-slate-500">
                       {[emailLine, schoolLine].filter(Boolean).join(" · ")}
@@ -203,7 +203,7 @@ export default async function StudentMyPage() {
                       className="rounded-xl border border-[#bfdbfe] bg-[#eef4ff] px-3 py-3 text-center"
                     >
                       <dd className="text-2xl font-black tabular-nums text-[#0f172a]">{item.value}</dd>
-                      <dt className="mt-0.5 text-[11px] font-bold text-[#1A56DB]">{item.label}</dt>
+                      <dt className="mt-0.5 text-[11px] font-bold text-[#2563EB]">{item.label}</dt>
                     </div>
                   ))}
                 </dl>
@@ -223,7 +223,7 @@ export default async function StudentMyPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2">
-                  <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]" href="/question-room">
+                  <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d4ed8]" href="/question-room">
                     질문방 바로가기
                   </Link>
                   <Link className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-[#d8e0ec] bg-white px-5 py-2.5 text-sm font-bold text-[#3f4b5f] transition hover:border-[#c4cedd] hover:text-[#0f172a]" href="/individual-questions">

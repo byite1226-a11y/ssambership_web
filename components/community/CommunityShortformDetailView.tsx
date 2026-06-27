@@ -6,7 +6,7 @@ import type { CommunityCommentListItem } from "@/lib/community/communityQueries"
 import { submitCommunityCommentAction } from "@/lib/community/commentActions";
 import { toggleShortformLikeAction } from "@/lib/community/communityShortformActions";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 
 export function CommunityShortformDetailView(props: {
   item: ShortformCard;
@@ -50,7 +50,7 @@ export function CommunityShortformDetailView(props: {
         </p>
         {v.description ? <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{v.description}</p> : null}
         {v.tags.length ? (
-          <p className="flex flex-wrap gap-2 text-sm font-semibold text-[#1A56DB]">
+          <p className="flex flex-wrap gap-2 text-sm font-semibold text-[#2563EB]">
             {v.tags.map((t) => (
               <span key={t}>#{t}</span>
             ))}
@@ -71,8 +71,8 @@ export function CommunityShortformDetailView(props: {
                 className={[
                   "inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold transition",
                   props.liked
-                    ? "bg-[#1A56DB] text-white hover:bg-[#1648c0]"
-                    : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-[#1A56DB]",
+                    ? "bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
+                    : "border border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:text-[#2563EB]",
                 ].join(" ")}
               >
                 <Heart className="h-4 w-4" fill={props.liked ? "currentColor" : "none"} aria-hidden />
@@ -82,7 +82,7 @@ export function CommunityShortformDetailView(props: {
           ) : (
             <Link
               href={`/login?next=${encodeURIComponent(props.returnPath)}`}
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-extrabold text-slate-700 hover:text-[#1A56DB]"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-extrabold text-slate-700 hover:text-[#2563EB]"
             >
               <Heart className="h-4 w-4" aria-hidden />
               {"\uC88B\uC544\uC694"} {v.likeCount.toLocaleString("ko-KR")}
@@ -111,7 +111,7 @@ export function CommunityShortformDetailView(props: {
             </form>
           ) : (
             <p className="text-sm text-slate-500">
-              <Link href={`/login?next=${encodeURIComponent(props.returnPath)}`} className="font-bold text-[#1A56DB]">
+              <Link href={`/login?next=${encodeURIComponent(props.returnPath)}`} className="font-bold text-[#2563EB]">
                 {"\uB85C\uADF8\uC778"}
               </Link>
               {" \uD6C4 \uB313\uAE00\uC744 \uC791\uC131\uD560 \uC218 \uC788\uC5B4\uC694."}
@@ -127,7 +127,7 @@ export function CommunityShortformDetailView(props: {
           </ul>
         </section>
 
-        <Link href="/community/shortform" className="inline-flex text-sm font-bold text-[#1A56DB] hover:underline">
+        <Link href="/community/shortform" className="inline-flex text-sm font-bold text-[#2563EB] hover:underline">
           {"\u2190 숏폼 \uBAA9\uB85D"}
         </Link>
       </div>

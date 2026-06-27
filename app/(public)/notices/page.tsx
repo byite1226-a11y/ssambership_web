@@ -20,7 +20,7 @@ export default async function PublicNoticesPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-10 sm:px-6">
       <header>
-        <p className="text-xs font-extrabold uppercase tracking-wide text-[#1A56DB]">고객 지원</p>
+        <p className="text-xs font-extrabold uppercase tracking-wide text-[#2563EB]">고객 지원</p>
         <h1 className="mt-1 text-2xl font-black text-slate-900">공지사항</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           서비스 점검, 업데이트, 이벤트 등 공식 안내를 모아 둡니다.
@@ -39,7 +39,7 @@ export default async function PublicNoticesPage() {
       )}
 
       <p className="text-center text-sm text-slate-600">
-        <Link href="/support" className="font-bold text-[#1A56DB] hover:underline">
+        <Link href="/support" className="font-bold text-[#2563EB] hover:underline">
           자주 묻는 질문 · 고객센터
         </Link>
         {" "}로 이동

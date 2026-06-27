@@ -31,7 +31,7 @@ export function CustomRequestStudentPostFlowStepper(props: Props) {
               key={s.n}
               className={`flex min-h-[5.75rem] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-2 py-3 text-center sm:min-h-[6.25rem] sm:px-3 sm:py-4 ${
                 current
-                  ? "border-transparent bg-[#1A56DB] text-white shadow-lg ring-2 ring-[#1A56DB]/30"
+                  ? "border-transparent bg-[#2563EB] text-white shadow-lg ring-2 ring-[#2563EB]/30"
                   : done
                     ? "border-slate-200/90 bg-white text-slate-800 shadow-sm"
                     : "border-slate-200/70 bg-slate-50 text-slate-500"

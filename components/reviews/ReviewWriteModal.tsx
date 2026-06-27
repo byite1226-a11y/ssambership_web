@@ -101,7 +101,7 @@ export function ReviewWriteModal(props: Props) {
         className={[
           "w-full rounded-xl px-4 py-3 text-sm font-bold transition",
           eligible
-            ? "bg-[#1A56DB] text-white hover:bg-blue-700"
+            ? "bg-[#2563EB] text-white hover:bg-blue-700"
             : "cursor-not-allowed bg-slate-200 text-slate-500",
         ].join(" ")}
       >
@@ -152,7 +152,7 @@ export function ReviewWriteModal(props: Props) {
               <button
                 type="submit"
                 disabled={submitting || content.trim().length < 20}
-                className="w-full rounded-xl bg-[#1A56DB] py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="w-full rounded-xl bg-[#2563EB] py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {submitting ? "제출 중…" : "리뷰 제출"}
               </button>

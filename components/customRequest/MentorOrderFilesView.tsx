@@ -51,7 +51,7 @@ export function MentorOrderFilesView(props: MentorOrderFilesViewProps) {
         </div>
       </header>
 
-      <section className="rounded-2xl border-2 border-dashed border-[#1A56DB]/30 bg-blue-50/30 p-6 text-center sm:p-8">
+      <section className="rounded-2xl border-2 border-dashed border-[#2563EB]/30 bg-blue-50/30 p-6 text-center sm:p-8">
         <p className="text-sm font-medium text-slate-700">
           파일을 드래그 앤 드롭하거나 파일 선택 버튼을 클릭하세요
         </p>
@@ -73,7 +73,7 @@ export function MentorOrderFilesView(props: MentorOrderFilesViewProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#1A56DB] px-5 text-sm font-extrabold text-white hover:bg-[#1648c0]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
           >
             파일 선택
           </button>
@@ -95,7 +95,7 @@ export function MentorOrderFilesView(props: MentorOrderFilesViewProps) {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate text-sm font-extrabold text-slate-900">{f.fileName}</p>
                     {f.isLatest ? (
-                      <span className="rounded-full bg-[#1A56DB] px-2 py-0.5 text-[10px] font-black text-white">
+                      <span className="rounded-full bg-[#2563EB] px-2 py-0.5 text-[10px] font-black text-white">
                         최종본
                       </span>
                     ) : null}
@@ -151,14 +151,14 @@ export function MentorOrderFilesView(props: MentorOrderFilesViewProps) {
           <button
             type="submit"
             disabled={!canSubmitDelivery}
-            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#1A56DB] px-6 text-sm font-extrabold text-white hover:bg-[#1648c0] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#2563EB] px-6 text-sm font-extrabold text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             납품하기
           </button>
         </form>
         <Link
           href={roomHref}
-          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-[#1A56DB] bg-white px-6 text-sm font-extrabold text-[#1A56DB] hover:bg-blue-50/40 sm:w-auto"
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-[#2563EB] bg-white px-6 text-sm font-extrabold text-[#2563EB] hover:bg-blue-50/40 sm:w-auto"
         >
           작업방으로 돌아가기
         </Link>

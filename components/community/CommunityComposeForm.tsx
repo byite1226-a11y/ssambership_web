@@ -6,7 +6,7 @@ import { submitCommunityBoardPostAction } from "@/lib/community/communityBoardAc
 import { COMMUNITY_POST_CATEGORIES, COMMUNITY_HASHTAG_MAX, COMMUNITY_IMAGE_MAX } from "@/lib/community/communityBoardConstants";
 import { CommunityCategoryChips } from "@/components/community/CommunityCategoryChips";
 
-const PRIMARY = "#1A56DB";
+const PRIMARY = "#2563EB";
 
 type Tab = "board" | "shortform";
 
@@ -54,7 +54,7 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
         </div>
         <p className="text-sm text-slate-600">
           {"숏폼 \uC601\uC0C1 \uC5C5\uB85C\uB4DC\uB294 "}
-          <Link href="/community/shortform" className="font-bold text-[#1A56DB]">
+          <Link href="/community/shortform" className="font-bold text-[#2563EB]">
             {"숏폼 \uBA54\uB274"}
           </Link>
           {"\uC5D0\uC11C \uC774\uC5B4\uAC00\uC694. \uBA58\uD1A0\uB294 \uBA58\uD1A0 \uBA54\uB274\uC758 \uCEF4\uD37C\uB2C8\uD2F0 \uC791\uC131\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC788\uC5B4\uC694."}
@@ -135,7 +135,7 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
         </div>
         <ul className="mt-2 flex flex-wrap gap-2">
           {tags.map((t) => (
-            <li key={t} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#1A56DB]">
+            <li key={t} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#2563EB]">
               #{t}
             </li>
           ))}
@@ -155,7 +155,7 @@ export function CommunityComposeForm(props: { errorCode: string | null; draftSav
           type="submit"
           name="intent"
           value="publish"
-          className="rounded-xl bg-[#1A56DB] px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
+          className="rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
         >
           {"\uBC1C\uD589\uD558\uAE30"}
         </button>

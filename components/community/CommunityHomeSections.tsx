@@ -65,7 +65,7 @@ export function CommunityHomeSections(props: {
                 </div>
                 <Link
                   href={`/community/board/${post.id}`}
-                  className="mt-1.5 block text-[14px] font-semibold text-slate-900 hover:text-[#1A56DB]"
+                  className="mt-1.5 block text-[14px] font-semibold text-slate-900 hover:text-[#2563EB]"
                 >
                   {post.title}
                 </Link>

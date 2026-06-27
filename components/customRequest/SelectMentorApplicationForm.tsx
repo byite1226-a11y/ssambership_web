@@ -32,7 +32,7 @@ export function SelectMentorApplicationForm(props: {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="min-h-[48px] w-full rounded-xl bg-[#1A56DB] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
+        className="min-h-[48px] w-full rounded-xl bg-[#2563EB] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
       >
         선택하기
       </button>
@@ -67,7 +67,7 @@ export function SelectMentorApplicationForm(props: {
                   idleLabel="선택 확정"
                   pendingLabel="처리 중…"
                   disabled={submitting}
-                  className="min-h-[44px] w-full rounded-xl bg-[#1A56DB] px-6 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700 sm:w-auto"
+                  className="min-h-[44px] w-full rounded-xl bg-[#2563EB] px-6 py-2.5 text-sm font-extrabold text-white hover:bg-blue-700 sm:w-auto"
                 />
               </form>
             </div>

@@ -29,12 +29,7 @@ export function DisputeMentorPageBody(props: { bundle: DisputeBundle }) {
           <span className="text-xs text-slate-500">처리 상태</span>
           <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-extrabold text-slate-800">{state}</span>
         </div>
-        <p className="mt-1 text-xs text-slate-500">사건 정보를 불러왔습니다.</p>
       </section>
-
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-600">
-        증빙·첨부(멘토): <input type="file" disabled className="ml-1 text-xs" title="Storage 후속" />
-      </div>
 
       <div>
         <h3 className="text-sm font-extrabold text-slate-800">처리 로그</h3>

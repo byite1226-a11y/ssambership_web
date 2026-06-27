@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { CommunityFileDropzone } from "@/components/community/CommunityFileDropzone";
@@ -26,6 +25,14 @@ function schoolVerificationStatusLabel(status: string | null | undefined): strin
   if (s === "resubmit_required") return "재제출 필요";
   if (s === "pending") return "심사 대기";
   return "미제출";
+}
+
+function mentorKycBadgeClass(raw: string | null | undefined): string {
+  const s = String(raw ?? "").trim().toLowerCase();
+  if (/approved|verified|complete/.test(s)) return "border-emerald-200 bg-emerald-50 text-[#047857]";
+  if (/pending|review/.test(s)) return "border-amber-200 bg-amber-50 text-amber-900";
+  if (/reject|deny|denied/.test(s)) return "border-red-200 bg-red-50 text-red-700";
+  return "border-slate-200 bg-slate-50 text-slate-600";
 }
 
 function schoolVerificationBadgeClass(status: string | null | undefined): string {
@@ -78,16 +85,8 @@ export default async function MentorVerificationPage(props: PageProps) {
       title="인증 상태"
       description="학생증·운영 검토 결과를 확인합니다. 승인·반려·재제출 안내는 운영자 검토 후 이 화면에 반영됩니다."
       ctas={[
-        { href: "/mentor/profile/edit", label: "프로필·서류 편집", tone: "blue" },
+        { href: "/mentor/profile/edit", label: "프로필·서류 편집", tone: "green" },
         { href: "/mentor/profile", label: "프로필 요약", tone: "slate" },
-      ]}
-      sections={[
-        { title: "현재 상태", body: ver, status: row ? "connected" : "skeleton" },
-        {
-          title: "학교·전공 인증",
-          body: schoolStatusLabel,
-          status: schoolStatus === "approved" ? "connected" : "skeleton",
-        },
       ]}
     >
       <div className="mx-auto max-w-3xl space-y-4">
@@ -113,20 +112,13 @@ export default async function MentorVerificationPage(props: PageProps) {
               <p className="text-sm font-extrabold text-slate-900">표시명</p>
               <p className="mt-1 text-lg font-black text-slate-800">{display.displayName}</p>
             </div>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${mentorKycBadgeClass(display.verification)}`}>
               멘토 인증 {ver}
             </span>
           </div>
           {!row ? (
             <p className="text-sm text-amber-800">멘토 프로필 행을 찾지 못했습니다. 프로필 편집에서 정보를 저장해 주세요.</p>
           ) : null}
-          <p className="text-xs text-slate-500">
-            약관·정책 초안은{" "}
-            <Link href="/legal/terms" className="font-bold text-blue-700 underline">
-              이용약관(안내)
-            </Link>
-            에서 확인할 수 있어요.
-          </p>
         </section>
 
         <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -181,7 +173,7 @@ export default async function MentorVerificationPage(props: PageProps) {
               idleLabel={canSubmitSchoolDocument ? "학교·전공 인증 서류 제출" : "심사 대기 중"}
               pendingLabel="제출 중…"
               disabled={!canSubmitSchoolDocument}
-              className="min-h-12 w-full rounded-xl bg-[#1A56DB] px-5 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              className="min-h-12 w-full rounded-xl bg-[#059669] px-5 text-sm font-black text-white shadow-sm transition hover:bg-[#047857] disabled:cursor-not-allowed disabled:bg-slate-300"
             />
           </form>
         </section>
