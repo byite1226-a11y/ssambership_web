@@ -5,14 +5,15 @@ import { cn } from "@/lib/utils/cn";
 export type LinkButtonProps = {
   href: string;
   children: ReactNode;
-  accent?: "mentor" | "student";
+  /** "auto"(기본): 라우트 accent(var(--accent)) 따름. "mentor"/"student": 역할 고정 강제. */
+  accent?: "auto" | "mentor" | "student";
   variant?: "primary" | "secondary";
   className?: string;
 };
 
 /** CTA 링크 — Button 톤과 동일, shadow 없음 */
 export function LinkButton(props: LinkButtonProps) {
-  const { href, children, accent = "mentor", variant = "primary", className } = props;
+  const { href, children, accent = "auto", variant = "primary", className } = props;
 
   return (
     <Link
@@ -22,7 +23,9 @@ export function LinkButton(props: LinkButtonProps) {
         variant === "primary" &&
           (accent === "mentor"
             ? "bg-ds-accent-mentor text-white hover:bg-emerald-700"
-            : "bg-ds-accent-student text-white hover:bg-blue-700"),
+            : accent === "student"
+              ? "bg-ds-accent-student text-white hover:bg-blue-700"
+              : "bg-accent text-white hover:bg-accent-hover"),
         variant === "secondary" &&
           "border border-ds-border-subtle bg-ds-surface text-ds-primary hover:bg-ds-muted",
         className,

@@ -25,7 +25,7 @@ function desktopLinkClass(active: boolean): string {
   return [
     "relative flex h-16 shrink-0 items-center px-0.5 text-sm transition-colors",
     active
-      ? "font-extrabold text-blue-700 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-blue-600"
+      ? "font-extrabold text-accent after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-accent"
       : "font-semibold text-slate-600 hover:text-slate-900",
   ].join(" ");
 }

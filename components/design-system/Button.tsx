@@ -3,8 +3,10 @@ import { cn } from "@/lib/utils/cn";
 
 export type DsButtonVariant = "primary" | "secondary" | "ghost";
 export type DsButtonSize = "sm" | "md" | "lg";
-/** primary variant일 때만 적용 — 한 화면에 primary 1곳 권장 */
-export type DsButtonAccent = "student" | "mentor" | "neutral";
+/** primary variant일 때만 적용 — 한 화면에 primary 1곳 권장.
+ * "auto"(기본): 라우트 accent(var(--accent)) 따름 — 멘토 라우트=초록, 그 외=파랑(C3).
+ * "student"/"mentor": 역할 고정색, 라우트와 무관하게 강제할 때만 사용. */
+export type DsButtonAccent = "auto" | "student" | "mentor" | "neutral";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: DsButtonVariant;
@@ -22,6 +24,7 @@ const SIZE_CLASSES: Record<DsButtonSize, string> = {
 };
 
 const ACCENT_PRIMARY: Record<DsButtonAccent, string> = {
+  auto: "bg-accent text-white hover:bg-accent-hover disabled:bg-slate-300",
   student: "bg-ds-accent-student text-white hover:bg-blue-700 disabled:bg-slate-300",
   mentor: "bg-ds-accent-mentor text-white hover:bg-emerald-700 disabled:bg-slate-300",
   neutral: "bg-ds-primary text-white hover:bg-slate-800 disabled:bg-slate-300",
@@ -34,7 +37,7 @@ const ACCENT_PRIMARY: Record<DsButtonAccent, string> = {
 export function Button({
   variant = "secondary",
   size = "md",
-  accent = "student",
+  accent = "auto",
   className,
   children,
   type = "button",

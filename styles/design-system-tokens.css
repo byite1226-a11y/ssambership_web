@@ -20,10 +20,30 @@
   --ds-border-emphasis: #cbd5e1; /* slate-300 — 강조 카드 variant */
 
   /* ── Accent (한 화면에 primary 1곳 원칙) ── */
-  --ds-accent-student: #1A56DB; /* blue-600 */
+  --ds-accent-student: #2563EB; /* blue-600 */
   --ds-accent-student-muted: #eff6ff; /* blue-50 */
   --ds-accent-mentor: #059669; /* emerald-600 */
   --ds-accent-mentor-muted: #ecfdf5; /* emerald-50 */
+
+  /* ── 색 체계 v2 (300) — 2색 정체성 ──
+   * brand = 플랫폼/기본(공개+학생 강조, 브랜드)
+   * mentor = 멘토 라우트 전용(초록은 이 하나만)
+   * accent = 라우트별로 바뀌는 강조색. 기본 brand, 멘토 레이아웃에서 mentor로 덮어씀(C3).
+   */
+  --brand: #2563EB;
+  --brand-hover: #1D4ED8;
+  --brand-pale: #EFF4FF;
+  --brand-on-pale: #1E429F;
+
+  --mentor: #059669;
+  --mentor-hover: #047857;
+  --mentor-pale: #ECFDF5;
+  --mentor-on-pale: #047857;
+
+  --accent: var(--brand);
+  --accent-hover: var(--brand-hover);
+  --accent-pale: var(--brand-pale);
+  --accent-on-pale: var(--brand-on-pale);
 
   /* ── Status pairs: 연한 배경 + 또렷한 글자 ── */
   --ds-status-success-bg: #ecfdf5;
@@ -58,6 +78,18 @@
   --ds-radius-badge: 9999px; /* pill */
 }
 
+/* ── 색 체계 v2 (300) · C3 — 라우트별 accent 덮어쓰기 ──
+ * 멘토 레이아웃(AppShell area="mentor")이 data-shell-area="mentor" 를 출력한다.
+ * 그 하위 전체에서 accent = mentor(초록) 로 치환되어, var(--accent)/bg-accent 를
+ * 쓰는 공용 컴포넌트(네비 활성·버튼·링크 등)가 멘토 라우트에서 자동 초록이 된다.
+ * 학생·공개·admin 은 :root 기본값(brand 파랑) 유지. */
+[data-shell-area="mentor"] {
+  --accent: var(--mentor);
+  --accent-hover: var(--mentor-hover);
+  --accent-pale: var(--mentor-pale);
+  --accent-on-pale: var(--mentor-on-pale);
+}
+
 /**
  * Tailwind v4 @theme — ds-* 유틸리티 클래스 생성
  * 예: text-ds-primary, bg-ds-surface, border-ds-subtle, text-ds-display
@@ -79,6 +111,20 @@
   --color-ds-accent-student-muted: var(--ds-accent-student-muted);
   --color-ds-accent-mentor: var(--ds-accent-mentor);
   --color-ds-accent-mentor-muted: var(--ds-accent-mentor-muted);
+
+  /* 색 체계 v2 — bg-accent / text-accent / border-accent 등 유틸 생성 */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-pale: var(--brand-pale);
+  --color-brand-on-pale: var(--brand-on-pale);
+  --color-mentor: var(--mentor);
+  --color-mentor-hover: var(--mentor-hover);
+  --color-mentor-pale: var(--mentor-pale);
+  --color-mentor-on-pale: var(--mentor-on-pale);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-pale: var(--accent-pale);
+  --color-accent-on-pale: var(--accent-on-pale);
 
   /* Status */
   --color-ds-success-bg: var(--ds-status-success-bg);

@@ -31,7 +31,7 @@ export function ShellMobileNavMenu({ items, sessionRole, onClose }: Props) {
               <Link
                 href={item.href}
                 className={`flex h-12 items-center rounded-xl px-4 text-[16px] font-bold transition-colors ${
-                  active ? "bg-blue-50 text-blue-600" : "text-slate-800 hover:bg-slate-50"
+                  active ? "bg-accent-pale text-accent" : "text-slate-800 hover:bg-slate-50"
                 }`}
                 aria-current={active ? "page" : undefined}
                 onClick={onClose}
