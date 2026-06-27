@@ -18,3 +18,10 @@ generate_report.mjs
 
 # 스크린샷 스크립트
 scripts/
+
+# E2E / Playwright 산출물 (소스 아님)
+/test-results/
+/playwright-report/
+
+# 임시 스크린샷·캡처 산출물 (소스 아님 — 커밋 금지)
+/tmp-screens/
