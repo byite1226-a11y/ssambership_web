@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pickAuthorRoleSummary } from "@/lib/community/communityQueries";
+import { maskStudentName } from "@/lib/reviews/reviewDisplay";
 
 export const COMMUNITY_BRAND_MENTOR_LABEL = "쌤버십 멘토";
 export const COMMUNITY_BRAND_MEMBER_LABEL = "쌤버십 회원";
@@ -18,7 +19,28 @@ export function pickStoredAuthorName(row: Record<string, unknown>): string | nul
 
 export function pickUserDisplayName(user: CommunityAuthorNameRow | null | undefined): string | null {
   if (!user) return null;
-  return user.nickname?.trim() || user.full_name?.trim() || null;
+  const nickname = user.nickname?.trim();
+  if (nickname) return nickname;
+  // [개인정보] 닉네임이 없으면 법적 실명(full_name)을 그대로 공개하지 않고,
+  // 후기(maskStudentName)와 동일하게 마스킹한다(이지연 → 이*연). 둘 다 없으면 null → 브랜드 라벨 폴백.
+  const fullName = user.full_name?.trim();
+  if (fullName) return maskStudentName(fullName, null);
+  return null;
+}
+
+/**
+ * [개인정보] 글·댓글·숏폼 작성 시 저장할 작성자 라벨을 프로필에서 계산한다.
+ * 닉네임 → (없으면) 실명 마스킹(이지연 → 이*연, 후기와 동일) → (둘 다 없으면) 역할별 브랜드 라벨.
+ * 법적 실명(full_name) 원문은 저장·노출하지 않는다.
+ */
+export function authorStoredLabelFromProfile(
+  profile: { nickname?: string | null; full_name?: string | null; role?: string | null } | null | undefined
+): string {
+  const nickname = profile?.nickname?.trim();
+  if (nickname) return nickname;
+  const fullName = profile?.full_name?.trim();
+  if (fullName) return maskStudentName(fullName, null);
+  return profile?.role === "mentor" ? COMMUNITY_BRAND_MENTOR_LABEL : COMMUNITY_BRAND_MEMBER_LABEL;
 }
 
 export function communityAuthorFallbackLabel(row: Record<string, unknown>): string {

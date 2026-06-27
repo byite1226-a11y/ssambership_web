@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
-import {
-  COMMUNITY_BRAND_MEMBER_LABEL,
-  COMMUNITY_BRAND_MENTOR_LABEL,
-} from "@/lib/community/communityAuthorLabels";
+import { authorStoredLabelFromProfile } from "@/lib/community/communityAuthorLabels";
 import {
   COMMUNITY_IMAGE_MAX,
   normalizeCommunityPostCategory,
@@ -46,10 +43,7 @@ function errRedirect(returnPath: string, code: string) {
 async function authorLabelFor(userId: string): Promise<{ label: string; role: string | null }> {
   const supabase = await createClient();
   const { data: profile } = await getUserProfileById(supabase, userId);
-  const label =
-    profile?.nickname?.trim() ||
-    profile?.full_name?.trim() ||
-    (profile?.role === "mentor" ? COMMUNITY_BRAND_MENTOR_LABEL : COMMUNITY_BRAND_MEMBER_LABEL);
+  const label = authorStoredLabelFromProfile(profile);
   const role = profile?.role === "mentor" ? "멘토" : profile?.role === "student" ? "학생" : null;
   return { label, role };
 }

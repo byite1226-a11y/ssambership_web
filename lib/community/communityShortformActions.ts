@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
-import { COMMUNITY_BRAND_MENTOR_LABEL } from "@/lib/community/communityAuthorLabels";
+import { authorStoredLabelFromProfile } from "@/lib/community/communityAuthorLabels";
 import { communityComposePath } from "@/lib/community/communityComposeTab";
 import {
   insertShortformPost,
@@ -71,7 +71,7 @@ export async function submitShortformUploadAction(formData: FormData) {
   }
   if (!videoUrl && status === "published") err(returnPath, "video");
 
-  const label = profile?.nickname?.trim() || profile?.full_name?.trim() || COMMUNITY_BRAND_MENTOR_LABEL;
+  const label = authorStoredLabelFromProfile(profile);
   const payload = {
     title: safeTitle,
     category,

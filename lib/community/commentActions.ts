@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getServerAuthUser } from "@/lib/auth/getCurrentUser";
 import { createClient } from "@/lib/supabase/server";
 import { insertCommunityComment } from "@/lib/community/communityMutations";
+import { authorStoredLabelFromProfile } from "@/lib/community/communityAuthorLabels";
 import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
 import { TRUST_SAFETY_COMMUNITY_ERROR_CODE, sanitizeTrustSafetyText } from "@/lib/safety/trustSafetyText";
 
@@ -51,13 +52,7 @@ export async function submitCommunityCommentAction(formData: FormData) {
 
   const supabase = await createClient();
   const { data: profile } = await getUserProfileById(supabase, user.id);
-  const authorLabel = (() => {
-    const n = profile?.nickname?.trim();
-    const f = profile?.full_name?.trim();
-    if (n) return n;
-    if (f) return f;
-    return "쌤버십 회원";
-  })();
+  const authorLabel = authorStoredLabelFromProfile(profile);
 
   const r = await insertCommunityComment(supabase, user.id, {
     postType,
