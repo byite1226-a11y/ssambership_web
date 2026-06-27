@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { PolicyDraftBanner } from "@/components/legal/PolicyDraftBanner";
 
 export default function LegalNoOffplatformContactPage() {
@@ -12,10 +11,8 @@ export default function LegalNoOffplatformContactPage() {
       <p className="text-sm leading-relaxed text-slate-700">
         플랫폼 내 메시지와 주문 흐름을 사용해 주세요. 위반 탐지·제재 로직은 백엔드 연동 시 강화됩니다.
       </p>
-      <p className="text-sm">
-        <Link href="/custom-request" className="font-bold text-blue-700 underline">
-          맞춤의뢰 소개
-        </Link>
+      <p className="text-sm text-slate-500">
+        <span className="font-bold text-slate-700">맞춤의뢰</span>는 곧 오픈 예정입니다.
       </p>
     </div>
   );

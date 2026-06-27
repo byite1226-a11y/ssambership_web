@@ -3,11 +3,13 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 
 type FooterLink = { label: string; href: string; emphasis?: boolean };
 
+// 사업자등록번호: 환경변수로 관리. 비어 있으면 라인에 노출하지 않음(플레이스홀더 금지).
+const BUSINESS_NO = (process.env.NEXT_PUBLIC_BUSINESS_NO ?? "").trim();
+
 const SERVICE_LINKS: FooterLink[] = [
   { label: "멘토 찾기", href: "/mentors" },
   { label: "질문방", href: "/question-room" },
   { label: "커뮤니티", href: "/community" },
-  { label: "맞춤의뢰", href: "/custom-request" },
 ];
 
 const SUPPORT_LINKS: FooterLink[] = [
@@ -39,7 +41,7 @@ function FooterColumn(props: { title: string; links: FooterLink[] }) {
           <li key={link.label}>
             <Link
               href={link.href}
-              className="text-sm font-medium text-slate-600 transition hover:text-[#1A56DB]"
+              className="text-sm font-medium text-slate-600 transition hover:text-[#2563EB]"
             >
               {link.label}
             </Link>
@@ -77,14 +79,16 @@ export function SiteFooter() {
                 ) : null}
                 <Link
                   href={link.href}
-                  className={`transition hover:text-[#1A56DB] ${link.emphasis ? "font-medium" : "font-normal"}`}
+                  className={`transition hover:text-[#2563EB] ${link.emphasis ? "font-medium" : "font-normal"}`}
                 >
                   {link.label}
                 </Link>
               </span>
             ))}
           </nav>
-          <p className="text-xs font-medium text-slate-500">(주)쌤버십 | 사업자등록번호: 추후 입력 예정</p>
+          <p className="text-xs font-medium text-slate-500">
+            (주)쌤버십{BUSINESS_NO ? ` | 사업자등록번호: ${BUSINESS_NO}` : ""}
+          </p>
         </div>
       </div>
     </footer>

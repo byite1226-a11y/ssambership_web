@@ -6,7 +6,7 @@ import { PublicGuestLanding } from "@/components/landing/PublicGuestLanding";
 
 const MENTOR_HERO_CTAS = {
   primary: { href: "/mentor/question-room", label: "질문방 바로가기" },
-  secondary: { href: "/mentor/custom-request/dashboard", label: "맞춤의뢰 관리" },
+  secondary: { href: "/mentor/payouts", label: "정산 보기" },
 } as const;
 
 const STUDENT_HERO_CTAS = {

@@ -29,6 +29,15 @@ function isPayoutNavItem(item: MainNavItem): boolean {
   );
 }
 
+/**
+ * [맞춤의뢰 출시 준비 중] 네비에서 임시로 숨긴다. 라우트·기존 주문 데이터는 보존하며,
+ * 정식 오픈 시 이 필터(아래 getMainNavForRole/getLandingNavForProfile 적용분)만 제거하면 된다.
+ * admin 은 운영(검수·지원)을 위해 그대로 노출한다.
+ */
+function isCustomRequestNavItem(item: MainNavItem): boolean {
+  return item.href.startsWith("/custom-request") || item.href.startsWith("/mentor/custom-request") || item.label === "맞춤의뢰";
+}
+
 export const publicMainNav: MainNavItem[] = [
   { href: "/mentors", label: "멘토 찾기" },
   { href: "/question-room", label: "질문방" },
@@ -98,10 +107,14 @@ export function getMainNavForRole(sessionRole: AppRole | null | undefined): Main
   }
 
   if (sessionRole === "mentor") {
-    return items.filter((item) => !isCashNavItem(item));
+    items = items.filter((item) => !isCashNavItem(item));
   }
   if (sessionRole === "student") {
-    return items.filter((item) => !isPayoutNavItem(item));
+    items = items.filter((item) => !isPayoutNavItem(item));
+  }
+  // 맞춤의뢰 출시 준비 중 — admin 외 전 역할 네비에서 임시 숨김.
+  if (sessionRole !== "admin") {
+    items = items.filter((item) => !isCustomRequestNavItem(item));
   }
   return items;
 }
@@ -110,10 +123,8 @@ export function getLandingNavForProfile(role: AppRole | null | undefined): MainN
   if (role === "mentor") {
     return getMainNavForRole("mentor");
   }
-  if (role === "student") {
-    return landingGuestNav;
-  }
-  return landingGuestNav;
+  // 학생·비로그인 랜딩 네비에서도 맞춤의뢰 임시 숨김.
+  return landingGuestNav.filter((item) => !isCustomRequestNavItem(item));
 }
 
 export function mentorBlockedCashPath(pathname: string): boolean {

@@ -12,7 +12,6 @@ const loginPageCenter = [
   { href: "/", label: "멘토 찾기" },
   { href: "/", label: "질문방" },
   { href: "/", label: "커뮤니티" },
-  { href: "/", label: "맞춤의뢰" },
   { href: "/", label: "캐시결제" },
 ];
 

@@ -99,7 +99,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
                   className={[
                     "flex min-h-[38px] items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all duration-150",
                     isActive
-                      ? "bg-[#142d61] text-white shadow-sm"
+                      ? "bg-[#059669] text-white shadow-sm"
                       : "text-slate-700 hover:bg-slate-100 hover:text-slate-900",
                   ].join(" ")}
                 >
@@ -113,7 +113,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
                         "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black",
                         isActive
                           ? "bg-white/20 text-white"
-                          : "bg-slate-100 text-[#142d61]",
+                          : "bg-slate-100 text-[#059669]",
                       ].join(" ")}
                     >
                       {count}
@@ -130,7 +130,7 @@ export function MentorCustomRequestSubNav(props: MentorCustomRequestSubNavProps)
         <>
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="h-4 w-4 text-[#142d61]" />
+              <BookOpen className="h-4 w-4 text-[#059669]" />
               <h3 className="text-[13px] font-black text-slate-900">멘토 가이드</h3>
             </div>
             <p className="text-[12px] leading-relaxed text-slate-500 mb-3">

@@ -205,7 +205,7 @@ function ProfileHeader(props: {
   const initial = initialOf(displayName);
   const verifBadgeClass =
     verification.tone === "ok"
-      ? "text-[#1A56DB] bg-blue-50"
+      ? "text-[#2563EB] bg-blue-50"
       : verification.tone === "pending"
         ? "text-amber-700 bg-amber-50"
         : "text-slate-500 bg-slate-100";
@@ -219,7 +219,7 @@ function ProfileHeader(props: {
   return (
     <header className="mb-7 flex items-center gap-3.5">
       <div
-        className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#16A34A] text-xl font-semibold text-white"
+        className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-[#059669] text-xl font-semibold text-white"
         aria-hidden
       >
         {initial}
@@ -254,7 +254,7 @@ function RevenueCard(props: {
         </p>
         <Link
           href="/mentor/payouts"
-          className="text-[12px] font-medium text-[#1A56DB] hover:underline"
+          className="text-[12px] font-medium text-[#2563EB] hover:underline"
         >
           정산 내역 보기 →
         </Link>
@@ -291,12 +291,9 @@ function ActiveOrdersSection({ orders }: { orders: MentorHubOrderRow[] }) {
     <section>
       <div className="mb-3.5 flex items-center justify-between">
         <h2 className="text-[15px] font-semibold text-[#1e2430]">진행 중 의뢰</h2>
-        <Link
-          href="/mentor/custom-request/orders"
-          className="text-[12px] font-medium text-[#1A56DB] hover:underline"
-        >
-          전체보기 →
-        </Link>
+        <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200">
+          곧 오픈 예정
+        </span>
       </div>
       {orders.length === 0 ? <EmptyOrders /> : <OrderList orders={orders} />}
     </section>
@@ -309,9 +306,9 @@ function EmptyOrders() {
       <div className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-xl bg-slate-50">
         <Inbox className="h-5 w-5 text-slate-300" aria-hidden />
       </div>
-      <p className="mt-3 text-[14px] font-medium text-slate-600">진행 중인 의뢰가 없어요</p>
+      <p className="mt-3 text-[14px] font-medium text-slate-600">맞춤의뢰는 곧 오픈 예정이에요</p>
       <p className="mt-1.5 text-[12px] leading-relaxed text-slate-400">
-        새 의뢰가 들어오면 여기에서 바로 확인하고 관리할 수 있어요
+        서비스 준비가 끝나면 여기에서 의뢰를 확인하고 관리할 수 있어요
       </p>
     </div>
   );
@@ -327,7 +324,7 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
           >
             <div className="flex items-start gap-4">
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-[#1A56DB]"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-[#2563EB]"
                 aria-hidden
               >
                 {order.studentInitial}
@@ -358,14 +355,14 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
               </div>
               <Link
                 href={order.workroomHref}
-                className="hidden shrink-0 items-center gap-1 self-start rounded-[8px] bg-[#1A56DB] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#1648c0] sm:inline-flex"
+                className="hidden shrink-0 items-center gap-1 self-start rounded-[8px] bg-[#2563EB] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#1D4ED8] sm:inline-flex"
               >
                 바로가기 →
               </Link>
             </div>
             <Link
               href={order.workroomHref}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-[8px] bg-[#1A56DB] px-3 py-2 text-[12px] font-semibold text-white sm:hidden"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-[8px] bg-[#2563EB] px-3 py-2 text-[12px] font-semibold text-white sm:hidden"
             >
               바로가기 →
             </Link>
@@ -406,7 +403,7 @@ function SubscribersStatCard({ activeSubscribers }: { activeSubscribers: number 
   return (
     <StatCard
       icon={<Users className="h-4 w-4" />}
-      iconClass="bg-[#eef4ff] text-[#1A56DB]"
+      iconClass="bg-[#eef4ff] text-[#2563EB]"
       label="구독 학생"
     >
       <p className="text-[28px] font-bold tracking-tight text-[#1e2430]">
@@ -454,7 +451,7 @@ function RecentReviewsCard({ reviews }: { reviews: ReviewCardItem[] }) {
           ))}
         </ul>
       )}
-      <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-[#1A56DB] hover:underline">
+      <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-[#2563EB] hover:underline">
         후기 전체보기 →
       </Link>
     </article>
@@ -465,13 +462,13 @@ function CapStatCard({ usage }: { usage: MentorCapUsage }) {
   const { usedCap, capLimit, pct, isFull } = usage;
   // 상태별 색: 마감(빨강) > 여유 적음 80%↑(앰버) > 여유 있음(초록)
   const tone = isFull || pct >= 100 ? "full" : pct >= 80 ? "warn" : "ok";
-  const color = tone === "full" ? "#dc2626" : tone === "warn" ? "#e08a2f" : "#16a34a";
+  const color = tone === "full" ? "#dc2626" : tone === "warn" ? "#e08a2f" : "#059669";
   const statusLabel = tone === "full" ? "구독 마감" : tone === "warn" ? "여유 적음" : "여유 있음";
 
   return (
     <StatCard
       icon={<Gauge className="h-4 w-4" />}
-      iconClass="bg-[#eef9f1] text-[#16a34a]"
+      iconClass="bg-[#eef9f1] text-[#059669]"
       label="구독 수용량"
     >
       <p className="text-[28px] font-bold tracking-tight" style={{ color }}>
