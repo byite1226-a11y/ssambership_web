@@ -1,4 +1,5 @@
 import type { AppRole } from "@/lib/types/user";
+import { isCustomRequestFeatureEnabled } from "@/lib/shell/featureFlags";
 
 export type MainNavItem = { href: string; label: string };
 
@@ -113,7 +114,8 @@ export function getMainNavForRole(sessionRole: AppRole | null | undefined): Main
     items = items.filter((item) => !isPayoutNavItem(item));
   }
   // 맞춤의뢰 출시 준비 중 — admin 외 전 역할 네비에서 임시 숨김.
-  if (sessionRole !== "admin") {
+  // NEXT_PUBLIC_FEATURE_CUSTOM_REQUEST=on 으로 켜면 노출(로컬/스테이징).
+  if (sessionRole !== "admin" && !isCustomRequestFeatureEnabled()) {
     items = items.filter((item) => !isCustomRequestNavItem(item));
   }
   return items;
@@ -122,6 +124,9 @@ export function getMainNavForRole(sessionRole: AppRole | null | undefined): Main
 export function getLandingNavForProfile(role: AppRole | null | undefined): MainNavItem[] {
   if (role === "mentor") {
     return getMainNavForRole("mentor");
+  }
+  if (isCustomRequestFeatureEnabled()) {
+    return landingGuestNav;
   }
   // 학생·비로그인 랜딩 네비에서도 맞춤의뢰 임시 숨김.
   return landingGuestNav.filter((item) => !isCustomRequestNavItem(item));

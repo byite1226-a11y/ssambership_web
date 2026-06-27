@@ -8,6 +8,7 @@ import { CustomRequestPostListTable } from "@/components/customRequest/CustomReq
 import { CustomRequestTrustBanner } from "@/components/customRequest/CustomRequestTrustBanner";
 import { createClient } from "@/lib/supabase/server";
 import { loadCustomRequestCategories, loadRecentCustomRequestPosts } from "@/lib/customRequest/customRequestQueries";
+import { isCustomRequestFeatureEnabled } from "@/lib/shell/featureFlags";
 
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 
@@ -47,13 +48,16 @@ export default async function CustomRequestPublicPage() {
       emptyState=""
     >
       <div className="cr-landing">
-        {/* [맞춤의뢰 출시 준비 중] 진입점은 네비/푸터/랜딩에서 숨김. 직접 접근 시 안내 배너. 기존 주문은 그대로 이용 가능. */}
-        <div className="mx-auto mb-6 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-center">
-          <p className="text-sm font-extrabold text-amber-900">맞춤의뢰는 곧 오픈 예정이에요</p>
-          <p className="mt-1 text-xs font-medium leading-relaxed text-amber-800">
-            지금은 준비 중이라 새 의뢰 등록이 잠시 제한돼요. 이미 진행 중인 주문은 그대로 이용할 수 있어요.
-          </p>
-        </div>
+        {/* [맞춤의뢰 출시 준비 중] 진입점은 네비/푸터/랜딩에서 숨김. 직접 접근 시 안내 배너.
+            로컬·스테이징에서 NEXT_PUBLIC_FEATURE_CUSTOM_REQUEST=on 으로 배너 숨김 가능. */}
+        {!isCustomRequestFeatureEnabled() ? (
+          <div className="mx-auto mb-6 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-center">
+            <p className="text-sm font-extrabold text-amber-900">맞춤의뢰는 곧 오픈 예정이에요</p>
+            <p className="mt-1 text-xs font-medium leading-relaxed text-amber-800">
+              지금은 준비 중이라 새 의뢰 등록이 잠시 제한돼요. 이미 진행 중인 주문은 그대로 이용할 수 있어요.
+            </p>
+          </div>
+        ) : null}
         <CustomRequestHero role={role} />
 
         <section className="band scroll-mt-24" id="flow-steps" style={{ background: "#f3f6fc" }}>
