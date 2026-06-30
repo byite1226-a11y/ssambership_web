@@ -49,7 +49,8 @@ export function MentorOrderWaitingReviewView(props: MentorOrderWaitingReviewView
             </span>
           </div>
           <p className="mt-2 text-sm font-medium leading-relaxed text-slate-700">
-            작업 파일을 납품했어요. 학생의 검토를 기다려주세요.
+            <span className="md:hidden">학생 검토를 기다려주세요.</span>
+            <span className="hidden md:inline">작업 파일을 납품했어요. 학생의 검토를 기다려주세요.</span>
           </p>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-600">
             <span>요청: {props.requestTitle}</span>

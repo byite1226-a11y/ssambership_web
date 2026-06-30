@@ -419,15 +419,15 @@ export function OrderRoomView(props: {
     : orderNorm === "delivered" && !acceptBlock
       ? "student"
       : "mentor";
-  const statusHero = (() => {
+  const statusHero: { headline: string; guide: string; guideMobile?: string } = (() => {
     if (inDispute) {
-      return { headline: "운영팀이 확인하고 있어요", guide: "운영팀이 확인하는 동안 수락·수정·취소는 잠시 멈춰요." };
+      return { headline: "운영팀이 확인하고 있어요", guide: "운영팀이 확인하는 동안 수락·수정·취소는 잠시 멈춰요.", guideMobile: "확인하는 동안 잠시 멈춰요." };
     }
     if (orderNorm === "delivered") {
-      return { headline: "멘토가 결과물을 보냈어요", guide: "결과물을 확인하고 수락하거나, 필요하면 수정을 요청하세요." };
+      return { headline: "멘토가 결과물을 보냈어요", guide: "결과물을 확인하고 수락하거나, 필요하면 수정을 요청하세요.", guideMobile: "확인 후 수락하거나 수정을 요청하세요." };
     }
     if (orderNorm === "revision_requested") {
-      return { headline: "멘토가 다시 작업하고 있어요", guide: "요청한 수정 사항을 반영하는 중이에요. 조금만 기다려 주세요." };
+      return { headline: "멘토가 다시 작업하고 있어요", guide: "요청한 수정 사항을 반영하는 중이에요. 조금만 기다려 주세요.", guideMobile: "수정 사항을 반영하는 중이에요." };
     }
     if (orderNorm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS || orderNorm === "in_progress") {
       return { headline: "멘토가 작업하고 있어요", guide: "작업이 끝나면 결과물을 보내드려요." };
@@ -445,10 +445,19 @@ export function OrderRoomView(props: {
         <header className="cr-detail-header">
           <span className="eyebrow">맞춤의뢰 · {categoryLabel}</span>
           <div className="cr-detail-header-row">
-            <h1 className="cr-detail-title">{statusHero.headline}</h1>
+            <h1 className="cr-detail-title max-md:!text-[1.2rem]">{statusHero.headline}</h1>
             <span className="cr-category-badge">{statusLabel}</span>
           </div>
-          <p className="cr-detail-subtitle">{statusHero.guide}</p>
+          <p className="cr-detail-subtitle">
+            {statusHero.guideMobile ? (
+              <>
+                <span className="md:hidden">{statusHero.guideMobile}</span>
+                <span className="hidden md:inline">{statusHero.guide}</span>
+              </>
+            ) : (
+              statusHero.guide
+            )}
+          </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfdbfe] bg-[#eff5ff] px-3 py-1.5 text-xs font-extrabold text-[#2563EB]">
               <span aria-hidden>✓</span>
@@ -735,25 +744,25 @@ function OrderRoomViewMentor(props: {
           : heroMentorActionable
             ? "mentor"
             : "done";
-  const hero = (() => {
+  const hero: { headline: string; guide: string; guideMobile?: string } = (() => {
     if (hasActiveDispute) {
-      return { headline: "문제 해결을 진행하고 있어요", guide: "운영팀이 확인하는 동안 작업·납품·수정은 잠시 멈춰요." };
+      return { headline: "문제 해결을 진행하고 있어요", guide: "운영팀이 확인하는 동안 작업·납품·수정은 잠시 멈춰요.", guideMobile: "문제 해결이 진행 중이에요." };
     }
     if (isTerminalOrder || orderNorm === "completed") {
-      return { headline: "거래가 완료됐어요", guide: "결제·납품·정산이 모두 마무리됐어요. 수고하셨어요." };
+      return { headline: "거래가 완료됐어요", guide: "결제·납품·정산이 모두 마무리됐어요. 수고하셨어요.", guideMobile: "정산까지 마무리됐어요." };
     }
     if (orderNorm === "delivered") {
-      return { headline: "결과물을 보냈어요", guide: "학생이 확인하고 수락하면 정산돼요. 조금만 기다려 주세요." };
+      return { headline: "결과물을 보냈어요", guide: "학생이 확인하고 수락하면 정산돼요. 조금만 기다려 주세요.", guideMobile: "확인·수락하면 정산돼요." };
     }
     if (orderNorm === "revision_requested") {
-      return { headline: "학생이 수정을 요청했어요", guide: "요청 내용을 확인하고 수정본을 보내 주세요." };
+      return { headline: "학생이 수정을 요청했어요", guide: "요청 내용을 확인하고 수정본을 보내 주세요.", guideMobile: "수정본을 보완해 보내 주세요." };
     }
     if (orderNorm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS || orderNorm === "in_progress") {
-      return { headline: "작업을 진행하고 있어요", guide: "작업이 끝나면 결과물을 학생에게 보내 주세요." };
+      return { headline: "작업을 진행하고 있어요", guide: "작업이 끝나면 결과물을 학생에게 보내 주세요.", guideMobile: "작업 후 결과물을 보내 주세요." };
     }
     if (orderNorm === ORDER_INSERT_STATUS_PENDING) {
       return paymentConfirmed
-        ? { headline: "작업을 시작해 주세요", guide: "학생 결제가 안전하게 확인됐어요. 착수 버튼을 눌러 시작해 주세요." }
+        ? { headline: "작업을 시작해 주세요", guide: "학생 결제가 안전하게 확인됐어요. 착수 버튼을 눌러 시작해 주세요.", guideMobile: "착수 버튼을 눌러 시작해 주세요." }
         : { headline: "학생 결제를 기다리고 있어요", guide: "결제가 확인되면 작업을 시작할 수 있어요." };
     }
     return { headline: statusLabel, guide: "현재 진행 상태를 확인하세요." };
@@ -794,10 +803,19 @@ function OrderRoomViewMentor(props: {
                 <span className="inline-flex items-center rounded-full bg-emerald-100/70 px-3 py-1 text-xs font-extrabold text-emerald-800">
                   {detail.header.category && detail.header.category !== "—" ? `맞춤의뢰 · ${detail.header.category}` : "맞춤의뢰 주문방"}
                 </span>
-                <h1 className="mt-2 text-2xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
+                <h1 className="mt-2 text-xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
                   {hero.headline}
                 </h1>
-                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{hero.guide}</p>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
+                  {hero.guideMobile ? (
+                    <>
+                      <span className="md:hidden">{hero.guideMobile}</span>
+                      <span className="hidden md:inline">{hero.guide}</span>
+                    </>
+                  ) : (
+                    hero.guide
+                  )}
+                </p>
               </div>
             </div>
             <span className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600">

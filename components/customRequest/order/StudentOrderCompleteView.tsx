@@ -410,7 +410,8 @@ export function StudentOrderCompleteView({ detail, orderId }: Props) {
             <span className="cr-category-badge">완료</span>
           </div>
           <p className="cr-detail-subtitle">
-            요청한 작업이 마무리됐어요. 받은 결과물과 결제 영수증, 진행 기록을 한곳에서 확인할 수 있어요.
+            <span className="md:hidden">결과물·영수증을 한곳에서 확인하세요.</span>
+            <span className="hidden md:inline">요청한 작업이 마무리됐어요. 받은 결과물과 결제 영수증, 진행 기록을 한곳에서 확인할 수 있어요.</span>
           </p>
           <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-extrabold text-slate-700">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-white" aria-hidden>
