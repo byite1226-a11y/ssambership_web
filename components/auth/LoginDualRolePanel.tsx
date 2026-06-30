@@ -58,7 +58,10 @@ export function LoginRoleCard(props: {
           )}
         </div>
         <h2 className="mt-3 text-xl font-black text-slate-900 sm:text-2xl">{copy.title}</h2>
-        <p className="mt-1.5 text-sm font-medium leading-relaxed text-slate-600">{copy.line1}</p>
+        <p className="mt-1.5 text-sm font-medium leading-relaxed text-slate-600">
+          <span className="md:hidden">{copy.line1Mobile}</span>
+          <span className="hidden md:inline">{copy.line1}</span>
+        </p>
       </header>
 
       <ul className="mt-5 space-y-2 border-y border-slate-100 py-4">

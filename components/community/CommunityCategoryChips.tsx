@@ -29,7 +29,7 @@ export function CommunityCategoryChips({ categories, name, defaultSlug = "free",
     <fieldset>
       <legend className="text-sm font-extrabold text-slate-800">카테고리</legend>
       <input type="hidden" name={name} value={selected} required />
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-2 flex flex-nowrap gap-2 overflow-x-auto -mx-1 px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
         {options.map((c) => {
           const active = selected === c.slug;
           return (
@@ -38,7 +38,7 @@ export function CommunityCategoryChips({ categories, name, defaultSlug = "free",
               type="button"
               onClick={() => setSelected(c.slug)}
               className={[
-                "rounded-full px-3.5 py-1.5 text-xs font-bold transition",
+                "shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold transition",
                 active ? "bg-[#2563EB] text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50",
               ].join(" ")}
               aria-pressed={active}

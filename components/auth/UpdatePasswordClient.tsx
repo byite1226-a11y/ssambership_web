@@ -47,7 +47,7 @@ export function UpdatePasswordClient() {
   return (
     <div className="mx-auto max-w-md space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-black text-slate-900">새 비밀번호 설정</h2>
-      <p className="text-xs leading-relaxed text-slate-600">
+      <p className="hidden text-xs leading-relaxed text-slate-600 md:block">
         메일의 링크로 이 페이지에 들어온 경우에만 정상 동작합니다. 링크가 만료되었다면 비밀번호 찾기를 다시 요청해 주세요.
       </p>
       {err ? <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">{err}</p> : null}

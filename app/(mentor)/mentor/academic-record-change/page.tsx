@@ -67,7 +67,12 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="멘토"
       title="학적변경요청"
-      description="학교 정보는 멘토가 직접 수정할 수 없습니다. 편입·졸업·전과 등으로 학교가 바뀌었다면 증명 서류를 제출해 주세요. 관리자가 확인한 뒤 학교 정보에 반영됩니다."
+      description={
+        <>
+          <span className="md:hidden">증명 서류를 제출하면 관리자 확인 후 반영돼요.</span>
+          <span className="hidden md:inline">학교 정보는 멘토가 직접 수정할 수 없습니다. 편입·졸업·전과 등으로 학교가 바뀌었다면 증명 서류를 제출해 주세요. 관리자가 확인한 뒤 학교 정보에 반영됩니다.</span>
+        </>
+      }
       ctas={[
         { href: "/mentor/profile/edit", label: "프로필로 돌아가기", tone: "slate" },
       ]}
@@ -100,7 +105,8 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
             </span>
           </div>
           <p className="text-xs leading-6 text-slate-500">
-            학교 정보는 멘토의 신뢰·정산과 직결되어 임의 변경이 막혀 있습니다. 변경이 필요하면 아래에서 증명 서류와 함께 요청해 주세요.
+            <span className="md:hidden">변경 시 아래에서 서류와 함께 요청하세요.</span>
+            <span className="hidden md:inline">학교 정보는 멘토의 신뢰·정산과 직결되어 임의 변경이 막혀 있습니다. 변경이 필요하면 아래에서 증명 서류와 함께 요청해 주세요.</span>
           </p>
         </section>
 
@@ -109,7 +115,8 @@ export default async function MentorAcademicRecordChangePage(props: PageProps) {
             <div>
               <h2 className="text-xl font-black text-slate-900">학적변경요청</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                재학증명서, 졸업증명서, 합격증, 전과 확인서 등 학적 변동을 확인할 수 있는 서류를 제출해 주세요.
+                <span className="md:hidden">학적 변동 증명 서류를 제출해 주세요.</span>
+                <span className="hidden md:inline">재학증명서, 졸업증명서, 합격증, 전과 확인서 등 학적 변동을 확인할 수 있는 서류를 제출해 주세요.</span>
               </p>
             </div>
             <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusBadgeClass(status)}`}>

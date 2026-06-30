@@ -112,9 +112,17 @@ function SignupRoleChoiceCard({
   const isStudent = role === "student";
   const primary = isStudent ? STUDENT_PRIMARY : MENTOR_PRIMARY;
   const title = isStudent ? "학생으로 가입" : "멘토로 가입";
-  const description = isStudent
-    ? "질문권과 맞춤의뢰로 필요한 도움을 바로 받을 수 있어요."
-    : "답변·콘텐츠·맞춤의뢰를 운영하고 수익을 관리해요.";
+  const description = isStudent ? (
+    <>
+      <span className="md:hidden">필요한 도움을 바로 받을 수 있어요.</span>
+      <span className="hidden md:inline">질문권과 맞춤의뢰로 필요한 도움을 바로 받을 수 있어요.</span>
+    </>
+  ) : (
+    <>
+      <span className="md:hidden">멘토 활동으로 보상을 받을 수 있어요.</span>
+      <span className="hidden md:inline">답변·콘텐츠·맞춤의뢰를 운영하고 수익을 관리해요.</span>
+    </>
+  );
 
   return (
     <button
@@ -495,7 +503,8 @@ function SignupPageContent() {
                 어떤 계정으로 가입하시나요?
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-center text-base font-medium leading-relaxed text-slate-500 sm:text-lg">
-                역할에 따라 혜택·입력 항목·이후 흐름(인증, 심사)이 달라요. 한 가지를 골라 주세요.
+                <span className="md:hidden">역할을 한 가지 골라 주세요.</span>
+                <span className="hidden md:inline">역할에 따라 혜택·입력 항목·이후 흐름(인증, 심사)이 달라요. 한 가지를 골라 주세요.</span>
               </p>
               <div className="mt-6 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2 lg:gap-8">
                 <SignupRoleChoiceCard

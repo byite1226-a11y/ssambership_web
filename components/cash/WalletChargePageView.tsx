@@ -34,7 +34,10 @@ export function WalletChargePageView(props: Props) {
             </h1>
           </div>
           <p className="mt-2 text-sm font-medium leading-relaxed text-[#3f4b5f]">
-            <span className="font-bold text-slate-700">{displayName}</span>님, 충전 금액과 결제 수단을 확인한 뒤 캐시를 충전할 수 있어요.
+            <span className="md:hidden">충전 금액과 결제 수단을 확인하세요.</span>
+            <span className="hidden md:inline">
+              <span className="font-bold text-slate-700">{displayName}</span>님, 충전 금액과 결제 수단을 확인한 뒤 캐시를 충전할 수 있어요.
+            </span>
           </p>
         </header>
 

@@ -77,7 +77,10 @@ export function MentorApplicationForm(props: {
       {props.landing ? (
         <div className="apply-form-head">
           <h3>지원서</h3>
-          <p>제안가·납기·제안 내용은 의뢰자(학생)의 비교 화면에 표시돼요.</p>
+          <p>
+            <span className="md:hidden">입력 내용은 학생 비교 화면에 표시돼요.</span>
+            <span className="hidden md:inline">제안가·납기·제안 내용은 의뢰자(학생)의 비교 화면에 표시돼요.</span>
+          </p>
         </div>
       ) : (
         <div>

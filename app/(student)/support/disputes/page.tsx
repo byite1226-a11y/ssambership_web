@@ -14,7 +14,12 @@ export default async function StudentDisputesListPage() {
       hideFooterPlaceholderCards
       eyebrow="지원 · 분쟁"
       title="분쟁·환불 현황"
-      description="맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있습니다."
+      description={
+        <>
+          <span className="md:hidden">분쟁·처리 상태를 확인하세요.</span>
+          <span className="hidden md:inline">맞춤의뢰 진행 중 접수한 분쟁과 처리 상태를 확인할 수 있습니다.</span>
+        </>
+      }
     >
       <StudentDisputesFilterableList
         items={items}

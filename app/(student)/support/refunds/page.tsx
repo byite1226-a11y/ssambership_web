@@ -34,7 +34,12 @@ export default async function StudentSupportRefundsPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="고객지원"
       title="구독 환불 신청"
-      description="잔여기간 환불을 예상 금액으로 신청하면 관리자 승인 후 처리됩니다."
+      description={
+        <>
+          <span className="md:hidden">관리자 승인 후 환불 처리돼요.</span>
+          <span className="hidden md:inline">잔여기간 환불을 예상 금액으로 신청하면 관리자 승인 후 처리됩니다.</span>
+        </>
+      }
       sections={[]}
       dataPoints={[
         "학원법 시행령 별표4 기준 — 이용 개시 전 전액 / 기간 1/3 전 2/3 / 1/2 전 1/2 / 1/2 경과 후 환불 없음",

@@ -93,7 +93,16 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
         {/* Page header */}
         <div className="mb-5">
           <h1 className="ds-text-h2 text-slate-900">{titleText}</h1>
-          <p className="mt-1 text-sm text-slate-600">{descriptionText}</p>
+          <p className="mt-1 text-sm text-slate-600">
+            {isApplied ? (
+              descriptionText
+            ) : (
+              <>
+                <span className="md:hidden">관심 있는 의뢰에 제안서를 보내보세요.</span>
+                <span className="hidden md:inline">{descriptionText}</span>
+              </>
+            )}
+          </p>
         </div>
 
         <div className="min-w-0">
@@ -132,7 +141,7 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                       );
                     })}
                 </div>
-                <p className="mb-4 text-[11px] leading-relaxed text-slate-400">
+                <p className="mb-4 hidden text-[11px] leading-relaxed text-slate-400 md:block">
                   전체는 노출 중인 모든 의뢰 수이고, 카테고리 옆 숫자는 해당 분류에 속한 건수만 표시합니다.
                 </p>
 

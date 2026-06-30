@@ -156,7 +156,12 @@ export default async function MentorVerificationPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="멘토"
       title="인증 상태"
-      description="학생증·운영 검토 결과를 확인합니다. 승인·반려·재제출 안내는 운영자 검토 후 이 화면에 반영됩니다."
+      description={
+        <>
+          <span className="md:hidden">운영 검토 결과가 이 화면에 반영돼요.</span>
+          <span className="hidden md:inline">학생증·운영 검토 결과를 확인합니다. 승인·반려·재제출 안내는 운영자 검토 후 이 화면에 반영됩니다.</span>
+        </>
+      }
       ctas={[]}
     >
       <div className="mx-auto max-w-3xl space-y-4">
