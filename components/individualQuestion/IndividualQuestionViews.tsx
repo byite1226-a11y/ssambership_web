@@ -393,22 +393,22 @@ export function IndividualQuestionDetailView(props: {
           : { tile: "bg-emerald-50", fg: "text-[#059669]", Icon: MessageCircle };
 
   // 큰 상태 문장(주인공) + 누구 차례 — 액터별 관점. 순수 표시값, 상태에서 파생만.
-  const hero: { headline: string; guide: string } = (() => {
+  const hero: { headline: string; guide: string; guideMobile?: string } = (() => {
     if (isStudent) {
-      if (released) return { headline: "답변을 받았어요", guide: "질문이 완료됐어요. 받은 답변과 결제 내역을 아래에서 확인할 수 있어요." };
+      if (released) return { headline: "답변을 받았어요", guide: "질문이 완료됐어요. 받은 답변과 결제 내역을 아래에서 확인할 수 있어요.", guideMobile: "받은 답변을 아래에서 확인하세요." };
       if (refunded) return { headline: "안전 보관 중이던 캐시를 돌려받았어요", guide: "질문이 취소되어 안전 보관 중이던 캐시가 환불됐어요." };
       if (expired) return { headline: "답변 기간이 지났어요", guide: "기간 내 답변이 없어 안전 보관 중이던 캐시가 환불 처리됐어요." };
-      if (status === "answered") return { headline: "멘토가 답변했어요. 확인해 주세요", guide: "답변을 확인하고 도움이 됐다면 [해결 완료]를 눌러 주세요." };
-      if (status === "claimed") return { headline: "멘토가 답변을 준비하고 있어요", guide: "멘토가 질문을 맡았어요. 답변이 도착하면 여기에 표시돼요." };
-      if (status === "open") return { headline: "멘토 답변을 기다리고 있어요", guide: "공개 질문이 등록됐어요. 멘토가 답변을 맡으면 알려드릴게요." };
-      return { headline: "멘토 답변을 기다리고 있어요", guide: "지정한 멘토에게 질문이 전달됐어요. 답변을 준비하면 여기에 표시돼요." };
+      if (status === "answered") return { headline: "멘토가 답변했어요. 확인해 주세요", guide: "답변을 확인하고 도움이 됐다면 [해결 완료]를 눌러 주세요.", guideMobile: "확인 후 [해결 완료]를 눌러 주세요." };
+      if (status === "claimed") return { headline: "멘토가 답변을 준비하고 있어요", guide: "멘토가 질문을 맡았어요. 답변이 도착하면 여기에 표시돼요.", guideMobile: "답변이 도착하면 알려드려요." };
+      if (status === "open") return { headline: "멘토 답변을 기다리고 있어요", guide: "공개 질문이 등록됐어요. 멘토가 답변을 맡으면 알려드릴게요.", guideMobile: "멘토가 맡으면 알려드릴게요." };
+      return { headline: "멘토 답변을 기다리고 있어요", guide: "지정한 멘토에게 질문이 전달됐어요. 답변을 준비하면 여기에 표시돼요.", guideMobile: "답변을 준비하면 알려드려요." };
     }
-    if (released) return { headline: "답변이 완료됐어요", guide: "학생이 답변을 확정해 정산이 끝났어요. 수고하셨어요." };
+    if (released) return { headline: "답변이 완료됐어요", guide: "학생이 답변을 확정해 정산이 끝났어요. 수고하셨어요.", guideMobile: "정산이 끝났어요. 수고하셨어요." };
     if (refunded) return { headline: "질문이 환불됐어요", guide: "학생이 질문을 취소해 안전 보관 중이던 캐시가 환불됐어요." };
     if (expired) return { headline: "답변 기간이 지났어요", guide: "기간 내 답변이 없어 안전 보관 중이던 캐시가 환불 처리됐어요." };
-    if (status === "answered") return { headline: "답변을 확정했어요", guide: "학생이 [해결 완료]를 누르면 정산돼요. 보충 설명은 계속 보낼 수 있어요." };
-    if (status === "claimed") return { headline: "답변을 맡았어요", guide: "답변을 작성하고 확정하면 학생 확인을 요청해요." };
-    return { headline: "학생 질문이 도착했어요", guide: "학생이 캐시를 안전 결제하고 답변을 기다리고 있어요. 답변을 작성해 확정해 주세요." };
+    if (status === "answered") return { headline: "답변을 확정했어요", guide: "학생이 [해결 완료]를 누르면 정산돼요. 보충 설명은 계속 보낼 수 있어요.", guideMobile: "해결 완료 시 정산돼요. 보충 설명 가능." };
+    if (status === "claimed") return { headline: "답변을 맡았어요", guide: "답변을 작성하고 확정하면 학생 확인을 요청해요.", guideMobile: "답변을 작성하고 확정해 주세요." };
+    return { headline: "학생 질문이 도착했어요", guide: "학생이 캐시를 안전 결제하고 답변을 기다리고 있어요. 답변을 작성해 확정해 주세요.", guideMobile: "답변을 작성해 확정해 주세요." };
   })();
 
   // 누구 차례인지 — 내 차례 / 상대 대기 / 종료(표시 전용).
@@ -434,10 +434,19 @@ export function IndividualQuestionDetailView(props: {
                 개별 질문 · {individualQuestionTypeLabel(detail.question_type)}
               </span>
               <div className="cr-detail-header-row">
-                <h1 className="cr-detail-title">{hero.headline}</h1>
+                <h1 className="cr-detail-title max-md:!text-[1.2rem]">{hero.headline}</h1>
                 <IndividualQuestionStatusBadge status={detail.status} />
               </div>
-              <p className="cr-detail-subtitle">{hero.guide}</p>
+              <p className="cr-detail-subtitle">
+                {hero.guideMobile ? (
+                  <>
+                    <span className="md:hidden">{hero.guideMobile}</span>
+                    <span className="hidden md:inline">{hero.guide}</span>
+                  </>
+                ) : (
+                  hero.guide
+                )}
+              </p>
             </>
           ) : (
             <div className="flex items-start gap-3.5">
@@ -452,7 +461,16 @@ export function IndividualQuestionDetailView(props: {
                   <IndividualQuestionStatusBadge status={detail.status} />
                 </div>
                 <h1 className="cr-detail-title mt-1.5">{hero.headline}</h1>
-                <p className="cr-detail-subtitle">{hero.guide}</p>
+                <p className="cr-detail-subtitle">
+                  {hero.guideMobile ? (
+                    <>
+                      <span className="md:hidden">{hero.guideMobile}</span>
+                      <span className="hidden md:inline">{hero.guide}</span>
+                    </>
+                  ) : (
+                    hero.guide
+                  )}
+                </p>
               </div>
             </div>
           )}

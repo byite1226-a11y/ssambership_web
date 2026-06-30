@@ -215,7 +215,7 @@ export function StudentSentIndividualQuestionsSection(props: {
             </p>
             {tab === "all" ? (
               <p className="mt-0.5 text-xs font-medium leading-relaxed text-slate-600">
-                <span className="md:hidden">공개로 올리거나 멘토에게 직접 질문해 보세요.</span>
+                <span className="md:hidden">멘토에게 바로 질문해 보세요.</span>
                 <span className="hidden md:inline">{props.emptyDescription}</span>
               </p>
             ) : (

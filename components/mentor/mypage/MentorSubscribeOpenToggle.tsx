@@ -11,9 +11,14 @@ export function MentorSubscribeOpenToggle({ open }: { open: boolean }) {
         <div className="min-w-0">
           <h2 className="text-sm font-black text-slate-900">신규 구독 받기</h2>
           <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500">
-            {open
-              ? "현재 신규 구독을 받는 중이에요. 정원 안에서 새 학생이 구독할 수 있어요."
-              : "신규 구독을 받지 않는 중 · 기존 학생 구독은 그대로 유지돼요."}
+            {open ? (
+              <>
+                <span className="md:hidden">정원 안에서 새 학생을 받는 중이에요.</span>
+                <span className="hidden md:inline">현재 신규 구독을 받는 중이에요. 정원 안에서 새 학생이 구독할 수 있어요.</span>
+              </>
+            ) : (
+              "신규 구독을 받지 않는 중 · 기존 학생 구독은 그대로 유지돼요."
+            )}
           </p>
         </div>
         <span

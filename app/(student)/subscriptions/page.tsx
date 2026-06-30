@@ -101,7 +101,8 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
           <div className="mb-1 flex justify-center text-slate-300"><FileText className="h-12 w-12" strokeWidth={1.5} aria-hidden /></div>
           <h3 className="text-base font-bold text-slate-900">이용 중인 정기 구독이 없습니다</h3>
           <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-            아직 구독 중인 멘토의 플랜이 없습니다. 내 상황과 목표에 딱 맞는 멘토 플랜을 시작해 보세요.
+            <span className="md:hidden">나에게 맞는 멘토 플랜을 시작해 보세요.</span>
+            <span className="hidden md:inline">아직 구독 중인 멘토의 플랜이 없습니다. 내 상황과 목표에 딱 맞는 멘토 플랜을 시작해 보세요.</span>
           </p>
           <div className="pt-3">
             <Link href="/mentors" className="inline-block rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition shadow-sm">

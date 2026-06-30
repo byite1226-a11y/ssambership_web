@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Bell, HelpCircle, Star } from "lucide-react";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
@@ -16,7 +17,7 @@ import {
 import { countActiveSubscriptionsForStudent } from "@/lib/mypage/studentActiveSubscriptions";
 import { MypageSubscriptionsCard } from "@/components/mypage/MypageSubscriptionsCard";
 
-function SectionTitle(props: { title: string; hint?: string }) {
+function SectionTitle(props: { title: string; hint?: ReactNode }) {
   return (
     <div>
       <h2 className="flex items-center gap-2 text-base font-extrabold text-[#0f172a]">
@@ -58,10 +59,15 @@ export default async function StudentMyPage() {
   const emailLine = profile?.email?.trim() || user.email || "";
   const schoolLine = [profile?.grade_level?.trim(), profile?.student_status?.trim()].filter(Boolean).join(" · ");
   const initial = displayName.trim().charAt(0).toUpperCase() || "S";
-  const roomText = roomCount.error
+  const roomText: ReactNode = roomCount.error
     ? "질문방 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
     : roomCount.n === 0
-      ? "아직 열린 질문방이 없습니다. 멘토와 맺은 방이 여기에 이어집니다."
+      ? (
+          <>
+            <span className="md:hidden">구독하면 질문방이 여기 열려요.</span>
+            <span className="hidden md:inline">아직 열린 질문방이 없습니다. 멘토와 맺은 방이 여기에 이어집니다.</span>
+          </>
+        )
       : `연결된 질문방 ${roomCount.n}개 · 최근 질문과 답변을 확인하세요.`;
 
   const ledgerPreview = (

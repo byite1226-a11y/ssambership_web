@@ -69,7 +69,8 @@ export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilte
           <ClipboardList className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
           <h3 className="mt-4 text-lg font-black text-slate-900">아직 등록한 의뢰가 없어요</h3>
           <p className="mt-2 max-w-md text-sm font-medium text-slate-600">
-            혼자 해결하기 어려운 공부 고민을 전문 멘토에게 맡겨보세요.
+            <span className="md:hidden">전문 멘토에게 의뢰해 보세요.</span>
+            <span className="hidden md:inline">혼자 해결하기 어려운 공부 고민을 전문 멘토에게 맡겨보세요.</span>
           </p>
           <Link
             href="/custom-request/new"

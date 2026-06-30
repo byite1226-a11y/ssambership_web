@@ -48,7 +48,8 @@ export function NotificationEmptyState(props: {
       </span>
       <h3 className="mt-4 text-base font-black text-slate-900">새 알림이 없어요</h3>
       <p className="mt-1.5 max-w-xs text-sm font-medium leading-relaxed text-slate-500">
-        질문 답변·구독·맞춤의뢰·환불 소식이 생기면 한곳에 모아서 알려드려요.
+        <span className="md:hidden">새 소식이 생기면 여기 모아 알려드려요.</span>
+        <span className="hidden md:inline">질문 답변·구독·맞춤의뢰·환불 소식이 생기면 한곳에 모아서 알려드려요.</span>
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-1.5">
         {TYPE_HINTS.map((t) => (
