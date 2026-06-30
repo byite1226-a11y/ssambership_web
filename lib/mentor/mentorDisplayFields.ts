@@ -111,8 +111,12 @@ export function mentorVerificationKo(raw: string | null | undefined): string {
     under_review: "검토 중",
     rejected: "반려",
     denied: "반려",
-    none: "미등록",
-    unset: "미등록",
+    none: "미인증",
+    unset: "미인증",
+    unverified: "미인증",
+    not_verified: "미인증",
+    not_submitted: "미제출",
   };
-  return map[s] ?? (t.length > 28 ? `${t.slice(0, 24)}…` : t);
+  // 매핑 없는 영어 원문이 그대로 노출되지 않게 한글 폴백.
+  return map[s] ?? "미인증";
 }

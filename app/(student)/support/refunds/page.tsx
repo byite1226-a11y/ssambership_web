@@ -34,13 +34,12 @@ export default async function StudentSupportRefundsPage(props: PageProps) {
       hideFooterPlaceholderCards
       eyebrow="고객지원"
       title="구독 환불 신청"
-      description="구독 해지는 다음 갱신 중단이 기본입니다. 잔여기간 환불을 원하면 예상 금액으로 신청하고, 실제 환불은 관리자 승인 후 처리됩니다."
-      ctas={[
-        { href: "/legal/refund", label: "환불 정책 안내", tone: "slate" },
-        { href: "/subscriptions", label: "구독 현황", tone: "blue" },
-      ]}
+      description="잔여기간 환불을 예상 금액으로 신청하면 관리자 승인 후 처리됩니다."
       sections={[]}
-      dataPoints={["예상 환불액 = 결제금액 × 남은기간 / 전체기간", "관리자 승인 전에는 캐시가 자동 환불되지 않습니다."]}
+      dataPoints={[
+        "학원법 시행령 별표4 기준 — 이용 개시 전 전액 / 기간 1/3 전 2/3 / 1/2 전 1/2 / 1/2 경과 후 환불 없음",
+        "환불 금액은 신청 시점에 고정되며 관리자 승인 전에는 캐시가 환불되지 않습니다.",
+      ]}
     >
       <div className="mx-auto max-w-4xl space-y-5">
         {flashOk ? (
@@ -93,9 +92,12 @@ export default async function StudentSupportRefundsPage(props: PageProps) {
                         현재 기간 종료일은 <strong className="text-slate-900">{item.currentPeriodEndLabel}</strong>입니다.
                       </p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 px-4 py-3 text-right">
-                      <p className="text-xs font-bold text-slate-500">예상 환불액</p>
+                    <div className="w-full shrink-0 rounded-xl bg-slate-50 px-4 py-3 text-right md:w-56">
+                      <p className="text-xs font-bold text-slate-500">예상 환불액 (학원법 기준)</p>
                       <p className="mt-1 text-xl font-black text-slate-900">{item.refundEstimateLabel}</p>
+                      <p className="mt-1 text-[11px] font-semibold text-slate-600">
+                        {item.refundEstimateBracketLabel}
+                      </p>
                       <p className="mt-1 text-xs text-slate-500">
                         남은 {item.refundEstimate.remainingDays}일 / 전체 {item.refundEstimate.totalDays}일
                       </p>
@@ -110,16 +112,19 @@ export default async function StudentSupportRefundsPage(props: PageProps) {
                     <form action={requestSubscriptionProratedRefundAction} className="mt-4 space-y-3">
                       <input type="hidden" name="subscriptionId" value={item.subscriptionId} />
                       <label className="block text-xs font-bold text-slate-700">
-                        신청 사유
+                        신청 사유 <span className="text-red-500">*필수</span>
                         <textarea
                           name="reason"
                           rows={3}
-                          placeholder="환불이 필요한 이유를 간단히 적어 주세요."
+                          required
+                          minLength={5}
+                          placeholder="환불이 필요한 이유를 간단히 적어 주세요. (5자 이상)"
                           className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
                         />
                       </label>
                       <p className="text-xs leading-relaxed text-slate-500">
-                        이 금액은 예상치입니다. 실제 환불 여부와 금액은 관리자가 결제·이용 내역을 확인한 뒤 승인합니다.
+                        학원법 시행령 별표4 기준으로 산정된 예상치입니다. <strong>신청 시점의 금액으로 고정</strong>되며,
+                        관리자가 결제·이용 내역을 확인한 뒤 승인합니다.
                       </p>
                       <FormSubmitButton
                         idleLabel="잔여기간 환불 신청"

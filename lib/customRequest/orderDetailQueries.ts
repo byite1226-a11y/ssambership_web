@@ -234,13 +234,13 @@ function buildHeader(
           const raw = (src as Row)[k];
           if (raw == null) continue;
           if (typeof raw === "number" && Number.isFinite(raw)) {
-            return `${raw.toLocaleString("ko-KR")}원`;
+            return `${raw.toLocaleString("ko-KR")}캐시`;
           }
           const s = numberish(raw);
           if (s) {
             const n = Number(String(s).replace(/[, ]/g, ""));
             if (Number.isFinite(n)) {
-              return `${n.toLocaleString("ko-KR")}원`;
+              return `${n.toLocaleString("ko-KR")}캐시`;
             }
             return s;
           }

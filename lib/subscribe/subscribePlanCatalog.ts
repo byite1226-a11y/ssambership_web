@@ -14,15 +14,15 @@ export type SubscribePlanCatalogItem = {
 export const SUBSCRIBE_PLAN_CATALOG: readonly SubscribePlanCatalogItem[] = [
   {
     tier: "limited",
-    label: "베이직",
-    cashKrw: 55_000,
+    label: "라이트",
+    cashKrw: 29_900,
     weeklyLabel: "주 4개 질문",
     priorityLabel: "답변 우선순위 일반",
   },
   {
     tier: "standard",
     label: "스탠다드",
-    cashKrw: 114_900,
+    cashKrw: 84_900,
     weeklyLabel: "주 9개 질문",
     priorityLabel: "답변 우선순위 높음",
     recommend: true,
@@ -30,7 +30,7 @@ export const SUBSCRIBE_PLAN_CATALOG: readonly SubscribePlanCatalogItem[] = [
   {
     tier: "premium",
     label: "프리미엄",
-    cashKrw: 249_900,
+    cashKrw: 179_000,
     weeklyLabel: "질문 무제한",
     priorityLabel: "",
   },

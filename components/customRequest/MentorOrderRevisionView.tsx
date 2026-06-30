@@ -27,8 +27,9 @@ export type MentorOrderRevisionViewProps = {
 
 export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
   const { orderId, revisionUsage } = props;
-  const filesHref = `/mentor/custom-request/orders/${orderId}/files`;
   const roomHref = `/custom-request/orders/${orderId}`;
+  // 동선 통합: standalone "작업 파일" 페이지 은퇴 → 주문방 인라인 "작업 파일" 섹션 앵커로 연결.
+  const deliverablesHref = `${roomHref}#deliverables`;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] lg:gap-8">
@@ -108,7 +109,7 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
             <p className="mt-2 text-sm font-medium text-slate-600">재납품은 파일 업로드 화면에서 진행해 주세요.</p>
           )}
           <Link
-            href={filesHref}
+            href={deliverablesHref}
             className={`mt-4 inline-flex min-h-[48px] items-center justify-center rounded-xl px-5 text-sm font-extrabold text-white ${
               revisionUsage.exceeded
                 ? "cursor-not-allowed bg-slate-400"
@@ -154,7 +155,7 @@ export function MentorOrderRevisionView(props: MentorOrderRevisionViewProps) {
               </Link>
             </li>
             <li>
-              <Link href={filesHref} className="text-[#2563EB] hover:underline">
+              <Link href={deliverablesHref} className="text-[#2563EB] hover:underline">
                 작업파일
               </Link>
             </li>

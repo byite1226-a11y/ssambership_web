@@ -1,16 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { FileText, Lightbulb } from "lucide-react";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { fetchWalletBalanceByUserId } from "@/lib/cash/cashQueries";
 import { parseWalletBalanceKrw } from "@/lib/cash/parseWalletBalanceKrw";
-import {
-  requestSubscriptionCancelAtPeriodEndAction,
-  undoSubscriptionCancelAtPeriodEndAction,
-} from "@/lib/subscribe/subscriptionCancelActions";
 import { loadStudentSubscriptionManagementList } from "@/lib/subscribe/studentSubscriptionManagement";
 import { StudentDashboardShell } from "@/components/mypage/StudentDashboardShell";
-import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
+import { StudentSubscriptionsList } from "@/components/subscribe/StudentSubscriptionsList";
 
 type PageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
@@ -18,21 +15,6 @@ function firstParam(value: string | string[] | undefined): string | null {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value[0] ?? null;
   return null;
-}
-
-function subscriptionStatusBadgeClass(tone: string): string {
-  switch (tone) {
-    case "active":
-      return "border-blue-100 bg-blue-50 text-blue-700";
-    case "scheduled":
-    case "pastDue":
-      return "border-amber-100 bg-amber-50 text-amber-700";
-    case "expired":
-    case "refunded":
-    case "neutral":
-    default:
-      return "border-slate-200 bg-slate-50 text-slate-600";
-  }
 }
 
 export default async function StudentSubscriptionsPage(props: PageProps) {
@@ -50,7 +32,10 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
     loadStudentSubscriptionManagementList(supabase, user.id),
   ]);
   const cashBalanceKrw = parseWalletBalanceKrw(balance.row);
-  const activeCount = subscriptionList.items.filter((item) => item.status === "active" && !item.cancelAtPeriodEnd).length;
+  // "구독 중" = 현재 이용 가능한 구독(해지 예약=cancel_at_period_end 여도 기간까진 이용 중이므로 포함).
+  // 만료 예정 건은 아래 scheduledCancelCount 에도 잡혀 양쪽에 표시됨(이용 중 + 갱신 중단 예정 두 사실 반영).
+  // past_due(결제 실패 유예)는 혼란 방지 위해 제외 — active 기준만.
+  const activeCount = subscriptionList.items.filter((item) => item.status === "active").length;
   const scheduledCancelCount = subscriptionList.items.filter((item) => item.statusTone === "scheduled").length;
 
   return (
@@ -64,7 +49,10 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
       <div className="space-y-6">
         <header>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">구독 현황</h1>
-          <p className="mt-1 text-sm text-slate-500">이용 중인 멘토 플랜과 다음 갱신, 해지·환불 상태를 확인하세요.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            <span className="md:hidden">구독 플랜과 갱신·해지 상태를 확인하세요.</span>
+            <span className="hidden md:inline">이용 중인 멘토 플랜과 다음 갱신, 해지·환불 상태를 확인하세요.</span>
+          </p>
         </header>
 
         {flashOk ? (
@@ -78,19 +66,22 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
           </p>
         ) : null}
 
-        {/* Top Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24">
-            <p className="text-xs font-bold text-slate-500 uppercase">구독 중인 멘토</p>
-            <h3 className="text-xl font-black text-slate-900">{activeCount} <span className="text-xs font-normal text-slate-400">명</span></h3>
+        {/* Top Summary — 3등분 균등 통계 바(각 칸 중앙 정렬 + 칸 사이 0.5px 구분선, 양끝 없음) */}
+        <div className="grid grid-cols-3 divide-x-[0.5px] divide-slate-200 rounded-2xl border border-slate-200 bg-white px-2 py-3.5 shadow-sm">
+          <div className="flex items-baseline justify-center gap-1 px-1.5 sm:gap-1.5 sm:px-3">
+            <span className="text-[11px] font-bold text-slate-500 sm:text-xs">구독 중</span>
+            <span className="text-base font-black tabular-nums text-slate-900 sm:text-lg">{activeCount}</span>
+            <span className="text-[11px] font-medium text-slate-400 sm:text-xs">명</span>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24">
-            <p className="text-xs font-bold text-slate-500 uppercase">전체 구독 기록</p>
-            <h3 className="text-xl font-black text-slate-900">{subscriptionList.items.length} <span className="text-xs font-normal text-slate-400">건</span></h3>
+          <div className="flex items-baseline justify-center gap-1 px-1.5 sm:gap-1.5 sm:px-3">
+            <span className="text-[11px] font-bold text-slate-500 sm:text-xs">전체 기록</span>
+            <span className="text-base font-black tabular-nums text-slate-900 sm:text-lg">{subscriptionList.items.length}</span>
+            <span className="text-[11px] font-medium text-slate-400 sm:text-xs">건</span>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between h-24">
-            <p className="text-xs font-bold text-slate-500 uppercase">해지 예약</p>
-            <h3 className="text-xl font-black text-slate-900">{scheduledCancelCount} <span className="text-xs font-normal text-slate-400">건</span></h3>
+          <div className="flex items-baseline justify-center gap-1 px-1.5 sm:gap-1.5 sm:px-3">
+            <span className="text-[11px] font-bold text-slate-500 sm:text-xs">만료 예정</span>
+            <span className="text-base font-black tabular-nums text-slate-900 sm:text-lg">{scheduledCancelCount}</span>
+            <span className="text-[11px] font-medium text-slate-400 sm:text-xs">건</span>
           </div>
         </div>
 
@@ -101,108 +92,13 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
         ) : null}
 
         {subscriptionList.items.length > 0 ? (
-          <section className="space-y-4">
-            {subscriptionList.items.map((item) => (
-              <article key={item.subscriptionId} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-black text-slate-900">{item.mentorName}</h2>
-                      <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700">
-                        {item.planLabel}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2.5 py-1 text-xs font-extrabold ${subscriptionStatusBadgeClass(item.statusTone)}`}
-                      >
-                        {item.statusLabel}
-                      </span>
-                    </div>
-                    <dl className="grid gap-3 text-sm break-keep sm:grid-cols-2">
-                      <div className="rounded-xl bg-slate-50 px-4 py-3">
-                        <dt className="text-xs font-bold text-slate-500">현재 기간</dt>
-                        <dd className="mt-1 font-extrabold text-slate-900">{item.currentPeriodLabel}</dd>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-4 py-3">
-                        <dt className="text-xs font-bold text-slate-500">다음 결제일</dt>
-                        <dd className="mt-1 font-extrabold text-slate-900">{item.nextBillingDisplayLabel}</dd>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-4 py-3">
-                        <dt className="text-xs font-bold text-slate-500">주간 질문 한도</dt>
-                        <dd className="mt-1 font-extrabold text-slate-900">{item.weeklyQuestionLimitLabel}</dd>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-4 py-3">
-                        <dt className="text-xs font-bold text-slate-500">질문 리셋</dt>
-                        <dd className="mt-1 font-extrabold text-slate-900">{item.weeklyResetLabel}</dd>
-                      </div>
-                      <div className="rounded-xl bg-slate-50 px-4 py-3 sm:col-span-2">
-                        <dt className="text-xs font-bold text-slate-500">예상 잔여 환불액</dt>
-                        <dd className="mt-1 font-extrabold text-slate-900">{item.refundEstimateLabel}</dd>
-                      </div>
-                    </dl>
-                    {item.cancelAtPeriodEnd ? (
-                      <p className="text-xs font-semibold text-amber-700">
-                        현재 기간({item.currentPeriodEndLabel})까지 이용 가능하며 이후 자동 만료됩니다.
-                      </p>
-                    ) : null}
-                    {item.pendingRefundId ? (
-                      <p className="text-xs font-semibold text-blue-700">
-                        잔여기간 환불 신청이 관리자 검토 대기 중입니다.
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-                    {item.canCancel ? (
-                      <form action={requestSubscriptionCancelAtPeriodEndAction}>
-                        <input type="hidden" name="subscriptionId" value={item.subscriptionId} />
-                        <FormSubmitButton
-                          idleLabel="해지 예약"
-                          pendingLabel="저장 중..."
-                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-extrabold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        />
-                      </form>
-                    ) : null}
-                    {item.canUndoCancel ? (
-                      <form action={undoSubscriptionCancelAtPeriodEndAction}>
-                        <input type="hidden" name="subscriptionId" value={item.subscriptionId} />
-                        <FormSubmitButton
-                          idleLabel="해지 예약 취소"
-                          pendingLabel="저장 중..."
-                          className="w-full rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-extrabold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        />
-                      </form>
-                    ) : null}
-                    {item.statusTone === "expired" || item.statusTone === "refunded" ? (
-                      <Link
-                        href={item.resubscribeHref}
-                        className="rounded-xl bg-blue-600 px-4 py-2 text-center text-sm font-extrabold text-white hover:bg-blue-700"
-                      >
-                        재구독
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/support/refunds?subscriptionId=${encodeURIComponent(item.subscriptionId)}`}
-                        className={`rounded-xl px-4 py-2 text-center text-sm font-extrabold ${
-                          item.canRequestRefund
-                            ? "bg-blue-600 text-white hover:bg-blue-700"
-                            : "bg-slate-100 text-slate-400 pointer-events-none"
-                        }`}
-                        aria-disabled={!item.canRequestRefund}
-                      >
-                        환불 신청
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </section>
+          <StudentSubscriptionsList items={subscriptionList.items} />
         ) : null}
 
         {/* Empty State / Subscription Content card */}
         {subscriptionList.items.length === 0 ? (
         <section className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm text-center space-y-4">
-          <div className="flex justify-center text-slate-200 text-5xl mb-1">📄</div>
+          <div className="mb-1 flex justify-center text-slate-300"><FileText className="h-12 w-12" strokeWidth={1.5} aria-hidden /></div>
           <h3 className="text-base font-bold text-slate-900">이용 중인 정기 구독이 없습니다</h3>
           <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
             아직 구독 중인 멘토의 플랜이 없습니다. 내 상황과 목표에 딱 맞는 멘토 플랜을 시작해 보세요.
@@ -217,7 +113,7 @@ export default async function StudentSubscriptionsPage(props: PageProps) {
 
         {/* Bottom Details Card */}
         <section className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-          <h4 className="text-xs font-bold text-slate-800">💡 구독 시 유의 사항</h4>
+          <h4 className="flex items-center gap-1.5 text-xs font-bold text-slate-800"><Lightbulb className="h-4 w-4 text-slate-400" aria-hidden /> 구독 시 유의 사항</h4>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-500 leading-relaxed">
             <li>정기 구독은 이용 기간 만료 시 자동 결제가 진행됩니다.</li>
             <li>구독 해지는 만료일 24시간 전까지 신청할 수 있습니다.</li>

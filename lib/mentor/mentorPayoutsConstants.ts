@@ -16,9 +16,9 @@ export function minorUnitsToCash(minor: number): number {
   return minorUnitsToDisplayCash(minor);
 }
 
-/** @deprecated import from `@/lib/utils/formatDisplay` — 정산 화면은 원 단위 유지 */
+/** 정산 화면 인앱 가치 표시 — 캐시 단위(숫자 동일, 표시만). 실결제 KRW는 충전/토스에서만. */
 export function formatCashKrw(n: number): string {
-  return formatCashKrwDisplay(n, { unit: "원" });
+  return formatCashKrwDisplay(n, { unit: "캐시" });
 }
 
 export { formatCashKrwDisplay as formatCashAmount };

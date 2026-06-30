@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { CashChargeWidget } from "@/components/cash/CashChargeWidget";
 import { WalletChargeRecentSummary } from "@/components/cash/WalletChargeRecentSummary";
 import { WalletChargeRightSidebar } from "@/components/cash/WalletChargeRightSidebar";
+import { ResponsivePageColumns } from "@/components/shell/ResponsivePageColumns";
 import type { WalletBalanceBreakdown } from "@/lib/cash/parseWalletBalanceKrw";
 import type { WalletChargePageData } from "@/lib/cash/walletRouteData";
 import type { UserRow } from "@/lib/types/user";
@@ -61,21 +62,26 @@ export function WalletChargePageView(props: Props) {
           </p>
         ) : null}
 
-        <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <main className="min-w-0 space-y-6">
-          {actionError ? (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-950">
-              {mapDataErrorMessage(actionError)}
-            </p>
-          ) : null}
+        {/* lg+ 데스크탑은 기존 2단(본문 + 320px 우측 사이드바) 그대로, 모바일은 단일컬럼(본문→사이드바 아래로). */}
+        <ResponsivePageColumns
+          className="mt-6"
+          gap="gap-6"
+          desktopGrid="lg:grid-cols-[minmax(0,1fr)_320px]"
+          main={
+            <main className="min-w-0 space-y-6">
+              {actionError ? (
+                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-950">
+                  {mapDataErrorMessage(actionError)}
+                </p>
+              ) : null}
 
-          <CashChargeWidget userId={user.id} currentBalance={breakdown.totalCash} isAuthenticated />
+              <CashChargeWidget userId={user.id} currentBalance={breakdown.totalCash} isAuthenticated />
 
-          <WalletChargeRecentSummary rows={data.ledgerPreview.rows} error={data.ledgerPreview.error} />
-        </main>
-
-        <WalletChargeRightSidebar ledgerRows={data.ledgerPreview.rows} />
-        </div>
+              <WalletChargeRecentSummary rows={data.ledgerPreview.rows} error={data.ledgerPreview.error} />
+            </main>
+          }
+          aside={<WalletChargeRightSidebar ledgerRows={data.ledgerPreview.rows} />}
+        />
       </div>
     </div>
   );

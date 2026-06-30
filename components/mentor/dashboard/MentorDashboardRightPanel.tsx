@@ -31,7 +31,7 @@ export function MentorDashboardRightPanel(props: Props) {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-extrabold text-slate-900">오늘의 일정</h3>
-          <Link href="/mentor/custom-request/orders" className="text-[11px] font-bold text-[#2563EB] hover:underline">
+          <Link href="/mentor/custom-request/orders" className="text-[11px] font-bold text-[#059669] hover:underline">
             전체 보기 &gt;
           </Link>
         </div>
@@ -43,7 +43,7 @@ export function MentorDashboardRightPanel(props: Props) {
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className="block rounded-xl border border-slate-100 p-3 transition hover:border-blue-100 hover:bg-blue-50/30"
+                  className="block rounded-xl border border-slate-100 p-3 transition hover:border-emerald-100 hover:bg-[#ECFDF5]/30"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className={`text-[13px] font-bold ${item.urgent ? "text-red-600" : "text-slate-900"}`}>
@@ -78,12 +78,12 @@ export function MentorDashboardRightPanel(props: Props) {
           </div>
           <div className="flex justify-between gap-2">
             <dt className="font-semibold text-slate-600">완료(정산 예정)</dt>
-            <dd className="font-bold tabular-nums text-[#2563EB]">
+            <dd className="font-bold tabular-nums text-[#059669]">
               {formatCashKrw(revenuePanel.completedPending)}
             </dd>
           </div>
         </dl>
-        <Link href="/mentor/payouts" className="mt-4 inline-flex text-xs font-bold text-[#2563EB] hover:underline">
+        <Link href="/mentor/payouts" className="mt-4 inline-flex text-xs font-bold text-[#059669] hover:underline">
           정산/수익 관리 &gt;
         </Link>
       </section>
@@ -96,7 +96,7 @@ export function MentorDashboardRightPanel(props: Props) {
         <div className="mt-2">
           <StarRow filled={stars} />
         </div>
-        <Link href="/mentor/reviews" className="mt-4 inline-flex text-xs font-bold text-[#2563EB] hover:underline">
+        <Link href="/mentor/reviews" className="mt-4 inline-flex text-xs font-bold text-[#059669] hover:underline">
           리뷰 {rating.count}개 보기 &gt;
         </Link>
       </section>

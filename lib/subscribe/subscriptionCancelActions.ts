@@ -7,6 +7,7 @@ import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { rowsFromSupabaseData } from "@/lib/qna/safeSelect";
 import { SUBSCRIPTIONS_SELECT, SUBSCRIPTIONS_TABLE } from "@/lib/subscribe/subscriptionsTable";
 import { computeProratedRefundEstimate } from "@/lib/subscribe/subscriptionRefundProration";
+import { hasSubscriptionUsageStartedForPair } from "@/lib/subscribe/subscriptionUsageStarted";
 
 type Row = Record<string, unknown>;
 
@@ -114,7 +115,7 @@ export async function requestSubscriptionCancelAtPeriodEndAction(formData: FormD
       .eq("id", subscriptionId)
       .eq("student_id", user.id);
     if (error) {
-      redirect(withMessage(SUBSCRIPTIONS_PATH, "error", "해지 예약을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."));
+      redirect(withMessage(SUBSCRIPTIONS_PATH, "error", "다음 결제 중단 설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."));
     }
   }
 
@@ -138,7 +139,7 @@ export async function undoSubscriptionCancelAtPeriodEndAction(formData: FormData
 
   const status = normalizeStatus(loaded.row.status);
   if (!isCurrentSubscriptionStatus(status)) {
-    redirect(withMessage(SUBSCRIPTIONS_PATH, "error", "이미 종료된 구독은 해지 예약을 취소할 수 없습니다."));
+    redirect(withMessage(SUBSCRIPTIONS_PATH, "error", "이미 종료된 구독은 되돌릴 수 없습니다."));
   }
 
   const { error } = await admin
@@ -151,12 +152,12 @@ export async function undoSubscriptionCancelAtPeriodEndAction(formData: FormData
     .eq("id", subscriptionId)
     .eq("student_id", user.id);
   if (error) {
-    redirect(withMessage(SUBSCRIPTIONS_PATH, "error", "해지 예약 취소를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."));
+    redirect(withMessage(SUBSCRIPTIONS_PATH, "error", "구독 계속하기 설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."));
   }
 
   revalidatePath(SUBSCRIPTIONS_PATH);
   revalidatePath("/mypage");
-  redirect(withMessage(SUBSCRIPTIONS_PATH, "ok", "해지 예약을 취소했습니다. 다음 갱신일에 정상 갱신됩니다."));
+  redirect(withMessage(SUBSCRIPTIONS_PATH, "ok", "구독을 계속 이용합니다. 다음 갱신일에 정상 갱신됩니다."));
 }
 
 export async function requestSubscriptionProratedRefundAction(formData: FormData) {
@@ -165,6 +166,10 @@ export async function requestSubscriptionProratedRefundAction(formData: FormData
   const reason = textFromForm(formData.get("reason"));
   if (!subscriptionId) {
     redirect(withMessage(REFUNDS_PATH, "error", "구독을 선택해 주세요."));
+  }
+  // P1 ⑥ — 환불 신청 사유 필수
+  if (reason.length < 5) {
+    redirect(withMessage(REFUNDS_PATH, "error", "환불 신청 사유를 5자 이상 입력해 주세요."));
   }
 
   const admin = createServiceRoleClient();
@@ -195,14 +200,30 @@ export async function requestSubscriptionProratedRefundAction(formData: FormData
   const billingEvent = await latestSucceededBillingEvent(admin, subscriptionId);
   const periodStart = stringValue(loaded.row.current_period_start) ?? stringValue(billingEvent?.period_start);
   const periodEnd = stringValue(loaded.row.current_period_end) ?? stringValue(billingEvent?.period_end);
+  const mentorId = stringValue(loaded.row.mentor_id);
+  // 학원법 별표4 — 이용 개시 여부(첫 질문 작성) 판정.
+  // 멘토 ID 미상 시(이상 데이터)는 보수적으로 usageStarted=true 처리.
+  const usageStarted = mentorId
+    ? await hasSubscriptionUsageStartedForPair(admin, {
+        studentId: user.id,
+        mentorId,
+        periodStartIso: periodStart,
+      })
+    : true;
   const estimate = computeProratedRefundEstimate({
     amountCents: numberValue(billingEvent?.amount_cents),
     periodStartIso: periodStart,
     periodEndIso: periodEnd,
+    usageStarted,
+    mode: "student_voluntary",
   });
 
   if (estimate.amountCents <= 0) {
-    redirect(withMessage(REFUNDS_PATH, "error", "남은 이용 기간이 없거나 환불 예상액을 계산할 수 없습니다."));
+    const userMsg =
+      estimate.bracketReason === "ge_1_2"
+        ? "학원법 기준으로 기간 1/2를 경과하여 환불 가능 금액이 없습니다."
+        : "남은 이용 기간이 없거나 환불 예상액을 계산할 수 없습니다.";
+    redirect(withMessage(REFUNDS_PATH, "error", userMsg));
   }
 
   const paymentId = stringValue(billingEvent?.payment_id) ?? stringValue(loaded.row.payment_id);

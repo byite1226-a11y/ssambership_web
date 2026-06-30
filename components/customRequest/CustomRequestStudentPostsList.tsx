@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ClipboardList } from "lucide-react";
 import { deleteCustomRequestDraftAction } from "@/lib/customRequest/customRequestComposeActions";
 import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
@@ -17,6 +17,8 @@ import {
 } from "@/lib/customRequest/studentPostDisplay";
 
 type Row = Record<string, unknown>;
+
+const STUDENT_POSTS_PAGE_SIZE = 10;
 
 function formatSavedAt(row: Row): string {
   const raw = row.updated_at ?? row.created_at;
@@ -37,6 +39,20 @@ export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilte
     if (filter === "all") return props.rows;
     return props.rows.filter((r) => studentPostStatusBucket(r) === filter);
   }, [props.rows, filter]);
+
+  const [page, setPage] = useState(1);
+  // 모바일은 페이지당 5개, 데스크탑은 기존 10개. 초기값은 데스크탑 기준(SSR/hydration 일치) → 마운트 후 보정.
+  const [pageSize, setPageSize] = useState(STUDENT_POSTS_PAGE_SIZE);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPageSize(mq.matches ? 5 : STUDENT_POSTS_PAGE_SIZE);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const tabs: { id: StudentPostListFilter; label: string }[] = [
     { id: "all", label: "전체" },
@@ -64,14 +80,18 @@ export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilte
         </div>
       ) : (
         <>
-          <nav className="flex flex-wrap gap-2">
+          {/* 모바일: 가로 스크롤 + peek(마지막 칩 살짝 잘림) / 데스크탑(md+): 기존 wrap 복원 */}
+          <nav className="student-posts-filter-scroll -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
             {tabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setFilter(t.id)}
+                onClick={() => {
+                  setFilter(t.id);
+                  setPage(1);
+                }}
                 className={[
-                  "rounded-full px-3.5 py-1.5 text-xs font-bold",
+                  "shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold",
                   filter === t.id ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
                 ].join(" ")}
               >
@@ -85,7 +105,7 @@ export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilte
             </p>
           ) : (
             <ul className="space-y-3">
-              {filtered.map((r) => {
+              {visible.map((r) => {
                 const d = mapPostRowToPublicDetail(r);
                 const id = typeof r.id === "string" ? r.id : String(r.id ?? "");
                 const badge = studentPostStatusBadge(r);
@@ -97,7 +117,7 @@ export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilte
                 return (
                   <li key={id}>
                     {isDraft ? (
-                      <div className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
+                      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <span className="inline-flex rounded-full border border-blue-200 bg-white px-2.5 py-0.5 text-xs font-bold text-[#2563EB]">
                             {d.category && d.category !== "—" ? d.category : "기타"}
@@ -159,8 +179,37 @@ export function CustomRequestStudentPostsList(props: { rows: Row[]; initialFilte
               })}
             </ul>
           )}
+          {totalPages > 1 ? (
+            <div className="flex items-center justify-center gap-2" aria-label="페이지 이동">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
+              >
+                이전
+              </button>
+              <span className="text-xs font-bold" aria-live="polite">
+                <span className="text-[#2563EB]">{currentPage}</span>
+                <span className="text-slate-400"> · {totalPages}</span>
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
+              >
+                다음
+              </button>
+            </div>
+          ) : null}
         </>
       )}
+      <style jsx global>{`
+        .student-posts-filter-scroll::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }

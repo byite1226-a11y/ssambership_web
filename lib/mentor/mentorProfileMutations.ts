@@ -193,24 +193,29 @@ export async function updateMentorProfile(
     .map((s) => s.trim())
     .filter(Boolean);
 
+  // [과목 필수 게이트] 담당 과목이 0개면 구독 공개를 켤 수 없다(활동 차단).
+  // 가입 시 과목은 이미 필수이므로, 이 가드는 기존 0과목 멘토가 과목 없이 활동하는 것을 막는다.
+  if (input.subscribeOpen && subjects.length === 0) {
+    return { ok: false, error: "가르치는 과목을 1개 이상 선택해야 구독 공개를 켤 수 있어요." };
+  }
+
   const now = new Date().toISOString();
-  // [학적 잠금] university_name 은 멘토가 직접 수정할 수 없다.
+  // [학적 잠금] university_name·department_name 은 멘토가 직접 수정할 수 없다(학력 인증값).
   // 최초값은 가입(syncAfterSignUpSession)에서 설정되고, 이후 변경은
   // 학적변경요청(mentor_academic_record_change_requests) 관리자 승인으로만 반영된다.
-  // 따라서 이 upsert 에서는 university_name 을 의도적으로 제외한다.
+  // 따라서 이 upsert 에서는 university_name·department_name 을 의도적으로 제외한다.
   const core: Record<string, unknown> = {
     user_id: input.userId,
     intro_line: input.intro || null,
-    department_name: input.department || null,
     teaching_subjects: subjects,
     high_school_name: input.highSchool || null,
     updated_at: now,
   };
 
   // [안전장치] 정상 계정은 가입(syncAfterSignUpSession)에서 mentor_profiles 행이
-  // 이미 만들어지므로 위 upsert 는 UPDATE 가 되어 university_name 을 건드리지 않는다(잠금 유지).
-  // 다만 행이 없는 비정상 계정이면 이 upsert 가 INSERT 가 되는데, university_name 은
-  // NOT NULL(기본값 없음)이라 누락 시 저장이 통째로 실패한다. 그 경우에만 한해
+  // 이미 만들어지므로 위 upsert 는 UPDATE 가 되어 university_name·department_name 을 건드리지 않는다(잠금 유지).
+  // 다만 행이 없는 비정상 계정이면 이 upsert 가 INSERT 가 되는데, 두 컬럼이
+  // NOT NULL(기본값 없음)이면 누락 시 저장이 통째로 실패한다. 그 경우에만 한해
   // 최초 INSERT 를 성립시키기 위해 현재 표시값으로 채운다. 행이 이미 있으면 절대 덮어쓰지 않는다.
   const { data: existingProfile } = await supabase
     .from("mentor_profiles")
@@ -219,6 +224,7 @@ export async function updateMentorProfile(
     .maybeSingle();
   if (!existingProfile) {
     core.university_name = input.university?.trim() || "";
+    core.department_name = input.department?.trim() || "";
   }
 
   const { error: upErr } = await supabase.from("mentor_profiles").upsert(core, { onConflict: "user_id" });

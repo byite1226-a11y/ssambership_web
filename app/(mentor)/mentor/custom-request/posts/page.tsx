@@ -111,7 +111,7 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                           className={[
                             "flex shrink-0 items-center gap-1.5 border-b-2 px-4 pb-3 pt-1 text-[14px] font-semibold transition-colors whitespace-nowrap",
                             isActive
-                              ? "border-blue-600 text-blue-600"
+                              ? "border-[#059669] text-[#059669]"
                               : "border-transparent text-slate-500 hover:text-slate-800",
                           ].join(" ")}
                         >
@@ -120,7 +120,7 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                             <span
                               className={[
                                 "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-black tabular-nums",
-                                isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500",
+                                isActive ? "bg-emerald-100 text-[#047857]" : "bg-slate-100 text-slate-500",
                               ].join(" ")}
                             >
                               {count}
@@ -147,9 +147,9 @@ export default async function MentorCustomRequestPostsPage(props: PageProps) {
                   {/* Applied tab header */}
                   <div className="border-b border-slate-200 pb-3">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[14px] font-bold text-blue-600 border-b-2 border-blue-600 pb-2 px-1">
+                      <span className="text-[14px] font-bold text-[#059669] border-b-2 border-[#059669] pb-2 px-1">
                         제안한 의뢰
-                        <span className="ml-1.5 rounded-full bg-blue-100 px-1.5 py-0.5 text-[11px] font-black text-blue-700">
+                        <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] font-black text-[#047857]">
                           {applied.items.length}
                         </span>
                       </span>

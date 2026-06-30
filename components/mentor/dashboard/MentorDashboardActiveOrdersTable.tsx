@@ -10,7 +10,7 @@ export function MentorDashboardActiveOrdersTable(props: { orders: MentorHubOrder
         <h2 className="text-[15px] font-black text-slate-900">진행 중 의뢰</h2>
         <Link
           href="/mentor/custom-request/orders"
-          className="text-[12px] font-bold text-[#2563EB] hover:underline"
+          className="text-[12px] font-bold text-[#059669] hover:underline"
         >
           전체 보기 &gt;
         </Link>
@@ -29,7 +29,7 @@ export function MentorDashboardActiveOrdersTable(props: { orders: MentorHubOrder
           <p className="text-[13px] font-bold text-slate-600">아직 진행 중인 의뢰가 없어요</p>
           <Link
             href="/mentor/custom-request/posts"
-            className="mt-3 inline-block text-[12px] font-bold text-[#2563EB] hover:underline"
+            className="mt-3 inline-block text-[12px] font-bold text-[#059669] hover:underline"
           >
             의뢰 둘러보기
           </Link>
@@ -43,7 +43,7 @@ export function MentorDashboardActiveOrdersTable(props: { orders: MentorHubOrder
                 className="group grid grid-cols-12 items-center gap-2 px-5 py-3.5 transition hover:bg-slate-50/60"
               >
                 <div className="col-span-4 min-w-0 lg:col-span-5">
-                  <p className="truncate text-[13px] font-bold text-slate-900 group-hover:text-[#2563EB]">
+                  <p className="truncate text-[13px] font-bold text-slate-900 group-hover:text-[#059669]">
                     {order.title}
                   </p>
                   <span className="mt-1 inline-block rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
@@ -51,7 +51,7 @@ export function MentorDashboardActiveOrdersTable(props: { orders: MentorHubOrder
                   </span>
                 </div>
                 <div className="col-span-2 flex min-w-0 items-center gap-2">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[11px] font-black text-[#2563EB]">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ECFDF5] text-[11px] font-black text-[#059669]">
                     {order.studentInitial}
                   </span>
                   <p className="truncate text-[12px] text-slate-600">{order.studentName}</p>

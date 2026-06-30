@@ -7,6 +7,9 @@ export type UserRow = {
   id: string;
   role: AppRole;
   status: string;
+  /** 정지 만료 시각(102 마이그레이션). suspended 전용, null=영구/미설정 */
+  suspended_until?: string | null;
+  status_reason?: string | null;
   full_name: string | null;
   display_name?: string | null;
   nickname: string | null;

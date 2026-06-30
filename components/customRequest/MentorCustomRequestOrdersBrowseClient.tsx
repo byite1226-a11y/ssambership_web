@@ -23,6 +23,10 @@ const TABS: { id: MentorOrderBrowseTabId; label: string }[] = [
   { id: "done", label: "종료됨" },
 ];
 
+// 한 페이지 데스크탑 10개(2컬럼 × 5행) / 모바일 5개. 데이터는 이미 전부 로드 — slice만(추가 fetch 없음).
+const PAGE_SIZE = 10;
+const PAGE_SIZE_MOBILE = 5;
+
 function studentLine(row: Row): string {
   const name = pickDisplayField(row, ["student_name", "buyer_name", "client_name", "requester_name"]);
   if (name !== "—") return name;
@@ -57,12 +61,25 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
   const defaultTab = resolveDefaultTab(props.initialTab);
 
   const [tab, setTab] = useState<MentorOrderBrowseTabId>(defaultTab);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTab(resolveDefaultTab(props.initialTab));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.initialTab]);
+
+  // 모바일은 페이지당 5개, 데스크탑은 기존 10개. 초기값=데스크탑값(SSR/hydration 일치) → 마운트 후 보정.
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPageSize(mq.matches ? PAGE_SIZE_MOBILE : PAGE_SIZE);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const tabCounts = useMemo(() => {
     const c: Record<string, number> = { all: props.rows.length };
@@ -85,10 +102,15 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
     return props.rows.filter((r) => classifyMentorOrderBrowseTab(r as Row, disputeSet) === tab);
   }, [props.rows, tab, disputeSet]);
 
+  // 클라이언트 페이지네이션 — 활성 탭 필터 결과를 pageSize(데스크탑 10/모바일 5)씩 slice(추가 fetch 없음).
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
   return (
     <div>
       <div
-        className="mb-5 flex items-center gap-0 overflow-x-auto border-b border-ds-border-subtle [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mb-5 -mx-1 flex flex-nowrap items-center gap-0 overflow-x-auto px-1 border-b border-ds-border-subtle [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
         role="tablist"
         aria-label="수락된 의뢰 필터"
       >
@@ -101,17 +123,20 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
               type="button"
               role="tab"
               aria-selected={isActive}
-              onClick={() => setTab(t.id)}
+              onClick={() => {
+                setTab(t.id);
+                setPage(1);
+              }}
               className={[
                 "flex shrink-0 items-center gap-1.5 border-b-2 px-4 pb-3 pt-1 text-sm font-semibold whitespace-nowrap transition-colors",
-                isActive ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-800",
+                isActive ? "border-emerald-600 text-emerald-600" : "border-transparent text-slate-500 hover:text-slate-800",
               ].join(" ")}
             >
               {t.label}
               <span
                 className={[
                   "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums",
-                  isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500",
+                  isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500",
                 ].join(" ")}
               >
                 {count}
@@ -132,8 +157,9 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
           }
         />
       ) : (
+        <>
         <ul className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
-          {filtered.map((raw) => {
+          {paged.map((raw) => {
             const r = raw as Row;
             const id = typeof r.id === "string" && r.id.trim() ? r.id.trim() : null;
             if (!id) return null;
@@ -185,6 +211,30 @@ export function MentorCustomRequestOrdersBrowseClient(props: {
             );
           })}
         </ul>
+        {totalPages > 1 ? (
+          <nav className="mt-6 flex items-center justify-center gap-3" aria-label="페이지 이동">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              이전
+            </button>
+            <span className="text-sm font-bold tabular-nums text-slate-500">
+              <span className="text-[#059669]">{safePage}</span> / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              다음
+            </button>
+          </nav>
+        ) : null}
+        </>
       )}
     </div>
   );

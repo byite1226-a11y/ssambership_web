@@ -34,7 +34,7 @@ export function SelectMentorApplicationForm(props: {
         onClick={() => setOpen(true)}
         className="min-h-[48px] w-full rounded-xl bg-[#2563EB] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
       >
-        선택하기
+        이 멘토 선택
       </button>
 
       {open ? (

@@ -27,7 +27,12 @@ export default async function ForgotPasswordPage(props: Props) {
       noCard
       loginLayout
       title="비밀번호 재설정"
-      description={<p>가입에 사용한 이메일을 입력하면 재설정 링크를 보내 드립니다.</p>}
+      description={
+        <p>
+          <span className="md:hidden">가입 이메일로 재설정 링크를 보내드려요.</span>
+          <span className="hidden md:inline">가입에 사용한 이메일을 입력하면 재설정 링크를 보내 드립니다.</span>
+        </p>
+      }
       headerPrefix={
         <Link href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900">
           ← 로그인 유형 선택

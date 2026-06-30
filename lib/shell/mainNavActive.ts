@@ -47,16 +47,24 @@ export function isMainNavItemActive(pathname: string, itemHref: string, audience
         p.startsWith("/mentor/custom-request/")
       );
     case "/cash":
+      // 글로벌 "캐시결제"는 실제 충전·결제 화면에서만 활성.
+      // /wallet/ledger·/cash-history(마이페이지 "캐시 내역" 서브탭)는 마이페이지 컨텍스트라 제외.
       return (
         p === "/cash" ||
-        p === "/cash-history" ||
         p === "/wallet" ||
-        p.startsWith("/wallet/") ||
+        p === "/wallet/charge" ||
+        p.startsWith("/wallet/charge/") ||
         p === "/payments" ||
         p === "/pricing"
       );
     case "/mypage":
-      return p === "/mypage" || p.startsWith("/mypage/");
+      // 마이페이지 대시보드 셸 서브탭(캐시 내역·원장)도 마이페이지 컨텍스트로 활성.
+      return (
+        p === "/mypage" ||
+        p.startsWith("/mypage/") ||
+        p === "/wallet/ledger" ||
+        p === "/cash-history"
+      );
     case "/mentor/payouts":
       return p === "/mentor/payouts" || p.startsWith("/mentor/payouts/");
     case "/mentor/reviews":

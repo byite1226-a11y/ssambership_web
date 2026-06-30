@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, ChevronRight, Pencil, Play, XCircle } from "lucide-react";
+import { PendingSubmitButton } from "@/components/customRequest/order/PendingSubmitButton";
 import { startCustomOrderWorkAction } from "@/lib/customRequest/orderMentorActions";
 import {
   acceptCustomOrderDeliverableAction,
@@ -20,6 +21,9 @@ const mutedLink =
 
 const greenCardPrimary = `${cardPrimary} border-green-200 bg-green-50 text-green-800 hover:bg-green-100`;
 const blueCardPrimary = `${cardPrimary} border-blue-200 bg-blue-50 text-blue-900 hover:bg-blue-100`;
+// 납품 수락 — 학생의 가장 중요한 결정. 연한 카드 대신 채움형 primary(파랑) hero로 강조(시각만, 동작·가드 미터치).
+const studentAcceptHero =
+  "flex w-full items-center justify-between gap-3 rounded-2xl bg-[#2563EB] px-5 py-4 text-left text-white shadow-[0_6px_16px_rgba(37,99,235,0.28)] ring-1 ring-blue-700/10 transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50";
 // 분쟁 진행중 상태 알림 — 정의되지 않은 주황 대신 중립(secondary) 회색 보더로 통일
 const orangeNoticeCard = `${cardPrimary} border-slate-300 bg-slate-50 text-slate-800 hover:bg-slate-100`;
 
@@ -123,16 +127,27 @@ export function OrderActionBar(props: Props) {
         {view === "student" && actorRole === "student" && studentPrimaryAccepts ? (
           <form action={acceptCustomOrderDeliverableAction} className="w-full">
             <input type="hidden" name="orderId" value={orderId} />
-            <button type="submit" className={greenCardPrimary}>
+            <PendingSubmitButton
+              className={studentAcceptHero}
+              pendingChildren={
+                <span className="flex min-w-0 items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                  <span>
+                    <span className="block text-base font-extrabold">수락 처리 중…</span>
+                    <span className="mt-0.5 block text-xs font-normal opacity-90">잠시만 기다려 주세요.</span>
+                  </span>
+                </span>
+              }
+            >
               <span className="flex min-w-0 items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
                 <span>
-                  <span className="block text-sm font-bold">수락하기</span>
-                  <span className="mt-0.5 block text-xs font-normal opacity-85">납품이 만족스러우면 수락해 주세요.</span>
+                  <span className="block text-base font-extrabold">수락하고 완료하기</span>
+                  <span className="mt-0.5 block text-xs font-normal opacity-90">납품이 만족스러우면 수락해 주세요. 수락하면 정산돼요.</span>
                 </span>
               </span>
-              <Chevr />
-            </button>
+              <ChevronRight className="h-5 w-5 shrink-0 opacity-80" aria-hidden />
+            </PendingSubmitButton>
           </form>
         ) : null}
       </div>
@@ -147,13 +162,21 @@ export function OrderActionBar(props: Props) {
         {view === "student" && actorRole === "student" && canStudentCancel ? (
           <form action={cancelCustomOrderByStudentAction} className="w-full">
             <input type="hidden" name="orderId" value={orderId} />
-            <button type="submit" className={`${subtleLinkBar} text-red-800 hover:bg-red-50`}>
+            <PendingSubmitButton
+              className={`${subtleLinkBar} text-red-800 hover:bg-red-50`}
+              pendingChildren={
+                <span className="flex min-w-0 items-center gap-2">
+                  <XCircle className="h-3.5 w-3.5 shrink-0" />
+                  취소 처리 중…
+                </span>
+              }
+            >
               <span className="flex min-w-0 items-center gap-2">
                 <XCircle className="h-3.5 w-3.5 shrink-0" />
-                주문 취소(예치 반환)
+                주문 취소 · 전액 환불
               </span>
               <Chevr />
-            </button>
+            </PendingSubmitButton>
           </form>
         ) : view === "student" && actorRole === "student" ? (
           <button
@@ -164,7 +187,7 @@ export function OrderActionBar(props: Props) {
           >
             <span className="flex min-w-0 items-center gap-2">
               <XCircle className="h-3.5 w-3.5 shrink-0" />
-              주문 취소(예치 반환)
+              주문 취소(전액 환불)
             </span>
             <Chevr />
           </button>
@@ -283,12 +306,12 @@ function OrderActionBarMentor(props: Props) {
         {actorRole === "mentor" && mentorPrimaryStarts ? (
           <form action={startCustomOrderWorkAction} className="w-full">
             <input type="hidden" name="orderId" value={orderId} />
-            <button type="submit" className="group flex w-full items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50/50 px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50 active:scale-[0.98]">
+            <button type="submit" className="group flex w-full items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50/60 px-4 py-3 transition hover:border-green-300 hover:bg-green-50 active:scale-[0.98]">
               <span className="flex items-start gap-2.5">
-                <Play className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <Play className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                 <span className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-blue-900">작업 시작하기</span>
-                  <span className="text-xs font-medium text-blue-800/80">의뢰 착수 버튼을 누릅니다.</span>
+                  <span className="text-sm font-bold text-green-900">작업 시작하기</span>
+                  <span className="text-xs font-medium text-green-800/80">의뢰 착수 버튼을 누릅니다.</span>
                 </span>
               </span>
               <ChevrMentor />
@@ -303,9 +326,9 @@ function OrderActionBarMentor(props: Props) {
         )}
         
         {actorRole === "mentor" && canMentorRevisionJump ? (
-          <a href="#order-revisions" className="group flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-blue-600">
+          <a href="#order-revisions" className="group flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-green-700">
             <span className="flex items-center gap-2">
-              <Pencil className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-500" />
+              <Pencil className="h-3.5 w-3.5 text-slate-400 group-hover:text-green-600" />
               수정 요청 내역
             </span>
             <ChevrMentor />

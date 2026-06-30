@@ -34,12 +34,6 @@ type PageScaffoldProps = {
   children?: ReactNode;
 };
 
-const toneClass: Record<NonNullable<Cta["tone"]>, string> = {
-  blue: "bg-blue-600 text-white shadow-sm hover:bg-blue-700",
-  green: "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
-  slate: "border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50",
-};
-
 export function PageScaffold({
   eyebrow,
   title,
@@ -58,44 +52,22 @@ export function PageScaffold({
   const showEmptyStateCard = emptyState != null && emptyState.length > 0;
   const showDataPoints = dataPoints.length > 0;
   const showFooterPlaceholders = !hideFooterPlaceholderCards;
+  // eyebrow가 제목과 사실상 같으면(예: "알림" 위 "알림") 떠다니는 중복 꼬리표이므로 숨긴다.
+  // 의미 있는 분류(예: "고객지원")면 작은 accent 라벨로 유지한다.
+  const showEyebrow =
+    eyebrow != null &&
+    eyebrow.trim().length > 0 &&
+    eyebrow.trim().toLowerCase() !== (title ?? "").trim().toLowerCase();
 
   return (
     <div className={compactHero ? "space-y-0" : "space-y-6"}>
       {!hideHero ? (
-        <section
-          className={
-            compactHero
-              ? "border-0 border-b border-slate-200/50 bg-[#F3F7FF] px-3 py-3 sm:px-4 sm:py-3.5"
-              : "rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
-          }
-        >
-          <p
-            className={
-              compactHero
-                ? "text-[10px] font-semibold uppercase tracking-wider text-slate-500"
-                : "text-xs font-extrabold uppercase tracking-wider text-slate-500"
-            }
-          >
-            {eyebrow}
-          </p>
-          <h1
-            className={
-              compactHero
-                ? "mt-1 text-lg font-bold leading-tight tracking-tight text-slate-900 sm:text-xl"
-                : "mt-2 text-3xl font-black tracking-tight text-slate-900"
-            }
-          >
-            {title}
-          </h1>
-          <p
-            className={
-              compactHero ? "mt-1 text-xs leading-relaxed text-slate-600" : "mt-2 text-sm leading-6 text-slate-600"
-            }
-          >
-            {description}
-          </p>
-          {ctas.length > 0 ? (
-            compactHero ? (
+        compactHero ? (
+          <section className="border-0 border-b border-slate-200/50 bg-[#F3F7FF] px-3 py-3 sm:px-4 sm:py-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{eyebrow}</p>
+            <h1 className="mt-1 text-lg font-bold leading-tight tracking-tight text-slate-900 sm:text-xl">{title}</h1>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">{description}</p>
+            {ctas.length > 0 ? (
               <nav className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="페이지 이동">
                 {ctas.map((cta) => (
                   <Link
@@ -107,21 +79,37 @@ export function PageScaffold({
                   </Link>
                 ))}
               </nav>
-            ) : (
-              <div className="mt-4 flex flex-wrap gap-2.5">
-                {ctas.map((cta) => (
-                  <Link
-                    key={cta.href + cta.label}
-                    href={cta.href}
-                    className={`rounded-lg px-3.5 py-2 text-sm font-bold ${toneClass[cta.tone ?? "blue"]}`}
-                  >
-                    {cta.label}
-                  </Link>
-                ))}
+            ) : null}
+          </section>
+        ) : (
+          // 페이지 헤더: 휑한 테두리 박스 대신 제목(좌)·네비 칩(우) + 얇은 구분선으로 본문과 분리.
+          <header className="border-b border-slate-200 pb-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                {showEyebrow ? (
+                  <p className="text-xs font-bold tracking-wide text-accent">{eyebrow}</p>
+                ) : null}
+                <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">{title}</h1>
+                {description ? (
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
+                ) : null}
               </div>
-            )
-          ) : null}
-        </section>
+              {ctas.length > 0 ? (
+                <nav className="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end" aria-label="페이지 이동">
+                  {ctas.map((cta) => (
+                    <Link
+                      key={cta.href + cta.label}
+                      href={cta.href}
+                      className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                    >
+                      {cta.label}
+                    </Link>
+                  ))}
+                </nav>
+              ) : null}
+            </div>
+          </header>
+        )
       ) : null}
 
       {sections.length > 0 ? (

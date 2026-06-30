@@ -70,19 +70,19 @@ export function formatBudgetRangeKrw(row: Row): string {
   const max = parseKrw(row.budget_max);
   if (min != null && max != null) {
     if (min === max) {
-      return `${min.toLocaleString("ko-KR")}원`;
+      return `${min.toLocaleString("ko-KR")}캐시`;
     }
-    return `${min.toLocaleString("ko-KR")}원 ~ ${max.toLocaleString("ko-KR")}원`;
+    return `${min.toLocaleString("ko-KR")}캐시 ~ ${max.toLocaleString("ko-KR")}캐시`;
   }
   const b = parseKrw((row as { budget?: unknown }).budget);
   if (b != null) {
-    return `${b.toLocaleString("ko-KR")}원`;
+    return `${b.toLocaleString("ko-KR")}캐시`;
   }
   for (const k of ["min_budget", "max_budget", "price_range"] as const) {
     if (row[k] != null) {
       const v = parseKrw(row[k]);
       if (v != null) {
-        return `${v.toLocaleString("ko-KR")}원`;
+        return `${v.toLocaleString("ko-KR")}캐시`;
       }
     }
   }

@@ -34,7 +34,6 @@ function inMonth(iso: string, ym: string): boolean {
 export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero?: boolean }) {
   const [tab, setTab] = useState<TabId>("settlement");
   const [month, setMonth] = useState(props.data.defaultMonth);
-  const [showAllSettlement, setShowAllSettlement] = useState(false);
 
   const monthChoices = useMemo(() => monthOptions(props.data.defaultMonth), [props.data.defaultMonth]);
 
@@ -43,7 +42,15 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero
     [props.data.settlementLines, month]
   );
 
-  const visibleSettlement = showAllSettlement ? filteredSettlement : filteredSettlement.slice(0, 12);
+  // 목록엔 최신순 상위 6개만 표시(클라이언트 정렬·slice, 새 fetch/limit 없음).
+  // 나머지는 좌측 사이드바의 "정산 상세"(/mentor/payouts/detail) 진입으로 확인. 합계·금액 계산은 그대로.
+  const visibleSettlement = useMemo(
+    () =>
+      [...filteredSettlement]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 6),
+    [filteredSettlement]
+  );
 
   async function downloadSettlement() {
     const XLSX = await import("xlsx");
@@ -89,7 +96,7 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero
               className={[
                 "rounded-t-lg px-4 py-2.5 text-sm font-extrabold transition",
                 tab === id
-                  ? "border border-b-0 border-slate-200 bg-white text-[#2563EB]"
+                  ? "border border-b-0 border-slate-200 bg-white text-[#059669]"
                   : "text-slate-500 hover:text-slate-800",
               ].join(" ")}
             >
@@ -108,10 +115,7 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero
             <div className="flex flex-wrap items-center gap-2">
               <select
                 value={month}
-                onChange={(e) => {
-                  setMonth(e.target.value);
-                  setShowAllSettlement(false);
-                }}
+                onChange={(e) => setMonth(e.target.value)}
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800"
               >
                 {monthChoices.map((m) => (
@@ -133,18 +137,6 @@ export function MentorPayoutsMain(props: { data: MentorPayoutsPageData; hideHero
           </div>
 
           <MentorPayoutsSettlementTable rows={visibleSettlement} />
-
-          {filteredSettlement.length > 12 ? (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => setShowAllSettlement((v) => !v)}
-                className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-              >
-                {showAllSettlement ? "접기 ∧" : "더 많은 정산 내역 보기 ∨"}
-              </button>
-            </div>
-          ) : null}
         </div>
       ) : (
         <div className="space-y-3">

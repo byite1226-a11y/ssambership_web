@@ -1,18 +1,10 @@
 import { NotificationFilterTabs } from "@/components/notifications/NotificationFilterTabs";
 import { NotificationList } from "@/components/notifications/NotificationList";
-import type { NotificationHubLoad } from "@/lib/notifications/notificationsHubQueries";
+import { isNotificationReadRow, type NotificationHubLoad } from "@/lib/notifications/notificationsHubQueries";
 import type { AppRole } from "@/lib/types/user";
 import { USER_UI_LOAD_FAILED } from "@/lib/constants/userFacingMessages";
 
 type Filter = "all" | "unread";
-
-const EXAMPLES = [
-  "질문방에서 새 답변이 도착했을 때",
-  "구독·결제 상태가 바뀌었을 때",
-  "맞춤의뢰 진행 단계가 바뀌었을 때",
-  "공지·프로모션이 있을 때",
-  "분쟁·신고 처리 상태가 바뀌었을 때",
-] as const;
 
 export function NotificationsHubView(props: {
   hub: NotificationHubLoad;
@@ -24,9 +16,25 @@ export function NotificationsHubView(props: {
     console.error("[NotificationsHubView] hub.error", hub.error, hub.probe);
   }
 
+  const unreadCount = hub.error
+    ? 0
+    : hub.rows.filter((r) => !isNotificationReadRow(r as Record<string, unknown>, hub.readColumn)).length;
+
   return (
     <div className="space-y-4">
-      <NotificationFilterTabs current={filter} />
+      {/* 안 읽음 수 + 필터 탭 한 줄 정돈 (페이지 제목은 상단 스캐폴드가 표시) */}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-xs font-bold text-slate-500">
+          {unreadCount > 0 ? (
+            <>
+              안 읽음 <span className="text-[#2563EB]">{unreadCount}</span>건
+            </>
+          ) : (
+            "모두 확인했어요"
+          )}
+        </span>
+        <NotificationFilterTabs current={filter} />
+      </header>
 
       {hub.error ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 p-2 text-sm text-amber-950">{USER_UI_LOAD_FAILED}</p>
@@ -39,16 +47,6 @@ export function NotificationsHubView(props: {
       ) : null}
 
       <NotificationList hub={hub} filter={filter} role={role} />
-
-      <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-3 text-xs text-slate-600">
-        <p className="font-extrabold text-slate-800">알림으로 받을 수 있는 안내 예시</p>
-        <ul className="mt-1 list-inside list-disc">
-          {EXAMPLES.map((e) => (
-            <li key={e}>{e}</li>
-          ))}
-        </ul>
-      </section>
-
     </div>
   );
 }

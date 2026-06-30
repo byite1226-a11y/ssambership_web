@@ -28,7 +28,7 @@ export function MentorPayoutsRightPanel(props: Props) {
           </div>
           <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full rounded-full bg-[#2563EB] transition-all"
+              className="h-full rounded-full bg-[#059669] transition-all"
               style={{ width: `${schedule.monthProgressPct}%` }}
             />
           </div>
@@ -66,7 +66,7 @@ export function MentorPayoutsRightPanel(props: Props) {
             <dd className="text-right text-[13px] font-medium text-slate-700">익월 정산 반영</dd>
           </div>
         </dl>
-        <Link href="/support/disputes" className="mt-4 inline-flex text-xs font-bold text-[#2563EB] hover:underline">
+        <Link href="/support/disputes" className="mt-4 inline-flex text-xs font-bold text-[#059669] hover:underline">
           1:1 문의하기 →
         </Link>
       </section>

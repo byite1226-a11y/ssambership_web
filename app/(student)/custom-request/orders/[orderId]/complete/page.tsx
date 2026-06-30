@@ -128,7 +128,7 @@ function mapCompleteViewProps(
     deliverable,
     payment: {
       amountLabel: pickAmountLabel(order, detail.header.priceLine),
-      feeLabel: "0%",
+      feeLabel: "5%",
       paidAtLabel: formatOrderRoomDateTime(paidRaw ?? completedRaw),
     },
     review: {

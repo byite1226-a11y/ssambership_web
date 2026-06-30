@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CreditCard, MessageCircle, Search, TrendingUp } from "lucide-react";
+import { ArrowRight, CreditCard, MessageCircle, NotebookPen, Search, ShieldCheck, TrendingUp } from "lucide-react";
 import type { LandingPublicStats } from "@/lib/landing/landingPageQueries";
 import { SUBSCRIBE_PLAN_CATALOG } from "@/lib/subscribe/subscribePlanCatalog";
 
@@ -19,17 +19,17 @@ function buildStats(stats: LandingPublicStats) {
 
 const FEATURES = [
   {
-    emoji: "💬",
+    Icon: MessageCircle,
     title: "질문 카드 누적",
     description: "단발성 Q&A가 아닌 같은 멘토와 질문을 쌓아가는 구조",
   },
   {
-    emoji: "📝",
+    Icon: NotebookPen,
     title: "연결노트",
     description: "멘토와 학생이 함께 만드는 장기 학습 기록",
   },
   {
-    emoji: "✅",
+    Icon: ShieldCheck,
     title: "검증된 멘토",
     description: "대학교 재학 인증, 학생증 검수 완료된 멘토만 활동",
   },
@@ -149,8 +149,8 @@ export function PublicGuestLanding(props: { stats: LandingPublicStats; heroCtas?
                 key={f.title}
                 className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-[#2563EB]/30 hover:shadow-md"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#2563EB]/10 text-2xl select-none">
-                  {f.emoji}
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#2563EB]/10 text-[#2563EB] select-none">
+                  <f.Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden />
                 </div>
                 <h3 className="mt-4 text-lg font-black text-slate-900">{f.title}</h3>
                 <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{f.description}</p>

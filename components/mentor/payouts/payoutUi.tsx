@@ -15,7 +15,7 @@ export function formatPayoutTableDate(iso: string): string {
 
 export function typeBadgeClass(type: PayoutLineType): string {
   return type === "subscription"
-    ? "border-blue-200 bg-blue-50 text-blue-800"
+    ? "border-slate-200 bg-slate-100 text-slate-600"
     : "border-emerald-200 bg-emerald-50 text-emerald-800";
 }
 
@@ -46,7 +46,7 @@ export function performanceStatusBadge(status: "done" | "in_progress" | "cancell
     case "cancelled":
       return { label: "취소", className: "border-slate-200 bg-slate-100 text-slate-500" };
     default:
-      return { label: "진행중", className: "border-blue-200 bg-blue-50 text-blue-800" };
+      return { label: "진행중", className: "border-slate-200 bg-slate-100 text-slate-600" };
   }
 }
 

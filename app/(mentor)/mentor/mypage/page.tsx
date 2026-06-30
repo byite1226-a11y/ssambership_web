@@ -9,6 +9,9 @@ import type {
   MentorHubOrderRow,
 } from "@/lib/mentor/dashboard/mentorHubDashboardTypes";
 import { MentorRevenueChart, type MonthlyRevenue } from "@/components/mentor/mypage/MentorRevenueChart";
+import { MentorActivityControls } from "@/components/mentor/mypage/MentorActivityControls";
+import { MentorSubscribeOpenToggle } from "@/components/mentor/mypage/MentorSubscribeOpenToggle";
+import { loadMentorSubscribeOpen } from "@/lib/mentor/mentorSubscribeOpen";
 import { loadMentorCapUsage, type MentorCapUsage } from "@/lib/subscribe/mentorCapService";
 import { listMentorReceivedReviews, type ReviewCardItem } from "@/lib/reviews/reviewQueries";
 import { formatKoreanDate } from "@/lib/utils/formatDisplay";
@@ -106,9 +109,14 @@ async function loadRecentMonthlyRevenue(
  * 좌: 수익 카드(차트 포함) + 진행 의뢰 / 우: KPI 2.
  * 프로필 헤더는 상단 전체폭. 빠른 이동/프로필 CTA 카드는 네비·헤더와 중복이라 제외.
  */
-export default async function MentorMypagePage() {
+type MypageProps = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function MentorMypagePage(props: MypageProps) {
   const { user, profile } = await requireRole("mentor");
   const supabase = await createClient();
+  const sp = (await props.searchParams) ?? {};
+  const flashOk = typeof sp.ok === "string" ? sp.ok : null;
+  const flashErr = typeof sp.error === "string" ? sp.error : null;
 
   let hub: MentorHubDashboardData | null = null;
   try {
@@ -118,15 +126,29 @@ export default async function MentorMypagePage() {
   }
 
   let verificationStatus: string | null = null;
+  let activityInfo: {
+    activity_status?: string | null;
+    pause_until?: string | null;
+    termination_effective_at?: string | null;
+    pause_reason?: string | null;
+    last_pause_at?: string | null;
+  } = {};
   try {
     const { data: row, error } = await supabase
       .from("mentor_profiles")
-      .select("verification_status")
+      .select("verification_status, activity_status, pause_until, termination_effective_at, pause_reason, last_pause_at")
       .eq("user_id", user.id)
       .maybeSingle();
     if (!error && row) {
-      const v = (row as { verification_status?: unknown }).verification_status;
-      verificationStatus = typeof v === "string" ? v : null;
+      const r = row as Record<string, unknown>;
+      verificationStatus = typeof r.verification_status === "string" ? r.verification_status : null;
+      activityInfo = {
+        activity_status: typeof r.activity_status === "string" ? r.activity_status : null,
+        pause_until: typeof r.pause_until === "string" ? r.pause_until : null,
+        termination_effective_at: typeof r.termination_effective_at === "string" ? r.termination_effective_at : null,
+        pause_reason: typeof r.pause_reason === "string" ? r.pause_reason : null,
+        last_pause_at: typeof r.last_pause_at === "string" ? r.last_pause_at : null,
+      };
     }
   } catch {
     /* fallback: 미인증 */
@@ -135,6 +157,7 @@ export default async function MentorMypagePage() {
   const monthlyRevenue = await loadRecentMonthlyRevenue(supabase, user.id);
   const currentMonthLabel = monthlyRevenue[monthlyRevenue.length - 1]?.month ?? "이번 달";
   const capUsage = await loadMentorCapUsage(user.id);
+  const subscribeOpen = await loadMentorSubscribeOpen(supabase, user.id);
   const recentReviews = await listMentorReceivedReviews(supabase, user.id, 3);
 
   const displayName = profile?.nickname?.trim() || profile?.full_name?.trim() || "멘토";
@@ -166,6 +189,10 @@ export default async function MentorMypagePage() {
           </Link>
         </section>
       ) : null}
+
+      <MentorActivityControls info={activityInfo} flashOk={flashOk} flashErr={flashErr} />
+
+      <MentorSubscribeOpenToggle open={subscribeOpen} />
 
       <div className={`grid grid-cols-1 items-start lg:grid-cols-[1fr_300px] ${PAGE_COL_GAP}`}>
         {/* 좌 컬럼 */}
@@ -205,7 +232,7 @@ function ProfileHeader(props: {
   const initial = initialOf(displayName);
   const verifBadgeClass =
     verification.tone === "ok"
-      ? "text-[#2563EB] bg-blue-50"
+      ? "text-[#059669] bg-[#ECFDF5]"
       : verification.tone === "pending"
         ? "text-amber-700 bg-amber-50"
         : "text-slate-500 bg-slate-100";
@@ -254,7 +281,7 @@ function RevenueCard(props: {
         </p>
         <Link
           href="/mentor/payouts"
-          className="text-[12px] font-medium text-[#2563EB] hover:underline"
+          className="text-[12px] font-medium text-[#059669] hover:underline"
         >
           정산 내역 보기 →
         </Link>
@@ -320,11 +347,11 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
       {orders.map((order) => (
         <li key={order.id}>
           <article
-            className={`${SURFACE_CARD} transition-[box-shadow,border-color] duration-150 hover:border-blue-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]`}
+            className={`${SURFACE_CARD} transition-[box-shadow,border-color] duration-150 hover:border-emerald-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]`}
           >
             <div className="flex items-start gap-4">
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[13px] font-semibold text-[#2563EB]"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ECFDF5] text-[13px] font-semibold text-[#059669]"
                 aria-hidden
               >
                 {order.studentInitial}
@@ -355,14 +382,14 @@ function OrderList({ orders }: { orders: MentorHubOrderRow[] }) {
               </div>
               <Link
                 href={order.workroomHref}
-                className="hidden shrink-0 items-center gap-1 self-start rounded-[8px] bg-[#2563EB] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#1D4ED8] sm:inline-flex"
+                className="hidden shrink-0 items-center gap-1 self-start rounded-[8px] bg-[#059669] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#047857] sm:inline-flex"
               >
                 바로가기 →
               </Link>
             </div>
             <Link
               href={order.workroomHref}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-[8px] bg-[#2563EB] px-3 py-2 text-[12px] font-semibold text-white sm:hidden"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-[8px] bg-[#059669] px-3 py-2 text-[12px] font-semibold text-white sm:hidden"
             >
               바로가기 →
             </Link>
@@ -403,7 +430,7 @@ function SubscribersStatCard({ activeSubscribers }: { activeSubscribers: number 
   return (
     <StatCard
       icon={<Users className="h-4 w-4" />}
-      iconClass="bg-[#eef4ff] text-[#2563EB]"
+      iconClass="bg-[#ECFDF5] text-[#059669]"
       label="구독 학생"
     >
       <p className="text-[28px] font-bold tracking-tight text-[#1e2430]">
@@ -451,7 +478,7 @@ function RecentReviewsCard({ reviews }: { reviews: ReviewCardItem[] }) {
           ))}
         </ul>
       )}
-      <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-[#2563EB] hover:underline">
+      <Link href="/mentor/reviews" className="mt-3 inline-block text-[12px] font-bold text-[#059669] hover:underline">
         후기 전체보기 →
       </Link>
     </article>

@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { Megaphone, UserSearch } from "lucide-react";
 import "@/app/(public)/custom-request/landing.css";
-import { IndividualQuestionListCards } from "@/components/individualQuestion/IndividualQuestionViews";
+import { StudentSentIndividualQuestionsSection } from "@/components/individualQuestion/StudentSentIndividualQuestionsSection";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { fetchStudentIndividualQuestions } from "@/lib/individualQuestion/individualQuestionQueries";
 import { createClient } from "@/lib/supabase/server";
@@ -30,39 +31,58 @@ export default async function StudentIndividualQuestionsPage() {
           <div className="cr-detail-header-row">
             <h1 className="cr-detail-title">내 개별 질문</h1>
           </div>
-          <p className="cr-detail-subtitle">캐시로 예치한 지정형·공개형 단건 질문과 답변 상태를 확인합니다.</p>
+          <p className="cr-detail-subtitle">
+            <span className="md:hidden">지정형·공개형 단건 질문과 답변을 확인하세요.</span>
+            <span className="hidden md:inline">캐시로 안전 결제한 지정형·공개형 단건 질문과 답변 상태를 확인합니다.</span>
+          </p>
         </header>
 
-        <p className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-900">
-          개별 질문은 <strong>구독 질문방과 별개</strong>로, 건마다 캐시를 예치해 진행하는 단건 질문이에요. 구독 멘토와의 대화는 <Link href="/question-room" className="font-extrabold underline">질문방</Link>에서 이어집니다.
+        <p className="hidden rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-900 md:block md:mb-4">
+          개별 질문은 <strong>구독 질문방과 별개</strong>로, 건마다 캐시를 안전 결제해 진행하는 단건 질문이에요. 구독 멘토와의 대화는 <Link href="/question-room" className="font-extrabold underline">질문방</Link>에서 이어집니다.
         </p>
 
-        {/* 작성 진입: 공개형은 이 화면에서 바로, 지정형은 멘토 상세 안내 */}
-        <section className="mb-6 grid gap-3 md:grid-cols-2">
-          <div className="rounded-2xl border border-blue-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-extrabold text-blue-700">공개형</p>
-            <h2 className="mt-1 text-lg font-black text-slate-900">멘토 지정 없이 질문하기</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              가격을 제시해 공개로 등록하면, 승인된 멘토 중 먼저 가져간 1명이 답변해요.
+        {/* 작성 진입: 공개형(주 경로)은 이 화면에서 바로, 지정형(보조)은 멘토 찾기로 */}
+        <section className="mb-6 grid items-stretch gap-3 md:grid-cols-2">
+          {/* 공개형 — 주 경로(파랑 강조 보더) */}
+          <div className="flex h-full flex-col rounded-xl border-2 border-[#2563EB] bg-white px-[1.2rem] py-[1.1rem]">
+            <div className="flex items-start justify-between gap-2">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-blue-50 text-[#2563EB]">
+                <Megaphone className="h-5 w-5" aria-hidden />
+              </span>
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-extrabold text-[#2563EB]">
+                여기서 바로 가능
+              </span>
+            </div>
+            <p className="mt-3 text-xs font-extrabold text-[#2563EB]">공개형</p>
+            <h2 className="mt-1 text-base font-medium text-slate-900">멘토 지정 없이 질문하기</h2>
+            <p className="mt-1 flex-grow text-[13px] leading-6 text-slate-600">
+              <span className="md:hidden">공개로 올리면 먼저 잡은 멘토가 답변해요.</span>
+              <span className="hidden md:inline">가격을 제시해 공개로 올리면, 먼저 잡은 멘토 1명이 답변해요.</span>
             </p>
             <Link
               href="/individual-questions/new"
-              className="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700"
+              className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-[#1D4ED8]"
             >
               공개형 질문하기
             </Link>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-xs font-extrabold text-slate-500">지정형</p>
-            <h2 className="mt-1 text-lg font-black text-slate-900">특정 멘토에게 묻기</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              특정 멘토에게 묻고 싶다면 <strong>멘토 상세</strong>에서 <strong>&lsquo;개별 질문하기&rsquo;</strong>를 눌러 주세요.
+          {/* 지정형 — 보조(회색 하이라인) */}
+          <div className="flex h-full flex-col rounded-xl border-[0.5px] border-slate-200 bg-white px-[1.2rem] py-[1.1rem]">
+            <div className="flex items-start">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-slate-100 text-slate-500">
+                <UserSearch className="h-5 w-5" aria-hidden />
+              </span>
+            </div>
+            <p className="mt-3 text-xs font-extrabold text-slate-500">지정형</p>
+            <h2 className="mt-1 text-base font-medium text-slate-900">특정 멘토에게 묻기</h2>
+            <p className="mt-1 flex-grow text-[13px] leading-6 text-slate-600">
+              원하는 멘토를 직접 골라 1:1로 질문하고 싶을 때.
             </p>
             <Link
               href="/mentors"
-              className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-700 hover:bg-slate-100"
+              className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-xl border-[1.5px] border-[#2563EB] bg-transparent px-5 py-2.5 text-sm font-extrabold text-[#2563EB] hover:bg-blue-50"
             >
-              멘토 찾기
+              멘토 찾기 <span aria-hidden>→</span>
             </Link>
           </div>
         </section>
@@ -74,12 +94,11 @@ export default async function StudentIndividualQuestionsPage() {
         ) : null}
 
         {user ? (
-          <IndividualQuestionListCards
+          <StudentSentIndividualQuestionsSection
             rows={rows}
             emptyTitle="아직 개별 질문이 없습니다"
             emptyDescription="공개 질문을 등록하거나 멘토 프로필에서 지정형 질문을 보낼 수 있어요."
             detailBaseHref="/individual-questions"
-            counterpartLabel="멘토"
           />
         ) : (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">

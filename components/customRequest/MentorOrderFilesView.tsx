@@ -47,11 +47,11 @@ export function MentorOrderFilesView(props: MentorOrderFilesViewProps) {
           상태: {props.statusLabel} · 마감: {props.deadlineLabel}
         </p>
         <div className="mt-5 max-w-md">
-          <MentorOrderProgressStepper steps={FILE_STEPS} activeIndex={2} />
+          <MentorOrderProgressStepper steps={FILE_STEPS} activeIndex={2} accent="green" />
         </div>
       </header>
 
-      <section className="rounded-2xl border-2 border-dashed border-[#2563EB]/30 bg-blue-50/30 p-6 text-center sm:p-8">
+      <section className="rounded-2xl border-2 border-dashed border-[#059669]/30 bg-emerald-50/30 p-6 text-center sm:p-8">
         <p className="text-sm font-medium text-slate-700">
           파일을 드래그 앤 드롭하거나 파일 선택 버튼을 클릭하세요
         </p>
@@ -73,7 +73,7 @@ export function MentorOrderFilesView(props: MentorOrderFilesViewProps) {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#059669] px-5 text-sm font-extrabold text-white hover:bg-[#047857]"
           >
             파일 선택
           </button>
@@ -151,14 +151,14 @@ export function MentorOrderFilesView(props: MentorOrderFilesViewProps) {
           <button
             type="submit"
             disabled={!canSubmitDelivery}
-            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#2563EB] px-6 text-sm font-extrabold text-white hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-[#059669] px-6 text-sm font-extrabold text-white hover:bg-[#047857] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             납품하기
           </button>
         </form>
         <Link
           href={roomHref}
-          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-[#2563EB] bg-white px-6 text-sm font-extrabold text-[#2563EB] hover:bg-blue-50/40 sm:w-auto"
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-[#059669] bg-white px-6 text-sm font-extrabold text-[#059669] hover:bg-emerald-50/40 sm:w-auto"
         >
           작업방으로 돌아가기
         </Link>

@@ -70,6 +70,9 @@ export function MentorCard(props: {
   const profileHref = `/mentors/${card.mentorId}`;
   const subscribeHref = `/subscribe?mentorId=${encodeURIComponent(card.mentorId)}`;
   const closed = card.subscriptionClosed;
+  // 모바일 밀도: 대표 요금제 1개만 노출(나머지는 sm+에서). 추천 플랜 우선, 없으면 첫 번째.
+  const repTierKey = (card.tierPrices.find((t) => t.recommend) ?? card.tierPrices[0])?.tier;
+  const extraTierCount = Math.max(0, card.tierPrices.length - 1);
 
   if (layout === "grid") {
     return (
@@ -128,7 +131,10 @@ export function MentorCard(props: {
           <p className="mt-3 text-[11px] font-semibold text-slate-500">{formatStatLine(card)}</p>
           <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
             {card.tierPrices.map((t) => (
-              <div key={t.tier} className="flex justify-between text-[11px]">
+              <div
+                key={t.tier}
+                className={`${t.tier === repTierKey ? "flex" : "hidden sm:flex"} justify-between text-[11px]`}
+              >
                 <span className="font-bold text-slate-600">
                   {t.label}
                   {t.recommend ? (
@@ -138,6 +144,9 @@ export function MentorCard(props: {
                 <span className="font-black text-slate-900">{t.cashLabel}</span>
               </div>
             ))}
+            {extraTierCount > 0 ? (
+              <p className="text-[10px] font-semibold text-slate-400 sm:hidden">외 {extraTierCount}개 요금제</p>
+            ) : null}
           </div>
           <Link
             href={profileHref}
@@ -214,7 +223,7 @@ export function MentorCard(props: {
             {card.tierPrices.map((t) => (
               <li
                 key={t.tier}
-                className={`rounded-lg border px-2.5 py-2 ${
+                className={`${t.tier === repTierKey ? "block" : "hidden sm:block"} rounded-lg border px-2.5 py-2 ${
                   t.recommend ? "border-blue-200 bg-blue-50/60" : "border-slate-200 bg-white"
                 }`}
               >
@@ -235,6 +244,9 @@ export function MentorCard(props: {
               </li>
             ))}
           </ul>
+          {extraTierCount > 0 ? (
+            <p className="mt-2 text-[10px] font-semibold text-slate-400 sm:hidden">외 {extraTierCount}개 요금제 · 프로필에서 전체 보기</p>
+          ) : null}
           {closed ? (
             <div className="mt-3 flex min-h-[40px] w-full cursor-not-allowed items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-extrabold text-slate-400">
               구독 마감

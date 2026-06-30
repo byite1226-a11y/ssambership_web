@@ -5,11 +5,11 @@ import {
   MentorIndividualQuestionSummaryStrip,
   OpenIndividualQuestionBrowseCards,
 } from "@/components/individualQuestion/IndividualQuestionViews";
+import { MentorOwnedIndividualQuestionsSection } from "@/components/individualQuestion/MentorOwnedIndividualQuestionsSection";
 import { requireRole } from "@/lib/auth/routeGuard";
 import {
   fetchMentorOwnedIndividualQuestions,
   fetchOpenIndividualQuestionsForMentor,
-  isIndividualQuestionAwaitingAnswer,
 } from "@/lib/individualQuestion/individualQuestionQueries";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
 import { createClient } from "@/lib/supabase/server";
@@ -40,9 +40,6 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
       ])
     : [{ rows: [], error: null }, { rows: [], error: null }];
 
-  const awaitingRows = rows.filter((row) => isIndividualQuestionAwaitingAnswer(row.status));
-  const settledRows = rows.filter((row) => !isIndividualQuestionAwaitingAnswer(row.status));
-
   // 요약 스트립 숫자 — 이미 가져온 목록으로 계산(데이터 로직 미터치, 표시용 카운트).
   const lower = (s: string | null | undefined) => (s ?? "").toLowerCase();
   const now = new Date();
@@ -63,7 +60,7 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
             <h1 className="cr-detail-title">나에게 온 개별 질문</h1>
             <Link
               href="/mentor/profile/edit"
-              className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-extrabold text-blue-700 hover:bg-blue-100"
+              className="rounded-xl border border-emerald-200 bg-[#ECFDF5] px-4 py-2 text-sm font-extrabold text-[#047857] hover:bg-emerald-100"
             >
               단가 설정
             </Link>
@@ -110,40 +107,10 @@ export default async function MentorIndividualQuestionsPage(props: PageProps) {
             />
           </section>
         ) : (
-          <>
-            <section>
-              <h2 className="cr-section-title-v5 mb-4">
-                <span className="bar" aria-hidden />
-                답변 대기 ({awaitingRows.length})
-              </h2>
-              <IndividualQuestionListCards
-                rows={awaitingRows}
-                emptyTitle="답변할 질문이 없어요"
-                emptyDescription="새 지정 질문이 도착하거나 공개 질문에 답변을 맡으면 이곳에 표시됩니다."
-                detailBaseHref="/mentor/individual-questions"
-                counterpartLabel="학생"
-              />
-            </section>
-
-            {settledRows.length > 0 ? (
-              <>
-                <hr className="cr-detail-divider" />
-                <section>
-                  <h2 className="cr-section-title-v5 mb-4">
-                    <span className="bar" aria-hidden />
-                    답변 완료·종료 ({settledRows.length})
-                  </h2>
-                  <IndividualQuestionListCards
-                    rows={settledRows}
-                    emptyTitle="완료된 질문이 없어요"
-                    emptyDescription="답변을 완료하면 이곳에 정리됩니다."
-                    detailBaseHref="/mentor/individual-questions"
-                    counterpartLabel="학생"
-                  />
-                </section>
-              </>
-            ) : null}
-          </>
+          <MentorOwnedIndividualQuestionsSection
+            rows={rows}
+            detailBaseHref="/mentor/individual-questions"
+          />
         )}
 
         <hr className="cr-detail-divider" />

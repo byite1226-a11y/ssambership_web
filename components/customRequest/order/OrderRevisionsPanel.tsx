@@ -19,7 +19,7 @@ type Props = {
   /** 3열 레이아웃 우측: 히스토리 접기 */
   workspaceCompact?: boolean;
   /** 멘토 작업방: 수정 요청 블록 톤(reference 보라 계열) */
-  revisionAccent?: "default" | "violet";
+  revisionAccent?: "default" | "blue";
   view?: "student" | "mentor";
   embedded?: boolean;
 };
@@ -47,7 +47,7 @@ export function OrderRevisionsPanel({
   const mentorWorkroom = view === "mentor";
 
   const accentSection =
-    !mentorWorkroom && revisionAccent === "violet" ? "bg-gradient-to-br from-violet-50/40 via-white to-white ring-2 ring-violet-200/60" : "";
+    !mentorWorkroom && revisionAccent === "blue" ? "bg-gradient-to-br from-blue-50/40 via-white to-white ring-2 ring-blue-200/60" : "";
   const sectionClass = mentorWorkroom
     ? "space-y-5 rounded-2xl border border-ds-border-subtle p-6 text-sm text-slate-800"
     : embedded
@@ -92,7 +92,7 @@ export function OrderRevisionsPanel({
           <textarea
             id="order-revision-note"
             name="requestNote"
-            className="min-h-[100px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-violet-400 focus:ring-1 focus:ring-violet-400 transition"
+            className="min-h-[100px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition"
             maxLength={8000}
             placeholder="수정이 필요한 부분을 구체적으로 적어 주세요."
             required
@@ -100,7 +100,7 @@ export function OrderRevisionsPanel({
           />
           <button
             type="submit"
-            className="rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white hover:bg-violet-700 shadow-md shadow-violet-500/10 transition"
+            className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-700 shadow-md shadow-blue-500/10 transition"
           >
             수정 요청 보내기
           </button>
@@ -108,8 +108,8 @@ export function OrderRevisionsPanel({
       ) : !orderTerminal && actorRole === "student" && canShowComposer && studentRevisionRequestDisabledReason ? (
         <p
           className={`mt-3 rounded-xl border px-3 py-2.5 text-xs leading-relaxed font-bold ${
-            revisionAccent === "violet"
-              ? "border-violet-200 bg-violet-50/80 text-violet-950"
+            revisionAccent === "blue"
+              ? "border-blue-200 bg-blue-50/80 text-blue-950"
               : "border-slate-200 bg-slate-50 text-slate-600"
           }`}
           role="status"
@@ -130,8 +130,8 @@ export function OrderRevisionsPanel({
               {rows.map((r, i) => {
                 const at = r.created_at != null ? formatOrderRoomDateTime(r.created_at) : "—";
                 return (
-                  <li key={String(r.id ?? i)} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 hover:border-violet-100 transition duration-200">
-                    <p className="text-[10px] font-bold text-violet-400">{at}</p>
+                  <li key={String(r.id ?? i)} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 hover:border-slate-200 transition duration-200">
+                    <p className="text-[10px] font-bold text-slate-400">{at}</p>
                     <p className="mt-1.5 whitespace-pre-wrap text-xs text-slate-700 leading-relaxed font-semibold">{revisionBody(r)}</p>
                   </li>
                 );
@@ -151,8 +151,8 @@ export function OrderRevisionsPanel({
                   className={`rounded-xl px-4 py-4 transition duration-200 ${
                     mentorWorkroom
                       ? "bg-slate-50"
-                      : revisionAccent === "violet"
-                        ? "border border-violet-100 bg-violet-50/20 hover:border-violet-300 hover:shadow-sm"
+                      : revisionAccent === "blue"
+                        ? "border border-blue-100 bg-blue-50/20 hover:border-blue-300 hover:shadow-sm"
                         : "border border-blue-100/50 bg-blue-50/10 hover:border-blue-300 hover:shadow-sm"
                   }`}
                 >

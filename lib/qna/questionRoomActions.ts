@@ -9,7 +9,9 @@ import { draftToParam } from "@/lib/qna/draftQuery";
 import { QUESTION_THREADS_ROOM_FK_CANDIDATES, threadRowBelongsToMentorStudentRoom } from "@/lib/qna/questionThreadRoomRef";
 import { userMatchesMentorInRoomRow, userMatchesStudentInRoomRow } from "@/lib/qna/questionRoomQueries";
 import { assertThreadCreationSubscriptionAllowed } from "@/lib/qna/questionThreadSubscriptionGuard";
+import { assertConnectionNoteWriteAllowed } from "@/lib/qna/connectionNoteSubscriptionGuard";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
+import { assertAccountActive } from "@/lib/auth/accountStatus";
 import {
   createQuestionMessage,
   createQuestionThread,
@@ -158,6 +160,15 @@ export async function createQuestionThreadAction(formData: FormData) {
     redirect(listPathForActor(actor) + "?error=" + encodeURIComponent("room 정보가 없습니다."));
   }
 
+  // 계정 정지/차단 가드 — 정지된 계정은 질문 작성 불가.
+  {
+    const supabaseAcct = await createClient();
+    const acctGate = await assertAccountActive(supabaseAcct, user.id);
+    if (!acctGate.ok) {
+      redirect(listPathForActor(actor) + "?error=" + encodeURIComponent(acctGate.userMessage));
+    }
+  }
+
   if (actor === "mentor") {
     const supabaseEarly = await createClient();
     const roomErrEarly = await assertMentorStudentRoomParty(supabaseEarly, roomId, user.id, actor);
@@ -238,6 +249,10 @@ export async function createQuestionMessageAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const acctGateMsg = await assertAccountActive(supabase, user.id);
+  if (!acctGateMsg.ok) {
+    redirect(buildRedirectUrl(roomId, actor, { kind: "message", error: acctGateMsg.userMessage }));
+  }
   /* question_messages.author_id = user.id (서버) — 폼/히든에서 user id 수신 없음 */
   const { threadId, content } = readMessageFromForm(formData);
   const fallbackThread = threadId || textFromForm(formData.get("contextThreadId")) || null;
@@ -505,6 +520,10 @@ export async function saveConnectionNoteAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const acctGateNote = await assertAccountActive(supabase, user.id);
+  if (!acctGateNote.ok) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: acctGateNote.userMessage }));
+  }
   const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
   const content = readNoteFromForm(formData);
 
@@ -514,6 +533,19 @@ export async function saveConnectionNoteAction(formData: FormData) {
         thread: contextThreadId,
         kind: "note",
         error: userFacingActionError("note", roomErr),
+        draftNote: content,
+      })
+    );
+  }
+
+  // 만료된 구독에서 노트 편집 차단(읽기는 별도 RLS로 허용 유지).
+  const noteGate = await assertConnectionNoteWriteAllowed(supabase, roomId, actor);
+  if (!noteGate.ok) {
+    redirect(
+      buildRedirectUrl(roomId, actor, {
+        thread: contextThreadId,
+        kind: "note",
+        error: noteGate.userMessage,
         draftNote: content,
       })
     );
@@ -560,12 +592,22 @@ export async function updateConnectionNoteAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const acctGateNoteEdit = await assertAccountActive(supabase, user.id);
+  if (!acctGateNoteEdit.ok) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: acctGateNoteEdit.userMessage }));
+  }
   const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
   if (roomErr) {
     redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: userFacingActionError("note", roomErr) }));
   }
   if (!content.trim()) {
     redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: "노트 내용을 입력해 주세요." }));
+  }
+
+  // 만료된 구독에서 노트 수정 차단.
+  const noteGate = await assertConnectionNoteWriteAllowed(supabase, roomId, actor);
+  if (!noteGate.ok) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: noteGate.userMessage }));
   }
 
   // 작성자 본인 확인(앱 1차). RLS cn_update 가 author_id = auth.uid() 로 최종 보장.
@@ -601,9 +643,19 @@ export async function deleteConnectionNoteAction(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const acctGateNoteDel = await assertAccountActive(supabase, user.id);
+  if (!acctGateNoteDel.ok) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: acctGateNoteDel.userMessage }));
+  }
   const roomErr = await assertMentorStudentRoomParty(supabase, roomId, user.id, actor);
   if (roomErr) {
     redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: userFacingActionError("note", roomErr) }));
+  }
+
+  // 만료된 구독에서 노트 삭제 차단.
+  const noteGate = await assertConnectionNoteWriteAllowed(supabase, roomId, actor);
+  if (!noteGate.ok) {
+    redirect(buildRedirectUrl(roomId, actor, { thread: contextThreadId, kind: "note", error: noteGate.userMessage }));
   }
 
   const { data: noteRow } = await supabase

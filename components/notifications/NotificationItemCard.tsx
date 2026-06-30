@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { AppRole } from "@/lib/types/user";
 import { markNotificationReadFormAction } from "@/lib/notifications/notificationReadActions";
-import { resolveNotificationHref, typeBadgeLabel } from "@/lib/notifications/notificationDeepLink";
+import { resolveNotificationHref } from "@/lib/notifications/notificationDeepLink";
 import {
   formatNotificationTime,
   notificationTimeIso,
@@ -9,6 +9,11 @@ import {
   typeRaw,
 } from "@/lib/notifications/notificationRowDisplay";
 import { isNotificationReadRow, type NotificationHubLoad } from "@/lib/notifications/notificationsHubQueries";
+import {
+  notificationTypeMeta,
+  notificationToneChipClass,
+  notificationToneBadgeClass,
+} from "@/components/notifications/notificationTypeIcon";
 
 type Row = Record<string, unknown>;
 
@@ -20,59 +25,64 @@ export function NotificationItemCard(props: {
   const { row, hub, role } = props;
   const read = isNotificationReadRow(row, hub.readColumn);
   const typeK = typeRaw(row, hub.typeColumn);
-  const badge = typeBadgeLabel(typeK);
+  const meta = notificationTypeMeta(typeK);
+  const Icon = meta.Icon;
   const href = resolveNotificationHref(row, role, typeK);
   const tiso = notificationTimeIso(row);
   const title = notificationTitleLine(row);
 
   return (
     <article
-      className={`rounded-2xl border p-3 text-sm ${
-        read ? "border-slate-200 bg-slate-50/80" : "border-blue-200 bg-white shadow-sm"
+      className={`relative flex gap-3 rounded-xl border px-3.5 py-3 transition ${
+        read
+          ? "border-slate-200 bg-slate-50/50"
+          : "border-blue-200/80 bg-white shadow-sm"
       }`}
     >
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span
-          className={`rounded-full border px-2 py-0.5 font-bold ${
-            badge.variant === "emerald"
-              ? "border-emerald-300 text-emerald-900"
-              : badge.variant === "blue"
-                ? "border-blue-200 text-blue-900"
-                : badge.variant === "violet"
-                  ? "border-violet-200 text-violet-900"
-                  : badge.variant === "amber"
-                    ? "border-amber-200 text-amber-900"
-                    : badge.variant === "red"
-                      ? "border-red-200 text-red-900"
-                      : "border-slate-200 text-slate-800"
+      {/* 종류별 아이콘 칩 */}
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${notificationToneChipClass(meta.tone)} ${
+          read ? "opacity-60" : ""
+        }`}
+        aria-hidden
+      >
+        <Icon className="h-[18px] w-[18px]" strokeWidth={1.9} />
+      </span>
+
+      <Link href={href} prefetch={false} className="block min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${notificationToneBadgeClass(meta.tone)} ${
+              read ? "opacity-70" : ""
+            }`}
+          >
+            {meta.label}
+          </span>
+          {!read ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2563EB]" aria-label="안 읽음" /> : null}
+          <span className="ml-auto shrink-0 text-[11px] text-slate-400">{formatNotificationTime(tiso)}</span>
+        </div>
+        <p
+          className={`mt-1 line-clamp-2 text-[13px] leading-relaxed ${
+            read ? "font-medium text-slate-500" : "font-bold text-slate-900"
           }`}
         >
-          {badge.label}
-        </span>
-        <span className="ml-auto text-slate-500">{formatNotificationTime(tiso)}</span>
-      </div>
-      <h3 className="mt-1 font-extrabold text-slate-900">{title}</h3>
-      <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-        <span>{read ? "읽음" : "읽지 않음"}</span>
-        <div className="flex items-center gap-2">
-          {hub.readColumn && !read ? (
-            <form action={markNotificationReadFormAction} className="inline">
-              <input type="hidden" name="notificationId" value={String(row.id ?? "")} />
-              <button
-                type="submit"
-                className="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-900 hover:bg-blue-100"
-                title="본인 알림만 읽음 처리"
-              >
-                읽음 처리
-              </button>
-            </form>
-          ) : null}
-          {hub.readColumn && read ? <span className="text-[10px] font-bold text-slate-500">처리됨</span> : null}
-          <Link className="font-bold text-blue-800 underline" href={href} prefetch={false}>
-            열기 →
-          </Link>
-        </div>
-      </div>
+          {title}
+        </p>
+      </Link>
+
+      {/* 읽음 처리 (안 읽은 항목만) */}
+      {hub.readColumn && !read ? (
+        <form action={markNotificationReadFormAction} className="shrink-0 self-start">
+          <input type="hidden" name="notificationId" value={String(row.id ?? "")} />
+          <button
+            type="submit"
+            className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+            title="본인 알림만 읽음 처리"
+          >
+            읽음
+          </button>
+        </form>
+      ) : null}
     </article>
   );
 }

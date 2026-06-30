@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { AdminDisputeListItem } from "@/lib/disputes/disputeListQueries";
 import { adminDisputeStatusLabel } from "@/lib/admin/disputeLabels";
 import { applyDisputeSanctionAction } from "@/lib/admin/adminDisputeSanctionActions";
+import { bulkUpdateDisputesAction } from "@/lib/admin/bulkActions";
 
 type Props = {
   items: AdminDisputeListItem[];
@@ -108,6 +109,32 @@ export function AdminDisputesWorkspace(props: Props) {
         </label>
       </div>
 
+      {/* P1 ③ 일괄 처리 — 체크박스는 form 속성으로 이 폼에 연결 */}
+      <form
+        id="disputeBulkForm"
+        className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5"
+      >
+        <span className="text-[11px] font-bold text-slate-500">선택 항목 일괄</span>
+        <button
+          type="submit"
+          name="bulkStatus"
+          value="under_review"
+          formAction={bulkUpdateDisputesAction}
+          className="rounded-lg border border-indigo-300 bg-white px-3 py-1 text-xs font-bold text-indigo-700 hover:bg-indigo-50"
+        >
+          처리중으로
+        </button>
+        <button
+          type="submit"
+          name="bulkStatus"
+          value="resolved"
+          formAction={bulkUpdateDisputesAction}
+          className="rounded-lg border border-emerald-300 bg-white px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-50"
+        >
+          완료(resolved)로
+        </button>
+      </form>
+
       {!props.table ? (
         <p className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
           연결된 분쟁 테이블이 없습니다. 스키마 마이그레이션을 확인해 주세요.
@@ -121,6 +148,7 @@ export function AdminDisputesWorkspace(props: Props) {
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-xs font-bold text-slate-600">
+                <th className="px-3 py-3">선택</th>
                 <th className="px-4 py-3">유형</th>
                 <th className="px-4 py-3">제목·요약</th>
                 <th className="px-4 py-3">상태</th>
@@ -133,6 +161,16 @@ export function AdminDisputesWorkspace(props: Props) {
                 const st = adminDisputeStatusLabel(it.statusRaw || it.statusLabel);
                 return (
                   <tr key={it.id} className="align-top hover:bg-slate-50/40">
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        name="ids"
+                        value={it.id}
+                        form="disputeBulkForm"
+                        aria-label="분쟁 선택"
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                    </td>
                     <td className="px-4 py-3 text-xs font-semibold text-slate-700">{it.typeLabel}</td>
                     <td className="max-w-xs px-4 py-3">
                       <p className="font-semibold text-slate-900">{it.titleLine}</p>
@@ -155,6 +193,15 @@ export function AdminDisputesWorkspace(props: Props) {
                     <td className="px-4 py-3">
                       <form action={applyDisputeSanctionAction} className="flex min-w-[200px] flex-col gap-1.5">
                         <input type="hidden" name="disputeId" value={it.id} />
+                        <select
+                          name="target"
+                          defaultValue="mentor"
+                          className="rounded-lg border px-2 py-1 text-xs font-semibold text-slate-700"
+                          title="제재 대상 (정지/차단이 실제 계정에 적용됩니다)"
+                        >
+                          <option value="mentor">제재 대상: 멘토</option>
+                          <option value="student">제재 대상: 학생</option>
+                        </select>
                         <input name="note" placeholder="메모(선택)" className="rounded-lg border px-2 py-1 text-xs" />
                         <div className="flex flex-wrap gap-1">
                           {SANCTIONS.map(([sanction, label]) => (

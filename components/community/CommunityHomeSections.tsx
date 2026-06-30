@@ -32,7 +32,7 @@ export function CommunityHomeSections(props: {
         ) : props.shortforms.length === 0 ? (
           <CommunityShortformEmptyPanel role={props.viewerRole} loggedIn={props.loggedIn} compact />
         ) : (
-          <ul className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3">
+          <ul className="grid list-none grid-cols-2 gap-3 p-0 sm:gap-4 md:grid-cols-3">
             {props.shortforms.slice(0, 6).map((item) => (
               <div key={item.id} className="[&>li]:h-full">
                 <CommunityShortformVideoCard item={item} href={`/community/shortform/${item.id}`} />

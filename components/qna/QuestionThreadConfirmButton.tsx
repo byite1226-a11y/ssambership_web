@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { WEEKLY_QUESTION_LIMIT_MESSAGE } from "@/lib/qna/questionThreadStatus";
 
 export function QuestionThreadConfirmButton(props: {
   roomId: string;
@@ -39,64 +38,37 @@ export function QuestionThreadConfirmButton(props: {
     }
   }
 
-  function handleAdditionalQuestion() {
-    const textarea = document.querySelector<HTMLTextAreaElement>('textarea[name="messageBody"]');
-    textarea?.focus();
-    textarea?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }
-
   if (props.compact) {
     return (
-      <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
         {error ? <p className="mb-1 text-[10px] font-bold text-amber-800">{error}</p> : null}
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void handleConfirm()}
-            className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {pending ? "처리 중…" : "답변 확인 완료"}
-          </button>
-          <button
-            type="button"
-            onClick={handleAdditionalQuestion}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black text-slate-700 hover:bg-slate-50"
-          >
-            추가 질문하기
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => void handleConfirm()}
+          className="rounded-lg bg-[#2563EB] px-3 py-1.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {pending ? "처리 중…" : "답변 확인 완료"}
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-4">
-      <p className="text-[12px] font-bold text-blue-950">멘토 답변이 도착했습니다.</p>
-      <p className="mt-1 text-[11px] font-medium text-blue-800/90">
-        내용을 확인한 뒤 확인하기를 누르면 이번 주 질문 한도에 반영됩니다.
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+      <p className="text-[12px] font-bold text-slate-800">멘토 답변이 도착했어요.</p>
+      <p className="mt-1 text-[11px] font-medium text-slate-500">
+        내용을 확인한 뒤 “답변 확인 완료”를 누르면 완료로 표시돼요.
       </p>
-      {error ? (
-        <p className="mt-2 text-[11px] font-bold text-amber-800">{error}</p>
-      ) : null}
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => void handleConfirm()}
-          className="rounded-xl bg-blue-600 px-4 py-2.5 text-[12px] font-black text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"
-        >
-          {pending ? "처리 중…" : "답변 확인 완료"}
-        </button>
-        <button
-          type="button"
-          onClick={handleAdditionalQuestion}
-          className="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-[12px] font-black text-blue-900 transition hover:bg-blue-50"
-        >
-          추가 질문하기
-        </button>
-      </div>
-      <p className="mt-2 text-[10px] text-blue-700/80">{WEEKLY_QUESTION_LIMIT_MESSAGE}는 확인 완료된 질문 수 기준입니다.</p>
+      {error ? <p className="mt-2 text-[11px] font-bold text-amber-800">{error}</p> : null}
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => void handleConfirm()}
+        className="mt-3 w-full rounded-xl bg-[#2563EB] px-4 py-2.5 text-[12px] font-black text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50 sm:w-auto"
+      >
+        {pending ? "처리 중…" : "답변 확인 완료"}
+      </button>
     </div>
   );
 }

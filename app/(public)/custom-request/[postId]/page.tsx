@@ -54,7 +54,27 @@ export default async function CustomRequestPostPublicPage(props: Props) {
   }
 
   if (!post.row || !post.table) {
-    notFound();
+    // 비공개·종료·로그인 필요 등으로 열람 불가 — 404 대신 안내 화면(P1.1).
+    return (
+      <PageScaffold
+        compactHero
+        hideFooterPlaceholderCards
+        eyebrow="맞춤의뢰"
+        title="지금은 볼 수 없는 의뢰예요"
+        description="비공개로 전환됐거나 모집이 끝난 의뢰일 수 있어요. 맞춤의뢰 목록에서 다른 의뢰를 확인해 보세요."
+        ctas={[{ href: "/custom-request", label: "맞춤의뢰", tone: "slate" }]}
+        sections={[]}
+        dataPoints={[]}
+        emptyState=""
+      >
+        <p className="text-sm text-slate-700">
+          로그인이 필요한 의뢰이거나 주소가 바뀌었을 수 있어요.{" "}
+          <Link href="/custom-request" className="font-extrabold text-[#2563EB] underline underline-offset-2">
+            맞춤의뢰 홈으로
+          </Link>
+        </p>
+      </PageScaffold>
+    );
   }
 
   if (isDraftCustomRequestPost(post.row)) {

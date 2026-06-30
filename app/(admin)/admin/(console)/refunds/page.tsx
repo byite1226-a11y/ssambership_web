@@ -6,10 +6,13 @@ import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { createClient } from "@/lib/supabase/server";
 import {
   countAdminRefundsByStatus,
+  countAdminRefundsByRequestType,
   loadAdminDashboardSummary,
   loadAdminRefundsListPaged,
 } from "@/lib/admin/adminQueries";
+import { refundSlaInfo, REFUND_SLA_DAYS } from "@/lib/admin/refundSla";
 import { approveAdminRefundAction, rejectAdminRefundAction } from "@/lib/admin/refundActions";
+import { bulkProcessRefundsAction } from "@/lib/admin/bulkActions";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { parseAdminListParams } from "@/lib/admin/adminListParams";
 
@@ -126,11 +129,34 @@ export default async function AdminRefundsPage(props: PageProps) {
 
   const supabase = await createClient();
   const params = parseAdminListParams(sp, { defaultPageSize: 25, defaultStatus: "pending" });
-  const [list, summary, byStatus] = await Promise.all([
-    loadAdminRefundsListPaged(supabase, params),
+  const requestType = typeof sp.type === "string" ? sp.type : "all";
+  const sort = typeof sp.sort === "string" ? sp.sort : "recent";
+  const [list, summary, byStatus, byType] = await Promise.all([
+    loadAdminRefundsListPaged(supabase, { ...params, requestType, sort }),
     loadAdminDashboardSummary(supabase),
     countAdminRefundsByStatus(supabase),
+    countAdminRefundsByRequestType(supabase),
   ]);
+  const now = new Date();
+
+  // type/sort 를 보존하는 URL 빌더(상태·검색·페이지 유지)
+  const refundFilterUrl = (overrides: { type?: string; sort?: string }) => {
+    const usp = new URLSearchParams();
+    if (params.search) usp.set("q", params.search);
+    if (params.status && params.status !== "all") usp.set("status", params.status);
+    const t = overrides.type ?? requestType;
+    const s = overrides.sort ?? sort;
+    if (t && t !== "all") usp.set("type", t);
+    if (s && s !== "recent") usp.set("sort", s);
+    const qs = usp.toString();
+    return qs ? `/admin/refunds?${qs}` : "/admin/refunds";
+  };
+
+  const typeTabs = [
+    { value: "all", label: "전체(대기)", count: byType.all ?? 0 },
+    { value: "subscription_prorated", label: "구독 잔여(학생)", count: byType.subscription_prorated ?? 0 },
+    { value: "subscription_mentor_suspended", label: "멘토중단 ⏱5일", count: byType.subscription_mentor_suspended ?? 0 },
+  ];
   const rows = (list.rows as Row[]) ?? [];
   const REFUND_BASE_PATH = "/admin/refunds";
   const statusTabs = [
@@ -207,6 +233,49 @@ export default async function AdminRefundsPage(props: PageProps) {
           statusTabs={statusTabs}
         />
 
+        {/* 요청 유형 필터 + 기한 임박순 정렬 (SLA) */}
+        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <nav className="flex flex-wrap gap-1.5" aria-label="요청 유형">
+              {typeTabs.map((tab) => {
+                const isActive = requestType === tab.value;
+                return (
+                  <Link
+                    key={tab.value}
+                    href={refundFilterUrl({ type: tab.value })}
+                    className={[
+                      "rounded-xl border px-3 py-1.5 text-xs font-extrabold transition",
+                      isActive
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                    ].join(" ")}
+                  >
+                    {tab.label}
+                    <span className={["ml-1.5 text-[10px]", isActive ? "text-blue-100" : "text-slate-500"].join(" ")}>
+                      {tab.count}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+            <Link
+              href={refundFilterUrl({ sort: sort === "deadline" ? "recent" : "deadline" })}
+              className={[
+                "rounded-xl border px-3 py-1.5 text-xs font-extrabold transition",
+                sort === "deadline"
+                  ? "border-amber-500 bg-amber-500 text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              {sort === "deadline" ? "✓ 기한 임박순" : "기한 임박순 정렬"}
+            </Link>
+          </div>
+          <p className="text-[11px] font-medium text-slate-400">
+            멘토 중단 환불은 요청일로부터 {REFUND_SLA_DAYS}일 이내 처리가 목표입니다. 남은 일수는 아래 표
+            &lsquo;SLA&rsquo; 열에서 확인하세요.
+          </p>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-bold text-slate-800">환불 요청 목록</h2>
@@ -235,19 +304,41 @@ export default async function AdminRefundsPage(props: PageProps) {
           </div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3 flex items-center justify-between">
+            <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">환불 데이터</h2>
-              <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded">
-                {rows.length}건
-              </span>
+              {/* P1 ③ 일괄 처리 — 체크박스는 form 속성으로 이 폼에 연결 */}
+              <form id="refundBulkForm" className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-500">선택 항목 일괄</span>
+                <button
+                  type="submit"
+                  name="bulkDecision"
+                  value="approve"
+                  formAction={bulkProcessRefundsAction}
+                  className="rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white hover:bg-blue-500"
+                >
+                  일괄 승인
+                </button>
+                <button
+                  type="submit"
+                  name="bulkDecision"
+                  value="reject"
+                  formAction={bulkProcessRefundsAction}
+                  className="rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white hover:bg-red-500"
+                >
+                  일괄 거절
+                </button>
+                <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded">{rows.length}건</span>
+              </form>
             </div>
-            <table className="w-full min-w-[1080px] text-left text-sm">
+            <table className="w-full min-w-[1120px] text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/40">
+                  <th className="px-3 py-3 text-xs font-bold text-slate-600">선택</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">환불 ID</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">사용자</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">환불 금액</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">상태</th>
+                  <th className="px-5 py-3 text-xs font-bold text-slate-600">SLA</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">사유</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">결제 ID</th>
                   <th className="px-5 py-3 text-xs font-bold text-slate-600">맞춤의뢰 ID</th>
@@ -269,6 +360,18 @@ export default async function AdminRefundsPage(props: PageProps) {
                   const orderPv = previewId(pickFirst(row, ["custom_request_order_id"]));
                   return (
                     <tr key={rowKey} className="hover:bg-slate-50/30 transition-colors">
+                      <td className="px-3 py-4">
+                        {pending && refundIdValue ? (
+                          <input
+                            type="checkbox"
+                            name="ids"
+                            value={refundIdValue}
+                            form="refundBulkForm"
+                            aria-label="환불 선택"
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                        ) : null}
+                      </td>
                       <td className="max-w-[120px] truncate px-5 py-4 font-mono text-xs font-medium text-slate-800" title={idPv.title}>
                         {idPv.display}
                       </td>
@@ -282,6 +385,34 @@ export default async function AdminRefundsPage(props: PageProps) {
                         <span className={`inline-block border rounded-lg px-2.5 py-1 text-xs font-bold ${statusBadgeClass(st)}`}>
                           {refundStatusLabel(st)}
                         </span>
+                      </td>
+                      <td className="px-5 py-4 whitespace-nowrap">
+                        {(() => {
+                          const sla = refundSlaInfo(
+                            cell(pickFirst(row, ["created_at"])) === "—" ? null : String(pickFirst(row, ["created_at"])),
+                            st,
+                            now
+                          );
+                          const isMentor = firstString(row, ["request_type"]) === "subscription_mentor_suspended";
+                          if (sla.daysRemaining === null) {
+                            return <span className="text-xs text-slate-400">{sla.label}</span>;
+                          }
+                          const cls =
+                            sla.tone === "over"
+                              ? "bg-red-50 text-red-700 border-red-200"
+                              : sla.tone === "soon"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-slate-50 text-slate-600 border-slate-200";
+                          return (
+                            <span
+                              className={`inline-block rounded-lg border px-2.5 py-1 text-xs font-bold ${cls}`}
+                              title={isMentor ? "멘토 중단 환불 — 5일 SLA" : "처리 경과(5일 기준)"}
+                            >
+                              {sla.label}
+                              {isMentor ? " ⏱" : ""}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="max-w-[240px] px-5 py-4 text-xs text-slate-700">
                         {(() => {

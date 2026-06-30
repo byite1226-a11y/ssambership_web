@@ -2,16 +2,17 @@ import { CommunityHomeSections } from "@/components/community/CommunityHomeSecti
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
-import { listCommunityBoardPosts } from "@/lib/community/communityBoardQueries";
+import { listCommunityPopularPostsForHome } from "@/lib/community/communityBoardQueries";
 import { listShortformFeed } from "@/lib/community/communityShortformQueries";
 
 export default async function CommunityLandingPage() {
   const { user, profile } = await getServerUserWithProfile();
   const supabase = await createClient();
 
+  // G4.1: 추천 숏폼 = 최신순 6개, 인기 게시글 = 좋아요 상위 5개(동률 시 최신). 결정적·랜덤 없음.
   const [shortform, popular] = await Promise.all([
-    listShortformFeed(supabase, { limit: 5, sort: "popular" }),
-    listCommunityBoardPosts(supabase, { limit: 5, sort: "popular" }),
+    listShortformFeed(supabase, { limit: 6, sort: "latest" }),
+    listCommunityPopularPostsForHome(supabase, 5),
   ]);
 
   if (shortform.error) console.error("[community] shortform", shortform.error);

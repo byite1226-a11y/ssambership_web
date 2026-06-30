@@ -75,17 +75,29 @@ export function MentorDetailSubscribeSidebar(props: {
           {freeLabel}
         </Link>
 
+        {/* 개별 질문 단가 — 구독(主)보다 한 단계 낮은 보조 표시. 채운 강조 카드/큰 CTA 금지: 옅은 구분선 + 한 줄 + 작은 텍스트 링크. */}
         {props.individualQuestionPriceCents ? (
-          <Link
-            href={props.individualQuestionHref}
-            className="mt-2 flex min-h-[48px] w-full items-center justify-center rounded-xl border-2 border-emerald-500 bg-white text-sm font-extrabold text-emerald-700 transition hover:bg-emerald-50/40"
-          >
-            개별 질문하기 · {formatIndividualQuestionPrice(props.individualQuestionPriceCents)}
-          </Link>
-        ) : (
-          <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center">
-            <p className="text-xs font-extrabold text-slate-500">이 멘토는 개별 질문을 받지 않아요</p>
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-slate-500">개별 질문 · 구독 없이 1건씩</p>
+                <p className="mt-0.5 text-sm font-extrabold text-slate-900">
+                  {formatIndividualQuestionPrice(props.individualQuestionPriceCents)}
+                  <span className="ml-1 text-[11px] font-medium text-slate-400">/ 1건</span>
+                </p>
+              </div>
+              <Link
+                href={props.individualQuestionHref}
+                className="shrink-0 text-xs font-bold text-[#2563EB] hover:underline"
+              >
+                질문하기 →
+              </Link>
+            </div>
           </div>
+        ) : (
+          <p className="mt-4 border-t border-slate-100 pt-4 text-[11px] font-medium text-slate-400">
+            이 멘토는 개별 질문을 받지 않아요.
+          </p>
         )}
 
         <div className="mt-5 border-t border-slate-100 pt-4">

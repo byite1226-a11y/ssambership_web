@@ -4,7 +4,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 export type MonthlyRevenue = { month: string; total: number };
 
-const PRIMARY = "#2563EB";
+const PRIMARY = "#059669";
 
 export type MonthlyChartUnit = "캐시" | "원";
 

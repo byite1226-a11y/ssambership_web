@@ -31,17 +31,10 @@ export function QuestionRoomStudentThreadForm(props: {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canAsk) return;
+    // 과목·메모·제목 모두 선택사항. 제목을 비우면 서버가 "질문 N"(질문방 단위 순번) 자동 생성.
     const trimmed = title.trim();
     const subject = normalizeQuestionSubjectCode(subjectCode);
     const topicText = topic.trim();
-    if (!subject) {
-      setError("과목을 선택해 주세요.");
-      return;
-    }
-    if (!trimmed) {
-      setError("질문 제목을 입력해 주세요.");
-      return;
-    }
     setPending(true);
     setError(null);
     try {
@@ -52,8 +45,8 @@ export function QuestionRoomStudentThreadForm(props: {
         body: JSON.stringify({
           roomId: props.roomId,
           title: trimmed,
-          subject,
-          subjectTag: subject,
+          subject: subject ?? undefined,
+          subjectTag: subject ?? undefined,
           topic: topicText || null,
         }),
       });
@@ -80,18 +73,41 @@ export function QuestionRoomStudentThreadForm(props: {
     }
   }
 
+  // ★질문방 멘토가 지정한 과목만 후보로(없으면 전체 폴백). 라벨→코드 정규화해 중복 제거.
+  const mentorSubjectOptions = (() => {
+    const seen = new Set<string>();
+    const out: { code: string; label: string }[] = [];
+    for (const raw of props.subjectOptions ?? []) {
+      const code = normalizeQuestionSubjectCode(raw);
+      const key = code ?? raw;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push({ code: key, label: raw });
+    }
+    return out;
+  })();
+
   const subjectField = (
     <div>
-      <label className="mb-1 block text-[11px] font-bold text-slate-600">과목</label>
+      <label className="mb-1 block text-[11px] font-bold text-slate-600">
+        과목 <span className="font-medium text-slate-400">(선택)</span>
+      </label>
       <select
         value={subjectCode}
         onChange={(e) => setSubjectCode(e.target.value)}
-        required
         disabled={!canAsk || pending}
         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[12px] font-medium outline-none focus:border-[#2563EB] disabled:bg-slate-50"
       >
-        <option value="">과목 선택</option>
-        <SubjectSelectOptions />
+        <option value="">과목 미지정</option>
+        {mentorSubjectOptions.length > 0 ? (
+          mentorSubjectOptions.map((o) => (
+            <option key={o.code} value={o.code}>
+              {o.label}
+            </option>
+          ))
+        ) : (
+          <SubjectSelectOptions />
+        )}
       </select>
     </div>
   );
@@ -120,13 +136,14 @@ export function QuestionRoomStudentThreadForm(props: {
         {subjectField}
         {topicField}
         <div>
-          <label className="mb-1 block text-[11px] font-bold text-slate-600">질문 제목</label>
+          <label className="mb-1 block text-[11px] font-bold text-slate-600">
+            질문 제목 <span className="font-medium text-slate-400">(선택)</span>
+          </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            required
             disabled={!canAsk || pending}
-            placeholder="질문 제목을 입력해 주세요"
+            placeholder="비우면 '질문 N'으로 자동 생성돼요"
             className="w-full rounded-xl border border-slate-200 px-4 py-3 text-[13px] font-medium outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 disabled:bg-slate-50"
           />
         </div>

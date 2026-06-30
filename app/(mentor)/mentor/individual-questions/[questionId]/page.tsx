@@ -45,7 +45,7 @@ export default async function MentorIndividualQuestionDetailPage(props: PageProp
       backLabel="개별 질문 목록"
       flash={
         answered
-          ? "답변을 확정했어요. 학생이 [해결됨]을 누르면 예치 금액이 지급됩니다."
+          ? "답변을 확정했어요. 학생이 [해결 완료]를 누르면 안전 보관 중인 캐시가 정산돼요."
           : sent
             ? "메시지를 보냈어요."
             : claimed

@@ -6,7 +6,12 @@ import { requireRole } from "@/lib/auth/routeGuard";
 import { toAdminDisplayError } from "@/lib/admin/adminDisplayError";
 import { logAdminAction } from "@/lib/admin/adminActionLog";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { insertAdminReportNote, tryInsertAdminReportNote } from "@/lib/admin/adminCaseNotes";
+import {
+  applyContentModeration,
+  type ModerationIntent,
+} from "@/lib/admin/communityModerationCore";
 
 const PATH = "/admin/moderation";
 const TABLE = "content_reports";
@@ -88,7 +93,7 @@ export async function updateContentReportStatusAction(formData: FormData) {
 
 const MODERATION_INTENTS = new Set(["hidden", "deleted", "restored"]);
 
-/** 숨김 / 삭제 / 정상 복구 */
+/** 숨김 / 삭제 / 정상 복구 — 실제 콘텐츠도 함께 처리 */
 export async function updateContentReportModerationAction(formData: FormData) {
   const { user } = await requireRole("admin");
   const reportId = textFromForm(formData.get("reportId"));
@@ -99,6 +104,34 @@ export async function updateContentReportModerationAction(formData: FormData) {
   if (!MODERATION_INTENTS.has(intent)) redirect(errUrl(safeMsg("허용되지 않은 조치입니다.")));
 
   const supabase = await createClient();
+  // 신고 행을 service_role 로 조회 — target_id/target_type 가 필요
+  let admin: ReturnType<typeof createServiceRoleClient>;
+  try {
+    admin = createServiceRoleClient();
+  } catch {
+    redirect(errUrl(safeMsg("서버 설정 오류로 처리할 수 없습니다.")));
+  }
+  const { data: reportRow, error: loadErr } = await admin
+    .from(TABLE)
+    .select("id, target_type, target_id, status")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (loadErr || !reportRow) {
+    redirect(errUrl(safeMsg(loadErr?.message ?? "신고를 찾을 수 없습니다.")));
+  }
+  const reportRowTyped = reportRow as { target_type?: string | null; target_id?: string | null };
+
+  // ★ 실제 콘텐츠 변경(community_posts/shortform_posts/community_comments)
+  const moderation = await applyContentModeration({
+    targetType: reportRowTyped.target_type,
+    targetId: reportRowTyped.target_id,
+    intent: intent as ModerationIntent,
+  });
+  if (!moderation.ok) {
+    redirect(errUrl(safeMsg(`콘텐츠 처리 실패: ${moderation.error}`)));
+  }
+
+  // 신고 상태도 함께 변경(기존 동작 유지)
   const statusMap: Record<string, string> = {
     hidden: "hidden",
     deleted: "removed",
@@ -120,7 +153,7 @@ export async function updateContentReportModerationAction(formData: FormData) {
     actionType: `content_report_${intent}`,
     targetType: "content_report",
     targetId: reportId,
-    detail: { note },
+    detail: { note, moderation_applied: moderation.applied, moderation_note: moderation.note },
   });
 
   revalidatePath(PATH);

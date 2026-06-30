@@ -666,11 +666,13 @@ async function runPagedListQuery(args: {
   from: number;
   to: number;
   orderColumn?: string;
+  ascending?: boolean;
 }): Promise<{ rows: Row[]; count: number; errorMsg: string | null }> {
   const orderColumn = args.orderColumn ?? "created_at";
+  const ascending = args.ascending ?? false;
   let q: PgRestQueryBuilder = args.client.from(args.table).select("*", { count: "exact" });
   q = args.applyFilters(q);
-  const r1 = await q.order(orderColumn, { ascending: false }).range(args.from, args.to);
+  const r1 = await q.order(orderColumn, { ascending }).range(args.from, args.to);
   if (!r1.error) {
     return { rows: ((r1.data as Row[] | null) ?? []), count: r1.count ?? 0, errorMsg: null };
   }
@@ -692,7 +694,15 @@ async function runPagedListQuery(args: {
  */
 export async function loadAdminRefundsListPaged(
   supabase: SupabaseClient,
-  args: { search: string; status: string; page: number; pageSize: number }
+  args: {
+    search: string;
+    status: string;
+    page: number;
+    pageSize: number;
+    requestType?: string;
+    /** "deadline" 이면 요청일 오름차순(기한 임박순). 그 외 최신순. */
+    sort?: string;
+  }
 ): Promise<AdminListPagedResult> {
   const { table, error: te } = await firstReadableAdminTable(supabase, ["refunds"]);
   if (!table) {
@@ -711,6 +721,7 @@ export async function loadAdminRefundsListPaged(
   const applyFilters = (q: PgRestQueryBuilder): PgRestQueryBuilder => {
     let r = q;
     if (args.status && args.status !== "all") r = r.eq("status", args.status);
+    if (args.requestType && args.requestType !== "all") r = r.eq("request_type", args.requestType);
     if (args.search) {
       const s = args.search.replace(/[%_,]/g, " ").trim();
       if (s) {
@@ -731,7 +742,14 @@ export async function loadAdminRefundsListPaged(
     }
     return r;
   };
-  const paged = await runPagedListQuery({ client: supabase, table, applyFilters, from, to });
+  const paged = await runPagedListQuery({
+    client: supabase,
+    table,
+    applyFilters,
+    from,
+    to,
+    ascending: args.sort === "deadline",
+  });
 
   const pay = await pickExistingColumn(supabase, table, [
     "payment_id",
@@ -770,6 +788,33 @@ export async function countAdminRefundsByStatus(
       .select("*", { count: "exact", head: true })
       .eq("status", s);
     out[s] = count ?? 0;
+  }
+  return out;
+}
+
+/** 환불 요청 유형별 카운트(유형 탭 표시용). status='pending' 만 — SLA 대상 강조. */
+export async function countAdminRefundsByRequestType(
+  supabase: SupabaseClient
+): Promise<Record<string, number>> {
+  const out: Record<string, number> = {};
+  const types = [
+    "subscription_prorated",
+    "subscription_mentor_suspended",
+    "iq",
+    "order",
+  ];
+  const { count: allPending } = await supabase
+    .from("refunds")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending");
+  out.all = allPending ?? 0;
+  for (const t of types) {
+    const { count } = await supabase
+      .from("refunds")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending")
+      .eq("request_type", t);
+    out[t] = count ?? 0;
   }
   return out;
 }

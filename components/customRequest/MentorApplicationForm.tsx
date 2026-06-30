@@ -94,7 +94,7 @@ export function MentorApplicationForm(props: {
       <div className={props.landing ? "apply-form-grid" : "grid grid-cols-1 gap-4 sm:grid-cols-2"}>
         {fieldBlock({
           landing: props.landing,
-          label: "제안 금액(원)",
+          label: "제안 금액(캐시)",
           hint: budgetHint,
           children: (
             <input
@@ -201,8 +201,8 @@ export function MentorApplicationForm(props: {
           pendingLabel="제출 중…"
           className={
             props.landing
-              ? "btn btn-primary w-full sm:w-auto disabled:cursor-not-allowed"
-              : "inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-bold text-white enabled:hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              ? "btn btn-success w-full sm:w-auto disabled:cursor-not-allowed"
+              : "inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           }
         />
       </div>

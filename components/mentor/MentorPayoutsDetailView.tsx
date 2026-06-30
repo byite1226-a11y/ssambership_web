@@ -39,8 +39,29 @@ export function MentorPayoutsDetailView() {
   const [error, setError] = useState<string | null>(null);
   const [lines, setLines] = useState<MentorPayoutDetailLine[]>([]);
   const [totals, setTotals] = useState({ paymentAmount: 0, feeAmount: 0, netAmount: 0 });
+  const [page, setPage] = useState(1);
+
+  // 클라이언트 페이지네이션 — 데스크탑 10/page, 모바일(≤767px) 5/page.
+  // SSR/hydration 일치를 위해 초기값=데스크탑(10), 마운트 후 모바일이면 5로 보정.
+  const PAGE_SIZE_DESKTOP = 10;
+  const PAGE_SIZE_MOBILE = 5;
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_DESKTOP);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPageSize(mql.matches ? PAGE_SIZE_MOBILE : PAGE_SIZE_DESKTOP);
+    apply();
+    mql.addEventListener("change", apply);
+    return () => mql.removeEventListener("change", apply);
+  }, []);
 
   const tableRows = useMemo(() => lines.map(detailLineToSettlementRow), [lines]);
+  // 이미 로드된 내역을 pageSize개씩 slice(추가 fetch 없음). pageSize 전환 시 safePage 클램프.
+  const totalPages = Math.max(1, Math.ceil(tableRows.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedRows = useMemo(
+    () => tableRows.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [tableRows, safePage, pageSize]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,7 +123,7 @@ export function MentorPayoutsDetailView() {
     <div className="mx-auto max-w-6xl px-4 pb-16 pt-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-2">
-          <Link href="/mentor/payouts" className="inline-flex text-sm font-bold text-[#2563EB] hover:underline">
+          <Link href="/mentor/payouts" className="inline-flex text-sm font-bold text-[#059669] hover:underline">
             ← 정산 요약으로
           </Link>
           <div>
@@ -121,12 +142,23 @@ export function MentorPayoutsDetailView() {
         </button>
       </div>
 
+      {/* 순수령액 합계 — 헤더 근처로 끌어올려 먼저 보이게(멘토 초록 강조). 값은 기존 totals.netAmount 그대로. */}
+      {!loading && !error ? (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border-[0.5px] border-emerald-200 bg-emerald-50/60 px-5 py-4">
+          <span className="text-sm font-bold text-slate-700">순수령액 합계</span>
+          <span className="text-2xl font-black tabular-nums text-[#059669]">{formatCashKrw(totals.netAmount)}</span>
+        </div>
+      ) : null}
+
       <div className="mb-4 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <label className="text-xs font-semibold text-slate-600">
           기간
           <select
             value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            onChange={(e) => {
+              setMonth(e.target.value);
+              setPage(1);
+            }}
             className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold"
           >
             {months.map((m) => (
@@ -140,7 +172,10 @@ export function MentorPayoutsDetailView() {
           유형
           <select
             value={type}
-            onChange={(e) => setType(e.target.value as "all" | PayoutLineType)}
+            onChange={(e) => {
+              setType(e.target.value as "all" | PayoutLineType);
+              setPage(1);
+            }}
             className="mt-1 block rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold"
           >
             <option value="all">전체</option>
@@ -160,18 +195,30 @@ export function MentorPayoutsDetailView() {
         <p className="py-16 text-center text-sm text-slate-500">불러오는 중…</p>
       ) : (
         <>
-          <MentorPayoutsSettlementTable rows={tableRows} variant="detail" />
-          <div className="mt-4 flex flex-wrap justify-end gap-6 rounded-2xl border border-slate-200 bg-slate-50/80 px-5 py-4 text-sm font-bold">
-            <span className="text-slate-600">
-              결제금액 합계 <span className="text-slate-900">{formatCashKrw(totals.paymentAmount)}</span>
-            </span>
-            <span className="text-slate-600">
-              수수료 합계 <span className="text-slate-900">{formatCashKrw(totals.feeAmount)}</span>
-            </span>
-            <span className="text-[#2563EB]">
-              순수령액 합계 <span className="font-black">{formatCashKrw(totals.netAmount)}</span>
-            </span>
-          </div>
+          <MentorPayoutsSettlementTable rows={pagedRows} variant="detail" />
+          {totalPages > 1 ? (
+            <nav className="mt-6 flex items-center justify-center gap-3" aria-label="페이지 이동">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                이전
+              </button>
+              <span className="text-sm font-bold tabular-nums text-slate-500">
+                <span className="text-[#059669]">{safePage}</span> / {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                다음
+              </button>
+            </nav>
+          ) : null}
         </>
       )}
     </div>

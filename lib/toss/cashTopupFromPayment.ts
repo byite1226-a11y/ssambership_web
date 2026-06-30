@@ -2,6 +2,22 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cashKrwForPayKrw, isAllowedChargePayKrw } from "@/lib/cash/chargePackages";
+import { recoverPastDueSubscriptionsForStudent } from "@/lib/subscribe/subscriptionRenewalBatch";
+
+/**
+ * 충전 직후 그 사용자의 past_due 구독을 즉시 복구한다(best-effort).
+ * 충전 자체 흐름을 막지 않도록 예외/오류는 삼킨다. confirm·webhook·테스트충전 공용.
+ */
+export async function recoverPastDueAfterTopup(admin: SupabaseClient, userId: string): Promise<void> {
+  try {
+    const r = await recoverPastDueSubscriptionsForStudent(admin, userId, new Date());
+    if (r.recovered > 0) {
+      console.log("[recoverPastDueAfterTopup] recovered", { userId, ...r });
+    }
+  } catch (e) {
+    console.error("[recoverPastDueAfterTopup]", e);
+  }
+}
 
 export function parseUserIdFromCashOrderId(orderId: string): string | null {
   const m = /^cash-(.+)-(\d+)$/.exec(orderId);
@@ -84,6 +100,9 @@ export async function recordCashTopupFromTossOrder(params: {
     console.error("[recordCashTopupFromTossOrder] record_cash_topup", rpcError.message, { orderId, userId });
     return { ok: false, code: "ledger_failed", message: "충전 기록에 실패했습니다." };
   }
+
+  // P1 ① — 충전 직후 past_due 구독 즉시 복구(best-effort, 충전 흐름은 중단하지 않음)
+  await recoverPastDueAfterTopup(admin, userId);
 
   return { ok: true, duplicate: false, amount: cashKrw, payAmount: payAmountWon, userId };
 }

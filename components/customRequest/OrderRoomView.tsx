@@ -2,7 +2,7 @@
 
 import "@/app/(public)/custom-request/landing.css";
 
-import { useState } from "react";
+import { AlertTriangle, BadgeCheck, Briefcase, Pencil, Send, ShieldCheck } from "lucide-react";
 import type { loadOrderBundle } from "@/lib/customRequest/customRequestQueries";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import { hasActiveDisputeForOrderRows } from "@/lib/customRequest/orderDisputeHelpers";
@@ -243,10 +243,19 @@ function openDisputeApplicationDisabledReason(
   return null;
 }
 
-function OngoingOrderStepper({ currentIndex }: { currentIndex: number }) {
+function OngoingOrderStepper({ currentIndex, paused }: { currentIndex: number; paused?: boolean }) {
   return (
     <div className="cr-stepper-shell mt-3 !mb-0">
-      <div className="form-stepper-lifecycle">
+      {/* 분쟁 중에는 단계를 리셋하지 않고 직전 진행 위치를 유지한 채 '일시 정지'로만 표시(표시 전용). */}
+      {paused ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+          <span className="inline-flex h-5 items-center rounded-full bg-amber-100 px-2 text-[11px] font-extrabold text-amber-800">
+            운영팀 확인 중
+          </span>
+          진행이 잠시 멈췄어요 · 현재 단계는 그대로 유지돼요
+        </div>
+      ) : null}
+      <div className={`form-stepper-lifecycle${paused ? " opacity-70" : ""}`}>
         <ol aria-label="주문 진행 단계">
           {ORDER_ROOM_TIMELINE_STEPS.map((step, index) => {
             const isDone = index < currentIndex;
@@ -375,7 +384,13 @@ export function OrderRoomView(props: {
 
   const hasDeliverable = (detail.bundle.deliverables.rows?.length ?? 0) > 0;
   const currentStepIndex = orderWorkspaceCurrentStepIndex(orderNorm, isTerminalOrder, hasDeliverable);
-  const statusLabel = orderNorm ? orderStatusLabelForUi(orderNorm) : "진행 중";
+  // 분쟁 중에는 상태가 'disputed'로 와서 라벨이 "종료됨", 스테퍼가 1단계로 리셋된다.
+  // 표시 전용: 활성 분쟁(open/under_review/escalated)뿐 아니라 status==='disputed'(분쟁 기록이 resolved여도
+  // 주문 상태가 disputed로 남은 경우)도 포함해 멘토 주문방과 통일 — 라벨 "운영팀 확인 중", 스테퍼는 진행 맥락 유지.
+  // 가드 입력(hasActiveDispute)·escrow·정산은 미터치.
+  const inDispute = hasActiveDispute || orderNorm === "disputed";
+  const statusLabel = inDispute ? "운영팀 확인 중" : orderNorm ? orderStatusLabelForUi(orderNorm) : "진행 중";
+  const stepIndexForDisplay = inDispute ? Math.max(currentStepIndex, hasDeliverable ? 2 : 1) : currentStepIndex;
   const categoryLabel = detail.header.category && detail.header.category !== "—" ? detail.header.category : "맞춤의뢰";
   const mentorLabel =
     detail.header.mentorName && detail.header.mentorName !== "—" ? `${detail.header.mentorName} 멘토` : "배정 멘토";
@@ -392,55 +407,169 @@ export function OrderRoomView(props: {
   const showReviewCountdown = inReviewStage && reviewDeadlineIso != null;
   const showRevisionUsage = inReviewStage;
 
+  // 가드 판정값을 한 번만 계산해 재사용(값은 기존 함수 그대로 — 안전 규칙 불변).
+  const acceptBlock = studentAcceptDisabledReason(actorRole, view, o as Row, detail);
+  const cancelBlock = studentCancelDisabledReason(actorRole, view, o as Row, detail);
+  // rule 5: 최종 판정은 서버(RPC)지만, 2회 모두 사용 시 화면에서도 수정 버튼을 미리 비활성화(서버 enforcement와 동기).
+  const revBlockEffective = revBlock ?? (revisionUsage.exceeded ? "수정 요청은 최대 2회까지 가능해요. 모두 사용했습니다." : null);
+  const revisionsLeft = Math.max(0, revisionUsage.max - revisionUsage.used);
+  // 큰 상태 문장(주인공) + 지금 누구 차례 — 순수 표시, 상태/분쟁/수락가능 여부에서 파생.
+  const turn: "student" | "mentor" | "ops" = inDispute
+    ? "ops"
+    : orderNorm === "delivered" && !acceptBlock
+      ? "student"
+      : "mentor";
+  const statusHero = (() => {
+    if (inDispute) {
+      return { headline: "운영팀이 확인하고 있어요", guide: "운영팀이 확인하는 동안 수락·수정·취소는 잠시 멈춰요." };
+    }
+    if (orderNorm === "delivered") {
+      return { headline: "멘토가 결과물을 보냈어요", guide: "결과물을 확인하고 수락하거나, 필요하면 수정을 요청하세요." };
+    }
+    if (orderNorm === "revision_requested") {
+      return { headline: "멘토가 다시 작업하고 있어요", guide: "요청한 수정 사항을 반영하는 중이에요. 조금만 기다려 주세요." };
+    }
+    if (orderNorm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS || orderNorm === "in_progress") {
+      return { headline: "멘토가 작업하고 있어요", guide: "작업이 끝나면 결과물을 보내드려요." };
+    }
+    if (orderNorm === ORDER_INSERT_STATUS_PENDING) {
+      return { headline: "곧 작업이 시작돼요", guide: "멘토가 곧 작업을 시작할 거예요." };
+    }
+    return { headline: statusLabel, guide: "현재 진행 상태를 확인하세요." };
+  })();
+
   return (
     <div className="cr-landing cr-detail-v5 cr-detail-shell py-3" data-views="custom-order-room">
       <article className="cr-detail-card">
+        {/* 큰 상태 문장이 주인공: 지금 무슨 일이고 누구 차례인지 사람 말로. */}
         <header className="cr-detail-header">
-          <span className="eyebrow">맞춤의뢰</span>
+          <span className="eyebrow">맞춤의뢰 · {categoryLabel}</span>
           <div className="cr-detail-header-row">
-            <h1 className="cr-detail-title">주문방</h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="cr-category-badge">{categoryLabel}</span>
-              <span className="cr-category-badge">{statusLabel}</span>
-            </div>
+            <h1 className="cr-detail-title">{statusHero.headline}</h1>
+            <span className="cr-category-badge">{statusLabel}</span>
           </div>
-          <p className="cr-detail-subtitle">
-            선택한 멘토와 대화하며 작업을 진행하고, 납품 파일과 수정 요청, 문제 해결 내역을 한곳에서 확인할 수 있어요.
-          </p>
-          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#bfdbfe] bg-[var(--c-blue-weak,#e9f0ff)] px-3 py-1.5 text-xs font-extrabold text-[#2563EB]">
-            <span aria-hidden>✓</span>
-            결제 금액이 안전하게 예치되었어요
-          </span>
-          {isTerminalOrder ? (
-            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-              구매확정되어 멘토에게 지급되었습니다.
-            </div>
-          ) : (
-            <div className="mt-3 rounded-xl border border-[#bfdbfe] bg-[#eff5ff] px-4 py-3 text-sm font-medium leading-relaxed text-slate-700">
-              결제하신 <strong className="font-extrabold text-[#2563EB]">{amountLabel}</strong>은 쌤버십이 안전하게
-              예치 중입니다. <strong className="font-extrabold">납품을 확인(구매확정)</strong>하면 멘토에게 지급돼요. 문제가
-              있으면 지급 전 환불·분쟁 신청이 가능합니다.
-            </div>
-          )}
+          <p className="cr-detail-subtitle">{statusHero.guide}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bfdbfe] bg-[#eff5ff] px-3 py-1.5 text-xs font-extrabold text-[#2563EB]">
+              <span aria-hidden>✓</span>
+              {amountLabel} 안전 보관 중
+            </span>
+            {turn === "student" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2563EB] px-3 py-1.5 text-xs font-extrabold text-white">
+                지금 내 차례예요
+              </span>
+            ) : turn === "mentor" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
+                멘토를 기다리는 중
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
+                운영팀 확인 중
+              </span>
+            )}
+          </div>
         </header>
 
         <CustomRequestCoreStrip
           items={[
             { label: "선택된 멘토", value: mentorLabel },
-            { label: "결제 금액", value: amountLabel },
+            { label: "안전 결제 금액", value: amountLabel },
             { label: "마감일(납기)", value: dueLabel },
           ]}
         />
 
         <CustomRequestDetailDivider />
 
+        {/* 진행 단계 — 조연(작게) */}
         <CustomRequestSectionPane title="진행 단계" hint="현재 주문 상태에 맞춰 자동으로 표시돼요">
-          <OngoingOrderStepper currentIndex={currentStepIndex} />
+          <OngoingOrderStepper currentIndex={stepIndexForDisplay} paused={inDispute} />
         </CustomRequestSectionPane>
 
         <CustomRequestDetailDivider />
 
-        <CustomRequestSectionPane title="주문방 채팅" hint="대화 내용은 안전한 거래를 위해 저장됩니다">
+        {/* 결정 영역: 멘토가 보낸 결과물(결정 대상) + 바로 아래 수락/수정 액션 */}
+        <CustomRequestSectionPane title="멘토가 보낸 결과물" hint="수락 전에는 다운로드·미리보기가 잠겨 있어요">
+          <div className="mt-3">
+            <OrderDeliverablesPanel
+              detail={detail}
+              orderId={oid}
+              view={view}
+              actorRole={actorRole}
+              mentorDeliverableBlockReason={mentorDeliverableBlockReason}
+              orderTerminal={isTerminalOrder}
+              embedded
+            />
+            {showReviewCountdown ? (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-sm font-bold text-slate-800">
+                  학생 검토 기간 <DeliveryReviewCountdown reviewDeadlineIso={reviewDeadlineIso} compact className="ml-1" />
+                </p>
+                <p className="text-xs font-medium text-slate-500">기간 내 무응답 시 자동 완료</p>
+              </div>
+            ) : null}
+          </div>
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            {turn === "student" ? (
+              <p className="mb-2 text-sm font-bold text-slate-800">
+                확인 후 결정해 주세요{" "}
+                <span className="font-medium text-slate-500">
+                  · 수락하면 안전 보관 중인 {amountLabel}가 멘토에게 정산돼요
+                </span>
+              </p>
+            ) : turn === "mentor" ? (
+              <p className="mb-2 text-sm font-medium text-slate-500">아직 내가 결정할 단계가 아니에요. 멘토 작업을 기다려 주세요.</p>
+            ) : null}
+            <OrderActionBar
+              view={view}
+              actorRole={actorRole}
+              orderId={oid}
+              orderTerminal={isTerminalOrder}
+              studentAcceptDisabledReason={acceptBlock}
+              mentorStartDisabledReason={mentorStartDisabledReason(
+                actorRole,
+                view,
+                o as Row,
+                detail,
+                mentorStartDdlDisabledReason
+              )}
+              studentRevisionRequestDisabledReason={revBlockEffective}
+              studentCancelDisabledReason={cancelBlock}
+              openDisputeApplicationDisabledReason={disputeFormBlock}
+              hasActiveDispute={hasActiveDispute}
+              mentorRevisionJumpDisabledReason={null}
+              embedded
+            />
+          </div>
+
+          {/* D1: 수정 요청을 핵심 작업 카드에 통합(별도 카드 제거) */}
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-extrabold text-slate-900">수정 요청</p>
+              {showRevisionUsage ? (
+                <span className={`text-xs font-bold ${revisionUsage.exceeded ? "text-red-700" : "text-[#2563EB]"}`}>
+                  수정 {revisionUsage.max}회 중 {revisionsLeft}회 남음
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-3">
+              <OrderRevisionsPanel
+                detail={detail}
+                orderId={oid}
+                actorRole={actorRole}
+                hasOrderPartyAccess={!accessDenied}
+                studentRevisionRequestDisabledReason={revBlockEffective}
+                orderTerminal={isTerminalOrder}
+                revisionAccent={"default"}
+                embedded
+              />
+            </div>
+          </div>
+        </CustomRequestSectionPane>
+
+        <CustomRequestDetailDivider />
+
+        {/* 채팅 — 소통용, 결정 아래로 분리 */}
+        <CustomRequestSectionPane title="멘토와 대화" hint="결정과 별개로, 궁금한 점은 여기서 이야기해요">
           <div className="mt-3">
             <OrderProgressSection
               detail={detail}
@@ -456,90 +585,8 @@ export function OrderRoomView(props: {
 
         <CustomRequestDetailDivider />
 
-        <CustomRequestSectionPane title="납품물" hint="납품 파일과 제출 내역을 확인할 수 있어요">
-          <div className="mt-3">
-            <OrderDeliverablesPanel
-              detail={detail}
-              orderId={oid}
-              view={view}
-              actorRole={actorRole}
-              mentorDeliverableBlockReason={mentorDeliverableBlockReason}
-              orderTerminal={isTerminalOrder}
-              embedded
-            />
-            {showReviewCountdown ? (
-              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
-                <p className="text-sm font-black text-slate-900">학생 검토 기간</p>
-                <DeliveryReviewCountdown reviewDeadlineIso={reviewDeadlineIso} className="mt-3" />
-                <p className="mt-2 text-xs font-medium text-slate-600">
-                  검토 기간 내 응답이 없으면 자동 완료 처리됩니다.
-                </p>
-              </div>
-            ) : null}
-          </div>
-        </CustomRequestSectionPane>
-
-        <CustomRequestDetailDivider />
-
-        <CustomRequestSectionPane title="작업" hint="현재 단계에서 가능한 작업만 활성화돼요">
-          <div className="mt-3">
-            <OrderActionBar
-              view={view}
-              actorRole={actorRole}
-              orderId={oid}
-              orderTerminal={isTerminalOrder}
-              studentAcceptDisabledReason={studentAcceptDisabledReason(actorRole, view, o as Row, detail)}
-              mentorStartDisabledReason={mentorStartDisabledReason(
-                actorRole,
-                view,
-                o as Row,
-                detail,
-                mentorStartDdlDisabledReason
-              )}
-              studentRevisionRequestDisabledReason={revBlock}
-              studentCancelDisabledReason={studentCancelDisabledReason(actorRole, view, o as Row, detail)}
-              openDisputeApplicationDisabledReason={disputeFormBlock}
-              hasActiveDispute={hasActiveDispute}
-              mentorRevisionJumpDisabledReason={null}
-              embedded
-            />
-          </div>
-        </CustomRequestSectionPane>
-
-        <CustomRequestDetailDivider />
-
-        <CustomRequestSectionPane title="수정 요청" hint="납품 검토 단계에서 필요한 수정 사항을 남길 수 있어요">
-          <div className="mt-3">
-            {showRevisionUsage ? (
-              <div
-                className={`mb-3 rounded-xl border px-4 py-3 ${
-                  revisionUsage.exceeded ? "border-red-200 bg-red-50/60" : "border-slate-200 bg-slate-50"
-                }`}
-              >
-                <p className="text-sm font-extrabold text-slate-800">
-                  수정 {revisionUsage.used}/{revisionUsage.max}회 사용
-                </p>
-                {revisionUsage.exceeded ? (
-                  <p className="mt-1 text-xs font-bold text-red-800">최대 수정 횟수를 초과했습니다.</p>
-                ) : null}
-              </div>
-            ) : null}
-            <OrderRevisionsPanel
-              detail={detail}
-              orderId={oid}
-              actorRole={actorRole}
-              hasOrderPartyAccess={!accessDenied}
-              studentRevisionRequestDisabledReason={revBlock}
-              orderTerminal={isTerminalOrder}
-              revisionAccent={"default"}
-              embedded
-            />
-          </div>
-        </CustomRequestSectionPane>
-
-        <CustomRequestDetailDivider />
-
-        <CustomRequestSectionPane title="문제 해결" hint="결제·납품·수정 요청 관련 문제가 있으면 접수해 주세요">
+        {/* 보조: 문제 해결 → 진행 로그 → 정책 (하단 보조 위치) */}
+        <CustomRequestSectionPane title="문제가 있나요?" hint="결제·납품·수정 요청 관련 문제를 접수할 수 있어요">
           <div className="mt-3">
             <OrderDisputesPanel
               detail={detail}
@@ -555,11 +602,16 @@ export function OrderRoomView(props: {
 
         <CustomRequestDetailDivider />
 
-        <CustomRequestSectionPane title="진행 로그" hint="펼치면 단계별 기록을 확인할 수 있어요">
+        {/* D1: 진행 로그는 기본 접힘 — 펼칠 때만 노출 */}
+        <details className="mt-2">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm font-extrabold text-slate-700 hover:bg-slate-50">
+            진행 로그
+            <span className="text-xs font-medium text-slate-400">펼쳐 보기</span>
+          </summary>
           <div className="mt-3">
             <OrderEventsLogPanel detail={detail} embedded />
           </div>
-        </CustomRequestSectionPane>
+        </details>
 
         <CustomRequestDetailDivider />
 
@@ -604,9 +656,6 @@ function OrderRoomViewMentor(props: {
     mentorStartDdlDisabledReason,
     mentorStudentDisplayName,
   } = props;
-  
-  type TabKey = "채팅" | "작업 파일" | "요청사항" | "진행 관리";
-  const [activeTab, setActiveTab] = useState<TabKey>("채팅");
 
   const o = bundle.order.row;
 
@@ -659,7 +708,70 @@ function OrderRoomViewMentor(props: {
   const oid = String((o as Row).id ?? "");
   const idForDisplay = String(oid || orderId).trim();
 
-  const tabs: TabKey[] = ["채팅", "작업 파일", "요청사항", "진행 관리"];
+  // ── 학생 시점과 통일: 큰 상태 문장(주인공) + 누구 차례 + 안전 결제(에스크로). 순수 표시값 —
+  //    상태/결제확인/분쟁에서 파생만 하고 가드 판정 함수·값은 건드리지 않는다.
+  const amountLabel =
+    detail.header.priceLine && detail.header.priceLine !== "—" ? detail.header.priceLine : "협의 중";
+  const paymentConfirmed = isOrderRowPaymentConfirmedForMentorWork(o as Row);
+  const statusLabel = orderNorm ? orderStatusLabelForUi(orderNorm) : "진행 중";
+  const heroTerminal = isTerminalOrder || orderNorm === "completed";
+  // 멘토가 실제로 행동할 수 있는(=가드가 열리는 방향의) 상태에서만 "내 차례"로 표시.
+  // 그 외 종료·취소·분쟁종결 등은 중립으로 둬서 "지금 내 차례예요"를 과하게 외치지 않는다.
+  const heroMentorActionable =
+    !heroTerminal &&
+    !hasActiveDispute &&
+    (orderNorm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS ||
+      orderNorm === "in_progress" ||
+      orderNorm === "revision_requested" ||
+      (orderNorm === ORDER_INSERT_STATUS_PENDING && paymentConfirmed));
+  const heroTurn: "mentor" | "student" | "ops" | "done" = heroTerminal
+    ? "done"
+    : hasActiveDispute
+      ? "ops"
+      : orderNorm === "delivered"
+        ? "student"
+        : orderNorm === ORDER_INSERT_STATUS_PENDING && !paymentConfirmed
+          ? "student"
+          : heroMentorActionable
+            ? "mentor"
+            : "done";
+  const hero = (() => {
+    if (hasActiveDispute) {
+      return { headline: "문제 해결을 진행하고 있어요", guide: "운영팀이 확인하는 동안 작업·납품·수정은 잠시 멈춰요." };
+    }
+    if (isTerminalOrder || orderNorm === "completed") {
+      return { headline: "거래가 완료됐어요", guide: "결제·납품·정산이 모두 마무리됐어요. 수고하셨어요." };
+    }
+    if (orderNorm === "delivered") {
+      return { headline: "결과물을 보냈어요", guide: "학생이 확인하고 수락하면 정산돼요. 조금만 기다려 주세요." };
+    }
+    if (orderNorm === "revision_requested") {
+      return { headline: "학생이 수정을 요청했어요", guide: "요청 내용을 확인하고 수정본을 보내 주세요." };
+    }
+    if (orderNorm === ORDER_MENTOR_WORK_STARTED_PRIMARY_STATUS || orderNorm === "in_progress") {
+      return { headline: "작업을 진행하고 있어요", guide: "작업이 끝나면 결과물을 학생에게 보내 주세요." };
+    }
+    if (orderNorm === ORDER_INSERT_STATUS_PENDING) {
+      return paymentConfirmed
+        ? { headline: "작업을 시작해 주세요", guide: "학생 결제가 안전하게 확인됐어요. 착수 버튼을 눌러 시작해 주세요." }
+        : { headline: "학생 결제를 기다리고 있어요", guide: "결제가 확인되면 작업을 시작할 수 있어요." };
+    }
+    return { headline: statusLabel, guide: "현재 진행 상태를 확인하세요." };
+  })();
+
+  // 상태별 아이콘 앵커(톤은 기존 상태 의미 재사용): 분쟁=빨강, 수정요청=주황, 그 외 정상=초록.
+  const heroIcon = (() => {
+    if (hasActiveDispute || orderNorm === "disputed") {
+      return { tile: "bg-red-50", fg: "text-red-600", Icon: AlertTriangle };
+    }
+    if (orderNorm === "revision_requested") {
+      return { tile: "bg-amber-50", fg: "text-amber-600", Icon: Pencil };
+    }
+    if (orderNorm === "delivered") {
+      return { tile: "bg-emerald-50", fg: "text-[#059669]", Icon: Send };
+    }
+    return { tile: "bg-emerald-50", fg: "text-[#059669]", Icon: Briefcase };
+  })();
 
   return (
     <div className="min-h-screen w-full bg-white py-8">
@@ -671,125 +783,169 @@ function OrderRoomViewMentor(props: {
           backHref={mentorOrderHubHref ?? "/mentor/custom-request/orders"}
         />
 
+        {/* 상태 히어로 — 플랫 카드(그라데이션 제거) + 좌측 상태 아이콘 앵커. 멘토 초록 브랜드(칩·pill·CTA) 유지 */}
+        <header className="mt-6 rounded-3xl border-[0.5px] border-slate-200 bg-white p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-start gap-3.5">
+              <span className={`flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl ${heroIcon.tile} ${heroIcon.fg}`}>
+                <heroIcon.Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <span className="inline-flex items-center rounded-full bg-emerald-100/70 px-3 py-1 text-xs font-extrabold text-emerald-800">
+                  {detail.header.category && detail.header.category !== "—" ? `맞춤의뢰 · ${detail.header.category}` : "맞춤의뢰 주문방"}
+                </span>
+                <h1 className="mt-2 text-2xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
+                  {hero.headline}
+                </h1>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">{hero.guide}</p>
+              </div>
+            </div>
+            <span className="inline-flex h-7 shrink-0 items-center rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600">
+              {statusLabel}
+            </span>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            {heroTurn === "done" && !heroTerminal ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
+                {amountLabel}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-700">
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden /> {amountLabel} {heroTerminal ? "정산 완료" : "안전 보관 중"}
+              </span>
+            )}
+            {heroTurn === "mentor" ? (
+              <span className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-extrabold text-white">
+                지금 내 차례예요
+              </span>
+            ) : heroTurn === "student" ? (
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
+                학생을 기다리는 중
+              </span>
+            ) : heroTurn === "ops" ? (
+              <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700">
+                운영팀 확인 중
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600">
+                거래 종료
+              </span>
+            )}
+            {heroTurn === "mentor" || heroTurn === "student" ? (
+              <span className="text-xs font-medium text-slate-400">학생이 수락하면 정산돼요</span>
+            ) : null}
+          </div>
+        </header>
+
         {/* MAIN: 2-Column Workspace Layout */}
         <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-          {/* LEFT CONTENT: Tabs + Content area */}
-          <div className="flex min-w-0 flex-1 flex-col">
-            {/* The Flat White Tab Bar */}
-            <div className="flex items-center border-b border-ds-border-subtle bg-white px-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`relative px-5 py-4 text-[15px] transition-colors ${
-                    activeTab === tab
-                      ? "font-semibold text-slate-900"
-                      : "font-medium text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {tab}
-                  {activeTab === tab && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" aria-hidden />
-                  )}
-                </button>
-              ))}
-            </div>
+          {/* LEFT CONTENT: 탭 대신 세로로 쌓는 섹션(작업↔채팅 분리) */}
+          <div className="flex min-w-0 flex-1 flex-col gap-8">
+            {/* 완료 영수증 — 종료된 주문 상단 안내 */}
+            {isTerminalOrder ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
+                <p className="flex items-center gap-2 text-sm font-extrabold text-emerald-800">
+                  <BadgeCheck className="h-4 w-4" aria-hidden /> 거래가 완료됐어요
+                </p>
+                <p className="mt-1 text-xs font-medium text-emerald-700/90">
+                  결제·납품·정산이 마무리됐어요. 자세한 내역은 아래 정산·진행 로그에서 확인할 수 있어요.
+                </p>
+              </div>
+            ) : null}
 
-            {/* ACTIVE TAB CONTENT AREA — 바깥 액자 없음, 여백으로만 구분 */}
-            <div className="pt-8">
-              {activeTab === "채팅" && (
-                <OrderProgressSection
-                  detail={detail}
-                  orderId={idForDisplay}
-                  view={view}
-                  actorRole={actorRole}
-                  hasOrderPartyAccess={!accessDenied}
-                  orderTerminal={isTerminalOrder}
-                  mentorStudentDisplayName={mentorStudentDisplayName}
-                />
-              )}
+            {/* 지금 할 일: 작업 시작/납품 제어 + 결과물 파일 (멘토 액션 — 가드 프롭 1:1 보존) */}
+            {/* id=deliverables: 재납품 화면 등에서 "작업 파일" 섹션으로 바로 스크롤 연결 */}
+            <section id="deliverables" className="scroll-mt-24 space-y-5">
+              <OrderActionBar
+                view={view}
+                actorRole={actorRole}
+                orderId={oid}
+                orderTerminal={isTerminalOrder}
+                studentAcceptDisabledReason={null}
+                mentorStartDisabledReason={mentorStartDisabledReason(
+                  actorRole,
+                  view,
+                  o as Row,
+                  detail,
+                  mentorStartDdlDisabledReason
+                )}
+                studentRevisionRequestDisabledReason={null}
+                studentCancelDisabledReason="학생 본인 의뢰에서만 주문을 취소할 수 있습니다."
+                openDisputeApplicationDisabledReason={disputeFormBlock}
+                hasActiveDispute={hasActiveDispute}
+                mentorRevisionJumpDisabledReason={activeDisputeActionBlock}
+              />
+              <OrderDeliverablesPanel
+                detail={detail}
+                orderId={oid}
+                view={view}
+                actorRole={actorRole}
+                mentorDeliverableBlockReason={mentorDeliverableBlockReason}
+                orderTerminal={isTerminalOrder}
+              />
+            </section>
 
-              {activeTab === "작업 파일" && (
-                <OrderDeliverablesPanel
-                  detail={detail}
-                  orderId={oid}
-                  view={view}
-                  actorRole={actorRole}
-                  mentorDeliverableBlockReason={mentorDeliverableBlockReason}
-                  orderTerminal={isTerminalOrder}
-                />
-              )}
+            {/* 수정 요청 내역 */}
+            <OrderRevisionsPanel
+              detail={detail}
+              orderId={oid}
+              actorRole={actorRole}
+              hasOrderPartyAccess={!accessDenied}
+              studentRevisionRequestDisabledReason={revBlock}
+              orderTerminal={isTerminalOrder}
+              revisionAccent="default"
+              view={view}
+            />
 
-              {activeTab === "요청사항" && (
-                <div className="space-y-8">
-                  <OrderRevisionsPanel
+            {/* 학생과 대화 — 작업과 분리 */}
+            <OrderProgressSection
+              detail={detail}
+              orderId={idForDisplay}
+              view={view}
+              actorRole={actorRole}
+              hasOrderPartyAccess={!accessDenied}
+              orderTerminal={isTerminalOrder}
+              mentorStudentDisplayName={mentorStudentDisplayName}
+            />
+
+            {/* 문제 해결 */}
+            <OrderDisputesPanel
+              detail={detail}
+              orderId={oid}
+              actorRole={actorRole}
+              hasOrderPartyAccess={!accessDenied}
+              openDisputeApplicationDisabledReason={disputeFormBlock}
+              orderTerminal={isTerminalOrder}
+              view={view}
+            />
+
+            {/* 정산 내역 */}
+            {hasRightSettlementBlockContent(detail, o as Row, actorRole) && (
+              <section className="space-y-5 border-t border-ds-border-subtle pt-8">
+                <h4 className="text-base font-bold text-slate-900">정산 내역</h4>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <OrderPaymentSettlementBlock
                     detail={detail}
+                    orderRow={o as Row}
                     orderId={oid}
                     actorRole={actorRole}
-                    hasOrderPartyAccess={!accessDenied}
-                    studentRevisionRequestDisabledReason={revBlock}
-                    orderTerminal={isTerminalOrder}
-                    revisionAccent="violet"
                     view={view}
                   />
-                  <OrderDisputesPanel
-                    detail={detail}
-                    orderId={oid}
-                    actorRole={actorRole}
-                    hasOrderPartyAccess={!accessDenied}
-                    openDisputeApplicationDisabledReason={disputeFormBlock}
-                    orderTerminal={isTerminalOrder}
-                    view={view}
-                  />
+                  <OrderSettlementLineCard detail={detail} view={view} />
                 </div>
-              )}
+              </section>
+            )}
 
-              {activeTab === "진행 관리" && (
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <h3 className="text-base font-bold text-slate-900">작업 제어 및 시스템 상태</h3>
-                    <p className="text-sm leading-relaxed text-slate-600">주문의 현재 단계를 변경하거나 중요 이벤트를 추적합니다.</p>
-                  </div>
-                  <OrderActionBar
-                    view={view}
-                    actorRole={actorRole}
-                    orderId={oid}
-                    orderTerminal={isTerminalOrder}
-                    studentAcceptDisabledReason={null}
-                    mentorStartDisabledReason={mentorStartDisabledReason(
-                      actorRole,
-                      view,
-                      o as Row,
-                      detail,
-                      mentorStartDdlDisabledReason
-                    )}
-                    studentRevisionRequestDisabledReason={null}
-                    studentCancelDisabledReason="학생 본인 의뢰에서만 주문을 취소할 수 있습니다."
-                    openDisputeApplicationDisabledReason={disputeFormBlock}
-                    hasActiveDispute={hasActiveDispute}
-                    mentorRevisionJumpDisabledReason={activeDisputeActionBlock}
-                  />
-                  
-                  {hasRightSettlementBlockContent(detail, o as Row, actorRole) && (
-                    <div className="space-y-5 border-t border-ds-border-subtle pt-8">
-                      <h4 className="text-base font-bold text-slate-900">정산 내역</h4>
-                      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                        <OrderPaymentSettlementBlock
-                          detail={detail}
-                          orderRow={o as Row}
-                          orderId={oid}
-                          actorRole={actorRole}
-                          view={view}
-                        />
-                        <OrderSettlementLineCard detail={detail} view={view} />
-                      </div>
-                    </div>
-                  )}
-
-                  <OrderEventsLogPanel detail={detail} view={view} />
-                </div>
-              )}
-            </div>
+            {/* D1: 진행 로그는 기본 접힘 — 펼칠 때만 노출 */}
+            <details className="mt-2">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm font-extrabold text-slate-700 hover:bg-slate-50">
+                진행 로그
+                <span className="text-xs font-medium text-slate-400">펼쳐 보기</span>
+              </summary>
+              <div className="mt-3">
+                <OrderEventsLogPanel detail={detail} view={view} />
+              </div>
+            </details>
           </div>
 
           {/* RIGHT SIDEBAR: 진행 단계 + 의뢰 정보 + 접이식 안내 */}

@@ -156,9 +156,29 @@ export function QuestionRoomWorkspace(props: {
 
   // List View
   if (props.surface === "list") {
-    const startHref = props.listStartQuestion?.href ?? (props.variant === "student" ? "/mentors" : "/mentor/mypage");
-    const startLabel = props.listStartQuestion?.label ?? (props.variant === "student" ? "질문 시작하기" : "대시보드로 이동");
-    
+    // 학생 구독 0개 목록 = 3컬럼 제로상태 셸 재사용(구형 대시보드 폐기).
+    // 목록 페이지는 방이 1개라도 있으면 방으로 redirect하므로, 학생 list는 항상 0개 제로상태.
+    if (props.variant === "student") {
+      return (
+        <QuestionRoomStudentDesignWorkspace
+          currentUserId={props.currentUserId ?? ""}
+          roomId=""
+          threadId={null}
+          rooms={props.rooms}
+          threads={props.threads}
+          messages={props.messages}
+          notes={props.notes}
+          listPreviewsByRoomId={props.listPreviewsByRoomId ?? {}}
+          mentorDisplays={props.mentorDisplays ?? {}}
+          initialUsageByMentorId={props.initialUsageByMentorId}
+          subscriptionContext={props.subscriptionContext ?? undefined}
+          actionFeedback={props.actionFeedback}
+          formRevision={rev}
+        />
+      );
+    }
+    const startHref = props.listStartQuestion?.href ?? "/mentor/mypage";
+    const startLabel = props.listStartQuestion?.label ?? "대시보드로 이동";
     return (
       <div className="mx-auto w-full max-w-7xl min-w-0 space-y-3">
         <QuestionRoomListCatalog

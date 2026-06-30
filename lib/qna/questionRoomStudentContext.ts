@@ -21,6 +21,8 @@ export type QuestionRoomSubscriptionContext = {
   subscribedAtLabel: string;
   weekRenewalLabel: string;
   nextRenewalLabel: string;
+  /** 상단 메타 압축용 짧은 갱신일 (예: "7/5") */
+  nextRenewalShort: string;
 };
 
 function formatKoDate(iso: string | null | undefined): string {
@@ -55,6 +57,18 @@ function anchorRenewalLabel(anchorIso: string | null): string {
   return `매주 ${weekday} 갱신 (구독 시작 시각 기준)`;
 }
 
+function nextAnchorRenewalShort(anchorIso: string | null): string {
+  const bounds = subscriptionAnchorWeekBounds(anchorIso);
+  if (!bounds) return "—";
+  const parts = bounds.end.toLocaleDateString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "numeric",
+    day: "numeric",
+  });
+  const m = parts.match(/(\d+)\D+(\d+)/);
+  return m ? `${m[1]}/${m[2]}` : "—";
+}
+
 function nextAnchorRenewalLabel(anchorIso: string | null): string {
   const bounds = subscriptionAnchorWeekBounds(anchorIso);
   if (!bounds) return "구독 후 7일째";
@@ -81,6 +95,7 @@ export async function loadQuestionRoomSubscriptionContext(
       subscribedAtLabel: "—",
       weekRenewalLabel: "구독 시작일 기준 7일마다 갱신",
       nextRenewalLabel: "구독 후 7일째",
+      nextRenewalShort: "—",
     };
   }
 
@@ -96,6 +111,7 @@ export async function loadQuestionRoomSubscriptionContext(
     subscribedAtLabel: formatKoDate(anchorIso),
     weekRenewalLabel: anchorRenewalLabel(anchorIso),
     nextRenewalLabel: nextAnchorRenewalLabel(anchorIso),
+    nextRenewalShort: nextAnchorRenewalShort(anchorIso),
   };
 }
 

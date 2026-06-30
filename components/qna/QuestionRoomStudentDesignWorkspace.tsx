@@ -8,11 +8,15 @@ import { listCardClassName, type ListCardTone } from "@/components/design-system
 import {
   ArrowLeft,
   BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Eye,
   FileText,
+  Inbox,
   MessageCircle,
   MessageCirclePlus,
+  NotebookPen,
   Plus,
   Search,
   Send,
@@ -22,7 +26,8 @@ import { parseAttachmentMessageBody } from "@/lib/qna/questionRoomAttachmentDisp
 import { FormSubmitButton } from "@/components/qna/FormSubmitButton";
 import { QuestionRoomNewQuestionModal } from "@/components/qna/QuestionRoomNewQuestionModal";
 import { QuestionThreadConfirmButton } from "@/components/qna/QuestionThreadConfirmButton";
-import { QuestionThreadWrongAnswerToggle } from "@/components/qna/QuestionThreadWrongAnswerToggle";
+// 오답 표시 토글은 화면에서 숨김(컴포넌트·API·DB는 보존, 추후 멘토용으로 활용). UI 렌더만 제거.
+// import { QuestionThreadWrongAnswerToggle } from "@/components/qna/QuestionThreadWrongAnswerToggle";
 import type { WeeklyUsageSnapshot } from "@/lib/qna/weeklyQuestionUsageDisplay";
 import { weeklyQuestionQuotaLabel } from "@/lib/qna/weeklyQuestionUsageDisplay";
 import { sendQuestionMessageAction } from "@/lib/qna/questionRoomActions";
@@ -229,6 +234,22 @@ export function QuestionRoomStudentDesignWorkspace(props: {
     return rows;
   }, [props.threads.rows, sort]);
 
+  // ★질문 목록 페이지네이션 (일정 개수 초과 시)
+  const THREADS_PER_PAGE = 12;
+  const [threadPage, setThreadPage] = useState(1);
+  const threadTotalPages = Math.max(1, Math.ceil(sortedThreads.length / THREADS_PER_PAGE));
+  const safeThreadPage = Math.min(threadPage, threadTotalPages);
+  useEffect(() => {
+    if (threadPage > threadTotalPages) setThreadPage(threadTotalPages);
+  }, [threadPage, threadTotalPages]);
+  useEffect(() => {
+    setThreadPage(1);
+  }, [props.roomId, sort]);
+  const pagedThreads = sortedThreads.slice(
+    (safeThreadPage - 1) * THREADS_PER_PAGE,
+    safeThreadPage * THREADS_PER_PAGE
+  );
+
   const selectedThread = useMemo(() => {
     if (!props.threadId) return sortedThreads[0] ?? null;
     return sortedThreads.find((t) => String(t.id) === String(props.threadId)) ?? null;
@@ -241,19 +262,99 @@ export function QuestionRoomStudentDesignWorkspace(props: {
   const subjectChipsRoom = roomSubjectChips(currentRoom ?? {}, props.mentorDisplays, 4);
 
   if (!props.rooms.loading && props.rooms.rows.length === 0) {
+    // 구독 0개 제로상태 — 정상 3컬럼 셸(좌 리스트·중앙 히어로·우 연결노트)을 그대로 재사용.
+    // 모바일은 중앙 히어로 우선(order-1) → 좌측 리스트 → 우측 노트.
     return (
-      <div className="flex min-h-[calc(100vh-120px)] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-        <MessageCirclePlus className="h-12 w-12 text-slate-400" strokeWidth={1.5} aria-hidden />
-        <h2 className="mt-4 text-xl font-black text-slate-900">구독한 멘토에게 질문해보세요</h2>
-        <p className="mt-2 max-w-md text-sm font-medium text-slate-600">
-          멘토를 구독하면 이 곳에서 자유롭게 질문할 수 있어요.
-        </p>
-        <Link
-          href="/mentors"
-          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
-        >
-          멘토 찾기
-        </Link>
+      <div className="flex min-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#f8fafc] font-sans text-slate-900 shadow-sm">
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          {/* 좌측 레일 — 구독 질문방(빈 리스트 + 구독 버튼) */}
+          <aside className="order-2 flex w-full shrink-0 flex-col border-t border-slate-200 bg-white lg:order-1 lg:w-[240px] lg:border-t-0 lg:border-r">
+            <div className="shrink-0 border-b border-slate-100 p-4">
+              <h2 className="text-[15px] font-black text-slate-900">구독 질문방</h2>
+              <div className="relative mt-3">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  disabled
+                  placeholder="멘토 또는 질문방 검색"
+                  className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-[12px] font-medium outline-none placeholder:text-slate-400"
+                />
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 p-2">
+              <div className="flex flex-col items-center justify-center px-3 py-10 text-center">
+                <Inbox className="h-8 w-8 text-slate-300" strokeWidth={1.75} aria-hidden />
+                <p className="mt-2 text-[11px] font-bold leading-relaxed text-slate-400">구독한 질문방이 아직 없어요</p>
+              </div>
+            </div>
+            <div className="shrink-0 border-t border-slate-100 p-3">
+              <Link
+                href="/mentors"
+                className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#2563EB]/40 bg-[#EEF4FF] text-[12px] font-black text-[#2563EB] transition hover:bg-[#E0ECFF]"
+              >
+                <Plus className="h-4 w-4" />
+                질문방 구독하기
+              </Link>
+            </div>
+          </aside>
+
+          {/* 중앙 — 히어로 빈상태(구독 유도) */}
+          <main className="order-1 flex min-w-0 flex-1 flex-col bg-white lg:order-2 lg:border-r lg:border-slate-200">
+            <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EEF4FF] text-[#2563EB]">
+                <MessageCirclePlus className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              </div>
+              <h2 className="mt-3 text-base font-medium text-slate-900">멘토를 구독하면 질문방이 열려요</h2>
+              <p className="mt-1.5 max-w-md text-[13px] font-medium leading-relaxed text-slate-500">
+                {/* 모바일 1줄 축약 / 데스크탑 원문 유지 */}
+                <span className="md:hidden">멘토를 구독하면 질문·답변·노트가 쌓여요.</span>
+                <span className="hidden md:inline">마음에 드는 멘토를 구독하면 1:1로 질문하고, 답변과 노트가 여기에 쌓여요.</span>
+              </p>
+              <ol className="mt-5 w-full max-w-[300px] space-y-2.5 text-left">
+                {[
+                  ["멘토 구독하기", "마음에 드는 멘토를 골라 구독해요."],
+                  ["궁금한 점 질문하기", "사진·파일도 함께 첨부할 수 있어요."],
+                  ["답변 확인하기", "답변을 받으면 확인을 눌러 완료해요."],
+                ].map(([t, d], i) => (
+                  <li key={t} className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-black text-white">
+                      {i + 1}
+                    </span>
+                    <span>
+                      <span className="block text-[12px] font-bold text-slate-800">{t}</span>
+                      <span className="block text-[10.5px] font-medium leading-relaxed text-slate-500">{d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <Link
+                href="/mentors"
+                className="mt-6 inline-flex min-h-[44px] w-full max-w-[300px] items-center justify-center rounded-xl bg-[#2563EB] px-5 text-sm font-extrabold text-white hover:bg-[#1D4ED8]"
+              >
+                질문방 구독하기
+              </Link>
+            </div>
+          </main>
+
+          {/* 우측 레일 — 연결 노트(빈) */}
+          <aside className="order-3 flex w-full shrink-0 flex-col border-t border-slate-200 bg-white lg:w-[280px] lg:border-t-0">
+            <div className="shrink-0 border-b border-slate-100 px-4 py-3">
+              <h2 className="flex items-center gap-1.5 text-[14px] font-black text-slate-900">
+                <NotebookPen className="h-4 w-4 text-slate-400" aria-hidden />
+                연결 노트
+              </h2>
+            </div>
+            <div className="flex flex-1 items-center justify-center px-4 py-10">
+              <div className="flex w-full flex-col items-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center">
+                <NotebookPen className="h-7 w-7 text-slate-300" strokeWidth={1.75} aria-hidden />
+                <p className="mt-2 text-[12px] font-bold leading-relaxed text-slate-400">
+                  구독하고 질문하면
+                  <br />
+                  노트가 여기에 쌓여요
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     );
   }
@@ -271,9 +372,9 @@ export function QuestionRoomStudentDesignWorkspace(props: {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1">
-        {/* 좌측 240px */}
-        <aside className="flex w-[240px] shrink-0 flex-col border-r border-slate-200 bg-white">
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* 좌측 240px (모바일: 상단, 높이 제한) */}
+        <aside className="flex max-h-[38vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white lg:max-h-none lg:w-[240px] lg:border-b-0 lg:border-r">
           <div className="shrink-0 border-b border-slate-100 p-4">
             <h2 className="text-[15px] font-black text-slate-900">구독 질문방</h2>
             <div className="relative mt-3">
@@ -371,7 +472,7 @@ export function QuestionRoomStudentDesignWorkspace(props: {
         </aside>
 
         {/* 중앙 */}
-        <main className="flex min-w-0 flex-1 flex-col border-r border-slate-200 bg-white">
+        <main className="flex min-w-0 flex-1 flex-col border-slate-200 bg-white lg:border-r">
           <header className="shrink-0 border-b border-slate-100 px-6 py-5">
             <div className="flex gap-4">
               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-slate-50 shadow-md ring-1 ring-slate-100">
@@ -412,30 +513,28 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                 <div className="mt-4 max-w-md">
                   <div className="flex items-center justify-between text-[11px] font-bold text-slate-600">
                     <span>{weeklyQuestionQuotaLabel(weeklyUsage)}</span>
-                    <span className="text-slate-400">
-                      {(() => {
-                        const t = String(weeklyUsage?.planTier ?? "").toLowerCase();
-                        return t === "limited" ? "베이직" : t === "standard" ? "스탠다드" : t === "premium" ? "프리미엄" : "플랜";
-                      })()}
-                    </span>
+                    <span className="text-slate-400">{subCtx?.planLabel ?? "플랜"}</span>
                   </div>
-                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                  {/* ★잔여(남은) 질문 = 파랑, 사용 = 회색 트랙 (반전) */}
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-200">
                     <div
                       className="h-full rounded-full bg-[#2563EB] transition-all"
                       style={{
                         width:
-                          weeklyUsage && weeklyUsage.limit > 0 && weeklyUsage.limit < 999
-                            ? `${Math.min(100, Math.round((weeklyUsage.used / weeklyUsage.limit) * 100))}%`
-                            : weeklyUsage && weeklyUsage.limit >= 999
-                              ? "12%"
+                          weeklyUsage && weeklyUsage.limit >= 999
+                            ? "100%"
+                            : weeklyUsage && weeklyUsage.limit > 0
+                              ? `${Math.min(100, Math.max(0, Math.round(((weeklyUsage.limit - weeklyUsage.used) / weeklyUsage.limit) * 100)))}%`
                               : "0%",
                       }}
                     />
                   </div>
-                  <p className="mt-1.5 space-y-0.5 text-[10px] text-slate-500">
-                    <span className="block">갱신: {subCtx?.weekRenewalLabel ?? "구독 시작일 기준 7일마다"}</span>
-                    <span className="block">구독 플랜: {subCtx?.planLabel ?? "—"}</span>
-                    <span className="block">다음 갱신: {subCtx?.nextRenewalLabel ?? "—"}</span>
+                  {/* ★상단 구독 메타 한 줄 압축 (상세는 마우스오버 툴팁) */}
+                  <p
+                    className="mt-1.5 truncate text-[10px] text-slate-500"
+                    title={`${subCtx?.weekRenewalLabel ?? ""} · 다음 갱신 ${subCtx?.nextRenewalLabel ?? "—"}`}
+                  >
+                    {subCtx?.planLabel ?? "구독 플랜"} 플랜 · 다음 갱신 {subCtx?.nextRenewalShort ?? "—"}
                   </p>
                 </div>
               </div>
@@ -525,21 +624,20 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                   )}
                 </div>
 
-                {props.threadId ? (
-                  <div className="mt-6 space-y-3">
-                    <QuestionThreadWrongAnswerToggle
-                      roomId={props.roomId}
-                      threadId={props.threadId}
-                      initialChecked={Boolean(selectedThread.is_wrong_answer)}
-                    />
-                    {threadWorkflow === "answered" ? (
-                      <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} />
-                    ) : threadWorkflow === "confirmed" ? (
-                      <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12px] font-bold text-emerald-900">
-                        답변 확인이 완료되었습니다. 이 질문은 주간 질문 집계에 반영됐어요.
-                      </p>
-                    ) : null}
+                {/* 오답 표시 체크박스는 화면에서 숨김(데이터/API는 보존 — 추후 멘토용 기능으로 활용).
+                    QuestionThreadWrongAnswerToggle / is_wrong_answer 컬럼·라우트는 그대로 둠. */}
+                {props.threadId && threadWorkflow === "answered" ? (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
+                    <span className="text-[11px] font-bold text-slate-600">
+                      멘토 답변이 도착했어요. 확인하면 완료로 표시돼요.
+                    </span>
+                    <QuestionThreadConfirmButton roomId={props.roomId} threadId={props.threadId} compact />
                   </div>
+                ) : props.threadId && threadWorkflow === "confirmed" ? (
+                  <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800">
+                    <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+                    답변을 확인했어요
+                  </p>
                 ) : null}
               </div>
 
@@ -583,14 +681,38 @@ export function QuestionRoomStudentDesignWorkspace(props: {
               {props.threads.loading ? (
                 <p className="py-12 text-center text-[12px] font-bold text-slate-400">질문을 불러오는 중…</p>
               ) : sortedThreads.length === 0 ? (
-                <p className="py-12 text-center text-[12px] font-bold leading-relaxed text-slate-400">
-                  아직 등록된 질문이 없습니다.
-                  <br />
-                  아래 버튼으로 첫 질문을 시작해 보세요.
-                </p>
+                <div className="flex flex-col items-center px-2 py-10 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EEF4FF] text-[#2563EB]">
+                    <MessageCirclePlus className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+                  </div>
+                  <h3 className="mt-3 text-[15px] font-black text-slate-900">이 멘토에게 첫 질문을 남겨보세요</h3>
+                  <p className="mt-1.5 text-[12px] font-medium leading-relaxed text-slate-500">
+                    구독이 시작됐어요. 궁금한 점을 질문하면 멘토가 답변하고, 연결노트로 기록이 쌓여요.
+                  </p>
+                  <ol className="mt-5 w-full max-w-[300px] space-y-2.5 text-left">
+                    {[
+                      ["과목·단원 고르기", "과목·메모는 선택이에요. 비워도 돼요."],
+                      ["궁금한 점 질문하기", "사진·파일도 함께 첨부할 수 있어요."],
+                      ["답변 확인하기", "답변을 받으면 확인을 눌러 완료로 표시해요."],
+                    ].map(([t, d], i) => (
+                      <li key={t} className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-[10px] font-black text-white">
+                          {i + 1}
+                        </span>
+                        <span>
+                          <span className="block text-[12px] font-bold text-slate-800">{t}</span>
+                          <span className="block text-[10.5px] font-medium leading-relaxed text-slate-500">{d}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p className="mt-4 text-[11px] font-bold text-slate-400">
+                    아래 “새로운 질문하기” 버튼으로 시작해 보세요.
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {sortedThreads.map((t) => {
+                  {pagedThreads.map((t) => {
                     const id = String(t.id);
                     const status = threadStatusListLabel(t);
                     const workflow = readQuestionThreadWorkflowStatus(t);
@@ -650,6 +772,31 @@ export function QuestionRoomStudentDesignWorkspace(props: {
                       </article>
                     );
                   })}
+                  {threadTotalPages > 1 ? (
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        disabled={safeThreadPage <= 1}
+                        onClick={() => setThreadPage((p) => Math.max(1, p - 1))}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                        aria-label="이전 페이지"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <span className="text-[11px] font-bold text-slate-500">
+                        {safeThreadPage} / {threadTotalPages}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={safeThreadPage >= threadTotalPages}
+                        onClick={() => setThreadPage((p) => Math.min(threadTotalPages, p + 1))}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                        aria-label="다음 페이지"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

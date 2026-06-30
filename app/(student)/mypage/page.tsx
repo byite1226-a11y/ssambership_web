@@ -166,7 +166,10 @@ export default async function StudentMyPage() {
               내 학습과 결제를 한곳에서 확인하세요
             </h1>
           </div>
-          <p className="mt-2 text-sm font-medium leading-relaxed text-[#3f4b5f]">진행 중인 질문, 구독 현황, 캐시 잔액과 지원 링크를 한 화면에 정리했어요.</p>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-[#3f4b5f]">
+            <span className="md:hidden">진행 중인 질문·구독·캐시를 한눈에.</span>
+            <span className="hidden md:inline">진행 중인 질문, 구독 현황, 캐시 잔액과 지원 링크를 한 화면에 정리했어요.</span>
+          </p>
         </header>
 
         <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">

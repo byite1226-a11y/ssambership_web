@@ -61,9 +61,10 @@ export function QuestionRoomWeeklyUsageBar(props: {
   const used = usage?.used ?? 0;
   const unlimited = usage != null && usage.limit >= 999;
   const quotaLabel = weeklyQuestionQuotaLabel(usage);
+  // F3.6: 막대 채움 = 남은 질문 비율(파랑), 회색 트랙 = 사용분. 다른 질문방 막대와 방향 통일.
   const pct =
     usage && !unlimited && usage.limit > 0
-      ? Math.min(100, Math.round((used / usage.limit) * 100))
+      ? Math.min(100, Math.max(0, Math.round(((usage.limit - used) / usage.limit) * 100)))
       : 0;
 
   return (

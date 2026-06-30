@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function MentorDashboardNotifyBanner() {
   return (
-    <section className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-white p-6 shadow-sm">
+    <section className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-base font-black text-slate-900">새로운 의뢰 알림을 설정해보세요!</h3>
@@ -12,7 +12,7 @@ export function MentorDashboardNotifyBanner() {
         </div>
         <Link
           href="/notifications"
-          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
+          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#059669] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#047857]"
         >
           알림 설정하기 &gt;
         </Link>

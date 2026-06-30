@@ -13,6 +13,10 @@
 .cr-landing .btn-primary:hover{background:#1d4ed8;box-shadow:0 16px 26px -10px rgba(26,86,219,.55);transform:translateY(-1px)}
 .cr-landing .btn-ghost{background:#fff;color:var(--c-secondary);border-color:var(--c-border-strong);font-weight:700}
 .cr-landing .btn-ghost:hover{color:var(--c-primary);border-color:#c4cedd}
+/* 멘토 화면 primary(초록 #059669) — 학생 btn-primary(파랑)와 분리. 한 화면 한 primary. */
+.cr-landing .btn-success{background:#059669;color:#fff;box-shadow:0 12px 22px -10px rgba(5,150,105,.5)}
+.cr-landing .btn-success:hover{background:#047857;box-shadow:0 16px 26px -10px rgba(5,150,105,.55);transform:translateY(-1px)}
+.cr-landing .btn-success:disabled,.cr-landing .btn-success[disabled]{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
 .cr-landing .btn-white{background:#fff;color:var(--c-blue);box-shadow:0 14px 30px -12px rgba(0,0,0,.5)}
 .cr-landing .btn-white:hover{background:#f1f5ff;transform:translateY(-1px)}
 
@@ -140,6 +144,16 @@
   .cr-landing .trust{flex-direction:column;gap:18px;padding:28px}.cr-landing .cta-dark{padding:46px 24px}
   .cr-landing .tbl thead{display:none}.cr-landing .tbl,.cr-landing .tbl tbody,.cr-landing .tbl tr,.cr-landing .tbl td{display:block;width:100%}
   .cr-landing .tbl tbody tr{border-top:1px solid var(--c-border);padding:8px 0}.cr-landing .tbl td{border:none;padding:4px 18px}}
+
+/* B-3: 맞춤의뢰 landing 모바일 우선 폴리시 — ≤640px(폰) 전용. lg+ 데스크탑 base/min-width 규칙 미영향(픽셀 동일). */
+@media (max-width:640px){
+  .cr-landing .wrap{padding:0 18px}
+  .cr-landing .band{padding:46px 0}
+  .cr-landing .hero .cols{padding:40px 0 48px;gap:26px}
+  /* 핵심 액션(의뢰 등록) 크게 — 토스 모바일: CTA 풀폭 세로 스택 */
+  .cr-landing .hero .cta-row{flex-direction:column;width:100%;gap:10px}
+  .cr-landing .hero .cta-row .btn{width:100%}
+}
 
 /* ===== 의뢰 등록 폼 (/custom-request/new) ===== */
 .cr-landing .ticon.sm{width:36px;height:36px;border-radius:10px;font-size:13px;font-weight:800;flex:none}

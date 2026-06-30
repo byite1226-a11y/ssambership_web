@@ -29,14 +29,14 @@ export function MentorDashboardKpiCards(props: { kpis: MentorHubDashboardData["k
           key={c.label}
           className={[
             "rounded-2xl border bg-white p-5 shadow-sm",
-            c.highlight ? "border-blue-200 ring-1 ring-blue-100" : "border-slate-200",
+            c.highlight ? "border-emerald-200 ring-1 ring-emerald-100" : "border-slate-200",
           ].join(" ")}
         >
           <p className="text-xs font-bold text-slate-500">{c.label}</p>
           <p
             className={[
               "mt-2 text-2xl font-black tabular-nums",
-              c.highlight ? "text-[#2563EB]" : "text-slate-900",
+              c.highlight ? "text-[#059669]" : "text-slate-900",
             ].join(" ")}
           >
             {c.value}

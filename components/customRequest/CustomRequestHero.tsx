@@ -33,8 +33,10 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
               의뢰하세요
             </h1>
             <p className="lead">
-              요청을 올리면 검증된 현직 대학생 멘토들이 제안을 보내요. 비교하고 한 분을 골라, 작업방에서 안전하게 끝까지
-              이어가요.
+              <span className="md:hidden">현직 대학생 멘토의 제안을 받아 골라보세요.</span>
+              <span className="hidden md:inline">
+                요청을 올리면 검증된 현직 대학생 멘토들이 제안을 보내요. 비교하고 한 분을 골라, 작업방에서 안전하게 끝까지 이어가요.
+              </span>
             </p>
             <ul className="mini">
               <li>
@@ -97,7 +99,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
                 </div>
                 <div className="pv-req">
                   <span className="l">수학 내신 대비 코치</span>
-                  <span className="r">예산 50,000원</span>
+                  <span className="r">예산 50,000캐시</span>
                 </div>
                 <div className="pvlabel">멘토 제안</div>
                 <div className="prow sel">
@@ -107,7 +109,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
                     <div className="s">서울대 수학교육 · 응답 빠름</div>
                   </span>
                   <span>
-                    <div className="pr">48,000원</div>
+                    <div className="pr">48,000캐시</div>
                     <div className="pk">
                       <svg className="ico" width="11" height="11" viewBox="0 0 24 24" aria-hidden>
                         <path d="M20 6L9 17l-5-5" />
@@ -122,7 +124,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
                     <div className="n">이O서 멘토</div>
                     <div className="s">연세대 응용통계 · 후기 24</div>
                   </span>
-                  <span className="pr">52,000원</span>
+                  <span className="pr">52,000캐시</span>
                 </div>
                 <div className="prow" style={{ marginBottom: 0 }}>
                   <span className="av c">박</span>
@@ -130,7 +132,7 @@ export function CustomRequestHero({ role = null }: CustomRequestHeroProps) {
                     <div className="n">박O현 멘토</div>
                     <div className="s">고려대 수학 · 첨삭 전문</div>
                   </span>
-                  <span className="pr">50,000원</span>
+                  <span className="pr">50,000캐시</span>
                 </div>
               </div>
 

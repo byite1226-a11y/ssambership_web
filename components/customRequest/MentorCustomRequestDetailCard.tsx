@@ -127,7 +127,7 @@ export function MentorCustomRequestDetailCard(props: {
               ) : null}
               <Link
                 href="/mentor/custom-request/posts?tab=applied"
-                className="btn btn-primary mt-4 inline-flex !min-h-[44px] gap-2 !px-5 !py-2.5 !text-sm"
+                className="btn btn-success mt-4 inline-flex !min-h-[44px] gap-2 !px-5 !py-2.5 !text-sm"
               >
                 제안한 의뢰에서 상태 확인하기
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
@@ -146,7 +146,7 @@ export function MentorCustomRequestDetailCard(props: {
             목록으로 돌아가기
           </Link>
           {canApply ? (
-            <Link href={`/mentor/custom-request/posts/${props.postId}/apply`} className="btn btn-primary">
+            <Link href={`/mentor/custom-request/posts/${props.postId}/apply`} className="btn btn-success">
               제안서 작성하기
             </Link>
           ) : null}

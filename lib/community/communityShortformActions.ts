@@ -14,6 +14,7 @@ import {
 import type { ShortformCategorySlug } from "@/lib/community/communityShortformConstants";
 import { uploadShortformVideo } from "@/lib/community/communityShortformStorage";
 import { createClient } from "@/lib/supabase/server";
+import { assertAccountActive } from "@/lib/auth/accountStatus";
 import {
   TRUST_SAFETY_COMMUNITY_ERROR_CODE,
   findRestrictedPhraseInText,
@@ -42,6 +43,8 @@ export async function submitShortformUploadAction(formData: FormData) {
   if (!user) redirect(`/login?next=${encodeURIComponent(returnPath)}`);
 
   const supabase = await createClient();
+  const acctGate = await assertAccountActive(supabase, user.id);
+  if (!acctGate.ok) redirect("/community/shortform?error=account_blocked");
   const { data: profile } = await getUserProfileById(supabase, user.id);
   if (profile?.role !== "mentor") redirect("/community/shortform?error=mentor_only");
 

@@ -11,6 +11,8 @@ type ReviewParts = {
 type Props = {
   reviewDeadlineIso: string | null;
   className?: string;
+  /** D1: 한 줄 인라인 표시(큰 3칸 박스 대신). */
+  compact?: boolean;
 };
 
 function toParts(remainingMs: number): ReviewParts {
@@ -52,6 +54,18 @@ export function DeliveryReviewCountdown(props: Props) {
     { label: "시간", value: pad(parts.hours) },
     { label: "분", value: pad(parts.minutes) },
   ];
+
+  // D1: 한 줄 카운트다운(큰 3칸 박스 대신). 주문방 검토기간에서 사용.
+  if (props.compact) {
+    return (
+      <span className={`inline-flex items-baseline gap-1 text-sm font-extrabold tabular-nums text-[#2563EB] ${className}`} aria-live="polite">
+        {parts.days > 0 ? <span>{parts.days}일</span> : null}
+        <span>{pad(parts.hours)}시간</span>
+        <span>{pad(parts.minutes)}분</span>
+        <span className="font-bold text-slate-500">남음</span>
+      </span>
+    );
+  }
 
   return (
     <div className={`flex flex-wrap gap-2 sm:gap-3 ${className}`} aria-live="polite">

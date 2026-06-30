@@ -181,7 +181,7 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
           <span className="block h-4 w-[3px] shrink-0 rounded-sm bg-[#2563EB]" aria-hidden />
           충전 후 예상 잔액
         </h2>
-        <div className="mt-4 rounded-2xl border border-[#bfdbfe] bg-[#eef4ff] p-5">
+        <div className="mt-4">
           <p className="text-sm text-slate-600">
           {selected.payKrw.toLocaleString("ko-KR")}원 결제
           {selected.bonusKrw > 0 ? (
@@ -192,7 +192,7 @@ export function CashChargeWidget({ userId, currentBalance }: Props) {
           ) : null}{" "}
           = 지급 <span className="font-bold">{selected.cashKrw.toLocaleString("ko-KR")}캐시</span>
           </p>
-          <p className="mt-2 text-3xl font-black tabular-nums text-[#0f172a]">
+          <p className="mt-2 text-3xl font-black tabular-nums text-[#2563EB]">
           {projectedBalance.toLocaleString("ko-KR")}캐시
           </p>
         </div>

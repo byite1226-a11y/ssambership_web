@@ -1,4 +1,5 @@
 import type { MentorPayoutsPageData } from "@/lib/mentor/mentorPayoutsTypes";
+import { ResponsivePageColumns } from "@/components/shell/ResponsivePageColumns";
 import { MentorPayoutsHeroCard } from "./MentorPayoutsHeroCard";
 import { MentorPayoutsMain } from "./MentorPayoutsMain";
 import { MentorPayoutAccountPanel } from "./MentorPayoutAccountPanel";
@@ -11,22 +12,27 @@ export function MentorPayoutsPage(props: { data: MentorPayoutsPageData }) {
         <h1 className="text-2xl font-black text-slate-900">멘토 정산</h1>
         <p className="mt-1 text-sm text-slate-600">예상 정산 금액과 서비스 수익을 확인하세요.</p>
       </header>
-      <div className="grid grid-cols-1 items-start gap-[18px] xl:grid-cols-[1fr_300px]">
-        <div className="min-w-0 space-y-[18px]">
-          <MentorPayoutsHeroCard
-            summary={props.data.summary}
-            schedule={props.data.schedule}
-            lifetimePaid={props.data.kpis.lifetimePaid}
-          />
-          <MentorPayoutAccountPanel
-            bankName={props.data.summary.bankName}
-            accountNumber={props.data.summary.bankAccountNumber}
-            editable={props.data.summary.bankEditable}
-          />
-          <MentorPayoutsMain data={props.data} hideHero />
-        </div>
-        <MentorPayoutsRightPanel schedule={props.data.schedule} months={props.data.months} />
-      </div>
+      {/* lg+ 데스크탑은 기존 2단(본문 + 300px 우측 패널) 그대로, 모바일은 단일컬럼(본문→우측 패널 아래로). */}
+      <ResponsivePageColumns
+        gap="gap-[18px]"
+        desktopGrid="xl:grid-cols-[1fr_300px]"
+        main={
+          <div className="min-w-0 space-y-[18px]">
+            <MentorPayoutsHeroCard
+              summary={props.data.summary}
+              schedule={props.data.schedule}
+              lifetimePaid={props.data.kpis.lifetimePaid}
+            />
+            <MentorPayoutAccountPanel
+              bankName={props.data.summary.bankName}
+              accountNumber={props.data.summary.bankAccountNumber}
+              editable={props.data.summary.bankEditable}
+            />
+            <MentorPayoutsMain data={props.data} hideHero />
+          </div>
+        }
+        aside={<MentorPayoutsRightPanel schedule={props.data.schedule} months={props.data.months} />}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import { recoverPastDueAfterTopup } from "@/lib/toss/cashTopupFromPayment";
 
 const MAX_CENTS = 1_000_000_000;
 
@@ -103,6 +104,9 @@ export async function testWalletCashTopupAction(formData: FormData): Promise<voi
     console.error("[testWalletCashTopupAction] record_cash_topup", error);
     redirect("/wallet/charge?error=" + encodeURIComponent(msg));
   }
+
+  // P1 ① — 테스트 충전 직후 past_due 구독 즉시 복구
+  await recoverPastDueAfterTopup(admin, user.id);
 
   revalidatePath("/wallet");
   revalidatePath("/wallet/charge");

@@ -17,6 +17,7 @@ import {
 } from "@/lib/community/communityBoardSort";
 
 const PRIMARY = "#2563EB";
+const BOARD_PAGE_SIZE = 10;
 
 type Props = {
   initialPosts: CommunityBoardPostCard[];
@@ -27,6 +28,8 @@ type Props = {
   /** 목록 URL 기준 (홈: /community, 게시판: /community/board) */
   basePath?: string;
   writeHref?: string;
+  /** true: 이미 로드된 배열을 10개씩 클라이언트 페이지네이션(게시판). 기본 false: 기존 무한 스크롤(홈). */
+  paginate?: boolean;
 };
 
 export function CommunityHomeFeed(props: Props) {
@@ -42,6 +45,22 @@ export function CommunityHomeFeed(props: Props) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(!props.initialCursor);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const paginate = props.paginate ?? false;
+  const [page, setPage] = useState(1);
+  // 탭(정렬)·카테고리 변경 시 1페이지로 리셋.
+  useEffect(() => {
+    setPage(1);
+  }, [category, sortTab]);
+  // 모바일은 페이지당 5개, 데스크탑은 기존 10개. 초기값=데스크탑값(SSR/hydration 일치) → 마운트 후 보정.
+  const [pageSize, setPageSize] = useState(BOARD_PAGE_SIZE);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPageSize(mq.matches ? 5 : BOARD_PAGE_SIZE);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     if (category === props.initialCategory && sortTab === (props.initialSort ?? "all")) {
@@ -112,12 +131,22 @@ export function CommunityHomeFeed(props: Props) {
     router.push(qs ? `${basePath}?${qs}` : basePath);
   }
 
+  const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const visiblePosts = paginate
+    ? posts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : posts;
+
   return (
     <section className="space-y-4">
       {props.showSortTabs ? (
         <CommunityBoardSortTabs active={sortTab} basePath={basePath} />
       ) : null}
-      <nav className="flex flex-wrap gap-2" aria-label="카테고리">
+      {/* 모바일: 가로 스크롤 한 줄(칩 → 마지막 칩 peek) · 데스크탑(md+): 기존 flex-wrap 그대로 */}
+      <nav
+        className="community-filter-scroll -mx-1 flex flex-nowrap gap-2 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+        aria-label="카테고리"
+      >
         {COMMUNITY_POST_CATEGORIES.map((c) => {
           const active = category === c.slug;
           return (
@@ -125,7 +154,7 @@ export function CommunityHomeFeed(props: Props) {
               key={c.slug}
               type="button"
               onClick={() => onTab(c.slug)}
-              className={communityFilterChipClass(active, "sm")}
+              className={`${communityFilterChipClass(active, "sm")} shrink-0 whitespace-nowrap`}
             >
               {c.label}
             </button>
@@ -147,7 +176,7 @@ export function CommunityHomeFeed(props: Props) {
         </div>
       ) : (
         <ul className="space-y-3">
-          {posts.map((post) => (
+          {visiblePosts.map((post) => (
             <li key={post.id}>
               <CommunityPostCard post={post} />
             </li>
@@ -155,13 +184,42 @@ export function CommunityHomeFeed(props: Props) {
         </ul>
       )}
 
-      <div ref={sentinelRef} className="h-8" aria-hidden />
-      {loading ? (
-        <p className="text-center text-xs font-semibold text-slate-500">불러오는 중…</p>
-      ) : null}
-      {done && posts.length > 0 ? (
-        <p className="text-center text-xs text-slate-400">모두 불러왔습니다.</p>
-      ) : null}
+      {paginate ? (
+        totalPages > 1 ? (
+          <div className="mt-4 flex items-center justify-center gap-2" aria-label="페이지 이동">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
+            >
+              이전
+            </button>
+            <span className="text-xs font-bold" aria-live="polite">
+              <span className="text-[#2563EB]">{currentPage}</span>
+              <span className="text-slate-400"> · {totalPages}</span>
+            </span>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
+            >
+              다음
+            </button>
+          </div>
+        ) : null
+      ) : (
+        <>
+          <div ref={sentinelRef} className="h-8" aria-hidden />
+          {loading ? (
+            <p className="text-center text-xs font-semibold text-slate-500">불러오는 중…</p>
+          ) : null}
+          {done && posts.length > 0 ? (
+            <p className="text-center text-xs text-slate-400">모두 불러왔습니다.</p>
+          ) : null}
+        </>
+      )}
 
       <Link
         href={writeHref}
@@ -172,6 +230,13 @@ export function CommunityHomeFeed(props: Props) {
         <span className="text-xl leading-none">+</span>
         <span>글쓰기</span>
       </Link>
+
+      {/* 모바일 가로 스크롤 카테고리 필터의 스크롤바 숨김(webkit) — FF/IE는 위 arbitrary 클래스로 처리 */}
+      <style jsx global>{`
+        .community-filter-scroll::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </section>
   );
 }

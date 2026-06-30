@@ -1,7 +1,7 @@
 import { CommunityLayoutShell } from "@/components/community/CommunityLayoutShell";
 import { CommunityShortformCategoryTabs } from "@/components/community/CommunityShortformCategoryTabs";
 import { CommunityShortformTabs, parseShortformTab } from "@/components/community/CommunityShortformTabs";
-import { CommunityShortformVideoCard } from "@/components/community/CommunityShortformVideoCard";
+import { CommunityShortformGrid } from "@/components/community/CommunityShortformGrid";
 import { getServerUserWithProfile } from "@/lib/auth/getServerUserWithProfile";
 import { createClient } from "@/lib/supabase/server";
 import { listShortformFeed } from "@/lib/community/communityShortformQueries";
@@ -42,11 +42,7 @@ export default async function CommunityShortformPage(props: Props) {
           등록된 숏폼이 없습니다.
         </p>
       ) : (
-        <ul className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-3">
-          {items.map((item) => (
-            <CommunityShortformVideoCard key={item.id} item={item} href={`/community/shortform/${item.id}`} />
-          ))}
-        </ul>
+        <CommunityShortformGrid items={items} />
       )}
       <CommunityShortformUploadFab isLoggedIn={isLoggedIn} isMentor={isMentor} />
     </CommunityLayoutShell>

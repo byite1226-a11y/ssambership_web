@@ -138,7 +138,10 @@ export function CustomRequestNewForm(props: { errorMessage: string | null; draft
               {props.errorMessage ? <div className="form-alert">{props.errorMessage}</div> : null}
 
               <div className="form-notices">
-                <CustomRequestPolicyNotice />
+                {/* 운영 범위 안내(단순 고지·동의 불요) — 모바일 정보 피로 완화 위해 모바일 숨김, 데스크탑 원문 유지. */}
+                <div className="hidden md:block">
+                  <CustomRequestPolicyNotice />
+                </div>
               </div>
 
               <FormSection step="1" title="카테고리 선택" hint="필수 · 하나를 선택해 주세요">

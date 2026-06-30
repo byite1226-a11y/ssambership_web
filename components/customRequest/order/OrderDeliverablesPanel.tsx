@@ -268,7 +268,7 @@ function OrderDeliverablesPanelMentor({
                       <input type="hidden" name="deliverableId" value={id} />
                       <button
                         type="submit"
-                        className="flex w-full items-center justify-center rounded-xl border border-ds-border-subtle bg-white py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                        className="flex w-full items-center justify-center rounded-xl border border-ds-border-subtle bg-white py-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                       >
                         다운로드
                       </button>
@@ -312,19 +312,19 @@ function OrderDeliverablesPanelMentor({
                 <input
                   type="file"
                   name="deliverableFile"
-                  className="block w-full cursor-pointer text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700"
+                  className="block w-full cursor-pointer text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700"
                   required
                 />
                 <textarea
                   name="deliverableBody"
                   rows={2}
-                  className="w-full rounded-xl border border-ds-border-subtle bg-white px-3 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-500 outline-none focus:border-blue-400"
+                  className="w-full rounded-xl border border-ds-border-subtle bg-white px-3 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-500 outline-none focus:border-emerald-400"
                   placeholder="납품 설명 (옵션)"
                 />
                 <FormSubmitButton
                   idleLabel="제출하기"
                   pendingLabel="제출 중"
-                  className="w-full rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700"
+                  className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700"
                 />
               </form>
             ) : null}

@@ -19,14 +19,15 @@ export async function fetchUserDisplayName(
   supabase: SupabaseClient,
   userId: string
 ): Promise<string> {
+  // users 테이블에 display_name 컬럼이 없어 select가 실패 → 이름이 항상 "사용자"로 폴백되던 버그 수정.
   const { data } = await supabase
     .from("users")
-    .select("full_name, nickname, display_name")
+    .select("full_name, nickname")
     .eq("id", userId)
     .maybeSingle();
-  const row = data as { full_name?: string | null; nickname?: string | null; display_name?: string | null } | null;
-  const name = (row?.full_name ?? row?.nickname ?? row?.display_name ?? "").trim();
-  return name || "사용자";
+  const row = data as { full_name?: string | null; nickname?: string | null } | null;
+  const name = (row?.full_name ?? row?.nickname ?? "").trim();
+  return name || "멘토";
 }
 
 /**

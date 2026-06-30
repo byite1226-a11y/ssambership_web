@@ -31,7 +31,7 @@ function ListBlock(props: { title: string; items: MentorChannelListItem[] }) {
             className="flex min-h-[3rem] flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm"
           >
             <span className="min-w-0 flex-1 font-bold text-slate-800 break-words">{it.title}</span>
-            <span className="shrink-0 whitespace-nowrap rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
+            <span className="shrink-0 whitespace-nowrap rounded-lg bg-[#ECFDF5] px-2.5 py-1 text-xs font-bold text-[#059669]">
               {it.publicLabel}
             </span>
           </li>
@@ -61,7 +61,7 @@ export function MentorChannelPageBody(props: {
         <div className="flex flex-wrap gap-3">
           <Link
             href="/mentor/profile/edit"
-            className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500 transition-colors shadow-sm"
+            className="rounded-xl bg-[#059669] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#047857] transition-colors shadow-sm"
           >
             프로필·연결 정보 편집
           </Link>
@@ -78,14 +78,14 @@ export function MentorChannelPageBody(props: {
   if (!items.length) {
     return (
       <div className="max-w-4xl mx-auto space-y-6 pb-12">
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-6">
-          <p className="text-sm font-extrabold text-blue-900">등록된 대표 콘텐츠가 없습니다</p>
-          <p className="mt-2 text-sm text-blue-950">프로필 편집 화면에서 대표 콘텐츠를 등록하면 이 채널에 목록이 채워집니다.</p>
+        <div className="rounded-2xl border border-emerald-200 bg-[#ECFDF5]/40 p-6">
+          <p className="text-sm font-extrabold text-[#065F46]">등록된 대표 콘텐츠가 없습니다</p>
+          <p className="mt-2 text-sm text-[#064E3B]">프로필 편집 화면에서 대표 콘텐츠를 등록하면 이 채널에 목록이 채워집니다.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/mentor/profile/edit"
-            className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-500 transition-colors shadow-sm"
+            className="rounded-xl bg-[#059669] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#047857] transition-colors shadow-sm"
           >
             대표 콘텐츠 및 프로필 편집
           </Link>
@@ -106,7 +106,7 @@ export function MentorChannelPageBody(props: {
         <div className="flex flex-wrap gap-2">
           <Link
             href="/mentor/profile/edit"
-            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 transition-colors shadow-sm"
+            className="rounded-xl bg-[#059669] px-4 py-2 text-sm font-bold text-white hover:bg-[#047857] transition-colors shadow-sm"
           >
             콘텐츠 연결·프로필 수정
           </Link>

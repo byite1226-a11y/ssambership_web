@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/design-system";
+import { Avatar } from "@/components/common/Avatar";
 import type { OrderDetailPageData } from "@/lib/customRequest/orderDetailQueries";
 import {
   isOrderRowTerminalForActions,
@@ -91,12 +92,12 @@ export function hasRightSettlementBlockContent(
 function formatKrwWon(n: unknown): string {
   if (n == null) return "—";
   if (typeof n === "number" && Number.isFinite(n)) {
-    return `${n.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}원`;
+    return `${n.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}캐시`;
   }
   const t = String(n).trim().replace(/[, ]/g, "");
   const v = Number(t);
   if (Number.isFinite(v)) {
-    return `${v.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}원`;
+    return `${v.toLocaleString("ko-KR", { maximumFractionDigits: 0 })}캐시`;
   }
   return "—";
 }
@@ -283,9 +284,7 @@ export function OrderRoomPageHeader(props: OrderRoomPageHeaderProps) {
           </div>
 
           <div className="pt-2.5 md:pt-0 md:pl-4 flex items-center gap-2.5">
-            <div className="h-9 w-9 shrink-0 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[11px] font-black text-slate-500" aria-hidden>
-              {(mName && mName !== "—" ? mName.trim().charAt(0) : "M").toUpperCase()}
-            </div>
+            <Avatar name={mName && mName !== "—" ? mName : null} role="mentor" className="h-9 w-9 text-[11px]" />
             <div className="space-y-0.5">
               <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">선택된 멘토</p>
               <p className="text-xs font-black text-slate-900">{`${mName} 멘토`}</p>
@@ -605,73 +604,24 @@ function OrderRoomPageHeaderMentor({ detail, backHref = "/custom-request" }: Ord
   }
   if (!o.row) return null;
 
-  const orderRow = o.row as Record<string, unknown>;
-  const dueDate = h.dueLine && h.dueLine !== "—" ? h.dueLine : "—";
-
   const backLabel = "수락된 의뢰 상세로 돌아가기";
-  const status = mentorCustomOrderBrowseStatus(orderRow, mentorOrderDisputeSetForBadge(orderRow, detail.hasActiveDispute));
+  const hasTitle = Boolean(h.requestTitle && h.requestTitle !== "—");
 
+  // 큰 상태 문장(아래 hero)이 주인공이므로 헤더는 경로 + 의뢰 제목만 — 중복 타이틀/죽은 버튼 제거.
   return (
-    <div className="mb-2 flex flex-col gap-6">
-      {/* TOP: Breadcrumb */}
-      <div>
-        <Link
-          href={backHref}
-          className="group inline-flex items-center gap-1 text-[13px] font-medium text-slate-500 hover:text-blue-600 transition-colors"
-        >
-          <span>←</span>
-          <span>{backLabel}</span>
-        </Link>
-      </div>
-
-      {/* Header Title Stack */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">작업방</h1>
-        <p className="text-[14px] text-slate-500">의뢰자와 1:1로 소통하며 작업을 진행하세요.</p>
-      </div>
-
-      {/* Summary — 과목·상태·마감만 (상세 메타는 우측 의뢰 정보) */}
-      <div className="flex items-start justify-between gap-6 border-b border-ds-border-subtle pb-6">
-        <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </div>
-
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge label={status.label} kind={status.kind} size="sm" />
-              <h2 className="truncate text-lg font-bold text-slate-900" title={h.requestTitle || ""}>
-                {h.requestTitle || "제목 정보 없음"}
-              </h2>
-            </div>
-            {dueDate !== "—" ? (
-              <p className="text-sm leading-relaxed text-slate-600">
-                마감일 <span className="font-semibold text-slate-900">{dueDate}</span>
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex h-9 items-center justify-center rounded-lg border border-ds-border-subtle bg-white px-4 text-[13px] font-bold text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50"
-          >
-            의뢰 상세 보기
-          </button>
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
-            aria-label="Options"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-            </svg>
-          </button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-2">
+      <Link
+        href={backHref}
+        className="group inline-flex items-center gap-1 text-[13px] font-medium text-slate-500 transition-colors hover:text-emerald-700"
+      >
+        <span className="transition-transform group-hover:-translate-x-0.5">←</span>
+        <span>{backLabel}</span>
+      </Link>
+      {hasTitle ? (
+        <p className="truncate text-sm font-bold text-slate-700" title={h.requestTitle}>
+          의뢰 · {h.requestTitle}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -796,7 +746,7 @@ function OrderStepStripMentor({
                   </svg>
                 </div>
               ) : isCurrent ? (
-                <div className="h-3.5 w-3.5 rounded-full bg-blue-600 ring-4 ring-blue-100" aria-current="step" />
+                <div className="h-3.5 w-3.5 rounded-full bg-emerald-600 ring-4 ring-emerald-100" aria-current="step" />
               ) : (
                 <div className="h-2 w-2 rounded-full bg-slate-200" aria-hidden />
               )}

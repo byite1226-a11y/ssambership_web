@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CircleCheck } from "lucide-react";
 import { downloadCustomOrderDeliverableAction } from "@/lib/customRequest/orderDeliverableDownloadActions";
 
 export type CustomRequestOrderCompleteViewProps = {
@@ -54,7 +55,7 @@ function ActionButton(props: {
   children: ReactNode;
 }) {
   const base =
-    "inline-flex min-h-[48px] w-full items-center justify-center rounded-xl px-4 text-sm font-extrabold transition sm:w-auto sm:min-w-[220px]";
+    "inline-flex min-h-[48px] w-full items-center justify-center rounded-xl px-4 text-sm font-extrabold transition";
   const styles =
     props.variant === "secondary"
       ? "border-2 border-[#2563EB] bg-white text-[#2563EB] hover:bg-blue-50/40"
@@ -69,7 +70,7 @@ function ActionButton(props: {
   }
 
   return (
-    <span className="relative inline-block w-full sm:w-auto" title={props.tooltip}>
+    <span className="relative block w-full" title={props.tooltip}>
       <button type="button" disabled className={`${base} ${styles} cursor-not-allowed opacity-50`}>
         {props.children}
       </button>
@@ -82,8 +83,12 @@ export function CustomRequestOrderCompleteView(props: CustomRequestOrderComplete
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
-      <header className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-center shadow-sm sm:p-8">
-        <h1 className="text-2xl font-black text-slate-900 sm:text-3xl">주문이 완료되었습니다 🎉</h1>
+      <header className="rounded-2xl border-[0.5px] border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
+        {/* 완료/성공 의미색은 체크 아이콘에만 — 배너 전체를 초록으로 칠하지 않음 */}
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+          <CircleCheck className="h-7 w-7" strokeWidth={2} aria-hidden />
+        </span>
+        <h1 className="mt-4 text-2xl font-black text-slate-900 sm:text-3xl">주문이 완료되었습니다</h1>
         <p className="mt-2 text-sm font-medium text-slate-600">완료 일시 · {completedAtLabel}</p>
       </header>
 
@@ -93,7 +98,6 @@ export function CustomRequestOrderCompleteView(props: CustomRequestOrderComplete
           <SummaryItem label="선택 멘토" value={summary.mentorName} />
           <SummaryItem label="요청 제목" value={summary.requestTitle} />
           <SummaryItem label="최종 금액" value={summary.finalAmountLabel} accent />
-          <SummaryItem label="총 소요 기간" value={summary.durationLabel} />
           <SummaryItem label="완료일" value={summary.completedDateLabel} />
           <SummaryItem label="마감일" value={summary.deadlineLabel} />
         </dl>
@@ -130,13 +134,10 @@ export function CustomRequestOrderCompleteView(props: CustomRequestOrderComplete
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="text-lg font-black text-slate-900">결제 정보</h2>
         <dl className="mt-4 space-y-3 text-sm">
+          {/* F4: 학생은 전액 결제 — 수수료는 멘토 정산 측 공제이므로 학생 영수증에서 제외(IQ 영수증과 동일 규칙). */}
           <div className="flex justify-between gap-4">
             <dt className="font-bold text-slate-500">결제 금액</dt>
             <dd className="font-extrabold text-slate-900">{payment.amountLabel}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="font-bold text-slate-500">수수료</dt>
-            <dd className="font-extrabold text-slate-900">{payment.feeLabel}</dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt className="font-bold text-slate-500">지급 완료 일시</dt>
@@ -151,7 +152,7 @@ export function CustomRequestOrderCompleteView(props: CustomRequestOrderComplete
         </button>
       </section>
 
-      <section className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <ActionButton
           href={review.eligible ? review.href : undefined}
           disabled={!review.eligible}

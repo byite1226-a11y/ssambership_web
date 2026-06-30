@@ -275,6 +275,21 @@ export async function saveConnectionNote(params: {
   return { ok: true, row: inserted.row };
 }
 
+/**
+ * 해당 질문방(room) 내 질문 누적 순번 = 그 room의 thread 개수 + 1.
+ * ★room id로만 필터(학생 전체 합산 아님) → 질문방마다 1,2,3… 독립 카운트.
+ */
+export async function nextRoomQuestionNumber(supabase: SupabaseClient, roomId: string): Promise<number> {
+  const { column } = await pickExistingColumn(supabase, "question_threads", [...QUESTION_THREADS_ROOM_FK_CANDIDATES]);
+  if (!column) return 1;
+  const { count, error } = await supabase
+    .from("question_threads")
+    .select("id", { count: "exact", head: true })
+    .eq(column, roomId);
+  if (error || count == null) return 1;
+  return count + 1;
+}
+
 async function findNewestThreadId(supabase: SupabaseClient, roomId: string): Promise<string | null> {
   const { column } = await pickExistingColumn(supabase, "question_threads", [...QUESTION_THREADS_ROOM_FK_CANDIDATES]);
   if (!column) return null;

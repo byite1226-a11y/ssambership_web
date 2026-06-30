@@ -599,3 +599,39 @@ export async function runSubscriptionRenewalBatch(
 
   return summary;
 }
+
+/**
+ * P1 ① — 캐시 충전 직후 past_due 구독 즉시 복구.
+ * 충전 성공 후 그 학생의 past_due 구독을 찾아 한 번씩 갱신 RPC 를 호출한다.
+ * (검증된 process_subscription_renewal 멱등 로직 그대로 사용. 잔액이 부족하면 past_due 유지)
+ */
+export async function recoverPastDueSubscriptionsForStudent(
+  supabase: SupabaseClient,
+  studentId: string,
+  at: Date = new Date()
+): Promise<{ recovered: number; insufficient: number; scanned: number }> {
+  const atIso = at.toISOString();
+  const out = { recovered: 0, insufficient: 0, scanned: 0 };
+  if (!studentId) return out;
+
+  const { data, error } = await supabase
+    .from(SUBSCRIPTIONS_TABLE)
+    .select(SUBSCRIPTIONS_SELECT)
+    .eq("student_id", studentId)
+    .eq("status", "past_due")
+    .limit(MAX_BATCH_LIMIT);
+  if (error) {
+    console.error("[recoverPastDueSubscriptionsForStudent] query", error.message);
+    return out;
+  }
+  const rows = ((data as unknown as Row[] | null) ?? []) as Row[];
+  out.scanned = rows.length;
+  for (const row of rows) {
+    // 해지 예약/유예 만료는 일반 배치가 처리하도록 건너뜀(복구 대상 아님)
+    if (boolFromUnknown(row.cancel_at_period_end)) continue;
+    const result = await processRenewal(supabase, row, atIso);
+    if (result.code === "renewed") out.recovered += 1;
+    else if (result.code === "insufficient") out.insufficient += 1;
+  }
+  return out;
+}

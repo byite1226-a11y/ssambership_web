@@ -67,28 +67,30 @@ export function MentorsListTopFilterBar(props: {
           <MentorsListQuickLinks favoriteCount={props.favoriteCount} />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-          <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">정렬</span>
-          {MENTOR_SORT_OPTIONS.map((s) => {
-            const active = props.filters.sort === s.id;
-            const href = mentorsListHref(hrefBase, {
-              sort: s.id === "popular" ? null : s.id,
-              page: null,
-            });
-            return (
-              <Link
-                key={s.id}
-                href={href}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-black transition ${
-                  active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {s.label}
-              </Link>
-            );
-          })}
+        <div className="flex items-center gap-2 border-t border-slate-100 pt-3">
+          <span className="shrink-0 text-[10px] font-extrabold uppercase tracking-wide text-slate-500">정렬</span>
+          <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {MENTOR_SORT_OPTIONS.map((s) => {
+              const active = props.filters.sort === s.id;
+              const href = mentorsListHref(hrefBase, {
+                sort: s.id === "popular" ? null : s.id,
+                page: null,
+              });
+              return (
+                <Link
+                  key={s.id}
+                  href={href}
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-black transition ${
+                    active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {s.label}
+                </Link>
+              );
+            })}
+          </div>
 
-          <div className="ml-auto flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 p-0.5">
             <Link
               href={mentorsListHref(hrefBase, { view: "list", page: null })}
               className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition ${

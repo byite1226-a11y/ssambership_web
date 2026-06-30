@@ -19,6 +19,7 @@ import {
 import { communityComposePath } from "@/lib/community/communityComposeTab";
 import { uploadCommunityPostImages } from "@/lib/community/communityStorage";
 import { createClient } from "@/lib/supabase/server";
+import { assertAccountActive } from "@/lib/auth/accountStatus";
 import {
   TRUST_SAFETY_COMMUNITY_ERROR_CODE,
   findRestrictedPhraseInText,
@@ -52,6 +53,12 @@ export async function submitCommunityBoardPostAction(formData: FormData) {
   const { user } = await getServerAuthUser();
   const returnPath = safeReturnPath(String(formData.get("returnPath") ?? DEFAULT_RETURN));
   if (!user) redirect(`/login?next=${encodeURIComponent(returnPath.split("?")[0] ?? returnPath)}`);
+
+  {
+    const supabaseAcct = await createClient();
+    const acctGate = await assertAccountActive(supabaseAcct, user.id);
+    if (!acctGate.ok) redirect(errRedirect(returnPath, "account_blocked"));
+  }
 
   const intent = String(formData.get("intent") ?? "publish");
   const status = intent === "draft" ? "draft" : "published";
@@ -168,6 +175,12 @@ export async function submitBoardCommentAction(formData: FormData) {
 
   const { label } = await authorLabelFor(user.id);
   const supabase = await createClient();
+  const acctGate = await assertAccountActive(supabase, user.id);
+  if (!acctGate.ok) {
+    const q = new URLSearchParams();
+    q.set("commentError", "account_blocked");
+    redirect(`${returnPath}?${q.toString()}`);
+  }
   const r = await insertBoardComment(supabase, user.id, {
     postId,
     parentId: parentId && UUID_RE.test(parentId) ? parentId : null,

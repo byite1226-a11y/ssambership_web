@@ -584,6 +584,14 @@ export async function loadPublicMentorsList(
     if (!mentorVerificationStatusAllowsActivity(prow?.verification_status)) {
       continue;
     }
+    // [과목 필수 게이트] 담당 과목 0개 멘토는 공개 디렉터리에서 제외(활동하려면 과목 지정 필요).
+    const prowSubjects = (prow as Record<string, unknown> | null)?.teaching_subjects;
+    const hasSubject = Array.isArray(prowSubjects)
+      ? prowSubjects.some((s) => typeof s === "string" && s.trim().length > 0)
+      : false;
+    if (!hasSubject) {
+      continue;
+    }
     const display = applySchoolClassificationLabels(buildMentorProfileDisplay(prow, u), {
       schoolTierLabels: opts?.schoolTierLabels ?? {},
       majorCategoryLabels: opts?.majorCategoryLabels ?? {},

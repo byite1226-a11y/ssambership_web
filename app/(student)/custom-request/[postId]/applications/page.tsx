@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { CustomRequestDetailShell } from "@/components/customRequest/customRequestDetailLayout";
 import { ApplicationsCompareView } from "@/components/customRequest/ApplicationsCompareView";
+import { CustomRequestApplicationsWaitingView } from "@/components/customRequest/CustomRequestApplicationsWaitingView";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -13,7 +14,7 @@ import {
   loadApplicationsForPost,
   loadCustomPostById,
 } from "@/lib/customRequest/customRequestQueries";
-import { isDraftCustomRequestPost } from "@/lib/customRequest/customRequestPostMappers";
+import { isDraftCustomRequestPost, mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
 import { batchSignApplicationAttachmentImageThumbUrls } from "@/lib/customRequest/applicationAttachmentAccess";
 
 type Row = Record<string, unknown>;
@@ -58,6 +59,16 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
       )
     : {};
 
+  // 지원 0건이면 대기 안내, 1건 이상이면 비교·선정 — 한 화면에서 자동 분기(waiting 라우트 병합).
+  const applicantCount = list.error ? 0 : (list.rows as Row[]).length;
+  const waitingPostSummary = (() => {
+    if (!post.row) {
+      return { title: "요청 정보 없음", category: "—", budgetLine: "—", deadline: "—", deadlineIso: null };
+    }
+    const d = mapPostRowToPublicDetail(post.row as Row);
+    return { title: d.title, category: d.category, budgetLine: d.budgetLine, deadline: d.deadline, deadlineIso: null };
+  })();
+
   return (
     <PageScaffold
       hideHero
@@ -80,6 +91,15 @@ export default async function CustomRequestApplicationsPage(props: PageProps) {
           <p className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold text-amber-950">
             이 맞춤의뢰는 작성자(의뢰하신 본인)만 비교·선정 화면을 열 수 있어요.
           </p>
+        ) : applicantCount === 0 ? (
+          <CustomRequestApplicationsWaitingView
+            postId={postId}
+            post={waitingPostSummary}
+            applications={[]}
+            applicantCount={0}
+            maxApplicants={10}
+            listError={list.error && !list.rows.length ? list.error : null}
+          />
         ) : (
           <ApplicationsCompareView
             list={list}

@@ -50,9 +50,9 @@ export function WalletChargeRightSidebar(props: { ledgerRows: LedgerLineRow[] })
         <p className="text-xs text-slate-500">총 사용 금액 (차감 합계)</p>
         <div className="mt-4 space-y-3">
           {[
-            { label: "맞춤의뢰", value: stats.custom, color: "bg-slate-400" },
-            { label: "구독제", value: stats.subscription, color: "bg-slate-300" },
-            { label: "기타", value: stats.other, color: "bg-slate-200" },
+            { label: "맞춤의뢰", value: stats.custom, color: "bg-[#2563EB]" },
+            { label: "구독제", value: stats.subscription, color: "bg-[#2563EB]" },
+            { label: "개별질문 · 기타", value: stats.other, color: "bg-[#2563EB]" },
           ].map((item) => (
             <div key={item.label}>
               <div className="flex justify-between text-xs font-semibold text-slate-600">

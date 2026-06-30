@@ -147,12 +147,12 @@ function formatAmountLine(row: Row): string {
     const raw = row[k];
     if (raw == null) continue;
     if (typeof raw === "number" && Number.isFinite(raw)) {
-      return `${raw.toLocaleString("ko-KR")}원`;
+      return `${raw.toLocaleString("ko-KR")}캐시`;
     }
     const s = String(raw).trim().replace(/[, ]/g, "");
     const n = Number(s);
     if (Number.isFinite(n)) {
-      return `${n.toLocaleString("ko-KR")}원`;
+      return `${n.toLocaleString("ko-KR")}캐시`;
     }
     if (String(raw).trim()) {
       return String(raw).trim();

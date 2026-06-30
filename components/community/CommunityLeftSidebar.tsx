@@ -29,7 +29,7 @@ export function CommunityLeftSidebar(props: { active: CommunityNavActive; logged
   const meActive = a === "me" || a === "my-posts" || a === "scraps";
 
   return (
-    <aside className="w-full lg:w-[200px]" aria-label="커뮤니티 메뉴">
+    <aside className="hidden w-full lg:block lg:w-[200px]" aria-label="커뮤니티 메뉴">
       <div className="flex flex-col gap-[14px]">
       <nav className={`${SURFACE_CARD} !px-3 !py-3`}>
         <NavLink href="/community" label="홈" active={a === "home"} />

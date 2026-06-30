@@ -2,6 +2,7 @@ import Link from "next/link";
 import React from "react";
 import { FileText, CalendarDays, Wallet, Bell, ShieldAlert, type LucideIcon } from "lucide-react";
 import { SURFACE_CARD, PAGE_COL_GAP } from "@/lib/ui/surfaceCard";
+import { MobileNavTabs } from "@/components/common/MobileNavTabs";
 
 interface UserLike {
   email?: string | null;
@@ -29,6 +30,8 @@ type Props = {
   };
   /** 우측 결제·캐시 최근 내역 */
   ledgerPreview?: React.ReactNode;
+  /** 우측 결제·캐시 레일 숨김(중앙 2컬럼 확장) — 캐시 사용내역처럼 우측 박스가 중복인 페이지 전용 */
+  hideRightRail?: boolean;
   children: React.ReactNode;
 };
 
@@ -49,6 +52,7 @@ export function StudentDashboardShell({
   cashBalanceKrw = 0,
   learningSummary,
   ledgerPreview,
+  hideRightRail = false,
   children,
 }: Props) {
   const name = profile?.full_name?.trim() || profile?.nickname?.trim() || user?.email || "—";
@@ -57,8 +61,8 @@ export function StudentDashboardShell({
 
   return (
     <div className="mx-auto max-w-[1320px] px-4 py-8 antialiased">
-      <div className={`grid grid-cols-1 items-start lg:grid-cols-[200px_minmax(0,1fr)_300px] ${PAGE_COL_GAP}`}>
-        <aside className={`flex flex-col self-start ${PAGE_COL_GAP} lg:col-span-1`}>
+      <div className={`grid grid-cols-1 items-start ${hideRightRail ? "lg:grid-cols-[200px_minmax(0,1fr)]" : "lg:grid-cols-[200px_minmax(0,1fr)_300px]"} ${PAGE_COL_GAP}`}>
+        <aside className={`hidden lg:flex flex-col self-start ${PAGE_COL_GAP} lg:col-span-1`}>
           <section className={SURFACE_CARD}>
             <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">마이페이지</p>
             <div className="flex items-center gap-3">
@@ -128,35 +132,49 @@ export function StudentDashboardShell({
           </nav>
         </aside>
 
-        <div className={`min-w-0 ${PAGE_COL_GAP} flex flex-col`}>{children}</div>
+        <div className={`min-w-0 ${PAGE_COL_GAP} flex flex-col`}>
+          <MobileNavTabs
+            tone="blue"
+            ariaLabel="마이페이지 메뉴"
+            items={NAV_ITEMS.map((item) => ({
+              href: item.href,
+              label: item.label,
+              active: activeTab === item.tab,
+              Icon: item.Icon,
+            }))}
+          />
+          {children}
+        </div>
 
-        <aside className={`flex flex-col self-start ${PAGE_COL_GAP}`}>
-          {ledgerPreview ? (
-            ledgerPreview
-          ) : (
-            <section className={SURFACE_CARD}>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">결제 · 캐시</p>
-              <p className="mt-2 text-2xl font-black tabular-nums text-[#2563EB]">
-                {cashBalanceKrw.toLocaleString("ko-KR")}
-                <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
-              </p>
-              <div className="mt-4 flex flex-col gap-2">
-                <Link
-                  href="/wallet/charge"
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
-                >
-                  충전하기
-                </Link>
-                <Link
-                  href="/wallet/ledger"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
-                >
-                  사용내역 전체
-                </Link>
-              </div>
-            </section>
-          )}
-        </aside>
+        {hideRightRail ? null : (
+          <aside className={`flex flex-col self-start ${PAGE_COL_GAP}`}>
+            {ledgerPreview ? (
+              ledgerPreview
+            ) : (
+              <section className={SURFACE_CARD}>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">결제 · 캐시</p>
+                <p className="mt-2 text-2xl font-black tabular-nums text-[#2563EB]">
+                  {cashBalanceKrw.toLocaleString("ko-KR")}
+                  <span className="ml-1 text-sm font-bold text-slate-500">캐시</span>
+                </p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <Link
+                    href="/wallet/charge"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+                  >
+                    충전하기
+                  </Link>
+                  <Link
+                    href="/wallet/ledger"
+                    className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                  >
+                    사용내역 전체
+                  </Link>
+                </div>
+              </section>
+            )}
+          </aside>
+        )}
       </div>
     </div>
   );

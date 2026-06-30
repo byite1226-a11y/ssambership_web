@@ -21,7 +21,7 @@ export function MentorPayoutsHeroCard(props: Props) {
   const { summary, schedule, lifetimePaid } = props;
 
   return (
-    <section className={`${SURFACE_CARD} border-l-[4px] border-l-[#2563EB]`}>
+    <section className={`${SURFACE_CARD} border-l-[4px] border-l-[#059669]`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[13px] font-medium text-slate-500">이번 달 예상 정산 · {schedule.monthLabel}</p>

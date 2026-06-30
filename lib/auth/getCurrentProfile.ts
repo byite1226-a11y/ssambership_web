@@ -14,7 +14,12 @@ export async function getUserProfileById(
   userId: string
 ): Promise<{ data: UserRow | null; error: Error | null }> {
   const { column: displayNameCol } = await pickExistingColumn(supabase, "users", ["display_name"]);
-  const select = displayNameCol ? `${BASE_USER_SELECT}, ${displayNameCol}` : BASE_USER_SELECT;
+  // 정지/차단 부가 컬럼(102 마이그레이션) — 미적용 운영 환경 보호를 위해 존재할 때만 select
+  const { column: suspendedUntilCol } = await pickExistingColumn(supabase, "users", [
+    "suspended_until",
+  ]);
+  const extraCols = [displayNameCol, suspendedUntilCol].filter(Boolean).join(", ");
+  const select = extraCols ? `${BASE_USER_SELECT}, ${extraCols}` : BASE_USER_SELECT;
 
   const { data, error } = await supabase.from("users").select(select).eq("id", userId).maybeSingle();
   if (error) {

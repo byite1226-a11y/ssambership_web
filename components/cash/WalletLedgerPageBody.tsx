@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ReceiptText } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { formatWalletRowDisplay } from "@/lib/cash/cashQueries";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/cash/ledgerRowDisplay";
 
 const PAGE_SIZE = 15;
+const PAGE_SIZE_MOBILE = 8;
 
 type PeriodKey = "1m" | "3m" | "6m" | "custom";
 type KindFilter = "all" | LedgerUiKind;
@@ -69,6 +70,16 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
   const [customFrom, setCustomFrom] = useState(searchParams.get("from") ?? "");
   const [customTo, setCustomTo] = useState(searchParams.get("to") ?? "");
 
+  // 모바일은 페이지당 8행, 데스크탑은 기존 15행. 초기값=데스크탑값(SSR/hydration 일치) → 마운트 후 보정.
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPageSize(mq.matches ? PAGE_SIZE_MOBILE : PAGE_SIZE);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
   const balanceText = data.balance.error
     ? "—"
     : data.balance.row
@@ -104,8 +115,10 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
     return rows;
   }, [ledgerRows, period, kind, customFrom, customTo]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // pageSize 전환(데스크탑↔모바일) 시 현재 페이지 클램프로 범위 초과 방지.
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   function applyCustomPeriod() {
     const p = new URLSearchParams();
@@ -149,31 +162,34 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <span className="w-full text-xs font-bold text-slate-500">기간</span>
-          {(
-            [
-              ["1m", "1개월"],
-              ["3m", "3개월"],
-              ["6m", "6개월"],
-              ["custom", "직접설정"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => {
-                setPeriod(key);
-                setPage(1);
-              }}
-              className={[
-                "rounded-full px-3.5 py-1.5 text-xs font-bold",
-                period === key ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
-              ].join(" ")}
-            >
-              {label}
-            </button>
-          ))}
+        <div>
+          <span className="block text-xs font-bold text-slate-500">기간</span>
+          {/* 모바일: 가로 스크롤 한 줄 · 데스크탑(md+): 기존 flex-wrap 그대로 */}
+          <div className="wallet-filter-scroll -mx-1 mt-2 flex flex-nowrap gap-2 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
+            {(
+              [
+                ["1m", "1개월"],
+                ["3m", "3개월"],
+                ["6m", "6개월"],
+                ["custom", "직접설정"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setPeriod(key);
+                  setPage(1);
+                }}
+                className={[
+                  "shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold",
+                  period === key ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         {period === "custom" ? (
           <div className="flex flex-wrap items-end gap-2">
@@ -205,32 +221,35 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-          <span className="w-full text-xs font-bold text-slate-500">유형</span>
-          {(
-            [
-              ["all", "전체"],
-              ["charge", "충전"],
-              ["subscription", "구독"],
-              ["custom_request", "맞춤의뢰"],
-              ["other", "기타"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => {
-                setKind(key);
-                setPage(1);
-              }}
-              className={[
-                "rounded-full px-3.5 py-1.5 text-xs font-bold",
-                kind === key ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
-              ].join(" ")}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="border-t border-slate-100 pt-4">
+          <span className="block text-xs font-bold text-slate-500">유형</span>
+          {/* 모바일: 가로 스크롤 한 줄(5칩 → 마지막 칩 peek) · 데스크탑(md+): 기존 flex-wrap 그대로 */}
+          <div className="wallet-filter-scroll -mx-1 mt-2 flex flex-nowrap gap-2 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
+            {(
+              [
+                ["all", "전체"],
+                ["charge", "충전"],
+                ["subscription", "구독"],
+                ["custom_request", "맞춤의뢰"],
+                ["other", "기타"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setKind(key);
+                  setPage(1);
+                }}
+                className={[
+                  "shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold",
+                  kind === key ? "bg-[#2563EB] text-white" : "border border-slate-200 bg-white text-slate-700",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -255,7 +274,8 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
           <p className="py-12 text-center text-sm font-bold text-slate-500">선택한 조건에 맞는 내역이 없어요</p>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* 데스크탑: 표 */}
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full min-w-[600px] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-xs font-bold text-slate-400">
@@ -297,23 +317,59 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
               </table>
             </div>
 
+            {/* 모바일: 카드(가로 스크롤 제거) */}
+            <ul className="space-y-2 sm:hidden">
+              {pageRows.map((row, i) => {
+                const k = ledgerUiKind(row);
+                const credit = ledgerIsCredit(row);
+                const amt = ledgerAmountLabel(row);
+                const amtText = credit && !amt.startsWith("+") && !amt.startsWith("-") ? `+${amt}` : amt;
+                return (
+                  <li
+                    key={typeof row.id === "string" ? row.id : `m-${i}`}
+                    className="rounded-xl border border-slate-200 bg-white p-3.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-700">
+                        {kindBadge(k)}
+                      </span>
+                      <span className="text-xs text-slate-500">{ledgerAt(row)}</span>
+                    </div>
+                    <div className="mt-2 flex items-end justify-between gap-3">
+                      <span className="min-w-0 break-keep text-sm font-semibold text-slate-800">{detailLabel(row)}</span>
+                      <span
+                        className={`shrink-0 text-base font-extrabold tabular-nums ${
+                          credit ? "text-slate-900" : "text-red-600"
+                        }`}
+                      >
+                        {amtText}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-right text-xs font-bold text-slate-400 tabular-nums">
+                      잔액 {ledgerBalanceAfter(row)}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+
             {totalPages > 1 ? (
               <div className="mt-4 flex items-center justify-center gap-2">
                 <button
                   type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage(Math.max(1, currentPage - 1))}
                   className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
                 >
                   이전
                 </button>
                 <span className="text-xs font-bold text-slate-600">
-                  {page} / {totalPages}
+                  {currentPage} / {totalPages}
                 </span>
                 <button
                   type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
                   className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
                 >
                   다음
@@ -327,6 +383,13 @@ export function WalletLedgerPageBody(props: { data: WalletLedgerPageData }) {
       <Link href="/wallet/charge" className="inline-block text-sm font-bold text-blue-600 hover:underline">
         캐시 충전하러 가기 →
       </Link>
+
+      {/* 모바일 가로 스크롤 필터의 스크롤바 숨김(webkit) — Firefox/IE는 위 arbitrary 클래스로 처리 */}
+      <style jsx global>{`
+        .wallet-filter-scroll::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }

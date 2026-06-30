@@ -24,8 +24,10 @@ import {
   computeProratedRefundEstimate,
   formatCashFromCents,
   formatDateLabel,
+  refundBracketLabelKo,
   type ProratedRefundEstimate,
 } from "@/lib/subscribe/subscriptionRefundProration";
+import { bulkHasSubscriptionUsageStarted } from "@/lib/subscribe/subscriptionUsageStarted";
 
 type Row = Record<string, unknown>;
 
@@ -59,6 +61,8 @@ export type StudentSubscriptionManagementItem = {
   latestBillingAmountLabel: string;
   refundEstimate: ProratedRefundEstimate;
   refundEstimateLabel: string;
+  /** 학원법 별표4 분기 사유(한글) — UI 안내용 */
+  refundEstimateBracketLabel: string;
   pendingRefundId: string | null;
   resubscribeHref: string;
 };
@@ -192,6 +196,18 @@ export async function loadStudentSubscriptionManagementList(
     planRowsByMentorId(supabase, mentorIds),
   ]);
 
+  // 학원법 별표4 "이용 개시" 판정을 카드별로 한 번에 조회.
+  const usageStartedBySub = await bulkHasSubscriptionUsageStarted(
+    supabase,
+    rows.flatMap((row) => {
+      const subId = stringValue(row.id);
+      const mId = stringValue(row.mentor_id);
+      const billingEvent = subId ? billingBySubscription.get(subId) ?? null : null;
+      const periodStart = stringValue(row.current_period_start) ?? stringValue(billingEvent?.period_start);
+      return subId && mId ? [{ subscriptionId: subId, studentId, mentorId: mId, periodStartIso: periodStart }] : [];
+    })
+  );
+
   const usersByMentor = new Map<string, Awaited<ReturnType<typeof getMentorUserPublic>>["data"]>();
   await Promise.all(
     mentorIds.map(async (mentorId) => {
@@ -219,10 +235,13 @@ export async function loadStudentSubscriptionManagementList(
     const currentPlanRow = tier ? (planRowsByMentor.get(mentorId)?.[tier] ?? null) : null;
     const nextBillingAmountCents = tier ? mentorPlanDebitAmountCents(currentPlanRow, tier) : null;
     const nextBillingAmountLabel = nextBillingAmountCents == null ? null : formatCashFromCents(nextBillingAmountCents);
+    const usageStarted = usageStartedBySub.get(subscriptionId) ?? true;
     const refundEstimate = computeProratedRefundEstimate({
       amountCents,
       periodStartIso: currentPeriodStart,
       periodEndIso: currentPeriodEnd,
+      usageStarted,
+      mode: "student_voluntary",
     });
     const pendingRefundId = pendingRefundBySubscription.get(subscriptionId) ?? null;
     const canUsePeriod = status === "active" || status === "past_due";
@@ -263,6 +282,7 @@ export async function loadStudentSubscriptionManagementList(
       latestBillingAmountLabel: amountCents == null ? "결제 금액 확인 필요" : formatCashFromCents(amountCents),
       refundEstimate,
       refundEstimateLabel: formatCashFromCents(refundEstimate.amountCents),
+      refundEstimateBracketLabel: refundBracketLabelKo(refundEstimate.bracketReason),
       pendingRefundId,
       resubscribeHref: `/subscribe?mentorId=${encodeURIComponent(mentorId)}${tier ? `&plan=${encodeURIComponent(tier)}` : ""}`,
     };

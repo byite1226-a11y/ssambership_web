@@ -1,4 +1,5 @@
 import { updateContentReportModerationAction, updateContentReportStatusAction } from "@/lib/admin/adminReportActions";
+import { bulkUpdateContentReportsAction } from "@/lib/admin/bulkActions";
 import { adminContentTargetDisplay } from "@/lib/admin/adminOperationalLabels";
 import { contentReportRowIsActionable, contentReportStatusLabel } from "@/lib/admin/contentReportLabels";
 import type { AdminListResult } from "@/lib/admin/adminQueries";
@@ -75,10 +76,46 @@ export function AdminContentReportsTable(props: {
   const statusKey = list.keyHints.status ?? "status";
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-      <table className="w-full min-w-[880px] text-left text-sm">
+    <div className="space-y-3">
+      {/* P1 ③ 일괄 처리 — 체크박스는 form 속성으로 이 폼에 연결 */}
+      <form
+        id="reportBulkForm"
+        className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5"
+      >
+        <span className="text-[11px] font-bold text-slate-500">선택 항목 일괄</span>
+        <button
+          type="submit"
+          name="bulkStatus"
+          value="reviewing"
+          formAction={bulkUpdateContentReportsAction}
+          className="rounded-lg border border-indigo-300 bg-white px-3 py-1 text-xs font-bold text-indigo-700 hover:bg-indigo-50"
+        >
+          검토 중으로
+        </button>
+        <button
+          type="submit"
+          name="bulkStatus"
+          value="resolved"
+          formAction={bulkUpdateContentReportsAction}
+          className="rounded-lg border border-emerald-300 bg-white px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-50"
+        >
+          처리 완료로
+        </button>
+        <button
+          type="submit"
+          name="bulkStatus"
+          value="dismissed"
+          formAction={bulkUpdateContentReportsAction}
+          className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"
+        >
+          종결로
+        </button>
+      </form>
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+      <table className="w-full min-w-[920px] text-left text-sm">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50/80">
+            <th className="px-3 py-2 font-extrabold text-slate-800">선택</th>
             <th className="px-3 py-2 font-extrabold text-slate-800">신고 ID</th>
             <th className="px-3 py-2 font-extrabold text-slate-800">신고자</th>
             <th className="px-3 py-2 font-extrabold text-slate-800">대상</th>
@@ -102,6 +139,18 @@ export function AdminContentReportsTable(props: {
             const actionable = contentReportRowIsActionable(statusRaw);
             return (
               <tr key={idPrev.title ?? String(i)} className="border-b border-slate-100 last:border-0">
+                <td className="px-3 py-2">
+                  {actionable ? (
+                    <input
+                      type="checkbox"
+                      name="ids"
+                      value={String(row.id ?? "")}
+                      form="reportBulkForm"
+                      aria-label="신고 선택"
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                  ) : null}
+                </td>
                 <td className="max-w-[120px] truncate px-3 py-2 font-mono text-xs text-slate-800" title={idPrev.title}>
                   {idPrev.display}
                 </td>
@@ -178,6 +227,7 @@ export function AdminContentReportsTable(props: {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

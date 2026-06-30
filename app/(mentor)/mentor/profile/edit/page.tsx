@@ -4,7 +4,7 @@ import { getUserProfileById } from "@/lib/auth/getCurrentProfile";
 import { requireRole } from "@/lib/auth/routeGuard";
 import { createClient } from "@/lib/supabase/server";
 import { MENTOR_PROFILE_DATA_MODEL } from "@/lib/mentor/mentorDataModel";
-import { buildMentorProfileDisplay } from "@/lib/mentor/mentorDisplayFields";
+import { buildMentorProfileDisplay, mentorVerificationKo } from "@/lib/mentor/mentorDisplayFields";
 import { fetchMentorMediaSample, fetchMentorProfileRow } from "@/lib/mentor/mentorProfileQueries";
 import { fetchMentorIndividualQuestionPrice } from "@/lib/individualQuestion/individualQuestionPricing";
 import { cashKrwFromAmountCents } from "@/lib/subscribe/mentorPlanPricing";
@@ -51,12 +51,36 @@ export default async function MentorProfileEditPage(props: PageProps) {
   if (re) {
     console.error("[mentor/profile/edit] profile row fetch", re);
   }
+
+  // 기존 요약 대시보드에서 흡수한 상태 정보(완성도·공개·인증) — 편집 화면 상단 배너
+  const completeness = [
+    display.intro,
+    display.university,
+    display.department,
+    display.subjects,
+    display.tags,
+  ].filter((s) => s && String(s).trim().length > 0).length;
+  const completenessPct = Math.min(100, Math.round((completeness / 5) * 100));
+  const verKo = mentorVerificationKo(display.verification);
+  const isPublic = Boolean(display.subOpen);
+
   return (
     <PageScaffold
       hideHero
       hideFooterPlaceholderCards
       sections={[]}
     >
+      <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-[#A7F3D0] bg-[#ECFDF5] px-4 py-3">
+        <span className="text-sm font-extrabold text-[#047857]">프로필 완성도 {completenessPct}%</span>
+        <span className="h-3 w-px bg-emerald-200" aria-hidden />
+        <span className="rounded-full border border-emerald-200 bg-white px-2.5 py-0.5 text-xs font-bold text-[#047857]">
+          {isPublic ? "공개 중" : "비공개"}
+        </span>
+        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-bold text-slate-600">
+          인증 {verKo}
+        </span>
+        <span className="ml-auto text-xs font-medium text-emerald-800/80">아래에서 항목을 채우면 공개 프로필이 더 또렷해져요.</span>
+      </div>
       <MentorProfileEditForm
         initial={initial}
         query={{ row, err: re, media: { rows: media.rows, table: media.table, error: null }, byTier }}

@@ -73,7 +73,9 @@ export function AuthTopNav({ size = "default", showMarketingNav = false, content
         loginActive ? "border-blue-200 bg-sky-50 text-blue-900" : "hover:border-slate-300",
       ].join(" ");
     return (
-      <header className="sticky top-0 z-20 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.05)] backdrop-blur-sm">
+      // loginPageNav는 forgot/update 비밀번호 화면 전용. 이들은 (public) AppShell 헤더(로고+햄버거)도
+      // 함께 렌더돼 모바일에서 헤더가 중복되므로, 이 가로 네비는 모바일에서 숨기고 md(데스크탑)부터 노출.
+      <header className="hidden md:block sticky top-0 z-20 w-full border-b border-slate-200/80 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.05)] backdrop-blur-sm">
         <div
           className={`${loginBar} ${"flex min-h-[3.5rem] flex-col gap-2.5 py-2.5 sm:min-h-[3.9rem] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-0"}`}
         >

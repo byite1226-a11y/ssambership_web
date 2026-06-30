@@ -191,8 +191,8 @@ export default async function NewOpenIndividualQuestionPage(props: PageProps) {
               취소
             </Link>
             <FormSubmitButton
-              idleLabel="예치하고 공개 등록"
-              pendingLabel="예치 처리 중..."
+              idleLabel="안전 결제하고 공개 등록"
+              pendingLabel="결제 처리 중..."
               className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             />
           </div>

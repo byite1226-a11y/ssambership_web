@@ -15,7 +15,7 @@ import { isMainNavItemActive, mainNavAudience } from "@/lib/shell/mainNavActive"
 
 function profileHref(profile: UserRow | null): string {
   if (!profile) return "/login/student";
-  if (profile.role === "mentor") return "/mentor/profile";
+  if (profile.role === "mentor") return "/mentor/profile/edit";
   if (profile.role === "admin") return "/admin";
   return "/mypage";
 }

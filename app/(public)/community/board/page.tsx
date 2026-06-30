@@ -37,6 +37,7 @@ export default async function CommunityBoardPage(props: Props) {
           initialSort={sortTab}
           showSortTabs
           basePath="/community/board"
+          paginate
         />
       </Suspense>
     </CommunityLayoutShell>

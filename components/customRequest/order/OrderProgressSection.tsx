@@ -7,6 +7,7 @@ import {
   orderEventKindLabelForUi,
 } from "@/lib/customRequest/orderLifecycleConstants";
 import { EmptyState } from "@/components/design-system";
+import { Avatar } from "@/components/common/Avatar";
 import {
   orderPartyLabelForMessage,
   pickOrderMentorIdFromRow,
@@ -224,9 +225,7 @@ export function OrderProgressSection(props: Props) {
 
                 <div className={`flex items-start gap-2.5 ${isMe ? "justify-end" : "justify-start"}`}>
                   {!isMe && (
-                    <div className="h-8 w-8 shrink-0 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-black text-slate-500">
-                      M
-                    </div>
+                    <Avatar name={detail.header.mentorName || null} role="mentor" className="h-8 w-8 text-xs" />
                   )}
                   <div className={`flex flex-col space-y-0.5 max-w-[70%] ${isMe ? "items-end" : "items-start"}`}>
                     {!isMe && (
@@ -407,7 +406,7 @@ function OrderProgressSectionMentor({
               title={orderTerminal ? "종료된 주문 대화방" : "주문방 대화"}
               description={
                 orderTerminal
-                  ? "이 주문은 종료되어 새 메시지를 보낼 수 없어요. 작업 파일과 요청사항은 상단 탭에서 확인할 수 있어요."
+                  ? "이 주문은 종료되어 새 메시지를 보낼 수 없어요. 작업 파일과 요청사항은 아래에서 확인할 수 있어요."
                   : "아직 주고받은 메시지가 없습니다. 상대방에게 먼저 인사를 건너보세요."
               }
               className="py-8"
@@ -439,7 +438,7 @@ function OrderProgressSectionMentor({
                   <div className="flex justify-end">
                     <div className="flex max-w-[70%] items-end gap-1.5 sm:max-w-md">
                       <span className="shrink-0 text-xs tabular-nums text-slate-400">{timeStr}</span>
-                      <div className="min-w-0 rounded-2xl rounded-tr-md bg-blue-600 px-4 py-2.5 text-sm font-medium leading-relaxed text-white">
+                      <div className="min-w-0 rounded-2xl rounded-tr-md bg-emerald-600 px-4 py-2.5 text-sm font-medium leading-relaxed text-white">
                         {hasText ? (
                           <p className="whitespace-pre-wrap break-words">{bodyLine}</p>
                         ) : null}
@@ -484,7 +483,7 @@ function OrderProgressSectionMentor({
           <div className="shrink-0 border-t border-ds-border-subtle pt-5">
             <form
               action={submitCustomOrderRoomMessageAction}
-              className="flex items-center gap-3 rounded-xl border border-ds-border-subtle bg-slate-50/50 px-4 py-2 transition-colors focus-within:border-blue-300 focus-within:bg-white"
+              className="flex items-center gap-3 rounded-xl border border-ds-border-subtle bg-slate-50/50 px-4 py-2 transition-colors focus-within:border-emerald-300 focus-within:bg-white"
             >
               <input type="hidden" name="orderId" value={orderId} />
               <input
@@ -497,7 +496,7 @@ function OrderProgressSectionMentor({
               />
               <div className="flex shrink-0 items-center gap-3">
                 <label
-                  className="cursor-pointer text-slate-500 transition hover:text-blue-600"
+                  className="cursor-pointer text-slate-500 transition hover:text-emerald-600"
                   title="파일 첨부"
                 >
                   <Paperclip className="h-5 w-5" strokeWidth={2.2} />
@@ -510,7 +509,7 @@ function OrderProgressSectionMentor({
                 </label>
                 <button
                   type="submit"
-                  className="inline-flex h-9 items-center justify-center rounded-xl bg-blue-600 px-5 text-xs font-bold text-white transition-colors hover:bg-blue-700"
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-emerald-600 px-5 text-xs font-bold text-white transition-colors hover:bg-emerald-700"
                 >
                   전송
                 </button>

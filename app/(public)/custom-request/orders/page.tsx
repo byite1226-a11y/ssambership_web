@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import { StudentCustomRequestOrdersBrowseClient } from "@/components/customRequest/StudentCustomRequestOrdersBrowseClient";
 import { PageScaffold } from "@/components/shell/PageScaffold";
 import { requireRole } from "@/lib/auth/routeGuard";
@@ -60,7 +61,7 @@ export default async function StudentCustomRequestOrdersListPage() {
 
         {enriched.length === 0 && !error ? (
           <div className="rounded-2xl border border-ds-border-subtle bg-ds-muted p-12 text-center select-none">
-            <div className="text-4xl">📄</div>
+            <div className="flex justify-center text-slate-300"><FileText className="h-11 w-11" strokeWidth={1.5} aria-hidden /></div>
             <p className="mt-3 text-base font-bold text-ds-primary">진행 중인 주문이 없습니다.</p>
             <p className="mt-1 text-sm font-medium text-ds-secondary">
               의뢰를 올리고 멘토들의 제안서를 확인하여 작업을 시작해 보세요.

@@ -8,6 +8,7 @@ import {
   getApplicationTextBlocksForCompare,
 } from "@/lib/customRequest/customRequestQueries";
 import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
+import { Avatar } from "@/components/common/Avatar";
 import { CustomRequestLifecycleStepper } from "@/components/customRequest/CustomRequestLifecycleStepper";
 import { CustomRequestAppsBreadcrumb, CustomRequestStepperShell } from "@/components/customRequest/customRequestDetailLayout";
 import { SelectMentorApplicationForm } from "@/components/customRequest/SelectMentorApplicationForm";
@@ -189,6 +190,18 @@ export function ApplicationsCompareView(props: {
           const verified = ["approved", "verified", "complete", "인증 완료"].some((v) =>
             String(e.display?.verification ?? "").toLowerCase().includes(v)
           );
+          // 공개 멘토 프로필 링크 — mentorId가 있을 때만(없으면 평문 폴백). 비교 흐름 유지 위해 새 탭.
+          const profileHref = e.mentorId ? `/mentors/${encodeURIComponent(e.mentorId)}` : null;
+          const mentorProfileLabel = displayName !== "—" ? displayName : "멘토";
+          const avatarEl = (
+            <Avatar
+              name={displayName !== "—" ? displayName : null}
+              photo={avatarUrl}
+              role="mentor"
+              className="h-14 w-14 text-lg"
+              ring
+            />
+          );
 
           return (
             <li
@@ -196,17 +209,34 @@ export function ApplicationsCompareView(props: {
               className="cr-apps-card"
             >
               <div className="flex flex-wrap items-start gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-lg font-black text-slate-500">
-                  {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    (displayName !== "—" ? displayName[0] : "M") ?? "M"
-                  )}
-                </div>
+                {profileHref ? (
+                  <Link
+                    href={profileHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`멘토 ${mentorProfileLabel} 프로필 보기`}
+                    className="shrink-0 rounded-full transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                  >
+                    {avatarEl}
+                  </Link>
+                ) : (
+                  avatarEl
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-base font-extrabold text-slate-900">{displayName}</p>
+                    {profileHref ? (
+                      <Link
+                        href={profileHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`멘토 ${mentorProfileLabel} 프로필 보기`}
+                        className="text-base font-extrabold text-slate-900 underline-offset-2 transition hover:text-blue-700 hover:underline focus-visible:text-blue-700 focus-visible:underline focus-visible:outline-none"
+                      >
+                        {displayName}
+                      </Link>
+                    ) : (
+                      <p className="text-base font-extrabold text-slate-900">{displayName}</p>
+                    )}
                     {verified ? (
                       <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-black text-blue-800">
                         인증

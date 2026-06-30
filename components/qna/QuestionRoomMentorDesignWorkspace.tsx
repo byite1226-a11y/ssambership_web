@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { ConnectionNotesPanel } from "@/components/qna/ConnectionNotesPanel";
-import { ArrowLeft, Download, Eye, FileText, MessageCircle, Search, Send, User } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Download, Eye, FileText, MessageCircle, Search, Send, User } from "lucide-react";
 import { QuestionRoomAttachmentButton } from "@/components/qna/QuestionRoomAttachmentButton";
 import { QuestionThreadAnswerCompleteButton } from "@/components/qna/QuestionThreadAnswerCompleteButton";
 import { parseAttachmentMessageBody } from "@/lib/qna/questionRoomAttachmentDisplay";
@@ -111,7 +111,7 @@ function ChatSendButton(props: { disabled?: boolean }) {
       type="submit"
       disabled={props.disabled || pending}
       aria-label="전송"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-200"
     >
       <Send className="h-4 w-4" />
     </button>
@@ -185,6 +185,31 @@ export function QuestionRoomMentorDesignWorkspace(props: {
     return list;
   }, [filteredThreads, sort]);
 
+  // ★질문 목록 페이지네이션 (이미 로드된 배열 클라이언트 slice). 모바일 3 / 데스크탑 4.
+  // 초기값=데스크탑값(SSR/hydration 일치) → 마운트 후 matchMedia로 보정.
+  const THREADS_PER_PAGE_DESKTOP = 4;
+  const [threadsPerPage, setThreadsPerPage] = useState(THREADS_PER_PAGE_DESKTOP);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setThreadsPerPage(mq.matches ? 3 : THREADS_PER_PAGE_DESKTOP);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  const [threadPage, setThreadPage] = useState(1);
+  const threadTotalPages = Math.max(1, Math.ceil(sortedThreads.length / threadsPerPage));
+  const safeThreadPage = Math.min(threadPage, threadTotalPages);
+  useEffect(() => {
+    if (threadPage > threadTotalPages) setThreadPage(threadTotalPages);
+  }, [threadPage, threadTotalPages]);
+  useEffect(() => {
+    setThreadPage(1);
+  }, [props.roomId, sort, statusFilter]);
+  const pagedThreads = sortedThreads.slice(
+    (safeThreadPage - 1) * threadsPerPage,
+    safeThreadPage * threadsPerPage
+  );
+
   const subjectChipsRoom = useMemo(() => {
     const chips = new Set<string>();
     for (const t of props.threads.rows) {
@@ -209,10 +234,10 @@ export function QuestionRoomMentorDesignWorkspace(props: {
   const hasPlan = Boolean(sub && (sub.planTier || (usage && (usage.limit > 0 || usage.planTier))));
   const usageUnlimited = Boolean(usage && usage.limit >= 999);
   const studentPlanCard = sub ? (
-    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold">
+    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold">
       {hasPlan ? (
         <>
-          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
+          <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
             {sub.planLabel}
           </span>
           <span className="text-slate-700">
@@ -220,7 +245,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
               ? `이번 주 무제한 · ${usage?.used ?? 0} 사용`
               : `이번 주 잔여 ${usage?.remaining ?? 0}/${usage?.limit ?? 0}`}
           </span>
-          <span className="text-blue-700/80">다음 갱신 {sub.nextRenewalLabel}</span>
+          <span className="text-emerald-700/80">다음 갱신 {sub.nextRenewalLabel}</span>
         </>
       ) : (
         <span className="text-slate-500">구독 정보 없음</span>
@@ -247,7 +272,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
 
   /* 채팅(톡방) 본문 — 3단계 중앙 */
   const chatThread = (
-    <main className="flex min-w-0 flex-1 flex-col border-r border-slate-200 bg-white">
+    <main className="flex min-w-0 flex-1 flex-col border-slate-200 bg-white lg:border-r">
       <header className="flex shrink-0 items-center gap-3 border-b border-slate-100 px-5 py-4">
         <Link
           href={props.backHref ?? roomBase}
@@ -294,7 +319,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                   <div
                     className={`rounded-2xl px-4 py-2.5 text-[13px] font-medium leading-relaxed shadow-sm ${
                       mine
-                        ? "rounded-tr-sm bg-blue-600 text-white"
+                        ? "rounded-tr-sm bg-emerald-600 text-white"
                         : "rounded-tl-sm border border-slate-200 bg-white text-slate-800"
                     }`}
                   >
@@ -379,8 +404,8 @@ export function QuestionRoomMentorDesignWorkspace(props: {
         </div>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="flex w-[260px] shrink-0 flex-col border-r border-slate-200 bg-white">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+        <aside className="flex max-h-[38vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white lg:max-h-none lg:w-[260px] lg:border-b-0 lg:border-r">
           <div className="shrink-0 border-b border-slate-100 px-4 py-4">
             <h1 className="text-[15px] font-black text-slate-900">학생 질문방</h1>
             <div className="relative mt-3">
@@ -390,7 +415,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                 value={roomSearch}
                 onChange={(e) => setRoomSearch(e.target.value)}
                 placeholder="학생명 검색"
-                className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[11px] font-medium outline-none focus:border-blue-500"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[11px] font-medium outline-none focus:border-emerald-500"
               />
             </div>
           </div>
@@ -413,12 +438,12 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                     href={`${roomBase}/${encodeURIComponent(rid)}`}
                     className={`relative mb-2 block rounded-xl border p-3 pr-8 transition ${
                       selected
-                        ? "border-l-[3px] border-l-blue-600 border-slate-200 bg-blue-50 shadow-sm"
+                        ? "border-l-[3px] border-l-emerald-600 border-slate-200 bg-emerald-50 shadow-sm"
                         : "border-transparent hover:bg-slate-50"
                     }`}
                   >
                     {unread > 0 ? (
-                      <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-600 px-1.5 text-[10px] font-black text-white">
+                      <span className="absolute right-2 top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-600 px-1.5 text-[10px] font-black text-white">
                         {unread > 9 ? "9+" : unread}
                       </span>
                     ) : null}
@@ -450,7 +475,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col border-r border-slate-200 bg-white">
+        <main className="flex min-w-0 flex-1 flex-col border-slate-200 bg-white lg:border-r">
           <header className="shrink-0 border-b border-slate-100 px-6 py-5">
             <div className="flex gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-white bg-slate-50 shadow-md ring-1 ring-slate-100">
@@ -506,7 +531,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
-                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 outline-none focus:border-blue-500"
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600 outline-none focus:border-emerald-500"
               >
                 <option value="newest">최신순</option>
                 <option value="oldest">오래된순</option>
@@ -520,7 +545,7 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                 <p className="py-12 text-center text-[12px] font-bold text-slate-400">표시할 질문이 없습니다.</p>
               ) : (
                 <div className="space-y-3">
-                  {sortedThreads.map((t) => {
+                  {pagedThreads.map((t) => {
                     const id = String(t.id);
                     const status = threadStatusListLabel(t);
                     const lastMsg = props.lastMessageByThreadId?.[id] ?? null;
@@ -566,6 +591,33 @@ export function QuestionRoomMentorDesignWorkspace(props: {
                       </Link>
                     );
                   })}
+                  {threadTotalPages > 1 ? (
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        disabled={safeThreadPage <= 1}
+                        onClick={() => setThreadPage((p) => Math.max(1, p - 1))}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 text-[11px] font-bold text-emerald-600 transition hover:bg-emerald-50 disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white"
+                        aria-label="이전 페이지"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        이전
+                      </button>
+                      <span className="text-[11px] font-bold text-slate-500">
+                        {safeThreadPage} · {threadTotalPages}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={safeThreadPage >= threadTotalPages}
+                        onClick={() => setThreadPage((p) => Math.min(threadTotalPages, p + 1))}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 text-[11px] font-bold text-emerald-600 transition hover:bg-emerald-50 disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white"
+                        aria-label="다음 페이지"
+                      >
+                        다음
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>

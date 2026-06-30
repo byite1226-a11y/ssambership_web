@@ -54,11 +54,11 @@ function pickAmountLabel(order: Row | null, fallback: string): string {
   for (const key of ["paid_amount", "total_amount", "agreed_price", "proposed_price", "price", "amount"] as const) {
     const value = order?.[key];
     if (typeof value === "number" && Number.isFinite(value)) {
-      return `${value.toLocaleString("ko-KR")}원`;
+      return `${value.toLocaleString("ko-KR")}캐시`;
     }
     if (typeof value === "string" && value.trim()) {
       const n = Number(value.replace(/[, ]/g, ""));
-      if (Number.isFinite(n)) return `${n.toLocaleString("ko-KR")}원`;
+      if (Number.isFinite(n)) return `${n.toLocaleString("ko-KR")}캐시`;
       return value.trim();
     }
   }
@@ -406,14 +406,16 @@ export function StudentOrderCompleteView({ detail, orderId }: Props) {
         <header className="cr-detail-header">
           <span className="eyebrow">맞춤의뢰</span>
           <div className="cr-detail-header-row">
-            <h1 className="cr-detail-title">주문 완료 🎉</h1>
+            <h1 className="cr-detail-title">거래가 완료됐어요</h1>
             <span className="cr-category-badge">완료</span>
           </div>
           <p className="cr-detail-subtitle">
             요청한 작업이 마무리됐어요. 받은 결과물과 결제 영수증, 진행 기록을 한곳에서 확인할 수 있어요.
           </p>
-          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-700">
-            <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+          <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-extrabold text-slate-700">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-white" aria-hidden>
+              <Check className="h-3 w-3" strokeWidth={3} />
+            </span>
             결제 · 납품 · 정산이 모두 마무리됐어요
           </span>
         </header>

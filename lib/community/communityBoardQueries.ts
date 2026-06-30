@@ -247,6 +247,42 @@ async function listCommunityBoardPostsLegacy(
   return { posts, nextCursor: nextCursor || null, error: null };
 }
 
+/**
+ * G4.1 홈 "인기 게시글" 결정적 선정: 좋아요(like_count) 상위, 동률 시 created_at 최신, limit개.
+ * 표시용 정렬·limit일 뿐 escrow/결제/한도와 무관. 게시판 피드의 popular 정렬(view·comment tiebreak 포함)과는
+ * 분리해, 매번 동일 결과가 나오도록 likes→created_at 만으로 결정한다(랜덤 없음).
+ */
+export async function listCommunityPopularPostsForHome(
+  supabase: SupabaseClient,
+  limit: number
+): Promise<{ posts: CommunityBoardPostCard[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("community_posts")
+    .select("*")
+    .eq("status", "published")
+    .order("like_count", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    // 레거시 스키마(status/like_count 미배포) 폴백: 최신순 limit개.
+    if (/relation|does not exist|column|status|like_count/i.test(error.message)) {
+      const fb = await supabase
+        .from("community_posts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (fb.error) return { posts: [], error: fb.error.message };
+      const rows = (fb.data as Row[]) ?? [];
+      const userMap = await boardAuthorNameMap(supabase, rows);
+      return { posts: rows.map((r) => mapRowToBoardCard(r, userMap)), error: null };
+    }
+    return { posts: [], error: error.message };
+  }
+  const rows = (data as Row[]) ?? [];
+  const userMap = await boardAuthorNameMap(supabase, rows);
+  return { posts: rows.map((r) => mapRowToBoardCard(r, userMap)), error: null };
+}
+
 export async function getCommunityBoardPost(
   supabase: SupabaseClient,
   id: string

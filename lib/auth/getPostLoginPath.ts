@@ -98,7 +98,7 @@ export function getSignUpSuccessPath(role: Extract<AppRole, "student" | "mentor"
     return resolvePostLoginPath(nextRaw, role);
   }
   if (role === "mentor") {
-    return "/mentor/profile";
+    return "/mentor/profile/edit";
   }
   return "/mypage";
 }

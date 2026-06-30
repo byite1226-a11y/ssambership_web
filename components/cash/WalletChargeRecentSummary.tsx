@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CreditCard, BookOpen, ClipboardList, Circle, type LucideIcon } from "lucide-react";
 import {
   ledgerAmountLabel,
   ledgerAt,
@@ -9,18 +10,18 @@ import {
 } from "@/lib/cash/ledgerRowDisplay";
 import type { LedgerLineRow } from "@/lib/cash/cashQueries";
 
-function kindIcon(kind: ReturnType<typeof ledgerUiKind>) {
-  if (kind === "charge") return { emoji: "💳", label: "캐시 충전" };
-  if (kind === "subscription") return { emoji: "📚", label: "구독제" };
-  if (kind === "custom_request") return { emoji: "📋", label: "맞춤의뢰" };
-  return { emoji: "•", label: "기타" };
+function kindMeta(kind: ReturnType<typeof ledgerUiKind>): { Icon: LucideIcon; label: string } {
+  if (kind === "charge") return { Icon: CreditCard, label: "캐시 충전" };
+  if (kind === "subscription") return { Icon: BookOpen, label: "구독제" };
+  if (kind === "custom_request") return { Icon: ClipboardList, label: "맞춤의뢰" };
+  return { Icon: Circle, label: "기타" };
 }
 
 function cleanDetail(row: Record<string, unknown>): string {
   const r = ledgerReasonLabel(row);
   if (r && r !== "—") return r;
   const k = ledgerUiKind(row);
-  return kindIcon(k).label;
+  return kindMeta(k).label;
 }
 
 export function WalletChargeRecentSummary(props: {
@@ -49,47 +50,82 @@ export function WalletChargeRecentSummary(props: {
       ) : list.length === 0 ? (
         <p className="mt-4 py-8 text-center text-sm text-slate-500">최근 사용 내역이 없습니다.</p>
       ) : (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[520px] border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-xs font-bold text-slate-400">
-                <th className="pb-2 pr-3 w-10" />
-                <th className="pb-2 pr-3">내역</th>
-                <th className="pb-2 pr-3 whitespace-nowrap">일시</th>
-                <th className="pb-2 pr-3 text-right whitespace-nowrap">금액</th>
-                <th className="pb-2 text-right whitespace-nowrap">잔액</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {list.map((row, i) => {
-                const r = row as Record<string, unknown>;
-                const kind = ledgerUiKind(r);
-                const icon = kindIcon(kind);
-                const credit = ledgerIsCredit(r);
-                const amt = ledgerAmountLabel(r);
-                return (
-                  <tr key={typeof r.id === "string" ? r.id : `row-${i}`}>
-                    <td className="py-3 pr-3 text-lg" aria-hidden>
-                      {icon.emoji}
-                    </td>
-                    <td className="py-3 pr-3 font-semibold text-slate-800">{cleanDetail(r)}</td>
-                    <td className="py-3 pr-3 text-xs text-slate-500 whitespace-nowrap">{ledgerAt(r)}</td>
-                    <td
-                      className={`py-3 pr-3 text-right font-extrabold tabular-nums whitespace-nowrap ${
-                        credit ? "text-[#047857]" : "text-[#dc2626]"
-                      }`}
-                    >
-                      {credit && !amt.startsWith("+") ? `+${amt}` : amt}
-                    </td>
-                    <td className="py-3 text-right text-xs font-bold text-slate-500 tabular-nums whitespace-nowrap">
-                      {ledgerBalanceAfter(r)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* 데스크탑: 표 */}
+          <div className="mt-4 hidden overflow-x-auto sm:block">
+            <table className="w-full min-w-[520px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs font-bold text-slate-400">
+                  <th className="pb-2 pr-3 w-10" />
+                  <th className="pb-2 pr-3">내역</th>
+                  <th className="pb-2 pr-3 whitespace-nowrap">일시</th>
+                  <th className="pb-2 pr-3 text-right whitespace-nowrap">금액</th>
+                  <th className="pb-2 text-right whitespace-nowrap">잔액</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {list.map((row, i) => {
+                  const r = row as Record<string, unknown>;
+                  const kind = ledgerUiKind(r);
+                  const { Icon } = kindMeta(kind);
+                  const credit = ledgerIsCredit(r);
+                  const amt = ledgerAmountLabel(r);
+                  return (
+                    <tr key={typeof r.id === "string" ? r.id : `row-${i}`}>
+                      <td className="py-3 pr-3 text-slate-400" aria-hidden>
+                        <Icon className="h-4 w-4" strokeWidth={1.75} />
+                      </td>
+                      <td className="py-3 pr-3 font-semibold text-slate-800">{cleanDetail(r)}</td>
+                      <td className="py-3 pr-3 text-xs text-slate-500 whitespace-nowrap">{ledgerAt(r)}</td>
+                      <td
+                        className={`py-3 pr-3 text-right font-extrabold tabular-nums whitespace-nowrap ${
+                          credit ? "text-slate-900" : "text-[#dc2626]"
+                        }`}
+                      >
+                        {credit && !amt.startsWith("+") ? `+${amt}` : amt}
+                      </td>
+                      <td className="py-3 text-right text-xs font-bold text-slate-500 tabular-nums whitespace-nowrap">
+                        {ledgerBalanceAfter(r)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 모바일: 카드(가로 스크롤 제거) */}
+          <ul className="mt-4 space-y-2 sm:hidden">
+            {list.map((row, i) => {
+              const r = row as Record<string, unknown>;
+              const kind = ledgerUiKind(r);
+              const { Icon } = kindMeta(kind);
+              const credit = ledgerIsCredit(r);
+              const amt = ledgerAmountLabel(r);
+              const amtText = credit && !amt.startsWith("+") ? `+${amt}` : amt;
+              return (
+                <li
+                  key={typeof r.id === "string" ? r.id : `m-${i}`}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500" aria-hidden>
+                    <Icon className="h-4 w-4" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-800">{cleanDetail(r)}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{ledgerAt(r)}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className={`text-sm font-extrabold tabular-nums ${credit ? "text-slate-900" : "text-[#dc2626]"}`}>
+                      {amtText}
+                    </p>
+                    <p className="mt-0.5 text-xs font-bold text-slate-400 tabular-nums">잔액 {ledgerBalanceAfter(r)}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </section>
   );

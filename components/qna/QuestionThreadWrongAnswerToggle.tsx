@@ -41,23 +41,19 @@ export function QuestionThreadWrongAnswerToggle(props: {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-      <label className="flex cursor-pointer items-start gap-2 text-[12px] font-bold text-slate-700">
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={pending}
-          onChange={(e) => void save(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
-        />
-        <span>
-          이 문제는 내가 틀렸던 문제예요
-          <span className="mt-0.5 block text-[10px] font-medium text-slate-500">
-            나중에 약점 분석과 복습 리포트에 반영됩니다.
-          </span>
-        </span>
-      </label>
-      {error ? <p className="mt-1 text-[11px] font-bold text-amber-800">{error}</p> : null}
-    </div>
+    <label
+      className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700"
+      title="나중에 약점 분석과 복습 리포트에 반영됩니다."
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={pending}
+        onChange={(e) => void save(e.target.checked)}
+        className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-[#2563EB] focus:ring-[#2563EB]"
+      />
+      이 문제는 내가 틀렸던 문제예요
+      {error ? <span className="ml-1 text-[10px] font-bold text-amber-800">· {error}</span> : null}
+    </label>
   );
 }

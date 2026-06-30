@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { mentorMainNav } from "@/lib/shell/mainNavItems";
 
-const PRIMARY = "#2563EB";
+const PRIMARY = "#059669";
 
 export function MentorDashboardSideNav() {
 const sideItems = mentorMainNav.filter((item) => item.href !== "/mentor/mypage");

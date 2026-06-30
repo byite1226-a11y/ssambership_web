@@ -57,7 +57,7 @@ export default async function NewDirectIndividualQuestionPage(props: PageProps) 
             <span className="cr-category-badge">지정형</span>
           </div>
           <p className="cr-detail-subtitle">
-            구독 질문권과 별개로 캐시를 예치해 단건 질문을 보냅니다. 답변 완료 시 예치 금액이 멘토에게 지급됩니다.
+            구독 질문권과 별개로 캐시를 안전 결제해 단건 질문을 보냅니다. 답변 완료 시 결제 금액이 멘토에게 지급됩니다.
           </p>
         </header>
 
@@ -80,7 +80,7 @@ export default async function NewDirectIndividualQuestionPage(props: PageProps) 
           </div>
           <div>
             <dt className="text-xs font-extrabold text-blue-700">진행 방식</dt>
-            <dd className="mt-1 text-sm font-black text-slate-900">등록 시 예치 · 답변 완료 시 지급</dd>
+            <dd className="mt-1 text-sm font-black text-slate-900">등록 시 안전 결제 · 답변 완료 시 지급</dd>
           </div>
         </dl>
 
@@ -170,8 +170,8 @@ export default async function NewDirectIndividualQuestionPage(props: PageProps) 
                 취소
               </Link>
               <FormSubmitButton
-                idleLabel={`${formatIndividualQuestionPrice(pricing.amountCents)} 예치하고 질문 보내기`}
-                pendingLabel="예치 처리 중..."
+                idleLabel={`${formatIndividualQuestionPrice(pricing.amountCents)} 안전 결제하고 질문 보내기`}
+                pendingLabel="결제 처리 중..."
                 className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>

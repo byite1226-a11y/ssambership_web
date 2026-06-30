@@ -31,7 +31,9 @@ export function MentorPayoutsSettlementTable(props: {
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <>
+    {/* 데스크탑(sm+): 기존 표 그대로 — lg+ 픽셀 동일 */}
+    <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm sm:block">
       <table className="w-full min-w-[880px] text-left text-sm">
         <thead>
           <tr className="border-b border-slate-100 bg-slate-50/90 text-xs font-bold text-slate-500">
@@ -72,7 +74,7 @@ export function MentorPayoutsSettlementTable(props: {
                 >
                   {row.isCancelled ? `+${formatCashKrw(row.feeAmount)}` : formatCashKrw(row.feeAmount)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums font-black text-[#2563EB]">
+                <td className="px-4 py-3 text-right tabular-nums font-black text-[#059669]">
                   {formatCashKrw(row.netAmount)}
                 </td>
                 <td className="px-4 py-3">
@@ -86,5 +88,51 @@ export function MentorPayoutsSettlementTable(props: {
         </tbody>
       </table>
     </div>
+
+    {/* 모바일(sm 미만): 행을 카드로 — 일자·유형 + 내용 + 총액·수수료·정산액(강조)·상태 */}
+    <ul className="space-y-2.5 sm:hidden">
+      {props.rows.map((row) => {
+        const st = settlementStatusBadge(row.uiStatus);
+        const grossText = row.isCancelled
+          ? `-${formatCashKrw(Math.abs(row.grossAmount))}`
+          : formatCashKrw(row.grossAmount);
+        const feeText = row.isCancelled ? `+${formatCashKrw(row.feeAmount)}` : formatCashKrw(row.feeAmount);
+        return (
+          <li key={row.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${typeBadgeClass(row.type)}`}>
+                {typeBadgeLabel(row.type)}
+              </span>
+              <span className="text-xs font-medium text-slate-500">{formatPayoutTableDate(row.date)}</span>
+            </div>
+            <p className="mt-2 break-keep text-sm font-semibold text-slate-800">{row.description}</p>
+            <dl className="mt-3 space-y-1.5 border-t border-slate-100 pt-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-medium text-slate-500">{grossLabel}</dt>
+                <dd className={`tabular-nums font-semibold ${row.isCancelled ? "text-red-600" : "text-slate-900"}`}>
+                  {grossText}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-medium text-slate-500">수수료</dt>
+                <dd className={`tabular-nums font-semibold ${row.isCancelled ? "text-emerald-600" : "text-slate-500"}`}>
+                  {feeText}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-1.5">
+                <dt className="font-bold text-slate-700">{netLabel}</dt>
+                <dd className="text-base font-black tabular-nums text-[#059669]">{formatCashKrw(row.netAmount)}</dd>
+              </div>
+            </dl>
+            <div className="mt-3 flex justify-end">
+              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${st.className}`}>
+                {st.label}
+              </span>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+    </>
   );
 }

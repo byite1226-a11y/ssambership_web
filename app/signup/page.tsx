@@ -78,7 +78,12 @@ function FieldError({ message }: { message?: string }) {
 function stepDescription(s: 1 | 2 | 3) {
   switch (s) {
     case 1:
-      return "학생과 멘토는 역할에 맞는 혜택이 달라요. 먼저 가입 유형을 골라 주세요.";
+      return (
+        <>
+          <span className="md:hidden">역할에 따라 혜택이 달라요. 유형을 골라 주세요.</span>
+          <span className="hidden md:inline">학생과 멘토는 역할에 맞는 혜택이 달라요. 먼저 가입 유형을 골라 주세요.</span>
+        </>
+      );
     case 2:
       return "이메일·비밀번호를 정하고, 프로필과 약관 동의를 완료하면 가입이 끝나요.";
     case 3:
@@ -474,7 +479,7 @@ function SignupPageContent() {
                   관리자 승인 전까지 멘토 활동은 대기 상태입니다. 프로필을 먼저 작성해 주세요.
                 </p>
                 <Link
-                  href="/mentor/profile"
+                  href="/mentor/profile/edit"
                   className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#059669] px-8 text-base font-extrabold text-white transition hover:bg-emerald-700 sm:min-h-[3.25rem] sm:px-10 sm:text-lg"
                 >
                   프로필 관리

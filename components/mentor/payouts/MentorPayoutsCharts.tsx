@@ -12,7 +12,7 @@ import type { MentorPayoutMonthlyCard } from "@/lib/mentor/mentorPayoutsTypes";
 import { MentorRevenueChart } from "@/components/mentor/mypage/MentorRevenueChart";
 import { formatCashKrw } from "./payoutUi";
 
-const PRIMARY = "#2563EB";
+const PRIMARY = "#059669";
 const CUSTOM_GREEN = "#059669";
 
 type DonutProps = {
@@ -88,7 +88,7 @@ export function MentorPayoutsMonthlyAreaChart(props: { months: MentorPayoutMonth
         monthlyRevenue={chartData}
         height={192}
         gradientId="mentor-payout-trend-grad"
-        valueUnit="원"
+        valueUnit="캐시"
       />
     </div>
   );

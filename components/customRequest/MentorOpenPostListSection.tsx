@@ -1,9 +1,13 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { EmptyState, LinkButton } from "@/components/design-system";
 import { mapPostRowToPublicDetail } from "@/lib/customRequest/customRequestPostMappers";
-import { pickDisplayField } from "@/lib/customRequest/customRequestQueries";
 
 type Row = Record<string, unknown>;
+
+const PAGE_SIZE = 5;
 
 function timeAgo(dateStr: string): string {
   if (!dateStr || dateStr === "—") return "";
@@ -24,6 +28,23 @@ export function MentorOpenPostListSection(props: {
   rows: Row[];
   listStatus: "ok" | "empty" | "rpc_unavailable";
 }) {
+  const [page, setPage] = useState(1);
+
+  // 탭/카테고리 변경 시 서버에서 새 rows가 내려오므로 1페이지로 리셋한다.
+  useEffect(() => {
+    setPage(1);
+  }, [props.rows]);
+
+  // 모바일은 페이지당 4개, 데스크탑은 기존 5개. 초기값=데스크탑값(SSR/hydration 일치) → 마운트 후 보정.
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setPageSize(mq.matches ? 4 : PAGE_SIZE);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
   if (props.listStatus === "rpc_unavailable") {
     return (
       <div className="rounded-2xl border border-ds-border-subtle bg-white px-5 py-5">
@@ -42,9 +63,14 @@ export function MentorOpenPostListSection(props: {
       />
     );
   }
+  const totalPages = Math.max(1, Math.ceil(props.rows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const visibleRows = props.rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
+    <div className="space-y-4">
     <ul className="space-y-3">
-      {props.rows.map((r, i) => {
+      {visibleRows.map((r, i) => {
         const d = mapPostRowToPublicDetail(r);
         const id = String(r.id ?? i);
         const detailHref = `/mentor/custom-request/posts/${id}`;
@@ -52,29 +78,78 @@ export function MentorOpenPostListSection(props: {
         const createdAt = String(r.created_at ?? "");
         const timeLabel = timeAgo(createdAt);
         const categoryLabel = d.category !== "—" ? d.category : "";
-        const metaParts = [
-          categoryLabel || null,
-          d.budgetLine !== "—" ? `예상 ${d.budgetLine}` : null,
-          d.deadline !== "—" ? `마감 ${d.deadline}` : null,
-          timeLabel || null,
-        ].filter(Boolean);
+        const statusLabel = d.status && d.status !== "—" ? d.status : "";
+        const summary =
+          d.body !== "—" ? d.body : d.goal !== "—" ? d.goal : d.subject !== "—" ? d.subject : "";
+        const budgetLabel = d.budgetLine !== "—" ? d.budgetLine : "";
+        const deadlineLabel = d.deadline !== "—" ? d.deadline : "";
 
         return (
           <li key={id}>
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-ds-border-subtle border-l-[3px] border-l-blue-600 bg-white px-5 py-4 transition-[box-shadow,border-color] duration-150 hover:border-blue-400 hover:shadow-[0_2px_8px_rgba(0,0,0,0.09)]">
+            {/* 크몽식 거래 카드 — 분류/상태 칩 + 식별 가능한 제목·요약 + 1차 정보(예상금액·마감) 강조. 멘토 화면=초록 액센트. */}
+            <div className="flex items-stretch justify-between gap-4 rounded-2xl border border-ds-border-subtle border-l-[3px] border-l-emerald-600 bg-white px-5 py-4 transition-[box-shadow,border-color] duration-150 hover:border-emerald-400 hover:shadow-[0_2px_10px_rgba(0,0,0,0.09)]">
               <Link href={detailHref} className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-slate-900">{d.title}</p>
-                {metaParts.length > 0 ? (
-                  <p className="mt-1 truncate text-sm text-slate-600">{metaParts.join(" · ")}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {categoryLabel ? (
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-extrabold text-[#047857]">
+                      {categoryLabel}
+                    </span>
+                  ) : null}
+                  {statusLabel ? (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">
+                      {statusLabel}
+                    </span>
+                  ) : null}
+                  {timeLabel ? <span className="text-[11px] font-medium text-slate-400">{timeLabel}</span> : null}
+                </div>
+                <p className="mt-2 truncate text-base font-extrabold text-slate-900">{d.title}</p>
+                {summary ? (
+                  <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{summary}</p>
                 ) : null}
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                  {budgetLabel ? (
+                    <span className="font-extrabold text-[#047857]">예상 {budgetLabel}</span>
+                  ) : (
+                    <span className="font-bold text-slate-400">예상 금액 협의</span>
+                  )}
+                  {deadlineLabel ? <span className="font-bold text-slate-700">마감 {deadlineLabel}</span> : null}
+                </div>
               </Link>
-              <LinkButton href={applyHref} variant="secondary" className="shrink-0 text-xs">
-                제안하기
-              </LinkButton>
+              <div className="flex shrink-0 items-center">
+                <LinkButton href={applyHref} variant="secondary" className="text-xs">
+                  제안하기
+                </LinkButton>
+              </div>
             </div>
           </li>
         );
       })}
     </ul>
+
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-center gap-2" aria-label="페이지 이동">
+          <button
+            type="button"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
+          >
+            이전
+          </button>
+          <span className="text-xs font-bold" aria-live="polite">
+            <span className="text-[#059669]">{currentPage}</span>
+            <span className="text-slate-400"> · {totalPages}</span>
+          </span>
+          <button
+            type="button"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40"
+          >
+            다음
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }

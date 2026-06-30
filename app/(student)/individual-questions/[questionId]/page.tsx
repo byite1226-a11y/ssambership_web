@@ -37,11 +37,11 @@ export default async function StudentIndividualQuestionDetailPage(props: PagePro
   const warning = firstParam(sp.warning);
 
   const flash = resolved
-    ? "답변을 확정했어요. 예치 금액이 멘토에게 지급되었습니다."
+    ? "해결 완료했어요. 안전 보관 중이던 캐시가 멘토에게 정산됐어요."
     : sent
       ? "메시지를 보냈어요."
       : created
-        ? "질문이 전달되었어요. 예치 금액은 답변을 확정하기 전까지 보관됩니다."
+        ? "질문이 전달됐어요. 안전 보관 중인 캐시는 해결 완료를 누르기 전까지 보관돼요."
         : null;
 
   return (

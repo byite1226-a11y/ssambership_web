@@ -25,3 +25,9 @@ scripts/
 
 # 임시 스크린샷·캡처 산출물 (소스 아님 — 커밋 금지)
 /tmp-screens/
+
+# 스크린샷 캡처 결과물·아카이브 (소스 아님 — 커밋 금지, 백업은 별도)
+screenshots_final/
+screenshots_*/
+screenshots*.zip
+shots_*.zip

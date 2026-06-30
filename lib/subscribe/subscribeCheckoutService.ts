@@ -22,6 +22,10 @@ import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { loadMentorCapUsage, wouldExceedCap } from "@/lib/subscribe/mentorCapService";
 import { fetchRoomsForUser } from "@/lib/qna/questionRoomQueries";
 import { assertMentorApprovedForAction } from "@/lib/mentor/mentorVerificationGate";
+import { assertAccountActive } from "@/lib/auth/accountStatus";
+import { loadMentorActivityForGate } from "@/lib/mentor/mentorActivityService";
+import { mentorAcceptsNewSubscriptions, mentorActivityState } from "@/lib/mentor/mentorActivity";
+import { loadMentorSubscribeOpen } from "@/lib/mentor/mentorSubscribeOpen";
 
 type Row = Record<string, unknown>;
 
@@ -486,6 +490,23 @@ export async function createSubscriptionPaymentIntent(
   if (!mentorGate.ok) {
     return { ok: false, error: mentorGate.error, code: "mentor" };
   }
+  // 멘토 활동 중단 게이트 — 종료/일시중단 중인 멘토는 신규 구독 불가.
+  const mentorActivity = await loadMentorActivityForGate(supabase, mentorId);
+  if (mentorActivity && !mentorAcceptsNewSubscriptions(mentorActivity)) {
+    const state = mentorActivityState(mentorActivity);
+    return {
+      ok: false,
+      error:
+        state === "paused"
+          ? "이 멘토는 현재 일시 휴식 중입니다. 복귀 후 다시 구독해 주세요."
+          : "이 멘토는 활동을 종료하여 신규 구독을 받지 않습니다.",
+      code: "mentor",
+    };
+  }
+  // 멘토 self "신규 구독 그만 받기" 게이트 — flag=false 면 신규 구독 거부(기존 구독·갱신엔 무관, cap 계산 불변).
+  if (!(await loadMentorSubscribeOpen(supabase, mentorId))) {
+    return { ok: false, error: "이 멘토는 현재 신규 구독을 받지 않고 있어요.", code: "mentor" };
+  }
   const dup = await findActiveSubscriptionForPair(supabase, studentId, mentorId);
   if (dup) {
     return {
@@ -705,6 +726,11 @@ export async function finalizeSubscriptionCheckout(
   }
 ): Promise<CompleteResult> {
   const { studentId, paymentId, mentorId, planTier, cashWallet } = args;
+  // 계정 정지/차단 가드 — 정지된 학생은 신규 구독 완료 불가.
+  const acctGate = await assertAccountActive(supabase, studentId);
+  if (!acctGate.ok) {
+    return { ok: false, error: acctGate.userMessage, code: "forbidden" };
+  }
   const payTable = await firstPayTable(supabase);
   if (!payTable) {
     return { ok: false, error: "payments 테이블 없음", code: "db" };
@@ -831,6 +857,10 @@ export async function finalizeSubscriptionCheckout(
       error: "이 멘토는 현재 구독이 마감되었습니다. 다른 멘토를 찾아보거나 잠시 후 다시 시도해 주세요.",
       code: "forbidden",
     };
+  }
+  // 멘토 self "신규 구독 그만 받기" 최종 재확인(확정 직전). cap 마감과 별개 사유.
+  if (!(await loadMentorSubscribeOpen(supabase, mentorId))) {
+    return { ok: false, error: "이 멘토는 현재 신규 구독을 받지 않고 있어요.", code: "forbidden" };
   }
 
   const debitCheck = resolveMentorPlanDebitAmount(planRow, planTier, "finalizeSubscriptionCheckout");

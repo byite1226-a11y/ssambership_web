@@ -280,17 +280,34 @@ export function MentorProfileEditForm(props: {
 
                 <div className="grid gap-4 sm:grid-cols-1">
                   <div>
-                    <label className={labelClass} htmlFor="department">전공(학과) <span className="ml-0.5 text-red-500">*</span></label>
+                    <label className={labelClass} htmlFor="department">
+                      전공(학과) <span className="ml-0.5 text-red-500">*</span>
+                      <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 ring-1 ring-slate-200">
+                        <Lock className="h-3 w-3" aria-hidden /> 잠금
+                      </span>
+                    </label>
                     <div className="relative mt-1.5">
                       <input
                         id="department"
                         name="department"
                         placeholder="전공 학과를 입력해주세요"
-                        className={inputClass}
+                        className={`${inputClass} cursor-not-allowed bg-slate-50 text-slate-500`}
                         value={formData.department}
-                        onChange={handleChange}
+                        readOnly
+                        aria-readonly="true"
                         maxLength={40}
                       />
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[11px] font-medium text-slate-500">
+                        학과 정보는 인증값이라 직접 수정할 수 없어요. 변경이 필요하면 요청해 주세요.
+                      </p>
+                      <Link
+                        href="/mentor/academic-record-change"
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#059669] bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-[#059669] transition hover:bg-emerald-100"
+                      >
+                        <FileText className="h-3.5 w-3.5" aria-hidden /> 학적변경요청
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -396,6 +413,11 @@ export function MentorProfileEditForm(props: {
               <div className="mt-2">
                 <MentorSubjectCheckboxes selected={subjectCodes} onToggle={toggleSubjectCode} />
               </div>
+              {subjectCodes.length === 0 ? (
+                <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-bold leading-relaxed text-amber-900">
+                  활동(구독 공개)하려면 담당 과목을 1개 이상 지정하세요. 과목을 설정하기 전에는 멘토 찾기에 노출되지 않고 새 구독을 받을 수 없어요.
+                </p>
+              ) : null}
               {/* 저장은 기존 경로 유지: name="subjects" 콤마 결합 code. (mutation이 split→text[]) */}
               <input type="hidden" name="subjects" value={formData.subjects} />
               <input type="hidden" name="tags" value={initial.tags} />
@@ -450,9 +472,8 @@ export function MentorProfileEditForm(props: {
                       />
                       <span className="shrink-0 text-xs font-bold text-slate-500">캐시</span>
                     </div>
-                    <p className="mt-2 text-[10px] font-semibold text-slate-500">
-                      권장 {rule.recommendedCashKrw.toLocaleString("ko-KR")} · 범위{" "}
-                      {rule.minCashKrw.toLocaleString("ko-KR")}~{rule.maxCashKrw.toLocaleString("ko-KR")}
+                    <p className="mt-2 whitespace-nowrap text-[10px] font-semibold text-slate-500">
+                      범위 {rule.minCashKrw.toLocaleString("ko-KR")}~{rule.maxCashKrw.toLocaleString("ko-KR")}
                     </p>
                     {invalid ? (
                       <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[10px] font-bold text-red-700">
@@ -529,7 +550,10 @@ export function MentorProfileEditForm(props: {
                 인증 서류 제출하기 &gt;
               </Link>
             </div>
-            {formData.subOpen ? <input type="hidden" name="subscribeOpen" value="on" /> : null}
+            {/* 과목 0개면 구독 공개를 켜지 않는다(저장은 통과, 구독만 닫힘) — 과목 필수 게이트 */}
+            {formData.subOpen && subjectCodes.length > 0 ? (
+              <input type="hidden" name="subscribeOpen" value="on" />
+            ) : null}
           </section>
 
           {/* 6. 대표 콘텐츠 설정 */}

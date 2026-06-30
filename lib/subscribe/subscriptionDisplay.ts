@@ -57,7 +57,7 @@ export function subscriptionStatusDisplayLabel(args: {
   const normalized = args.status.trim().toLowerCase();
   const periodEnd = formatSubscriptionDate(args.currentPeriodEnd);
   if (normalized === "cancel_scheduled" || (args.cancelAtPeriodEnd && (normalized === "active" || normalized === "past_due"))) {
-    return periodEnd === "—" ? "해지 예약됨" : `해지 예약됨 · ${periodEnd}까지 이용`;
+    return periodEnd === "—" ? "구독 만료 예정" : `구독 만료 예정 · ${periodEnd}까지 이용`;
   }
   if (normalized === "active") return "이용 중";
   if (normalized === "past_due") {
@@ -79,7 +79,7 @@ export function nextBillingDisplayLabel(args: {
 }): string {
   const normalized = args.status.trim().toLowerCase();
   if (normalized === "cancel_scheduled" || (args.cancelAtPeriodEnd && (normalized === "active" || normalized === "past_due"))) {
-    return "해지 예약으로 갱신 없음";
+    return "자동 갱신 중단됨";
   }
   if (normalized === "expired" || normalized === "canceled" || normalized === "cancelled") return "재구독 가능";
   if (normalized === "refunded") return "환불 완료";

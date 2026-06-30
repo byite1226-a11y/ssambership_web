@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { partyUserIdFromRoomRow } from "@/lib/qna/questionRoomUiLabels";
 import { assertRoomParty } from "@/lib/qna/questionRoomApiAuth";
-import { createQuestionThread } from "@/lib/qna/questionRoomMutations";
+import { createQuestionThread, nextRoomQuestionNumber } from "@/lib/qna/questionRoomMutations";
 import { updateQuestionThreadStatus } from "@/lib/qna/questionThreadMutations";
 import { readQuestionThreadWorkflowStatus, WEEKLY_QUESTION_LIMIT_MESSAGE } from "@/lib/qna/questionThreadStatus";
 import { fetchWeeklyQuestionUsage } from "@/lib/qna/weeklyQuestionUsage";
@@ -84,9 +84,11 @@ export async function createStudentQuestionThread(
     return { ok: false, status: gate.status, error: gate.error };
   }
 
-  const trimmed = title.trim();
-  if (!trimmed) {
-    return { ok: false, status: 400, error: "질문 주제 제목을 입력해 주세요." };
+  // 제목은 선택사항 — 비우면 질문방 단위 누적 순번으로 "질문 N" 자동 생성.
+  // ★N은 이 room의 thread 수 + 1 (학생 전체 합산 아님).
+  let finalTitle = title.trim();
+  if (!finalTitle) {
+    finalTitle = `질문 ${await nextRoomQuestionNumber(supabase, roomId)}`;
   }
 
   const result = await createQuestionThread({
@@ -94,7 +96,7 @@ export async function createStudentQuestionThread(
     role: "student",
     userId: studentId,
     roomId,
-    title: trimmed,
+    title: finalTitle,
     subject: subject?.trim() || null,
     topic: topic?.trim() || null,
   });

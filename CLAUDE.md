@@ -34,7 +34,7 @@
 - **요금제 표기:** 베이직(주4) / 스탠다드(주9, 추천) / 프리미엄(FUP) — tier id: `limited` / `standard` / `premium`
 - **가격(캐시/월):** 55,000 / 114,900 / 249,900
 - **cap:** 1.0 / 2.5 / 4.5
-- **수수료:** 구독 30/70 · 맞춤의뢰 20/80
+- **수수료(플랫폼 공제):** 구독 15% · 맞춤의뢰 5% · 개별질문 15% (멘토 수령 85/95/85)
 - **질문방:** `mentor_student_rooms` → `question_threads` → `question_messages`
 - **연결노트:** room 단위 (`connection_notes`)
 - **커뮤니티:** 게시판(`community_posts`) / 숏폼(`shortform_posts`) 분리
